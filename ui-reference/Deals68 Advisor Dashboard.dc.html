@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<title>Advisor Dashboard | Deals68</title>
+<meta name="robots" content="noindex,nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="assets/deals68-investors-import.js"></script>
+<script src="assets/deals68-mock.js"></script>
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body { font-family: 'Be Vietnam Pro', system-ui, sans-serif; color: #0F2A4A; background: #F7FAFC; -webkit-font-smoothing: antialiased; }
+  [data-lang="vi"] .l-en { display: none !important; }
+  [data-lang="en"] .l-vi { display: none !important; }
+  a { text-decoration: none; color: inherit; }
+</style>
+</helmet>
+
+<div data-lang="{{ lang }}" style="width:100%; overflow-x:hidden; min-height:100vh; display:flex; flex-direction:column;">
+
+  <header style="position:sticky; top:0; z-index:60; background:rgba(255,255,255,.94); backdrop-filter:blur(10px); border-bottom:1px solid #E7EDF3;">
+    <div style="max-width:1000px; margin:0 auto; padding:0 24px; height:70px; display:flex; align-items:center; gap:28px;">
+      <a href="Deals68 Home.dc.html" style="display:flex; align-items:center; flex-shrink:0;"><img src="assets/logo-beta.png" alt="Deals68.com" style="height:34px; display:block;"></a>
+      <div style="margin-left:auto; display:flex; align-items:center; gap:14px; flex-shrink:0;">
+        <div style="display:flex; align-items:center; border:1px solid #E2E8F0; border-radius:999px; overflow:hidden; font-size:13px; font-weight:700;">
+          <button onClick="{{ setVi }}" style="{{ viBtnStyle }}">VI</button>
+          <button onClick="{{ setEn }}" style="{{ enBtnStyle }}">EN</button>
+        </div>
+        <a href="Deals68 Home.dc.html" style="font-size:15px; font-weight:600; color:#14315A;"><span class="l-vi">Thoát</span><span class="l-en">Exit</span></a>
+      </div>
+    </div>
+  </header>
+
+  <section style="flex:1; display:flex; align-items:center; justify-content:center; padding:48px 24px;">
+    <div style="max-width:560px; text-align:center; background:#fff; border:1px solid #E7EDF3; border-radius:20px; padding:44px 36px; box-shadow:0 1px 2px rgba(15,42,74,.04);">
+      <div style="display:inline-flex; align-items:center; gap:8px; background:#E7F6FD; color:#1596cc; font-weight:700; font-size:12px; padding:6px 12px; border-radius:999px; margin-bottom:18px; text-transform:uppercase; letter-spacing:.5px;">🤝 <span class="l-vi">Cố vấn / Môi giới</span><span class="l-en">Advisor / Broker</span></div>
+      <div style="font-size:44px; margin-bottom:14px;">🚧</div>
+      <h1 style="font-size:23px; font-weight:800; letter-spacing:-.5px; margin:0 0 10px;"><span class="l-vi">Advisor Dashboard — Sắp ra mắt</span><span class="l-en">Advisor Dashboard — Coming soon</span></h1>
+      <p style="font-size:14.5px; color:#64748B; line-height:1.65; margin:0 0 6px;"><span class="l-vi">Hồ sơ Cố vấn của bạn ({{ advisorLabel }}) đã được ghi nhận và duyệt. Chúng tôi đang hoàn thiện Dashboard để bạn có thể quản lý nhiều hồ sơ Doanh nghiệp, theo dõi trạng thái từng thương vụ và kết nối trực tiếp với Nhà đầu tư.</span><span class="l-en">Your Advisor profile ({{ advisorLabel }}) has been recorded and approved. We're finishing the Dashboard so you can manage multiple business profiles, track each deal's status, and connect directly with investors.</span></p>
+      <p style="font-size:13.5px; color:#94A3B8; line-height:1.6; margin:0 0 26px;"><span class="l-vi">Trong lúc chờ, đội ngũ Deals68 sẽ hỗ trợ đăng hồ sơ Doanh nghiệp cho bạn qua email.</span><span class="l-en">In the meantime, the Deals68 team will help list your business profiles via email.</span></p>
+      <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
+        <a href="mailto:partner@deals68.com" style="background:#0F2A4A; color:#fff; font-weight:700; font-size:14.5px; padding:12px 22px; border-radius:11px;"><span class="l-vi">Liên hệ partner@deals68.com</span><span class="l-en">Contact partner@deals68.com</span></a>
+        <a href="Deals68 Businesses.dc.html" style="border:1px solid #E2E8F0; color:#334155; font-weight:600; font-size:14.5px; padding:12px 22px; border-radius:11px;"><span class="l-vi">Xem Doanh nghiệp</span><span class="l-en">Browse businesses</span></a>
+      </div>
+    </div>
+  </section>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { lang:'vi', advisorId:'advisor' };
+
+  componentDidMount() {
+    try {
+      const p = new URLSearchParams(location.search);
+      const q = p.get('adv');
+      const session = window.D68.getSession();
+      const id = q || (session && session.role==='advisor' ? session.id : null) || 'advisor';
+      this.setState({ advisorId: id });
+    } catch(e){}
+  }
+
+  setLang(l){ this.setState({ lang:l }); }
+
+  renderVals() {
+    const st = this.state;
+    const vi = st.lang === 'vi';
+    return {
+      lang: st.lang, setVi: ()=>this.setLang('vi'), setEn: ()=>this.setLang('en'),
+      viBtnStyle: `padding:7px 14px; border:none; cursor:pointer; font-weight:700; font-size:13px; background:${vi?'#0F2A4A':'transparent'}; color:${vi?'#fff':'#64748B'};`,
+      enBtnStyle: `padding:7px 14px; border:none; cursor:pointer; font-weight:700; font-size:13px; background:${!vi?'#0F2A4A':'transparent'}; color:${!vi?'#fff':'#64748B'};`,
+      advisorLabel: st.advisorId
+    };
+  }
+}
+</script>
+</body>
+</html>

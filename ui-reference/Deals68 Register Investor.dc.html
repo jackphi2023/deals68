@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Đăng ký Nhà đầu tư | Deals68</title>
+<meta name="description" content="Tạo hồ sơ Nhà đầu tư ẩn danh, chọn tiêu chí đầu tư và kích hoạt tài khoản để nhận proposal.">
+<meta name="robots" content="noindex,follow">
+<link rel="canonical" href="https://deals68.com/register/investor">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="site.webmanifest">
+<meta name="theme-color" content="#0F2A4A">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Deals68.com">
+<meta property="og:title" content="Đăng ký Nhà đầu tư | Deals68">
+<meta property="og:description" content="Tạo hồ sơ Nhà đầu tư ẩn danh, chọn tiêu chí đầu tư và kích hoạt tài khoản để nhận proposal.">
+<meta property="og:image" content="assets/og-image.png">
+<meta property="og:url" content="https://deals68.com/register/investor">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Đăng ký Nhà đầu tư | Deals68">
+<meta name="twitter:description" content="Tạo hồ sơ Nhà đầu tư ẩn danh, chọn tiêu chí đầu tư và kích hoạt tài khoản để nhận proposal.">
+<meta name="twitter:image" content="assets/og-image.png">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="assets/deals68-investors-import.js"></script>
+<script src="assets/deals68-mock.js"></script>
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body { font-family: 'Be Vietnam Pro', system-ui, sans-serif; color: #0F2A4A; background: #F7FAFC; -webkit-font-smoothing: antialiased; }
+  [data-lang="vi"] .l-en { display: none !important; }
+  [data-lang="en"] .l-vi { display: none !important; }
+  a { text-decoration: none; color: inherit; }
+  select, input, textarea, button { font-family: inherit; }
+  .d68-reg-dd:hover .d68-reg-menu { display: flex !important; }
+  @media (max-width: 860px) { .d68-form-2 { grid-template-columns: 1fr !important; } .d68-steps-label { display:none !important; } }
+</style>
+</helmet>
+
+<div data-lang="{{ lang }}" style="width:100%; overflow-x:hidden;">
+
+  <header style="position:sticky; top:0; z-index:60; background:rgba(255,255,255,.94); backdrop-filter:blur(10px); border-bottom:1px solid #E7EDF3;">
+    <div style="max-width:1000px; margin:0 auto; padding:0 24px; height:70px; display:flex; align-items:center; gap:28px;">
+      <a href="Deals68 Home.dc.html" style="display:flex; align-items:center; flex-shrink:0;"><img src="assets/logo-beta.png" alt="Deals68.com" style="height:34px; display:block;"></a>
+      <div style="margin-left:auto; display:flex; align-items:center; gap:14px; flex-shrink:0;">
+        <div style="display:flex; align-items:center; border:1px solid #E2E8F0; border-radius:999px; overflow:hidden; font-size:13px; font-weight:700;">
+          <button onClick="{{ setVi }}" style="{{ viBtnStyle }}">VI</button>
+          <button onClick="{{ setEn }}" style="{{ enBtnStyle }}">EN</button>
+        </div>
+        <a href="Deals68 Investor Dashboard.dc.html" style="font-size:15px; font-weight:600; color:#14315A;"><span class="l-vi">Đã có tài khoản?</span><span class="l-en">Have an account?</span></a>
+      </div>
+    </div>
+  </header>
+
+  <section style="max-width:820px; margin:0 auto; padding:40px 24px 72px;">
+    <div style="text-align:center; margin-bottom:30px;">
+      <div style="display:inline-flex; align-items:center; gap:8px; background:#FEF3D3; color:#B8860B; font-weight:700; font-size:12px; padding:6px 12px; border-radius:999px; margin-bottom:14px; text-transform:uppercase; letter-spacing:.5px;">📈 <span class="l-vi">Đăng ký Nhà đầu tư</span><span class="l-en">Register as Investor</span></div>
+      <h1 style="font-size:30px; font-weight:800; letter-spacing:-.7px; margin:0 0 8px;"><span class="l-vi">Tạo hồ sơ Nhà đầu tư</span><span class="l-en">Create your Investor profile</span></h1>
+      <p style="font-size:15.5px; color:#64748B; margin:0;"><span class="l-vi">Hồ sơ hiển thị ẩn danh trên Deals68; tên thật, website, email luôn được bảo mật.</span><span class="l-en">Profiles are anonymous on Deals68; your real name, website and email always stay private.</span></p>
+    </div>
+
+    <div style="display:flex; align-items:center; gap:8px; margin-bottom:28px;">
+      <sc-for list="{{ steps }}" as="s" hint-placeholder-count="3">
+        <div style="display:flex; align-items:center; gap:8px; flex:1;">
+          <div style="{{ s.circleStyle }}">{{ s.num }}</div>
+          <span class="d68-steps-label" style="{{ s.labelStyle }}">{{ s.label }}</span>
+          <sc-if value="{{ s.hasLine }}" hint-placeholder-val="{{ true }}"><div style="flex:1; height:2px; background:{{ s.lineColor }};"></div></sc-if>
+        </div>
+      </sc-for>
+    </div>
+
+    <div style="background:#fff; border:1px solid #E7EDF3; border-radius:20px; padding:32px; box-shadow:0 1px 2px rgba(15,42,74,.04);">
+
+      <sc-if value="{{ cameFromPricing }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; background:#E9F9EF; border:1px solid #BBF0CE; color:#16A34A; font-size:13.5px; font-weight:600; padding:12px 16px; border-radius:12px; margin-bottom:22px;">
+          <span>✓ <span class="l-vi">Đã lấy kỳ hạn từ trang Bảng giá:</span><span class="l-en">Term carried over from Pricing:</span> {{ pricingSummary }}</span>
+          <button onClick="{{ changePlanSelection }}" style="background:none; border:none; color:#16A34A; font-weight:700; text-decoration:underline; cursor:pointer; font-size:13px; flex-shrink:0;"><span class="l-vi">Đổi lựa chọn</span><span class="l-en">Change</span></button>
+        </div>
+      </sc-if>
+
+      <!-- STEP 1: PROFILE -->
+      <sc-if value="{{ isStep1 }}" hint-placeholder-val="{{ true }}">
+        <h2 style="font-size:19px; font-weight:800; margin:0 0 20px;"><span class="l-vi">1. Hồ sơ đầu tư</span><span class="l-en">1. Investor profile</span></h2>
+        <div style="display:flex; flex-direction:column; gap:16px;">
+          <div class="d68-form-2" style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+            <label style="display:flex; flex-direction:column; gap:6px;">
+              <span style="font-size:12.5px; font-weight:700; color:#334155;"><span class="l-vi">Loại nhà đầu tư</span><span class="l-en">Investor type</span></span>
+              <select value="{{ invType }}" onChange="{{ onInvType }}" style="{{ inputStyle }}">
+                <sc-for list="{{ typeOptions }}" as="t" hint-placeholder-count="7"><option>{{ t }}</option></sc-for>
+              </select>
+            </label>
+            <label style="display:flex; flex-direction:column; gap:6px;">
+              <span style="font-size:12.5px; font-weight:700; color:#334155;"><span class="l-vi">Quốc gia</span><span class="l-en">Country</span></span>
+              <select value="{{ country }}" onChange="{{ onCountry }}" style="{{ inputStyle }}">
+                <sc-for list="{{ countryOptions }}" as="c" hint-placeholder-count="8"><option>{{ c }}</option></sc-for>
+              </select>
+            </label>
+          </div>
+          <label style="display:flex; flex-direction:column; gap:6px;">
+            <span style="font-size:12.5px; font-weight:700; color:#334155;"><span class="l-vi">Ngành quan tâm (chọn nhiều)</span><span class="l-en">Preferred industries (multi-select)</span></span>
+            <div style="display:flex; flex-wrap:wrap; gap:8px;">
+              <sc-for list="{{ industryChips }}" as="ic" hint-placeholder-count="10">
+                <button onClick="{{ ic.toggle }}" style="{{ ic.style }}">{{ ic.label }}</button>
+              </sc-for>
+            </div>
+          </label>
+          <div class="d68-form-2" style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+            <label style="display:flex; flex-direction:column; gap:6px;">
+              <span style="font-size:12.5px; font-weight:700; color:#334155;"><span class="l-vi">Giai đoạn đầu tư</span><span class="l-en">Investment stage</span></span>
+              <select value="{{ stage }}" onChange="{{ onStage }}" style="{{ inputStyle }}">
+                <sc-for list="{{ stageOptions }}" as="s2" hint-placeholder-count="4"><option>{{ s2 }}</option></sc-for>
+              </select>
+            </label>
+            <label style="display:flex; flex-direction:column; gap:6px;">
+              <span style="font-size:12.5px; font-weight:700; color:#334155;"><span class="l-vi">Loại giao dịch quan tâm</span><span class="l-en">Deal types of interest</span></span>
+              <select value="{{ dealType }}" onChange="{{ onDealType }}" style="{{ inputStyle }}">
+                <sc-for list="{{ dealTypeOptions }}" as="d" hint-placeholder-count="5"><option>{{ d }}</option></sc-for>
+              </select>
+            </label>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- STEP 2: TICKET -->
+      <sc-if value="{{ isStep2 }}" hint-placeholder-val="{{ false }}">
+        <h2 style="font-size:19px; font-weight:800; margin:0 0 20px;"><span class="l-vi">2. Quy mô đầu tư</span><span class="l-en">2. Ticket size</span></h2>
+        <div style="display:flex; flex-direction:column; gap:16px;">
+          <div class="d68-form-2" style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+            <label style="display:flex; flex-direction:column; gap:6px;">
+              <span style="font-size:12.5px; font-weight:700; color:#334155;"><span class="l-vi">Ticket tối thiểu (USD)</span><span class="l-en">Min ticket (USD)</span></span>
+              <input type="number" value="{{ ticketMin }}" onInput="{{ onTicketMin }}" style="{{ inputStyle }}">
+            </label>
+            <label style="display:flex; flex-direction:column; gap:6px;">
+              <span style="font-size:12.5px; font-weight:700; color:#334155;"><span class="l-vi">Ticket tối đa (USD)</span><span class="l-en">Max ticket (USD)</span></span>
+              <input type="number" value="{{ ticketMax }}" onInput="{{ onTicketMax }}" style="{{ inputStyle }}">
+            </label>
+          </div>
+          <label style="display:flex; flex-direction:column; gap:6px;">
+            <span style="font-size:12.5px; font-weight:700; color:#334155;"><span class="l-vi">Mô tả ẩn danh hiển thị công khai</span><span class="l-en">Public anonymous description</span></span>
+            <textarea value="{{ desc }}" onInput="{{ onDesc }}" rows="4" placeholder="VD: Quỹ VC giai đoạn sớm quan tâm Fintech &amp; SaaS Đông Nam Á." style="{{ inputStyle }} resize:vertical;"></textarea>
+          </label>
+          <div style="background:#F7FAFC; border:1px solid #EEF2F6; border-radius:12px; padding:14px 16px; font-size:13px; color:#64748B; line-height:1.55;">🔒 <span class="l-vi">Tên thật, website và email của bạn không hiển thị public. Chỉ mở với Business khi proposal được bạn duyệt, và email luôn ẩn.</span><span class="l-en">Your real name, website and email are never shown publicly. They only unlock for a Business once you approve their proposal — email always stays hidden.</span></div>
+        </div>
+      </sc-if>
+
+      <!-- STEP 3: ACCOUNT -->
+      <sc-if value="{{ isStep3 }}" hint-placeholder-val="{{ false }}">
+        <h2 style="font-size:19px; font-weight:800; margin:0 0 20px;"><span class="l-vi">3. Tạo tài khoản</span><span class="l-en">3. Create your account</span></h2>
+        <div style="display:flex; flex-direction:column; gap:16px;">
+          <div class="d68-form-2" style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+            <label style="display:flex; flex-direction:column; gap:6px;">
+              <span style="font-size:12.5px; font-weight:700; color:#334155;"><span class="l-vi">Tên đầy đủ (nội bộ, không public)</span><span class="l-en">Full name (internal, not public)</span></span>
+              <input value="{{ fullName }}" onInput="{{ onFullName }}" style="{{ inputStyle }}">
+            </label>
+            <label style="display:flex; flex-direction:column; gap:6px;">
+              <span style="font-size:12.5px; font-weight:700; color:#334155;">Email</span>
+              <input value="{{ email }}" onInput="{{ onEmail }}" style="{{ inputStyle }}">
+            </label>
+          </div>
+          <label style="display:flex; flex-direction:column; gap:6px;">
+            <span style="font-size:12.5px; font-weight:700; color:#334155;"><span class="l-vi">Mật khẩu</span><span class="l-en">Password</span></span>
+            <input type="password" value="{{ password }}" onInput="{{ onPassword }}" placeholder="••••••••" style="{{ inputStyle }}">
+          </label>
+
+          <sc-if value="{{ hasDupEmail }}" hint-placeholder-val="{{ false }}">
+            <div style="background:#FDECEC; border:1px solid #F8B4B4; color:#B91C1C; font-size:13.5px; padding:14px 16px; border-radius:12px; line-height:1.6;">
+              <b>⚠ <span class="l-vi">Không thể dùng email này</span><span class="l-en">This email cannot be used</span></b><br>
+              {{ dupEmailMsg }}
+              <sc-if value="{{ hasDupProfile }}" hint-placeholder-val="{{ false }}">
+                <div style="margin-top:10px; background:#fff; border:1px solid #FECACA; border-radius:10px; padding:10px 12px; color:#334155; font-size:13px; line-height:1.55;">
+                  <span class="l-vi">Hồ sơ liên quan:</span><span class="l-en">Related profile:</span> <b>{{ dupProfileTitle }}</b><br>
+                  <span style="color:#94A3B8;"><span class="l-vi">Email và thông tin liên hệ vẫn được ẩn.</span><span class="l-en">Email and contact details remain hidden.</span></span>
+                </div>
+              </sc-if>
+            </div>
+          </sc-if>
+
+          <div style="background:#F7FAFC; border:1px solid #EEF2F6; border-radius:12px; padding:16px 18px; font-size:13.5px; color:#475569; line-height:1.6;">
+            <b><span class="l-vi">Tóm tắt:</span><span class="l-en">Summary:</span></b> {{ summaryText }}
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- STEP 4: PAYMENT -->
+      <sc-if value="{{ isStep4 }}" hint-placeholder-val="{{ false }}">
+        <sc-if value="{{ !paymentDone }}" hint-placeholder-val="{{ true }}">
+          <h2 style="font-size:19px; font-weight:800; margin:0 0 6px;"><span class="l-vi">4. Thanh toán</span><span class="l-en">4. Payment</span></h2>
+          <p style="font-size:13.5px; color:#64748B; margin:0 0 18px;"><span class="l-vi">Thành viên Nhà đầu tư · Thanh toán để kích hoạt tài khoản.</span><span class="l-en">Investor membership · Pay to activate your account.</span></p>
+
+          <div style="margin-bottom:20px;">
+            <div style="font-size:12.5px; font-weight:700; color:#334155; margin-bottom:9px;"><span class="l-vi">Kỳ hạn</span><span class="l-en">Term</span> <span style="font-weight:500; color:#94A3B8;">({{ unitLabel }})</span></div>
+            <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:8px;">
+              <sc-for list="{{ termOptions }}" as="tm" hint-placeholder-count="5">
+                <button onClick="{{ tm.onClick }}" style="{{ tm.style }}">
+                  <span style="font-size:15px; font-weight:800;">{{ tm.units }}</span>
+                  <sc-if value="{{ tm.hasDisc }}" hint-placeholder-val="{{ false }}"><span style="font-size:11px; font-weight:700; color:#16A34A; margin-left:5px;">-{{ tm.disc }}%</span></sc-if>
+                </button>
+              </sc-for>
+            </div>
+            <p style="font-size:12px; color:#94A3B8; margin:0;">{{ minTermNote }}</p>
+          </div>
+
+          <sc-if value="{{ isFreeOrder }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex; align-items:center; gap:10px; background:#E9F9EF; border:1px solid #BBF0CE; color:#16A34A; font-weight:700; font-size:14px; padding:14px 16px; border-radius:12px; margin-bottom:20px;">✅ <span class="l-vi">Mã khuyến mãi 100% — không cần chuyển khoản. Tài khoản sẽ chờ Admin duyệt nội dung.</span><span class="l-en">100% promo code — no transfer needed. Your account will wait for Admin content review.</span></div>
+          </sc-if>
+
+          <sc-if value="{{ !isFreeOrder }}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex; flex-direction:column; gap:10px; margin-bottom:20px;">
+            <sc-for list="{{ payMethods }}" as="pm" hint-placeholder-count="3">
+              <div onClick="{{ pm.onClick }}" style="{{ pm.cardStyle }}">
+                <div style="display:flex; align-items:center; gap:10px;">
+                  <span style="font-size:20px;">{{ pm.icon }}</span>
+                  <span style="font-weight:700; font-size:14.5px;">{{ pm.label }}</span>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+
+          <sc-if value="{{ isQr }}" hint-placeholder-val="{{ true }}">
+            <div style="background:#F7FAFC; border:1px solid #EEF2F6; border-radius:12px; padding:18px; margin-bottom:16px;">
+              <div style="display:flex; gap:16px; align-items:center;">
+                <div style="width:96px; height:96px; border-radius:10px; background:#fff; border:1px solid #E2E8F0; flex-shrink:0; display:flex; align-items:center; justify-content:center; color:#94A3B8; font-size:10.5px; text-align:center;">QR<br>Vietcombank</div>
+                <div style="font-size:13px; line-height:1.7;">
+                  <div><span class="l-vi">Người nhận:</span><span class="l-en">Recipient:</span> <b>Tieu Vo Dinh Phi</b></div>
+                  <div><span class="l-vi">Số TK:</span><span class="l-en">Account:</span> <b>0011004000713</b></div>
+                  <div><span class="l-vi">Nội dung:</span><span class="l-en">Note:</span> <b style="color:#B8860B;">DEALS68-{{ orderCode }}</b></div>
+                </div>
+              </div>
+              <label style="display:flex; align-items:center; gap:9px; margin-top:14px; font-size:13.5px; color:#334155; cursor:pointer;">
+                <input type="checkbox" checked="{{ qrConfirmed }}" onChange="{{ onQrConfirmed }}" style="width:16px; height:16px; accent-color:#16A34A;">
+                <span class="l-vi">Tôi đã chuyển khoản đúng số tiền và nội dung ở trên</span><span class="l-en">I have transferred the exact amount with the note above</span>
+              </label>
+            </div>
+          </sc-if>
+          <sc-if value="{{ isSenpay }}" hint-placeholder-val="{{ false }}">
+            <div style="background:#F7FAFC; border:1px solid #EEF2F6; border-radius:12px; padding:18px; margin-bottom:16px; font-size:13.5px; color:#475569;"><span class="l-vi">Bạn sẽ được chuyển tới cổng Senpay để nhập thẻ nội địa/thẻ tín dụng khi bấm Hoàn thành.</span><span class="l-en">You'll be redirected to Senpay to enter your domestic/credit card when you click Complete.</span></div>
+          </sc-if>
+          <sc-if value="{{ isPaypal }}" hint-placeholder-val="{{ false }}">
+            <div style="background:#F7FAFC; border:1px solid #EEF2F6; border-radius:12px; padding:18px; margin-bottom:16px; font-size:13.5px; color:#475569;"><span class="l-vi">Bạn sẽ được chuyển tới Paypal để hoàn tất thanh toán khi bấm Hoàn thành.</span><span class="l-en">You'll be redirected to Paypal to complete payment when you click Complete.</span></div>
+          </sc-if>
+          </sc-if>
+
+          <div style="display:flex; gap:8px; margin-bottom:8px;">
+            <input value="{{ promo }}" onInput="{{ onPromo }}" placeholder="Mã ưu đãi / giới thiệu" style="flex:1; border:1px solid #E2E8F0; border-radius:10px; padding:11px 13px; font-size:14.5px; background:#F7FAFC; font-weight:600; text-transform:uppercase; outline:none;">
+            <button onClick="{{ applyPromo }}" style="background:#0F2A4A; color:#fff; font-weight:700; font-size:14px; padding:0 18px; border:none; border-radius:10px; cursor:pointer;">Áp dụng</button>
+          </div>
+          <p style="font-size:12.5px; margin:0 0 18px; color:{{ promoColor }};">{{ promoMsg }}</p>
+
+          <div style="background:#0F2A4A; color:#fff; border-radius:14px; padding:20px;">
+            <div style="display:flex; justify-content:space-between; font-size:13.5px; color:#c6d5e6; margin-bottom:8px;"><span>Subtotal ({{ minUnitsLabel }})</span><span>{{ subtotalDisp }}</span></div>
+            <div style="display:flex; justify-content:space-between; font-size:13.5px; color:#c6d5e6; margin-bottom:8px;"><span><span class="l-vi">Chiết khấu kỳ hạn</span><span class="l-en">Term discount</span></span><span style="color:{{ termDiscColor }};">{{ termDiscDisp }}</span></div>
+            <div style="display:flex; justify-content:space-between; font-size:13.5px; color:#c6d5e6; margin-bottom:12px;"><span><span class="l-vi">Giảm giá</span><span class="l-en">Discount</span></span><span style="color:{{ discColor }};">{{ discDisp }}</span></div>
+            <div style="display:flex; justify-content:space-between; align-items:center; padding-top:12px; border-top:1px solid rgba(255,255,255,.15);">
+              <span style="font-weight:700;"><span class="l-vi">Tổng thanh toán</span><span class="l-en">Total due</span></span>
+              <span style="font-size:22px; font-weight:800; color:#F2B51D;">{{ totalDisp }}</span>
+            </div>
+          </div>
+
+          <sc-if value="{{ hasPayError }}" hint-placeholder-val="{{ false }}">
+            <div style="background:#FDECEC; border:1px solid #F8B4B4; color:#B91C1C; font-size:13px; font-weight:600; padding:11px 14px; border-radius:10px; margin-top:16px;">⚠ {{ payError }}</div>
+          </sc-if>
+        </sc-if>
+
+        <sc-if value="{{ paymentDone }}" hint-placeholder-val="{{ false }}">
+          <div style="text-align:center; padding:20px 0;">
+            <div style="font-size:44px; margin-bottom:14px;">{{ doneIcon }}</div>
+            <h2 style="font-size:20px; font-weight:800; margin:0 0 8px;">{{ doneTitle }}</h2>
+            <p style="font-size:14px; color:#64748B; margin:0 0 6px; max-width:460px; margin-left:auto; margin-right:auto;">{{ doneDesc }}</p>
+            <sc-if value="{{ !freeOrder }}" hint-placeholder-val="{{ true }}">
+              <p style="font-size:13px; color:#94A3B8; margin:0 0 22px;"><span class="l-vi">Mã đơn:</span><span class="l-en">Order ref:</span> <b style="color:#B8860B;">DEALS68-{{ orderCode }}</b></p>
+            </sc-if>
+            <sc-if value="{{ freeOrder }}" hint-placeholder-val="{{ false }}"><div style="margin-bottom:22px;"></div></sc-if>
+            <div style="background:#FEF3D3; color:#8a6400; font-size:13px; font-weight:600; padding:12px 16px; border-radius:10px; max-width:460px; margin:0 auto 22px; text-align:left; line-height:1.5;">🔒 <span class="l-vi">Dashboard chưa mở. Vui lòng hoàn tất thanh toán hoặc chờ Admin xác nhận.</span><span class="l-en">Dashboard is locked until payment is completed or confirmed by Admin.</span></div>
+            <a href="{{ loginHref }}" style="display:inline-block; background:#0F2A4A; color:#fff; font-weight:700; font-size:15px; padding:13px 28px; border-radius:11px;"><span class="l-vi">Đến trang Đăng nhập</span><span class="l-en">Go to Login</span> →</a>
+          </div>
+        </sc-if>
+      </sc-if>
+
+      <sc-if value="{{ !paymentDone }}" hint-placeholder-val="{{ true }}">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-top:28px; padding-top:22px; border-top:1px solid #EEF2F6;">
+          <sc-if value="{{ canBack }}" hint-placeholder-val="{{ false }}">
+            <button onClick="{{ goBack }}" style="border:1px solid #E2E8F0; background:#fff; color:#334155; font-weight:600; font-size:15px; padding:12px 22px; border-radius:11px; cursor:pointer;"><span class="l-vi">Quay lại</span><span class="l-en">Back</span></button>
+          </sc-if>
+          <sc-if value="{{ !canBack }}" hint-placeholder-val="{{ true }}"><span></span></sc-if>
+          <sc-if value="{{ !isStep4 }}" hint-placeholder-val="{{ true }}">
+            <button onClick="{{ goNext }}" style="background:#0F2A4A; color:#fff; font-weight:700; font-size:15px; padding:12px 26px; border-radius:11px; border:none; cursor:pointer;" style-hover="background:#14315A;"><span class="l-vi">Tiếp tục</span><span class="l-en">Continue</span> →</button>
+          </sc-if>
+          <sc-if value="{{ isStep4 }}" hint-placeholder-val="{{ false }}">
+            <button onClick="{{ submit }}" style="background:#F2B51D; color:#0F2A4A; font-weight:800; font-size:15px; padding:12px 26px; border-radius:11px; border:none; cursor:pointer; box-shadow:0 8px 20px rgba(242,181,29,.32);"><span class="l-vi">Hoàn thành</span><span class="l-en">Complete</span></button>
+          </sc-if>
+        </div>
+      </sc-if>
+    </div>
+  </section>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = {
+    lang:'vi', step:1,
+    invType:'VC', country:'Vietnam', industries:['Finance'], stage:'Early stage', dealType:'Fundraise',
+    ticketMin:100000, ticketMax:5000000, desc:'',
+    fullName:'', email:'', password:'', units:3,
+    payMethod:'qr', qrConfirmed:false, promo:'', appliedPromo:null, promoChecked:false,
+    payError:'', paymentDone:false, orderCode: 'I' + Math.floor(1000+Math.random()*9000),
+    cameFromPricing:false
+  };
+
+  PROMOS() { return { DEALS68:10, LAUNCH20:20, VCPC15:15 }; }
+  TERM_CFG() { return { unitVi:'tháng', unitEn:'months', min:3, terms:[3,6,9,12,24], tier:(u)=> u>=12?0.20 : u>=6?0.15 : 0 }; }
+
+  componentDidMount() {
+    try {
+      const raw = localStorage.getItem('d68_checkout_intent');
+      if (raw) {
+        const intent = JSON.parse(raw);
+        if (intent && intent.role === 'investor') {
+          const patch = { cameFromPricing: true };
+          if (intent.units) patch.units = intent.units;
+          if (intent.country === 'vn') patch.country = 'Vietnam';
+          if (intent.promo) {
+            patch.promo = intent.promo;
+            const res = window.D68 && window.D68.validatePromo ? window.D68.validatePromo(intent.promo, 'investor') : { ok:false };
+            patch.appliedPromo = res.ok ? res.promo : null;
+            patch.promoChecked = true;
+          }
+          this.setState(patch);
+        }
+        localStorage.removeItem('d68_checkout_intent');
+      }
+    } catch(e){}
+  }
+
+  setLang(l){ this.setState({ lang:l }); }
+  toggleIndustry(name) {
+    const cur = this.state.industries;
+    this.setState({ industries: cur.includes(name) ? cur.filter(x=>x!==name) : cur.concat([name]) });
+  }
+
+  computeTotal() {
+    const st = this.state;
+    const isVN = st.country === 'Vietnam';
+    const base = isVN ? 1000000 : 50;
+    const cfg = this.TERM_CFG();
+    const units = st.units || cfg.min;
+    const subtotal = base * units;
+    const termPct = cfg.tier(units);
+    const afterTerm = subtotal * (1 - termPct);
+    const promoPct = st.appliedPromo ? (st.appliedPromo.discountPercent / 100) : 0;
+    const total = afterTerm * (1 - promoPct);
+    return { subtotal, termPct, afterTerm, promoPct, total, units };
+  }
+
+  submit() {
+    const st = this.state;
+    const calc = this.computeTotal();
+    const isFree = calc.total <= 0.5;
+    if (!isFree && !st.qrConfirmed) {
+      this.setState({ payError: st.lang==='vi' ? 'Chưa xác nhận đã chuyển khoản — thanh toán chưa hoàn tất, tài khoản chưa được tạo.' : 'Bank transfer not confirmed — payment incomplete, account was not created.' });
+      return;
+    }
+    var code = 'INV-CUSTOM-' + Math.floor(Math.random()*9000+1000);
+    var id = 'investor_' + code.toLowerCase().replace(/[^a-z0-9]/g,'');
+    var extra = {
+      code: code,
+      contacts: [{ name: st.fullName || 'Primary Contact', email: st.email || 'contact@example.com', phone: '', role: 'Primary', isPrimary: true }],
+      overrides: {
+        type: st.invType, country: st.country, industries: st.industries.slice(),
+        stage: st.stage, dealType: st.dealType, ticketMin: st.ticketMin, ticketMax: st.ticketMax,
+        descVi: st.desc, descEn: st.desc
+      },
+      orderCode: st.orderCode
+    };
+    if (isFree) window.D68.submitPromoFreeOrder('investor', id, extra);
+    else window.D68.submitBankTransferOrder('investor', id, extra);
+    if (st.appliedPromo) window.D68.redeemPromo(st.promo, 'investor');
+    window.D68.addCredential('investor', st.email || id, st.password || '', id);
+    window.D68.logAudit && window.D68.logAudit(isFree ? 'investor_registered_promo_free' : 'investor_registered_pending', id + (isFree ? ' — promo 100%' : ' — bank_qr, 7-day hold'));
+    this.setState({ paymentDone: true, payError: '', createdId: id, freeOrder: isFree });
+  }
+
+  paymentVals(vi, T) {
+    const st = this.state;
+    const isVN = st.country === 'Vietnam';
+    const cur = isVN ? 'VND' : 'USD';
+    const cfg = this.TERM_CFG();
+    const money = (v) => cur==='VND' ? Math.round(v).toLocaleString('vi-VN') + ' ₫' : '$' + Math.round(v).toLocaleString('en-US');
+    const { subtotal, termPct, afterTerm, promoPct, total, units } = this.computeTotal();
+    const termBtnStyle = (active) => `padding:10px 15px; border:1px solid ${active?'#1BADEA':'#E2E8F0'}; background:${active?'#E7F6FD':'#fff'}; color:${active?'#1596cc':'#334155'}; border-radius:10px; cursor:pointer;`;
+    const termOptions = cfg.terms.map(u => ({ units:u, disc: Math.round(cfg.tier(u)*100), hasDisc: cfg.tier(u)>0, onClick: ()=>this.setState({ units:u }), style: termBtnStyle(units===u) }));
+    const promoFailMsg = {
+      not_found: T('Mã không hợp lệ.','Invalid code.'),
+      paused: T('Mã đang tạm dừng.','Code is paused.'),
+      expired: T('Mã đã hết hạn.','Code has expired.'),
+      exhausted: T('Mã đã hết số lượng sử dụng.','Code has reached its usage limit.'),
+      not_started: T('Mã chưa tới thời gian áp dụng.','Code is not active yet.'),
+      wrong_role: T('Mã không áp dụng cho Nhà đầu tư.','Code does not apply to Investor accounts.')
+    };
+    const methodCard = (active) => `border:2px solid ${active?'#1BADEA':'#E7EDF3'}; border-radius:12px; padding:14px 16px; cursor:pointer; background:${active?'#F5FBFE':'#fff'};`;
+    const disabledCard = 'border:2px dashed #E2E8F0; border-radius:12px; padding:14px 16px; cursor:not-allowed; background:#F8FAFC; opacity:.6;';
+    return {
+      unitLabel: T(cfg.unitVi, cfg.unitEn), minUnitsLabel: units + ' ' + T(cfg.unitVi, cfg.unitEn),
+      minTermNote: T(`Kỳ hạn tối thiểu: ${cfg.min} ${cfg.unitVi}.`, `Minimum term: ${cfg.min} ${cfg.unitEn}.`),
+      termOptions, orderCode: st.orderCode,
+      payMethods: [
+        { icon:'🏦', label:T('Chuyển khoản QR','Bank transfer QR'), onClick:()=>this.setState({ payMethod:'qr', payError:'' }), cardStyle: methodCard(st.payMethod==='qr') },
+        { icon:'💳', label:'Senpay ('+T('Thẻ nội địa / tín dụng','Domestic / credit card')+') · '+T('Sắp ra mắt','Coming soon'), onClick:()=>{}, cardStyle: disabledCard },
+        { icon:'🏧', label:'Bảo Kim (' + T('Ví điện tử','E-wallet') + ') · ' + T('Sắp ra mắt — webhook sau','Coming soon — webhook later'), onClick:()=>{}, cardStyle: disabledCard },
+        { icon:'🅿️', label:'Paypal / Stripe · '+T('Sắp ra mắt — webhook sau','Coming soon — webhook later'), onClick:()=>{}, cardStyle: disabledCard }
+      ],
+      isQr: st.payMethod==='qr', isSenpay: false, isPaypal: false,
+      isFreeOrder: total <= 0.5,
+      qrConfirmed: st.qrConfirmed, onQrConfirmed: (e)=>this.setState({ qrConfirmed:e.target.checked, payError:'' }),
+      promo: st.promo, onPromo: (e)=>this.setState({ promo:e.target.value.toUpperCase() }),
+      applyPromo: ()=>{
+        const code=(st.promo||'').trim().toUpperCase();
+        const res = window.D68 && window.D68.validatePromo ? window.D68.validatePromo(code, 'investor') : { ok:false, reason:'not_found' };
+        this.setState({ appliedPromo: res.ok ? res.promo : null, promoFailReason: res.ok ? null : res.reason, promoChecked:true });
+      },
+      promoMsg: st.appliedPromo ? T(`Đã áp dụng ${st.appliedPromo.code} (-${st.appliedPromo.discountPercent}%)`, `Applied ${st.appliedPromo.code} (-${st.appliedPromo.discountPercent}%)`) : (st.promoChecked ? (promoFailMsg[st.promoFailReason] || T('Mã không hợp lệ hoặc đã hết hạn.','Invalid or expired code.')) : ''),
+      promoColor: st.appliedPromo ? '#16A34A' : '#DC2626',
+      subtotalDisp: money(subtotal),
+      termDiscDisp: termPct>0 ? '−'+money(subtotal*termPct)+` (${Math.round(termPct*100)}%)` : T('Không','None'), termDiscColor: termPct>0?'#4ade80':'#9db4cc',
+      discDisp: promoPct>0 ? '−'+money(afterTerm*promoPct) : T('Không','None'), discColor: promoPct>0?'#4ade80':'#9db4cc',
+      totalDisp: money(total),
+      hasPayError: !!st.payError, payError: st.payError,
+      paymentDone: st.paymentDone, freeOrder: !!st.freeOrder,
+      doneIcon: st.freeOrder ? '✅' : '🕒',
+      doneTitle: st.freeOrder ? T('Hồ sơ đã ghi nhận — Chờ Admin duyệt nội dung','Profile received — Awaiting admin content review') : T('Thanh toán đã ghi nhận — Chờ xác nhận','Payment recorded — Awaiting confirmation'),
+      doneDesc: st.freeOrder ? T('Mã khuyến mãi 100% đã được áp dụng — không cần chuyển khoản. Admin sẽ duyệt nội dung hồ sơ trước khi kích hoạt.','Your 100% promo code was applied — no transfer needed. Admin will review your profile content before activating it.') : T('Hồ sơ của bạn đã được lưu trong 7 ngày. Vui lòng chuyển khoản đúng nội dung để Admin xác nhận.','Your profile is saved for 7 days. Please transfer with the correct reference for admin confirmation.'),
+      loginHref: 'Deals68 Login.dc.html?role=investor'
+    };
+  }
+
+  renderVals() {
+    const vi = this.state.lang === 'vi';
+    const T = (a,b) => vi ? a : b;
+    const st = this.state;
+    const inputStyle = 'border:1px solid #E2E8F0; border-radius:10px; padding:12px 13px; font-size:15px; color:#0F2A4A; background:#F7FAFC; font-weight:500; outline:none; width:100%;';
+    const bind = (key) => (e) => this.setState({ [key]: e.target.value });
+
+    const stepDefs = [
+      { num:1, label:T('Hồ sơ','Profile') },
+      { num:2, label:T('Quy mô','Ticket') },
+      { num:3, label:T('Tài khoản','Account') },
+      { num:4, label:T('Thanh toán','Payment') }
+    ];
+    const steps = stepDefs.map((s,i) => {
+      const active = st.step === s.num, done = st.step > s.num;
+      return {
+        num: done ? '✓' : s.num, label: s.label,
+        circleStyle: `flex-shrink:0; width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:14px; background:${active||done?'#0F2A4A':'#EEF2F6'}; color:${active||done?'#fff':'#94A3B8'};`,
+        labelStyle: `font-size:13px; font-weight:${active?'800':'600'}; color:${active?'#0F2A4A':'#94A3B8'}; white-space:nowrap;`,
+        hasLine: i < stepDefs.length - 1, lineColor: done ? '#0F2A4A' : '#E2E8F0'
+      };
+    });
+
+    const industryList = window.D68 ? window.D68.INDUSTRIES : ['Finance','IT & Software','Health Care','Manufacturing'];
+    const industryChips = industryList.map(name => {
+      const active = st.industries.includes(name);
+      return { label:name, toggle: ()=>this.toggleIndustry(name), style: `border:1px solid ${active?'#1BADEA':'#E2E8F0'}; background:${active?'#E7F6FD':'#fff'}; color:${active?'#1596cc':'#334155'}; font-weight:${active?'700':'500'}; font-size:13.5px; padding:8px 14px; border-radius:999px; cursor:pointer;` };
+    });
+
+    return {
+      lang: st.lang, setVi: ()=>this.setLang('vi'), setEn: ()=>this.setLang('en'),
+      viBtnStyle: `padding:7px 14px; border:none; cursor:pointer; font-weight:700; font-size:13px; background:${vi?'#0F2A4A':'transparent'}; color:${vi?'#fff':'#64748B'};`,
+      enBtnStyle: `padding:7px 14px; border:none; cursor:pointer; font-weight:700; font-size:13px; background:${!vi?'#0F2A4A':'transparent'}; color:${!vi?'#fff':'#64748B'};`,
+
+      steps, inputStyle,
+      isStep1: st.step===1, isStep2: st.step===2, isStep3: st.step===3, isStep4: st.step===4,
+      canBack: st.step>1,
+      cameFromPricing: st.cameFromPricing,
+      pricingSummary: T(`${st.units || this.TERM_CFG().min} ${this.TERM_CFG().unitVi}`, `${st.units || this.TERM_CFG().min} ${this.TERM_CFG().unitEn}`),
+      changePlanSelection: ()=>this.setState({ cameFromPricing:false }),
+
+      hasDupEmail: !!st.dupEmail,
+      dupEmailMsg: st.dupEmail ? (st.dupEmail.kind === 'account'
+        ? T('Email này đã có tài khoản Deals68. Vui lòng đăng nhập hoặc dùng "Quên mật khẩu".','This email already has a Deals68 account. Please log in or use "Forgot password".')
+        : T('Email này đã được ghi nhận trong hồ sơ Nhà đầu tư trên Deals68. Để bảo mật dữ liệu, bạn chưa thể tạo hồ sơ mới bằng email này. Vui lòng gửi email đến partner@deals68.com để được hỗ trợ cấp quyền truy cập hoặc cập nhật mật khẩu cho Profile nhà đầu tư.','This email is already linked to an Investor profile on Deals68. To protect investor data, a new profile cannot be created with this email. Please email partner@deals68.com for assistance with access or password setup.')) : '',
+      hasDupProfile: !!(st.dupEmail && st.dupEmail.profile),
+      dupProfileTitle: (st.dupEmail && st.dupEmail.profile) ? ((vi ? st.dupEmail.profile.titleVi : st.dupEmail.profile.titleEn) || st.dupEmail.profile.code) + ' — ' + st.dupEmail.profile.type + ' · ' + (vi ? (st.dupEmail.profile.countryVi || st.dupEmail.profile.country) : st.dupEmail.profile.country) : '',
+      goBack: ()=>this.setState({ step: Math.max(1, st.step-1) }),
+      goNext: ()=>{
+        // V1.6: block duplicate investor emails before the payment step
+        if (st.step === 3 && window.D68 && window.D68.checkInvestorEmailDuplicate) {
+          const res = window.D68.checkInvestorEmailDuplicate(st.email);
+          if (res.duplicate) { this.setState({ dupEmail: res }); return; }
+          this.setState({ dupEmail: null });
+        }
+        this.setState({ step: Math.min(4, st.step+1) });
+      },
+
+      invType: st.invType, onInvType: bind('invType'),
+      typeOptions: ['VC','PE','Institutional','Corporate/Strategic','Individual/Angel','Family Office','Lender/Debt'],
+      country: st.country, onCountry: bind('country'),
+      countryOptions: ['Vietnam','Singapore','Japan','South Korea','Hong Kong','United States','Israel','Malaysia'],
+      industryChips,
+      stage: st.stage, onStage: bind('stage'),
+      stageOptions: window.D68 ? window.D68.STAGES : ['Seed','Early stage','Growth stage','Mature / Buyout'],
+      dealType: st.dealType, onDealType: bind('dealType'),
+      dealTypeOptions: window.D68 ? window.D68.DEAL_TYPES : ['Fundraise','Partial Stake Sale','Full Acquisition','Strategic Partnership','Debt/Loan'],
+
+      ticketMin: st.ticketMin, onTicketMin: bind('ticketMin'),
+      ticketMax: st.ticketMax, onTicketMax: bind('ticketMax'),
+      desc: st.desc, onDesc: bind('desc'),
+
+      fullName: st.fullName, onFullName: bind('fullName'),
+      email: st.email, onEmail: (e)=>this.setState({ email: e.target.value, dupEmail: null }),
+      password: st.password, onPassword: bind('password'),
+      submit: ()=>this.submit(),
+
+      summaryText: st.invType + ' · ' + st.country + ' · ' + st.industries.join(', ') + ' · $' + Number(st.ticketMin).toLocaleString() + '–$' + Number(st.ticketMax).toLocaleString(),
+
+      ...this.paymentVals(vi, T)
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Investor Dashboard | Deals68</title>
+<meta name="description" content="Quản lý hồ sơ nhà đầu tư, liên hệ, mật khẩu và proposal nhận được.">
+<meta name="robots" content="noindex,nofollow">
+<link rel="canonical" href="https://deals68.com/dashboard/investor">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="site.webmanifest">
+<meta name="theme-color" content="#0F2A4A">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Deals68.com">
+<meta property="og:title" content="Investor Dashboard | Deals68">
+<meta property="og:description" content="Quản lý hồ sơ nhà đầu tư, liên hệ, mật khẩu và proposal nhận được.">
+<meta property="og:image" content="assets/og-image.png">
+<meta property="og:url" content="https://deals68.com/dashboard/investor">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Investor Dashboard | Deals68">
+<meta name="twitter:description" content="Quản lý hồ sơ nhà đầu tư, liên hệ, mật khẩu và proposal nhận được.">
+<meta name="twitter:image" content="assets/og-image.png">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="assets/deals68-investors-import.js"></script>
+<script src="assets/deals68-mock.js"></script>
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body { font-family: 'Be Vietnam Pro', system-ui, sans-serif; color: #0F2A4A; background: #F7FAFC; -webkit-font-smoothing: antialiased; }
+  [data-lang="vi"] .l-en { display: none !important; }
+  [data-lang="en"] .l-vi { display: none !important; }
+  a { text-decoration: none; color: inherit; }
+  select, input, textarea, button { font-family: inherit; }
+  @media (max-width: 980px) { .d68-dash-cols { grid-template-columns: 1fr !important; } .d68-side-nav { position:static !important; } }
+  @media (max-width: 700px) { .d68-form-2 { grid-template-columns: 1fr !important; } }
+</style>
+</helmet>
+
+<div data-lang="{{ lang }}" style="width:100%; overflow-x:hidden;">
+
+  <header style="position:sticky; top:0; z-index:60; background:rgba(255,255,255,.94); backdrop-filter:blur(10px); border-bottom:1px solid #E7EDF3;">
+    <div style="max-width:1240px; margin:0 auto; padding:0 24px; height:70px; display:flex; align-items:center; gap:20px;">
+      <a href="Deals68 Home.dc.html" style="display:flex; align-items:center; flex-shrink:0;"><img src="assets/logo-beta.png" alt="Deals68.com" style="height:34px; display:block;"></a>
+      <div style="margin-left:auto; display:flex; align-items:center; gap:14px; flex-shrink:0;">
+        <div style="display:flex; align-items:center; border:1px solid #E2E8F0; border-radius:999px; overflow:hidden; font-size:13px; font-weight:700;">
+          <button onClick="{{ setVi }}" style="{{ viBtnStyle }}">VI</button>
+          <button onClick="{{ setEn }}" style="{{ enBtnStyle }}">EN</button>
+        </div>
+        <a href="Deals68 Home.dc.html" style="background:#EEF2F6; color:#334155; font-weight:700; font-size:14px; padding:10px 16px; border-radius:9px;"><span class="l-vi">Thoát</span><span class="l-en">Exit</span></a>
+      </div>
+    </div>
+  </header>
+
+  <div style="max-width:1100px; margin:0 auto; padding:26px 24px 60px;">
+    <div style="margin-bottom:22px;">
+      <div style="font-size:12.5px; font-weight:700; color:#94A3B8; text-transform:uppercase; letter-spacing:.5px; margin-bottom:4px;">Investor Dashboard</div>
+      <h1 style="font-size:25px; font-weight:800; letter-spacing:-.5px; margin:0;">{{ invName }} <span style="font-weight:500; color:#64748B; font-size:16px;">· {{ invType }}</span> <span style="font-weight:500; color:#B8C4D0; font-size:12.5px;">{{ invCode }}</span></h1>
+    </div>
+
+    <sc-if value="{{ locked }}" hint-placeholder-val="{{ false }}">
+      <div style="background:#fff; border:1px solid #E7EDF3; border-radius:16px; padding:52px 32px; text-align:center; max-width:560px; margin:0 auto;">
+        <div style="font-size:44px; margin-bottom:16px;">{{ lockIcon }}</div>
+        <h2 style="font-size:20px; font-weight:800; margin:0 0 10px;">{{ lockTitle }}</h2>
+        <p style="font-size:14.5px; color:#64748B; line-height:1.6; margin:0 0 18px;">{{ lockDesc }}</p>
+        <sc-if value="{{ lockHasOrder }}" hint-placeholder-val="{{ false }}">
+          <p style="font-size:13px; color:#94A3B8; margin:0 0 22px;"><span class="l-vi">Mã đơn:</span><span class="l-en">Order ref:</span> <b style="color:#B8860B;">{{ lockOrderCode }}</b><sc-if value="{{ lockHasDays }}" hint-placeholder-val="{{ false }}"> · {{ lockDaysLeft }}</sc-if></p>
+        </sc-if>
+        <a href="Deals68 Pricing.dc.html" style="display:inline-block; background:#0F2A4A; color:#fff; font-weight:700; font-size:14.5px; padding:12px 24px; border-radius:11px;"><span class="l-vi">Xem Bảng giá</span><span class="l-en">View Pricing</span></a>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ !locked }}" hint-placeholder-val="{{ true }}">
+    <div class="d68-dash-cols" style="display:grid; grid-template-columns:220px minmax(0,1fr); gap:24px; align-items:start;">
+      <nav class="d68-side-nav" style="position:sticky; top:90px; background:#fff; border:1px solid #E7EDF3; border-radius:16px; padding:10px; display:flex; flex-direction:column; gap:2px;">
+        <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="4">
+          <button onClick="{{ t.onClick }}" style="{{ t.style }}">{{ t.icon }} {{ t.label }}</button>
+        </sc-for>
+      </nav>
+
+      <div>
+        <!-- PROFILE -->
+        <sc-if value="{{ isProfile }}" hint-placeholder-val="{{ true }}">
+          <div style="background:#fff; border:1px solid #E7EDF3; border-radius:16px; padding:26px 28px;">
+            <h2 style="font-size:19px; font-weight:800; margin:0 0 6px;"><span class="l-vi">Hồ sơ đầu tư</span><span class="l-en">Investor profile</span></h2>
+            <p style="font-size:13.5px; color:#64748B; margin:0 0 20px;"><span class="l-vi">Tên thật, website, email luôn ẩn công khai.</span><span class="l-en">Your real name, website and email always stay hidden publicly.</span></p>
+            <div style="display:flex; flex-direction:column; gap:16px;">
+              <label style="display:flex; flex-direction:column; gap:6px;">
+                <span style="font-size:12.5px; font-weight:700; color:#334155;"><span class="l-vi">Tên nhà đầu tư</span><span class="l-en">Investor name</span></span>
+                <input value="{{ invNameEdit }}" onInput="{{ onInvName }}" placeholder="VD: VinaCapital" style="{{ inputStyle }}">
+              </label>
+              <div class="d68-form-2" style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+                <label style="display:flex; flex-direction:column; gap:6px;">
+                  <span style="font-size:12.5px; font-weight:700; color:#334155;"><span class="l-vi">Loại nhà đầu tư</span><span class="l-en">Investor type</span></span>
+                  <select value="{{ invType }}" onChange="{{ onInvType }}" style="{{ inputStyle }}">
+                    <sc-for list="{{ typeOptions }}" as="t2" hint-placeholder-count="7"><option>{{ t2 }}</option></sc-for>
+                  </select>
+                </label>
+                <label style="display:flex; flex-direction:column; gap:6px;">
+                  <span style="font-size:12.5px; font-weight:700; color:#334155;"><span class="l-vi">Quốc gia</span><span class="l-en">Country</span></span>
+                  <select value="{{ country }}" onChange="{{ onCountry }}" style="{{ inputStyle }}">
+                    <sc-for list="{{ countryOptions }}" as="c" hint-placeholder-count="8"><option>{{ c }}</option></sc-for>
+                  </select>
+                </label>
+              </div>
+              <div class="d68-form-2" style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+                <label style="display:flex; flex-direction:column; gap:6px;">
+                  <span style="font-size:12.5px; font-weight:700; color:#334155;"><span class="l-vi">Ticket tối thiểu (USD)</span><span class="l-en">Min ticket (USD)</span></span>
+                  <input type="number" value="{{ ticketMin }}" onInput="{{ onTicketMin }}" style="{{ inputStyle }}">
+                </label>
+                <label style="display:flex; flex-direction:column; gap:6px;">
+                  <span style="font-size:12.5px; font-weight:700; color:#334155;"><span class="l-vi">Ticket tối đa (USD)</span><span class="l-en">Max ticket (USD)</span></span>
+                  <input type="number" value="{{ ticketMax }}" onInput="{{ onTicketMax }}" style="{{ inputStyle }}">
+                </label>
+              </div>
+              <label style="display:flex; flex-direction:column; gap:6px;">
+                <span style="font-size:12.5px; font-weight:700; color:#334155;"><span class="l-vi">Mô tả ẩn danh công khai</span><span class="l-en">Public anonymous description</span></span>
+                <textarea value="{{ desc }}" onInput="{{ onDesc }}" rows="4" style="{{ inputStyle }} resize:vertical;"></textarea>
+              </label>
+
+              <div style="border-top:1px solid #EEF2F6; padding-top:16px;">
+                <div style="font-size:13.5px; font-weight:800; color:#0F2A4A; margin-bottom:12px;"><span class="l-vi">Tiêu chí đầu tư (dùng để tính Fit Score &amp; đề xuất)</span><span class="l-en">Investment criteria (drives Fit Score &amp; recommendations)</span></div>
+
+                <div style="margin-bottom:14px;">
+                  <span style="font-size:12.5px; font-weight:700; color:#334155; display:block; margin-bottom:8px;"><span class="l-vi">Ngành quan tâm</span><span class="l-en">Industries of interest</span></span>
+                  <div style="display:flex; flex-wrap:wrap; gap:7px;">
+                    <sc-for list="{{ industryChips }}" as="ic" hint-placeholder-count="10"><button onClick="{{ ic.toggle }}" style="{{ ic.style }}">{{ ic.label }}</button></sc-for>
+                  </div>
+                </div>
+                <div style="margin-bottom:14px;">
+                  <span style="font-size:12.5px; font-weight:700; color:#334155; display:block; margin-bottom:8px;"><span class="l-vi">Loại giao dịch quan tâm</span><span class="l-en">Deal types of interest</span></span>
+                  <div style="display:flex; flex-wrap:wrap; gap:7px;">
+                    <sc-for list="{{ dealTypeChips }}" as="dc2" hint-placeholder-count="5"><button onClick="{{ dc2.toggle }}" style="{{ dc2.style }}">{{ dc2.label }}</button></sc-for>
+                  </div>
+                </div>
+                <div class="d68-form-2" style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:14px;">
+                  <label style="display:flex; flex-direction:column; gap:6px;">
+                    <span style="font-size:12.5px; font-weight:700; color:#334155;"><span class="l-vi">Giai đoạn ưu tiên</span><span class="l-en">Preferred stage</span></span>
+                    <select value="{{ stage }}" onChange="{{ onStage }}" style="{{ inputStyle }}">
+                      <sc-for list="{{ stageOptions }}" as="sg2" hint-placeholder-count="4"><option>{{ sg2 }}</option></sc-for>
+                    </select>
+                  </label>
+                  <label style="display:flex; flex-direction:column; gap:6px;">
+                    <span style="font-size:12.5px; font-weight:700; color:#334155;"><span class="l-vi">Khẩu vị rủi ro</span><span class="l-en">Risk appetite</span></span>
+                    <select value="{{ riskAppetite }}" onChange="{{ onRiskAppetite }}" style="{{ inputStyle }}">
+                      <option value="conservative">{{ riskLowLabel }}</option>
+                      <option value="balanced">{{ riskMidLabel }}</option>
+                      <option value="aggressive">{{ riskHighLabel }}</option>
+                    </select>
+                  </label>
+                </div>
+                <div class="d68-form-2" style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:14px;">
+                  <label style="display:flex; flex-direction:column; gap:6px;">
+                    <span style="font-size:12.5px; font-weight:700; color:#334155;"><span class="l-vi">Kỳ vọng lợi nhuận (%/năm)</span><span class="l-en">Return expectation (%/yr)</span></span>
+                    <input type="number" value="{{ returnExpectation }}" onInput="{{ onReturnExpectation }}" placeholder="VD: 20" style="{{ inputStyle }}">
+                  </label>
+                  <label style="display:flex; flex-direction:column; gap:6px;">
+                    <span style="font-size:12.5px; font-weight:700; color:#334155;"><span class="l-vi">Doanh thu/quy mô giao dịch ưa thích (USD)</span><span class="l-en">Preferred revenue/deal size (USD)</span></span>
+                    <input value="{{ preferredDealSize }}" onInput="{{ onPreferredDealSize }}" placeholder="VD: 500K–5M" style="{{ inputStyle }}">
+                  </label>
+                </div>
+                <label style="display:flex; flex-direction:column; gap:6px;">
+                  <span style="font-size:12.5px; font-weight:700; color:#334155;"><span class="l-vi">Ngành loại trừ (không quan tâm)</span><span class="l-en">Excluded sectors</span></span>
+                  <input value="{{ excludedSectors }}" onInput="{{ onExcludedSectors }}" placeholder="VD: Gambling, Crypto trading" style="{{ inputStyle }}">
+                </label>
+              </div>
+
+              <div style="display:flex; justify-content:flex-end;">
+                <button onClick="{{ saveProfile }}" style="background:#0F2A4A; color:#fff; font-weight:700; font-size:14.5px; padding:12px 24px; border-radius:10px; border:none; cursor:pointer;" style-hover="background:#14315A;"><span class="l-vi">Lưu thay đổi</span><span class="l-en">Save changes</span></button>
+              </div>
+              <sc-if value="{{ saved }}" hint-placeholder-val="{{ false }}"><div style="font-size:13px; font-weight:700; color:#16A34A;">✓ <span class="l-vi">Đã lưu.</span><span class="l-en">Saved.</span></div></sc-if>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- INVESTMENT CRITERIA + MATCHES -->
+        <sc-if value="{{ isRecommended }}" hint-placeholder-val="{{ false }}">
+          <div style="background:#fff; border:1px solid #E7EDF3; border-radius:16px; padding:26px 28px; margin-bottom:20px;">
+            <h2 style="font-size:19px; font-weight:800; margin:0 0 6px;"><span class="l-vi">Tiêu chí đầu tư</span><span class="l-en">Investment criteria</span></h2>
+            <p style="font-size:13.5px; color:#64748B; margin:0 0 18px;"><span class="l-vi">Chọn lĩnh vực, quy mô doanh thu và tỷ lệ EBITDA để nhận danh sách doanh nghiệp phù hợp.</span><span class="l-en">Pick sectors, revenue size and EBITDA range to get matching businesses.</span></p>
+            <div style="margin-bottom:16px;">
+              <span style="font-size:12.5px; font-weight:700; color:#334155; display:block; margin-bottom:8px;"><span class="l-vi">Lĩnh vực (chọn 1 hoặc nhiều)</span><span class="l-en">Sectors (choose one or more)</span></span>
+              <div style="display:flex; flex-wrap:wrap; gap:7px;">
+                <sc-for list="{{ c2IndustryChips }}" as="ic" hint-placeholder-count="10"><button onClick="{{ ic.toggle }}" style="{{ ic.style }}">{{ ic.label }}</button></sc-for>
+              </div>
+            </div>
+            <div class="d68-form-2" style="display:grid; grid-template-columns:1fr 1fr; gap:16px; align-items:end;">
+              <label style="display:flex; flex-direction:column; gap:6px;">
+                <span style="font-size:12.5px; font-weight:700; color:#334155;"><span class="l-vi">Quy mô doanh thu</span><span class="l-en">Revenue size</span></span>
+                <select value="{{ c2RevBand }}" onChange="{{ onC2RevBand }}" style="{{ inputStyle }}"><sc-for list="{{ c2RevOptions }}" as="ro" hint-placeholder-count="4"><option value="{{ ro.value }}">{{ ro.label }}</option></sc-for></select>
+              </label>
+              <label style="display:flex; flex-direction:column; gap:6px;">
+                <span style="font-size:12.5px; font-weight:700; color:#334155;"><span class="l-vi">Tỷ lệ EBITDA</span><span class="l-en">EBITDA margin</span></span>
+                <select value="{{ c2EbBand }}" onChange="{{ onC2EbBand }}" style="{{ inputStyle }}"><sc-for list="{{ c2EbOptions }}" as="eo" hint-placeholder-count="4"><option value="{{ eo.value }}">{{ eo.label }}</option></sc-for></select>
+              </label>
+            </div>
+            <div style="display:flex; justify-content:flex-end; margin-top:16px;">
+              <button onClick="{{ c2Update }}" style="background:#0F2A4A; color:#fff; font-weight:700; font-size:14px; padding:11px 22px; border-radius:10px; border:none; cursor:pointer;"><span class="l-vi">Cập nhật gợi ý</span><span class="l-en">Update matches</span></button>
+            </div>
+          </div>
+
+          <sc-if value="{{ c2HasMatches }}" hint-placeholder-val="{{ true }}">
+            <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:16px;">
+              <sc-for list="{{ c2Matches }}" as="m" hint-placeholder-count="4">
+                <div style="background:#fff; border:1px solid #E7EDF3; border-radius:16px; overflow:hidden; display:flex; flex-direction:column;">
+                  <div style="position:relative; height:150px; background:#0F2A4A;">
+                    <img src="{{ m.image }}" alt="{{ m.title }}" style="width:100%; height:100%; object-fit:cover; display:block;">
+                    <span style="position:absolute; top:10px; left:10px; {{ m.qStyle }}">Quality {{ m.qScore }}</span>
+                  </div>
+                  <div style="padding:16px 18px; display:flex; flex-direction:column; flex:1;">
+                    <span style="font-size:11.5px; font-weight:600; color:#1596cc; background:#E7F6FD; padding:3px 9px; border-radius:6px; align-self:flex-start;">{{ m.industry }}</span>
+                    <h3 style="font-size:15px; font-weight:700; line-height:1.35; margin:9px 0 12px; flex:1;">{{ m.title }}</h3>
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; padding-top:12px; border-top:1px solid #EEF2F6; margin-bottom:14px;">
+                      <div><div style="font-size:10.5px; color:#94A3B8; font-weight:600; text-transform:uppercase;"><span class="l-vi">Doanh thu</span><span class="l-en">Revenue</span></div><div style="font-size:13.5px; font-weight:700; color:#0F2A4A;">{{ m.revenue }}</div></div>
+                      <div><div style="font-size:10.5px; color:#94A3B8; font-weight:600; text-transform:uppercase;"><span class="l-vi">Gọi vốn</span><span class="l-en">Ask</span></div><div style="font-size:13.5px; font-weight:800; color:#1596cc;">{{ m.ask }}</div></div>
+                    </div>
+                    <div style="display:flex; gap:8px;">
+                      <a href="{{ m.href }}" style="flex:1; text-align:center; background:#0F2A4A; color:#fff; font-weight:700; font-size:13px; padding:10px; border-radius:9px;"><span class="l-vi">Xem hồ sơ</span><span class="l-en">View</span></a>
+                      <button onClick="{{ m.toggleWatch }}" style="{{ m.watchStyle }}">{{ m.watchLabel }}</button>
+                    </div>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+          </sc-if>
+          <sc-if value="{{ !c2HasMatches }}" hint-placeholder-val="{{ false }}">
+            <div style="background:#fff; border:1px dashed #CBD5E1; border-radius:16px; padding:44px 24px; text-align:center; color:#94A3B8; font-size:15px; font-weight:600;"><span class="l-vi">Chưa có doanh nghiệp phù hợp hiện tại, hãy cập nhật sau.</span><span class="l-en">No matching businesses right now — please check back later.</span></div>
+          </sc-if>
+        </sc-if>
+
+        <!-- WATCHLIST -->
+        <sc-if value="{{ isWatchlist }}" hint-placeholder-val="{{ false }}">
+          <div style="background:#fff; border:1px solid #E7EDF3; border-radius:16px; padding:26px 28px;">
+            <h2 style="font-size:19px; font-weight:800; margin:0 0 18px;"><span class="l-vi">Doanh nghiệp đã lưu</span><span class="l-en">Saved businesses</span></h2>
+            <sc-if value="{{ hasWatchlist }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex; flex-direction:column; gap:12px;">
+                <sc-for list="{{ watchlistItems }}" as="w" hint-placeholder-count="3">
+                  <div style="border:1px solid #EEF2F6; border-radius:14px; padding:16px 18px;">
+                    <div style="display:flex; align-items:center; gap:16px; flex-wrap:wrap;">
+                      <div style="flex:1; min-width:200px;">
+                        <div style="font-size:15px; font-weight:700;">{{ w.title }}</div>
+                        <div style="font-size:12.5px; color:#94A3B8; margin-top:2px;">{{ w.industry }}</div>
+                      </div>
+                      <span style="font-size:14px; font-weight:800; color:#1596cc;">{{ w.fitScore }}% Fit</span>
+                      <a href="{{ w.href }}" style="background:#0F2A4A; color:#fff; font-weight:700; font-size:12.5px; padding:9px 14px; border-radius:8px;"><span class="l-vi">Xem</span><span class="l-en">View</span></a>
+                      <button onClick="{{ w.remove }}" style="background:none; border:none; color:#DC2626; font-size:12.5px; font-weight:600; cursor:pointer;"><span class="l-vi">Bỏ theo dõi</span><span class="l-en">Remove</span></button>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:12px; padding-top:12px; border-top:1px solid #F1F5F9;">
+                      <select value="{{ w.reqDocSel }}" onChange="{{ w.onReqDocSel }}" style="border:1px solid #E2E8F0; border-radius:8px; padding:8px 10px; font-size:12.5px; color:#334155; background:#fff;">
+                        <sc-for list="{{ w.reqDocOptions }}" as="opt" hint-placeholder-count="5"><option value="{{ opt }}">{{ opt }}</option></sc-for>
+                      </select>
+                      <button onClick="{{ w.requestDoc }}" style="background:#0F2A4A; color:#fff; font-weight:700; font-size:12.5px; padding:9px 14px; border-radius:8px; border:none; cursor:pointer;">📂 <span class="l-vi">Yêu cầu tài liệu</span><span class="l-en">Request data</span></button>
+                    </div>
+                    <sc-if value="{{ w.hasReqs }}" hint-placeholder-val="{{ false }}">
+                      <div style="display:flex; flex-direction:column; gap:6px; margin-top:10px;">
+                        <sc-for list="{{ w.reqRows }}" as="rq" hint-placeholder-count="2">
+                          <div style="display:flex; align-items:center; gap:8px; font-size:12px;">
+                            <span style="font-weight:600; color:#334155;">{{ rq.fields }}</span>
+                            <span style="font-weight:700; padding:3px 9px; border-radius:6px; {{ rq.statusStyle }}">{{ rq.statusLabel }}</span>
+                          </div>
+                        </sc-for>
+                      </div>
+                    </sc-if>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-if>
+            <sc-if value="{{ !hasWatchlist }}" hint-placeholder-val="{{ true }}">
+              <div style="text-align:center; padding:36px 20px; color:#94A3B8; font-size:15px; font-weight:600;"><span class="l-vi">Chưa lưu doanh nghiệp nào. Bấm “Lưu” ở tab Tiêu chí đầu tư hoặc trang chi tiết DN để thêm.</span><span class="l-en">No saved businesses yet. Click “Save” in Investment criteria or on a business detail page.</span></div>
+            </sc-if>
+          </div>
+        </sc-if>
+
+        <!-- ALERTS -->
+        <sc-if value="{{ isAlerts }}" hint-placeholder-val="{{ false }}">
+          <div style="background:#fff; border:1px solid #E7EDF3; border-radius:16px; padding:26px 28px; margin-bottom:16px;">
+            <h2 style="font-size:19px; font-weight:800; margin:0 0 18px;"><span class="l-vi">Tuỳ chọn cảnh báo</span><span class="l-en">Alert preferences</span></h2>
+            <div style="display:flex; flex-direction:column; gap:12px;">
+              <sc-for list="{{ alertPrefs }}" as="ap" hint-placeholder-count="4">
+                <label style="display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px 14px; border:1px solid #EEF2F6; border-radius:10px; cursor:pointer;">
+                  <span style="font-size:13.5px; color:#334155; font-weight:600;">{{ ap.label }}</span>
+                  <input type="checkbox" checked="{{ ap.checked }}" onChange="{{ ap.onChange }}" style="width:18px; height:18px; accent-color:#16A34A;">
+                </label>
+              </sc-for>
+            </div>
+          </div>
+          <div style="background:#fff; border:1px solid #E7EDF3; border-radius:16px; padding:26px 28px;">
+            <h3 style="font-size:16px; font-weight:800; margin:0 0 14px;"><span class="l-vi">Cảnh báo gần đây</span><span class="l-en">Recent alerts</span></h3>
+            <div style="display:flex; flex-direction:column; gap:10px;">
+              <sc-for list="{{ alertItems }}" as="al" hint-placeholder-count="3">
+                <div style="display:flex; align-items:flex-start; gap:12px; padding:12px 14px; border-radius:10px; background:{{ al.bg }};">
+                  <span style="font-size:16px;">{{ al.icon }}</span>
+                  <div style="flex:1;">
+                    <div style="font-size:13.5px; color:#334155;">{{ al.text }}</div>
+                    <div style="font-size:11.5px; color:#94A3B8; margin-top:3px;">{{ al.time }}</div>
+                  </div>
+                  <sc-if value="{{ al.unread }}" hint-placeholder-val="{{ false }}"><button onClick="{{ al.markRead }}" style="background:none; border:none; color:#1596cc; font-size:12px; font-weight:700; cursor:pointer; flex-shrink:0;"><span class="l-vi">Đánh dấu đã đọc</span><span class="l-en">Mark read</span></button></sc-if>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- CONTACTS -->
+        <sc-if value="{{ isContacts }}" hint-placeholder-val="{{ false }}">
+          <div style="background:#fff; border:1px solid #E7EDF3; border-radius:16px; padding:26px 28px;">
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">
+              <h2 style="font-size:19px; font-weight:800; margin:0;"><span class="l-vi">Người liên hệ</span><span class="l-en">Contacts</span></h2>
+              <button onClick="{{ addContact }}" style="background:#E7F6FD; color:#1596cc; font-weight:700; font-size:13.5px; padding:9px 16px; border-radius:9px; border:none; cursor:pointer;">+ <span class="l-vi">Thêm liên hệ</span><span class="l-en">Add contact</span></button>
+            </div>
+            <p style="font-size:13.5px; color:#64748B; margin:0 0 18px;"><span class="l-vi">Email luôn ở chế độ riêng tư, không hiển thị cho Business.</span><span class="l-en">Email always stays private and is never shown to businesses.</span></p>
+            <div style="display:flex; flex-direction:column; gap:14px;">
+              <sc-for list="{{ contacts }}" as="ct" hint-placeholder-count="2">
+                <div style="border:1px solid #EEF2F6; border-radius:14px; padding:18px; display:flex; flex-direction:column; gap:12px;">
+                  <div class="d68-form-2" style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+                    <label style="display:flex; flex-direction:column; gap:5px;">
+                      <span style="font-size:11.5px; font-weight:700; color:#94A3B8;"><span class="l-vi">Tên</span><span class="l-en">Name</span></span>
+                      <input value="{{ ct.name }}" onInput="{{ ct.onName }}" style="{{ ct.inputStyle }}">
+                    </label>
+                    <label style="display:flex; flex-direction:column; gap:5px;">
+                      <span style="font-size:11.5px; font-weight:700; color:#94A3B8;"><span class="l-vi">Vai trò</span><span class="l-en">Role</span></span>
+                      <input value="{{ ct.role }}" onInput="{{ ct.onRole }}" style="{{ ct.inputStyle }}">
+                    </label>
+                  </div>
+                  <div class="d68-form-2" style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+                    <label style="display:flex; flex-direction:column; gap:5px;">
+                      <span style="font-size:11.5px; font-weight:700; color:#94A3B8;">Email 🔒</span>
+                      <input value="{{ ct.email }}" onInput="{{ ct.onEmail }}" style="{{ ct.inputStyle }}">
+                    </label>
+                    <label style="display:flex; flex-direction:column; gap:5px;">
+                      <span style="font-size:11.5px; font-weight:700; color:#94A3B8;"><span class="l-vi">Điện thoại</span><span class="l-en">Phone</span></span>
+                      <input value="{{ ct.phone }}" onInput="{{ ct.onPhone }}" style="{{ ct.inputStyle }}">
+                    </label>
+                  </div>
+                  <div style="display:flex; align-items:center; justify-content:space-between;">
+                    <label style="display:flex; align-items:center; gap:8px; font-size:13px; color:#334155; cursor:pointer;">
+                      <input type="checkbox" checked="{{ ct.isPrimary }}" onChange="{{ ct.onPrimary }}" style="width:15px; height:15px; accent-color:#1BADEA;">
+                      <span class="l-vi">Liên hệ chính</span><span class="l-en">Primary contact</span>
+                    </label>
+                    <button onClick="{{ ct.remove }}" style="border:none; background:none; color:#DC2626; font-size:13px; font-weight:600; cursor:pointer;"><span class="l-vi">Xóa</span><span class="l-en">Remove</span></button>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+            <div style="display:flex; justify-content:flex-end; margin-top:16px;">
+              <button onClick="{{ saveContacts }}" style="background:#0F2A4A; color:#fff; font-weight:700; font-size:14.5px; padding:12px 24px; border-radius:10px; border:none; cursor:pointer;" style-hover="background:#14315A;"><span class="l-vi">Lưu danh sách</span><span class="l-en">Save contacts</span></button>
+            </div>
+            <sc-if value="{{ saved }}" hint-placeholder-val="{{ false }}"><div style="font-size:13px; font-weight:700; color:#16A34A; margin-top:10px;">✓ <span class="l-vi">Đã lưu.</span><span class="l-en">Saved.</span></div></sc-if>
+          </div>
+        </sc-if>
+
+        <!-- SECURITY -->
+        <sc-if value="{{ isSecurity }}" hint-placeholder-val="{{ false }}">
+          <div style="background:#fff; border:1px solid #E7EDF3; border-radius:16px; padding:26px 28px; max-width:460px;">
+            <h2 style="font-size:19px; font-weight:800; margin:0 0 20px;"><span class="l-vi">Đổi mật khẩu</span><span class="l-en">Change password</span></h2>
+            <div style="display:flex; flex-direction:column; gap:14px;">
+              <label style="display:flex; flex-direction:column; gap:6px;">
+                <span style="font-size:12.5px; font-weight:700; color:#334155;"><span class="l-vi">Mật khẩu hiện tại</span><span class="l-en">Current password</span></span>
+                <input type="password" value="{{ curPass }}" onInput="{{ onCurPass }}" style="{{ inputStyle }}">
+              </label>
+              <label style="display:flex; flex-direction:column; gap:6px;">
+                <span style="font-size:12.5px; font-weight:700; color:#334155;"><span class="l-vi">Mật khẩu mới</span><span class="l-en">New password</span></span>
+                <input type="password" value="{{ newPass }}" onInput="{{ onNewPass }}" style="{{ inputStyle }}">
+              </label>
+              <button onClick="{{ changePass }}" style="background:#0F2A4A; color:#fff; font-weight:700; font-size:14.5px; padding:12px 24px; border-radius:10px; border:none; cursor:pointer;" style-hover="background:#14315A;"><span class="l-vi">Cập nhật mật khẩu</span><span class="l-en">Update password</span></button>
+              <sc-if value="{{ saved }}" hint-placeholder-val="{{ false }}"><div style="font-size:13px; font-weight:700; color:#16A34A;">✓ <span class="l-vi">Đã đổi mật khẩu.</span><span class="l-en">Password changed.</span></div></sc-if>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- PROPOSALS RECEIVED -->
+        <sc-if value="{{ isProposals }}" hint-placeholder-val="{{ false }}">
+          <div style="background:#fff; border:1px solid #E7EDF3; border-radius:16px; padding:26px 28px;">
+            <h2 style="font-size:19px; font-weight:800; margin:0 0 18px;"><span class="l-vi">Proposal nhận được</span><span class="l-en">Proposals received</span></h2>
+            <sc-if value="{{ hasProposals }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex; flex-direction:column; gap:12px;">
+                <sc-for list="{{ received }}" as="p" hint-placeholder-count="3">
+                  <div style="border:1px solid #EEF2F6; border-radius:14px; padding:16px 18px;">
+                    <div style="display:flex; align-items:flex-start; gap:16px; flex-wrap:wrap; margin-bottom:12px;">
+                      <div style="flex:1; min-width:200px;">
+                        <div style="font-size:15px; font-weight:700;">{{ p.bizLabel }}</div>
+                        <div style="font-size:12.5px; color:#94A3B8; margin-top:2px;">{{ p.sentAt }}</div>
+                      </div>
+                      <sc-if value="{{ p.qHas }}" hint-placeholder-val="{{ true }}"><span style="{{ p.qStyle }}">{{ p.qLabel }}</span></sc-if>
+                      <span style="{{ p.statusStyle }}">{{ p.statusLabel }}</span>
+                    </div>
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; padding:12px 0; border-top:1px solid #F1F5F9; border-bottom:1px solid #F1F5F9; margin-bottom:12px;">
+                      <div><div style="font-size:10.5px; color:#94A3B8; font-weight:700; text-transform:uppercase; letter-spacing:.4px;"><span class="l-vi">Đề xuất vốn · % cổ phần</span><span class="l-en">Investment ask · stake</span></div><div style="font-size:14px; font-weight:800; color:#1596cc; margin-top:2px;">{{ p.ask }}</div></div>
+                      <div><div style="font-size:10.5px; color:#94A3B8; font-weight:700; text-transform:uppercase; letter-spacing:.4px;"><span class="l-vi">Biên EBITDA</span><span class="l-en">EBITDA margin</span></div><div style="font-size:14px; font-weight:700; color:#0F2A4A; margin-top:2px;">{{ p.ebitda }}</div></div>
+                    </div>
+                    <sc-if value="{{ p.pending }}" hint-placeholder-val="{{ false }}">
+                      <div style="display:flex; gap:8px; justify-content:flex-end;">
+                        <button onClick="{{ p.approve }}" style="background:#16A34A; color:#fff; font-weight:700; font-size:13px; padding:9px 18px; border-radius:9px; border:none; cursor:pointer;"><span class="l-vi">Duyệt để kết nối</span><span class="l-en">Approve to connect</span></button>
+                        <button onClick="{{ p.decline }}" style="background:#fff; color:#DC2626; border:1px solid #FCA5A5; font-weight:700; font-size:13px; padding:9px 16px; border-radius:9px; cursor:pointer;"><span class="l-vi">Từ chối</span><span class="l-en">Decline</span></button>
+                      </div>
+                    </sc-if>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-if>
+            <sc-if value="{{ !hasProposals }}" hint-placeholder-val="{{ true }}">
+              <div style="text-align:center; padding:36px 20px; color:#94A3B8; font-size:15px; font-weight:600;"><span class="l-vi">Chưa có proposal nào.</span><span class="l-en">No proposals yet.</span></div>
+            </sc-if>
+          </div>
+        </sc-if>
+
+        <!-- PRIVACY CONFIG -->
+        <sc-if value="{{ isPrivacy }}" hint-placeholder-val="{{ false }}">
+          <div style="background:#fff; border:1px solid #E7EDF3; border-radius:16px; padding:26px 28px;">
+            <h2 style="font-size:19px; font-weight:800; margin:0 0 6px;"><span class="l-vi">Cấu hình riêng tư</span><span class="l-en">Privacy settings</span></h2>
+            <p style="font-size:13.5px; color:#64748B; margin:0 0 20px; line-height:1.55;"><span class="l-vi">Thông tin liên hệ luôn ẩn công khai. Bạn chọn có chia sẻ cho doanh nghiệp khi kết nối / khi proposal được duyệt hay không.</span><span class="l-en">Your contact details always stay private. Choose whether to share them with a business on connection / after a proposal is approved.</span></p>
+            <div style="display:flex; flex-direction:column; gap:16px;">
+              <div style="border:1px solid #EEF2F6; border-radius:14px; padding:18px;">
+                <label style="display:flex; align-items:flex-start; gap:10px; cursor:pointer; margin-bottom:12px;">
+                  <input type="checkbox" checked="{{ pvShareEmail }}" onChange="{{ onPvShareEmail }}" style="width:17px; height:17px; margin-top:2px; accent-color:#16A34A;">
+                  <span style="font-size:13.5px; color:#334155; font-weight:600;"><span class="l-vi">Công khai email cho doanh nghiệp nếu kết nối</span><span class="l-en">Share my email with the business on connection</span></span>
+                </label>
+                <input type="email" value="{{ pvEmail }}" onInput="{{ onPvEmail }}" placeholder="you@example.com" style="{{ inputStyle }}">
+              </div>
+              <div style="border:1px solid #EEF2F6; border-radius:14px; padding:18px;">
+                <label style="display:flex; align-items:flex-start; gap:10px; cursor:pointer; margin-bottom:12px;">
+                  <input type="checkbox" checked="{{ pvSharePhone }}" onChange="{{ onPvSharePhone }}" style="width:17px; height:17px; margin-top:2px; accent-color:#16A34A;">
+                  <span style="font-size:13.5px; color:#334155; font-weight:600;"><span class="l-vi">Công khai số điện thoại (WhatsApp/Zalo) nếu DN được duyệt proposal</span><span class="l-en">Share my phone (WhatsApp/Zalo) after a proposal is approved</span></span>
+                </label>
+                <div style="display:flex; gap:10px;">
+                  <select value="{{ pvPhoneCountry }}" onChange="{{ onPvPhoneCountry }}" style="{{ inputStyle }} max-width:160px;"><sc-for list="{{ pvCountryOptions }}" as="co" hint-placeholder-count="5"><option value="{{ co.value }}">{{ co.label }}</option></sc-for></select>
+                  <input value="{{ pvPhone }}" onInput="{{ onPvPhone }}" placeholder="912 345 678" style="{{ inputStyle }}">
+                </div>
+              </div>
+              <div style="display:flex; justify-content:flex-end;">
+                <button onClick="{{ saveProfile }}" style="background:#0F2A4A; color:#fff; font-weight:700; font-size:14.5px; padding:12px 24px; border-radius:10px; border:none; cursor:pointer;"><span class="l-vi">Lưu cấu hình</span><span class="l-en">Save settings</span></button>
+              </div>
+              <sc-if value="{{ saved }}" hint-placeholder-val="{{ false }}"><div style="font-size:13px; font-weight:700; color:#16A34A;">✓ <span class="l-vi">Đã lưu.</span><span class="l-en">Saved.</span></div></sc-if>
+            </div>
+          </div>
+        </sc-if>
+      </div>
+    </div>
+    </sc-if>
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { lang:'en', tab:'profile', invId:null, saved:false, curPass:'', newPass:'' };
+
+  componentDidMount() {
+    try {
+      var p = new URLSearchParams(location.search);
+      var q = p.get('inv');
+      var session = window.D68.getSession();
+      var id = q || (session && session.role==='investor' ? session.id : null) || 'investor_inv0001';
+      this.setState({ invId: id });
+      // Preserve the investor's own code (set at registration) — don't clobber it with the demo sample account's code.
+      var invState = window.D68.getInvestorState(id);
+      var code = invState.code || window.D68.INVESTOR_SAMPLE_ACCOUNT.investorCode;
+      window.D68.setSession({ role:'investor', id:id, name:id, investorCode: code });
+    } catch(e) { this.setState({ invId:'investor_inv0001' }); }
+  }
+
+  setLang(l){ this.setState({ lang:l }); }
+
+  patchOverrides(patch) {
+    const D68 = window.D68;
+    const id = this.state.invId;
+    const st = D68.getInvestorState(id);
+    st.overrides = Object.assign({}, st.overrides, patch);
+    D68.saveInvestorState(id, st);
+    this.setState({ saved:false });
+  }
+
+  // V1.6.1: expanded investment criteria (industries/dealTypes multi-select chips, stage, risk, return, deal size, exclusions)
+  criteriaVals(ov, T, id) {
+    const D68 = window.D68;
+    const crit = ov.criteria || {};
+    const industries = crit.industries || [];
+    const dealTypes = crit.dealTypes || [];
+    const chipStyle = (active) => `padding:7px 13px; border-radius:999px; border:1px solid ${active?'#1BADEA':'#E2E8F0'}; background:${active?'#E7F6FD':'#fff'}; color:${active?'#1596cc':'#64748B'}; font-size:12.5px; font-weight:600; cursor:pointer;`;
+    const toggleIndustry = (name) => () => {
+      const next = industries.includes(name) ? industries.filter(x=>x!==name) : industries.concat([name]);
+      this.patchOverrides({ criteria: Object.assign({}, crit, { industries: next }) });
+    };
+    const toggleDealType = (name) => () => {
+      const next = dealTypes.includes(name) ? dealTypes.filter(x=>x!==name) : dealTypes.concat([name]);
+      this.patchOverrides({ criteria: Object.assign({}, crit, { dealTypes: next }) });
+    };
+    return {
+      industryChips: (D68 ? D68.INDUSTRIES : ['Finance','IT & Software','Health Care','Food & Beverage']).map(name => ({ label:name, toggle: toggleIndustry(name), style: chipStyle(industries.includes(name)) })),
+      dealTypeChips: (D68 ? D68.DEAL_TYPES : ['Fundraise','Full Acquisition']).map(name => ({ label: D68 ? D68.dealTypeLabel(name, this.state.lang==='vi') : name, toggle: toggleDealType(name), style: chipStyle(dealTypes.includes(name)) })),
+      stage: crit.stage || 'Growth stage', onStage: (e)=>this.patchOverrides({ criteria: Object.assign({}, crit, { stage:e.target.value }) }),
+      stageOptions: D68 ? D68.STAGES : ['Seed','Early stage','Growth stage','Mature / Buyout'],
+      riskAppetite: crit.riskAppetite || 'balanced', onRiskAppetite: (e)=>this.patchOverrides({ criteria: Object.assign({}, crit, { riskAppetite:e.target.value }) }),
+      riskLowLabel: T('Thận trọng','Conservative'), riskMidLabel: T('Cân bằng','Balanced'), riskHighLabel: T('Mạo hiểm','Aggressive'),
+      returnExpectation: crit.returnExpectation || '', onReturnExpectation: (e)=>this.patchOverrides({ criteria: Object.assign({}, crit, { returnExpectation:e.target.value }) }),
+      preferredDealSize: crit.preferredDealSize || '', onPreferredDealSize: (e)=>this.patchOverrides({ criteria: Object.assign({}, crit, { preferredDealSize:e.target.value }) }),
+      excludedSectors: crit.excludedSectors || '', onExcludedSectors: (e)=>this.patchOverrides({ criteria: Object.assign({}, crit, { excludedSectors:e.target.value }) })
+    };
+  }
+
+  buildCriteriaForMatch(ov) {
+    const crit = ov.criteria || {};
+    return { industries: crit.industries || [], dealTypes: crit.dealTypes || [], stage: crit.stage, country: ov.country };
+  }
+
+  // V1.6.1: Recommended businesses ranked by Fit Score against the investor's saved criteria.
+  recommendedVals(ov, T, vi, id) {
+    const D68 = window.D68;
+    if (!D68 || !D68.getRecommendedBusinesses) return {};
+    const criteria = this.buildCriteriaForMatch(ov);
+    const list = D68.getRecommendedBusinesses(criteria, 8);
+    const watchlist = D68.getWatchlist(id);
+    const scoreColor = (s) => s >= 75 ? '#16A34A' : (s >= 50 ? '#B8860B' : '#94A3B8');
+    return {
+      recommended: list.map(r => {
+        const watched = watchlist.includes(r.biz.id);
+        return {
+          title: vi ? r.biz.titleVi : r.biz.titleEn,
+          industry: (r.biz.industry||'').split(';')[0] || '', dealType: (r.biz.dealType||'').split(';')[0] || '',
+          fitScore: r.fitScore, scoreColor: scoreColor(r.fitScore),
+          watchStyle: `border:1px solid ${watched?'#F2B51D':'#E2E8F0'}; background:${watched?'#FEF3D3':'#fff'}; color:${watched?'#B8860B':'#64748B'}; font-weight:700; font-size:12.5px; padding:9px 12px; border-radius:8px; cursor:pointer;`,
+          watchLabel: watched ? '★' : '☆',
+          toggleWatch: ()=>{ D68.toggleWatchlist(id, r.biz.id); this.forceUpdate(); },
+          href: 'Deals68 Business Detail.dc.html?id=' + r.biz.id
+        };
+      })
+    };
+  }
+
+  // V1.6.1: Watchlist tab — starred businesses persisted per investor.
+  // NEW: per-business "Request data" — creates a queue item Admin coordinates (investor → admin → business tab).
+  watchlistVals(ov, T, vi, id, invCode) {
+    const D68 = window.D68;
+    if (!D68) return {};
+    const watchlist = D68.getWatchlist(id);
+    const criteria = this.buildCriteriaForMatch(ov);
+    const st = this.state;
+    const docOptions = [
+      T('BCTC kiểm toán','Audited financials'),
+      T('Sao kê ngân hàng 6 tháng','6-month bank statement'),
+      T('Hợp đồng thuê mặt bằng','Lease agreement'),
+      T('Hồ sơ pháp lý DN','Legal / corporate documents'),
+      T('Model tài chính chi tiết','Detailed financial model')
+    ];
+    const myReqs = D68.getRequestDataForInvestor(invCode);
+    const statusMap = { pending: [T('Chờ xử lý','Pending'), 'color:#B8860B; background:#FEF3D3;'], fulfilled: [T('Đã cung cấp','Fulfilled'), 'color:#16A34A; background:#E9F9EF;'], declined: [T('Từ chối','Declined'), 'color:#DC2626; background:#FDECEC;'] };
+    const items = watchlist.map(bizId => {
+      const biz = D68.getBusinessSeed(bizId);
+      if (!biz) return null;
+      const bstate = D68.getBusinessState(bizId);
+      const prof = bstate.profile || {};
+      const merged = { industry: prof.industry || biz.industry, dealType: prof.dealType || biz.dealType, country: prof.country || 'Vietnam' };
+      const bizReqs = myReqs.filter(r => r.bizId === bizId).sort((a,b)=>b.requestedAt-a.requestedAt);
+      const sel = (st.reqDocSel && st.reqDocSel[bizId]) || docOptions[0];
+      return {
+        title: vi ? biz.titleVi : biz.titleEn, industry: (merged.industry||'').split(';')[0] || '',
+        fitScore: D68.computeFitScore(criteria, merged),
+        href: 'Deals68 Deal.dc.html?bizid=' + bizId,
+        remove: ()=>{ D68.toggleWatchlist(id, bizId); this.forceUpdate(); },
+        reqDocOptions: docOptions, reqDocSel: sel,
+        onReqDocSel: (e)=>{ const m=Object.assign({}, st.reqDocSel); m[bizId]=e.target.value; this.setState({ reqDocSel: m }); },
+        requestDoc: ()=>{ D68.addRequestData(bizId, invCode, sel); this.forceUpdate(); },
+        hasReqs: bizReqs.length>0,
+        reqRows: bizReqs.map(r => ({ fields: r.fields, statusLabel: (statusMap[r.status]||[r.status,''])[0], statusStyle: (statusMap[r.status]||['',''])[1] }))
+      };
+    }).filter(Boolean);
+    return { hasWatchlist: items.length > 0, watchlistItems: items };
+  }
+
+  // V1.6.1: Alerts tab — preferences + recent alert feed.
+  alertsVals(T, vi, id) {
+    const D68 = window.D68;
+    if (!D68) return {};
+    const a = D68.getAlerts(id);
+    const prefDefs = [
+      { key:'newMatch', vi:'Hồ sơ mới phù hợp tiêu chí', en:'New business matches my criteria' },
+      { key:'priceChange', vi:'Hồ sơ theo dõi thay đổi định giá', en:'Watched business valuation changes' },
+      { key:'proposalUpdate', vi:'Proposal nhận được có cập nhật', en:'Proposal I received gets updated' },
+      { key:'weeklyDigest', vi:'Tổng hợp hàng tuần qua email', en:'Weekly email digest' }
+    ];
+    const iconMap = { new_match:'🎯', proposal_update:'📨', price_change:'💰' };
+    return {
+      alertPrefs: prefDefs.map(p => ({
+        label: T(p.vi,p.en), checked: !!a.prefs[p.key],
+        onChange: (e)=>{ const next = D68.getAlerts(id); next.prefs[p.key] = e.target.checked; D68.saveAlerts(id, next); this.forceUpdate(); }
+      })),
+      alertItems: a.items.slice().sort((x,y)=>y.ts-x.ts).map(it => ({
+        icon: iconMap[it.type] || '🔔', text: it.text, unread: !it.read,
+        bg: it.read ? '#F7FAFC' : '#FFFDF5',
+        time: new Date(it.ts).toLocaleDateString(vi?'vi-VN':'en-US'),
+        markRead: ()=>{ D68.markAlertRead(id, it.id); this.forceUpdate(); }
+      }))
+    };
+  }
+
+  bizImage(bizId) {
+    const map = { hkmedi:'assets/deal1.png', infinitytech:'assets/deal2.png', dunniotailor:'assets/deal3.png', phongcua:'assets/deal4.png', trongnhanseafoods:'assets/deal5.png', automatedcoldstore:'assets/deal6.png' };
+    return map[bizId] || '';
+  }
+  normalizedAnnualVnd(fin, country) {
+    const v = parseFloat(fin.latest_annual_sales) || 0;
+    return (country === 'Vietnam') ? v : v * 24000;
+  }
+  moneyFmt(v, country) {
+    v = parseFloat(v) || 0;
+    if (!v) return '—';
+    return country === 'Vietnam' ? (Math.round(v).toLocaleString('vi-VN') + ' ₫') : ('$' + Math.round(v).toLocaleString('en-US'));
+  }
+
+  // NEW-2: Tiêu chí đầu tư — quick filter (industries + revenue band + EBITDA band) → matching businesses grid, newest first.
+  criteria2Vals(ov, T, vi, id) {
+    const D68 = window.D68;
+    if (!D68) return {};
+    const c2 = ov.criteria2 || {};
+    const inds = c2.industries || [];
+    const revBand = c2.revenueBand || 'any';
+    const ebBand = c2.ebitdaBand || 'any';
+    const chip = (active) => `padding:7px 13px; border-radius:999px; border:1px solid ${active?'#F2B51D':'#E2E8F0'}; background:${active?'#FEF3D3':'#fff'}; color:${active?'#B8860B':'#64748B'}; font-size:12.5px; font-weight:600; cursor:pointer;`;
+    const toggleInd = (name)=>()=>{ const next = inds.includes(name)?inds.filter(x=>x!==name):inds.concat([name]); this.patchOverrides({ criteria2: Object.assign({}, c2, { industries: next }) }); };
+
+    let matches = D68.BUSINESS_SEED.map((b, i) => {
+      const bs = D68.getBusinessState(b.id); const prof = bs.profile || {}; const fin = prof.financialInput || {};
+      return { b, i, prof, fin, annualVnd: this.normalizedAnnualVnd(fin, prof.country || 'Vietnam'), ebitda: parseFloat(fin.ebitda_margin_pct) || 0, status: bs.profileStatus, q: D68.computeQualityScore(b.id) };
+    }).filter(m => m.status === 'Live');
+    if (inds.length) matches = matches.filter(m => { const s = (m.prof.industry || m.b.industry || '').toLowerCase(); return inds.some(ci => s.indexOf(ci.toLowerCase()) !== -1); });
+    if (revBand !== 'any') matches = matches.filter(m => revBand==='small' ? m.annualVnd < 10e9 : revBand==='mid' ? (m.annualVnd>=10e9 && m.annualVnd<=100e9) : m.annualVnd>100e9);
+    if (ebBand !== 'any') matches = matches.filter(m => ebBand==='low' ? m.ebitda<10 : ebBand==='mid' ? (m.ebitda>=10 && m.ebitda<=20) : m.ebitda>20);
+    matches.sort((a,b)=> b.i - a.i);
+
+    const watchlist = D68.getWatchlist(id);
+    return {
+      c2IndustryChips: D68.INDUSTRIES.map(name => ({ label:name, toggle: toggleInd(name), style: chip(inds.includes(name)) })),
+      c2RevBand: revBand, onC2RevBand: (e)=>this.patchOverrides({ criteria2: Object.assign({}, c2, { revenueBand: e.target.value }) }),
+      c2RevOptions: [ {value:'any',label:T('Tất cả quy mô','Any size')}, {value:'small',label:T('< 10 tỷ ₫','< VND 10B')}, {value:'mid',label:T('10 – 100 tỷ ₫','VND 10–100B')}, {value:'large',label:T('> 100 tỷ ₫','> VND 100B')} ],
+      c2EbBand: ebBand, onC2EbBand: (e)=>this.patchOverrides({ criteria2: Object.assign({}, c2, { ebitdaBand: e.target.value }) }),
+      c2EbOptions: [ {value:'any',label:T('Tất cả','Any')}, {value:'low',label:T('< 10%','< 10%')}, {value:'mid',label:T('10 – 20%','10–20%')}, {value:'high',label:T('> 20%','> 20%')} ],
+      c2Update: ()=>this.forceUpdate(),
+      c2HasMatches: matches.length > 0,
+      c2Matches: matches.map(m => ({
+        title: vi ? m.b.titleVi : m.b.titleEn, image: this.bizImage(m.b.id), hasImage: !!this.bizImage(m.b.id),
+        industry: (m.prof.industry || m.b.industry || '').split(';')[0],
+        revenue: this.moneyFmt(m.fin.latest_annual_sales, m.prof.country || 'Vietnam'),
+        ask: (m.fin.investment_amount_sought ? this.moneyFmt(m.fin.investment_amount_sought, m.prof.country || 'Vietnam') : '—') + (m.fin.max_stake_pct ? (' · ' + m.fin.max_stake_pct + '%') : ''),
+        qScore: m.q.score, qLabel: '◆ ' + m.q.score, qStyle: `display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:800;color:${m.q.band.color};background:${m.q.band.bg};padding:4px 10px;border-radius:6px;`,
+        href: 'Deals68 Deal.dc.html?bizid=' + m.b.id,
+        watchLabel: watchlist.includes(m.b.id) ? ('★ ' + T('Đã lưu','Saved')) : ('☆ ' + T('Lưu','Save')),
+        watchStyle: `border:1px solid ${watchlist.includes(m.b.id)?'#F2B51D':'#E2E8F0'}; background:${watchlist.includes(m.b.id)?'#FEF3D3':'#fff'}; color:${watchlist.includes(m.b.id)?'#B8860B':'#64748B'}; font-weight:700; font-size:12.5px; padding:9px 13px; border-radius:8px; cursor:pointer;`,
+        toggleWatch: ()=>{ D68.toggleWatchlist(id, m.b.id); this.forceUpdate(); }
+      }))
+    };
+  }
+
+  // NEW-2: Privacy config — investor opts in to sharing email (on connect) / phone (after proposal approved).
+  privacyVals(ov, T) {
+    const pv = ov.privacy || {};
+    const setPv = (patch)=>this.patchOverrides({ privacy: Object.assign({}, pv, patch) });
+    return {
+      pvShareEmail: !!pv.shareEmail, onPvShareEmail: (e)=>setPv({ shareEmail: e.target.checked }),
+      pvEmail: pv.email || '', onPvEmail: (e)=>setPv({ email: e.target.value }),
+      pvSharePhone: !!pv.sharePhone, onPvSharePhone: (e)=>setPv({ sharePhone: e.target.checked }),
+      pvPhoneCountry: pv.phoneCountry || '+84', onPvPhoneCountry: (e)=>setPv({ phoneCountry: e.target.value }),
+      pvCountryOptions: [ {value:'+84',label:'+84 · VN'}, {value:'+1',label:'+1 · USA'}, {value:'+65',label:'+65 · Singapore'}, {value:'+82',label:'+82 · Hàn Quốc'}, {value:'+81',label:'+81 · Nhật Bản'} ],
+      pvPhone: pv.phone || '', onPvPhone: (e)=>setPv({ phone: e.target.value })
+    };
+  }
+
+  renderVals() {
+    const vi = this.state.lang === 'vi';
+    const T = (a,b) => vi ? a : b;
+    const st = this.state;
+    const D68 = window.D68;
+    const id = st.invId || 'investor_inv0001';
+    const invState = D68 ? D68.getInvestorState(id) : { contacts:[], overrides:{} };
+    const ov = invState.overrides || {};
+    const primaryContact = (invState.contacts || []).find(c=>c.isPrimary) || (invState.contacts || [])[0] || {};
+    const fallbackInvName = (id === 'investor_inv0001')
+      ? 'VinaCapital'
+      : ((primaryContact.name && primaryContact.name !== 'Primary Contact') ? primaryContact.name : (invState.code || 'Investor'));
+
+    const locked = D68 ? !D68.canAccessDashboard(invState) : false;
+    const lockInfoMap = {
+      payment_pending: { icon:'🕒', titleVi:'Dashboard chưa mở — chờ xác nhận thanh toán', titleEn:'Dashboard locked — awaiting payment confirmation',
+        descVi:'Hồ sơ của bạn đã được lưu trong 7 ngày. Vui lòng chuyển khoản đúng nội dung để Admin xác nhận.', descEn:'Your profile is saved for 7 days. Please transfer with the correct reference for admin confirmation.' },
+      pending_admin_review: { icon:'⏳', titleVi:'Dashboard chưa mở — chờ Admin duyệt', titleEn:'Dashboard locked — pending admin review',
+        descVi:'Thanh toán đã được ghi nhận. Dashboard sẽ mở ngay khi Admin duyệt xong hồ sơ.', descEn:'Payment received. Your dashboard unlocks as soon as Admin approves your profile.' },
+      expired: { icon:'⌛', titleVi:'Hồ sơ đã hết hạn', titleEn:'Profile expired',
+        descVi:'Quá 7 ngày chưa xác nhận thanh toán nên hồ sơ đã tự động ẩn. Vui lòng liên hệ hỗ trợ hoặc đăng ký lại.', descEn:'The 7-day payment window passed, so this profile was automatically hidden. Please contact support or register again.' },
+      hidden: { icon:'🚫', titleVi:'Tài khoản đang bị tạm ngưng', titleEn:'Account suspended',
+        descVi:'Tài khoản này đang bị Admin tạm ngưng. Vui lòng liên hệ partner@deals68.com.', descEn:'This account has been suspended by Admin. Please contact partner@deals68.com.' }
+    };
+    const lockInfo = lockInfoMap[invState.accountStatus] || lockInfoMap.payment_pending;
+    const lockDaysLeftNum = (D68 && invState.pendingExpiresAt) ? D68.daysLeft(invState.pendingExpiresAt) : null;
+    const base = (D68 && D68.getInvestors().find(i => i.code === 'INV-0001')) || {};
+
+    const invType = ov.type !== undefined ? ov.type : (base.type || 'VC');
+    const country = ov.country !== undefined ? ov.country : (base.country || 'Vietnam');
+    const ticketMin = ov.ticketMin !== undefined ? ov.ticketMin : (base.ticketMin || 100000);
+    const ticketMax = ov.ticketMax !== undefined ? ov.ticketMax : (base.ticketMax || 5000000);
+    const desc = ov.descVi !== undefined ? ov.descVi : (base.descVi || '');
+
+    const inputStyle = 'border:1px solid #E2E8F0; border-radius:9px; padding:10px 12px; font-size:14.5px; color:#0F2A4A; background:#F7FAFC; font-weight:500; outline:none; width:100%;';
+    const tabDefs = [
+      { key:'profile', icon:'📝', vi:'Hồ sơ', en:'Profile' },
+      { key:'recommended', icon:'🎯', vi:'Tiêu chí đầu tư', en:'Investment criteria' },
+      { key:'watchlist', icon:'★', vi:'Doanh nghiệp đã lưu', en:'Saved businesses' },
+      { key:'proposals', icon:'📨', vi:'Proposals', en:'Proposals' },
+      { key:'privacy', icon:'🔐', vi:'Cấu hình riêng tư', en:'Privacy' },
+      { key:'alerts', icon:'🔔', vi:'Cảnh báo', en:'Alerts' },
+      { key:'contacts', icon:'👤', vi:'Liên hệ', en:'Contacts' },
+      { key:'security', icon:'🔒', vi:'Bảo mật', en:'Security' }
+    ];
+    const tabs = tabDefs.map(t => ({
+      icon: t.icon, label: T(t.vi,t.en), onClick: ()=>this.setState({ tab:t.key, saved:false }),
+      style: `text-align:left; display:flex; align-items:center; gap:10px; padding:12px 14px; border:none; border-radius:10px; cursor:pointer; font-size:14.5px; font-weight:${st.tab===t.key?'700':'500'}; background:${st.tab===t.key?'#FEF3D3':'transparent'}; color:${st.tab===t.key?'#B8860B':'#64748B'};`
+    }));
+
+    const contacts = (invState.contacts || []).map((c, idx) => ({
+      name: c.name, role: c.role, email: c.email, phone: c.phone, isPrimary: !!c.isPrimary,
+      inputStyle: inputStyle,
+      onName: (e)=>this.updateContact(idx, { name:e.target.value }),
+      onRole: (e)=>this.updateContact(idx, { role:e.target.value }),
+      onEmail: (e)=>this.updateContact(idx, { email:e.target.value }),
+      onPhone: (e)=>this.updateContact(idx, { phone:e.target.value }),
+      onPrimary: ()=>this.updateContact(idx, { isPrimary:true }, true),
+      remove: ()=>this.removeContact(idx)
+    }));
+
+    const proposals = D68 ? D68.getProposals().filter(p => p.investorCode === (base.code || 'INV-0001')) : [];
+    const bizByid = {}; if (D68) D68.BUSINESS_SEED.forEach(b => bizByid[b.id] = b);
+    const statusStyle = (s) => {
+      const map = { sent:['#1596cc','#E7F6FD'], approved:['#16A34A','#E9F9EF'], declined:['#DC2626','#FDECEC'] };
+      const c = map[s] || ['#64748B','#F1F5F9'];
+      return `font-size:12px; font-weight:700; padding:5px 11px; border-radius:7px; color:${c[0]}; background:${c[1]}; flex-shrink:0;`;
+    };
+    const statusLabelMap = { sent: T('Chờ xem xét','Pending review'), approved: T('Đã duyệt','Approved'), declined: T('Đã từ chối','Declined') };
+
+    return {
+      lang: st.lang, setVi: ()=>this.setLang('vi'), setEn: ()=>this.setLang('en'),
+      viBtnStyle: `padding:7px 14px; border:none; cursor:pointer; font-weight:700; font-size:13px; background:${vi?'#0F2A4A':'transparent'}; color:${vi?'#fff':'#64748B'};`,
+      enBtnStyle: `padding:7px 14px; border:none; cursor:pointer; font-weight:700; font-size:13px; background:${!vi?'#0F2A4A':'transparent'}; color:${!vi?'#fff':'#64748B'};`,
+
+      invCode: invState.code || (D68 && D68.INVESTOR_SAMPLE_ACCOUNT.investorCode) || 'INV-0001',
+      invName: (ov.name !== undefined && ov.name !== '') ? ov.name : fallbackInvName,
+      invNameEdit: (ov.name !== undefined && ov.name !== '') ? ov.name : fallbackInvName,
+      onInvName: (e)=>this.patchOverrides({ name: e.target.value }),
+      invType, tabs,
+      locked, lockIcon: lockInfo.icon, lockTitle: T(lockInfo.titleVi, lockInfo.titleEn), lockDesc: T(lockInfo.descVi, lockInfo.descEn),
+      lockHasOrder: !!invState.orderCode, lockOrderCode: invState.orderCode ? ('DEALS68-'+invState.orderCode) : '',
+      lockHasDays: lockDaysLeftNum != null, lockDaysLeft: lockDaysLeftNum != null ? (lockDaysLeftNum + ' ' + T('ngày còn lại','days left')) : '',
+      isProfile: st.tab==='profile', isContacts: st.tab==='contacts', isSecurity: st.tab==='security', isProposals: st.tab==='proposals',
+      isRecommended: st.tab==='recommended', isWatchlist: st.tab==='watchlist', isAlerts: st.tab==='alerts', isPrivacy: st.tab==='privacy',
+
+      ...this.criteriaVals(ov, T, id),
+      ...this.criteria2Vals(ov, T, vi, id),
+      ...this.watchlistVals(ov, T, vi, id, invState.code || (D68 && D68.INVESTOR_SAMPLE_ACCOUNT.investorCode) || 'INV-0001'),
+      ...this.alertsVals(T, vi, id),
+      ...this.privacyVals(ov, T),
+
+      inputStyle,
+      onInvType: (e)=>this.patchOverrides({ type: e.target.value }),
+      typeOptions: ['VC','PE','Institutional','Corporate/Strategic','Individual/Angel','Family Office','Lender/Debt'],
+      country, onCountry: (e)=>this.patchOverrides({ country: e.target.value }),
+      countryOptions: ['Vietnam','Singapore','Japan','South Korea','Hong Kong','United States','Israel','Malaysia'],
+      ticketMin, onTicketMin: (e)=>this.patchOverrides({ ticketMin: e.target.value }),
+      ticketMax, onTicketMax: (e)=>this.patchOverrides({ ticketMax: e.target.value }),
+      desc, onDesc: (e)=>this.patchOverrides({ descVi: e.target.value, descEn: e.target.value }),
+      saveProfile: ()=>this.setState({ saved:true }),
+      saved: st.saved,
+
+      contacts,
+      addContact: ()=>{
+        const s = D68.getInvestorState(id);
+        s.contacts = (s.contacts||[]).concat([{ name:'New contact', email:'', phone:'', role:'', isPrimary:false }]);
+        D68.saveInvestorState(id, s); this.setState({ saved:false });
+      },
+      saveContacts: ()=>this.setState({ saved:true }),
+
+      curPass: st.curPass, onCurPass: (e)=>this.setState({ curPass:e.target.value }),
+      newPass: st.newPass, onNewPass: (e)=>this.setState({ newPass:e.target.value }),
+      changePass: ()=>this.setState({ saved:true, curPass:'', newPass:'' }),
+
+      hasProposals: proposals.length>0,
+      received: proposals.slice().reverse().map((p,i) => {
+        const biz = bizByid[p.businessId] || {};
+        const bs = D68 ? D68.getBusinessState(p.businessId) : {};
+        const prof = (bs && bs.profile) || {};
+        const fin = prof.financialInput || {};
+        const country = prof.country || 'Vietnam';
+        const q = D68 ? D68.computeQualityScore(p.businessId) : null;
+        return {
+          bizLabel: (biz.titleVi ? (vi?biz.titleVi:biz.titleEn) : p.businessId),
+          sentAt: p.sentAt ? new Date(p.sentAt).toLocaleDateString(vi?'vi-VN':'en-US') : '—',
+          statusStyle: statusStyle(p.status), statusLabel: statusLabelMap[p.status] || p.status,
+          ask: (fin.investment_amount_sought ? this.moneyFmt(fin.investment_amount_sought, country) : '—') + (fin.max_stake_pct ? (' · ' + fin.max_stake_pct + '%') : ''),
+          ebitda: fin.ebitda_margin_pct ? (fin.ebitda_margin_pct + '%') : '—',
+          qHas: !!q, qScore: q ? q.score : 0, qLabel: q ? ('◆ ' + q.score + '/100') : '',
+          qStyle: q ? `display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:800;color:${q.band.color};background:${q.band.bg};padding:4px 10px;border-radius:6px;` : '',
+          pending: p.status === 'sent',
+          approve: ()=>this.decideProposal(p.code, 'approved'),
+          decline: ()=>this.decideProposal(p.code, 'declined')
+        };
+      })
+    };
+  }
+
+  updateContact(idx, patch, exclusive) {
+    const D68 = window.D68; const id = this.state.invId;
+    const s = D68.getInvestorState(id);
+    s.contacts = (s.contacts||[]).map((c,i) => {
+      if (exclusive && patch.isPrimary) return Object.assign({}, c, { isPrimary: i===idx });
+      return i===idx ? Object.assign({}, c, patch) : c;
+    });
+    D68.saveInvestorState(id, s); this.setState({ saved:false });
+  }
+  removeContact(idx) {
+    const D68 = window.D68; const id = this.state.invId;
+    const s = D68.getInvestorState(id);
+    s.contacts = (s.contacts||[]).filter((c,i)=>i!==idx);
+    D68.saveInvestorState(id, s); this.setState({ saved:false });
+  }
+  decideProposal(code, status) {
+    const D68 = window.D68;
+    const list = D68.getProposals().map(p => p.code === code ? Object.assign({}, p, { status: status, investorDecisionAt: new Date().toISOString() }) : p);
+    D68.saveProposals(list);
+    this.forceUpdate();
+  }
+}
+</script>
+</body>
+</html>

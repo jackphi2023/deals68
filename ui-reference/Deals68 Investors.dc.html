@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Danh sách nhà đầu tư | Deals68</title>
+<meta name="description" content="Tìm nhà đầu tư theo loại hình, ngành quan tâm, ticket size, quốc gia/khu vực và mức độ hoạt động trên Deals68.">
+<meta name="robots" content="index,follow">
+<link rel="canonical" href="https://deals68.com/investors">
+<link rel="alternate" hreflang="vi" href="https://deals68.com/investors">
+<link rel="alternate" hreflang="en" href="https://deals68.com/investors">
+<link rel="alternate" hreflang="x-default" href="https://deals68.com/investors">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="site.webmanifest">
+<meta name="theme-color" content="#0F2A4A">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Deals68.com">
+<meta property="og:title" content="Danh sách nhà đầu tư | Deals68">
+<meta property="og:description" content="Tìm nhà đầu tư theo loại hình, ngành quan tâm, ticket size, quốc gia/khu vực và mức độ hoạt động trên Deals68.">
+<meta property="og:image" content="assets/og-image.png">
+<meta property="og:url" content="https://deals68.com/investors">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Danh sách nhà đầu tư | Deals68">
+<meta name="twitter:description" content="Tìm nhà đầu tư theo loại hình, ngành quan tâm, ticket size, quốc gia/khu vực và mức độ hoạt động trên Deals68.">
+<meta name="twitter:image" content="assets/og-image.png">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"Organization","name":"Deals68.com","url":"https://deals68.com/","logo":"https://deals68.com/assets/logo-beta.png","sameAs":[],"parentOrganization":{"@type":"Organization","name":"Viet Capital Partners & Consulting"}}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Trang chủ","item":"https://deals68.com/"},{"@type":"ListItem","position":2,"name":"Nhà đầu tư","item":"https://deals68.com/investors"}]}</script>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="assets/deals68-investors-import.js"></script>
+<script src="assets/deals68-mock.js"></script>
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body { font-family: 'Be Vietnam Pro', system-ui, sans-serif; color: #0F2A4A; background: #F7FAFC; -webkit-font-smoothing: antialiased; }
+  [data-lang="vi"] .l-en { display: none !important; }
+  [data-lang="en"] .l-vi { display: none !important; }
+  a { text-decoration: none; color: inherit; }
+  select, input, button { font-family: inherit; }
+  .d68-reg-dd:hover .d68-reg-menu { display: flex !important; }
+  @media (max-width: 1080px) { .d68-nav { display: none !important; } }
+  @media (max-width: 900px) {
+    .d68-list-cols { grid-template-columns: 1fr !important; }
+    .d68-sidebar { position:static !important; max-height:none !important; }
+  }
+  @media (max-width: 620px) { .d68-h1 { font-size: 26px !important; } }
+</style>
+</helmet>
+
+<div data-lang="{{ lang }}" style="width:100%; overflow-x:hidden;">
+
+  <header style="position:sticky; top:0; z-index:60; background:rgba(255,255,255,.94); backdrop-filter:blur(10px); border-bottom:1px solid #E7EDF3;">
+    <div style="max-width:1240px; margin:0 auto; padding:0 24px; height:70px; display:flex; align-items:center; gap:28px;">
+      <a href="Deals68 Home.dc.html" style="display:flex; align-items:center; flex-shrink:0;"><img src="assets/logo-beta.png" alt="Deals68.com" style="height:34px; display:block;"></a>
+      <nav class="d68-nav" style="display:flex; align-items:center; gap:26px; margin-left:8px; font-size:15px; font-weight:500; color:#14315A;">
+        <a href="Deals68 Businesses.dc.html"><span class="l-vi">Doanh nghiệp</span><span class="l-en">Businesses</span></a>
+        <a href="Deals68 Investors.dc.html" style="color:#1BADEA; font-weight:700;"><span class="l-vi">Nhà đầu tư</span><span class="l-en">Investors</span></a>
+        <a href="Deals68 Home.dc.html"><span class="l-vi">Cố vấn</span><span class="l-en">Advisors</span></a>
+        <a href="Deals68 Valuation.dc.html"><span class="l-vi">Định giá</span><span class="l-en">Valuation</span></a>
+        <a href="Deals68 Pricing.dc.html"><span class="l-vi">Bảng giá</span><span class="l-en">Pricing</span></a>
+      </nav>
+      <div style="margin-left:auto; display:flex; align-items:center; gap:14px; flex-shrink:0;">
+        <div style="display:flex; align-items:center; border:1px solid #E2E8F0; border-radius:999px; overflow:hidden; font-size:13px; font-weight:700;">
+          <button onClick="{{ setVi }}" style="{{ viBtnStyle }}">VI</button>
+          <button onClick="{{ setEn }}" style="{{ enBtnStyle }}">EN</button>
+        </div>
+        <a href="{{ loginLink }}" style="font-size:15px; font-weight:600; color:#14315A; white-space:nowrap;">{{ loginLabel }}</a>
+        <div class="d68-reg-dd" style="position:relative;">
+          <button style="display:inline-flex; align-items:center; gap:6px; background:#1BADEA; color:#fff; font-weight:700; font-size:15px; padding:11px 20px; border-radius:10px; box-shadow:0 6px 16px rgba(27,173,234,.28); white-space:nowrap; border:none; cursor:pointer;">
+            <span class="l-vi">Đăng ký</span><span class="l-en">Register</span> <span style="font-size:11px;">▾</span>
+          </button>
+          <div class="d68-reg-menu" style="display:none; position:absolute; top:100%; right:0; padding-top:8px; min-width:230px; flex-direction:column; z-index:80;">
+            <div style="background:#fff; border:1px solid #E7EDF3; border-radius:12px; box-shadow:0 14px 34px rgba(15,42,74,.16); padding:8px; display:flex; flex-direction:column; gap:2px;">
+              <a href="Deals68 Register Business.dc.html" style="padding:11px 14px; border-radius:8px; font-size:14.5px; font-weight:600; color:#14315A;" style-hover="background:#F5FBFE; color:#1596cc;"><span class="l-vi">Đăng ký Doanh nghiệp</span><span class="l-en">Register as Business</span></a>
+              <a href="Deals68 Register Investor.dc.html" style="padding:11px 14px; border-radius:8px; font-size:14.5px; font-weight:600; color:#14315A;" style-hover="background:#F5FBFE; color:#1596cc;"><span class="l-vi">Đăng ký Nhà đầu tư</span><span class="l-en">Register as Investor</span></a>
+              <a href="Deals68 Register Advisor.dc.html" style="padding:11px 14px; border-radius:8px; font-size:14.5px; font-weight:600; color:#14315A;" style-hover="background:#F5FBFE; color:#1596cc;"><span class="l-vi">Đăng ký Cố vấn</span><span class="l-en">Register as Advisor</span></a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div style="max-width:1240px; margin:0 auto; padding:26px 24px 8px;">
+    <h1 class="d68-h1" style="font-size:32px; font-weight:800; letter-spacing:-.8px; margin:0 0 8px;"><span class="l-vi">Nhà đầu tư trên Deals68</span><span class="l-en">Investors on Deals68</span></h1>
+    <p style="font-size:15px; color:#64748B; margin:0 0 14px; max-width:820px;"><span class="l-vi">{{ totalCount }} hồ sơ Nhà đầu tư ẩn danh — VC, PE, định chế, chiến lược, family office và cá nhân. Sắp xếp theo mức độ hoạt động.</span><span class="l-en">{{ totalCount }} anonymous investor profiles — VC, PE, institutional, strategic, family office and individuals. Sorted by activity ranking.</span></p>
+
+    <!-- SESSION BANNER -->
+    <sc-if value="{{ showLoginBanner }}" hint-placeholder-val="{{ false }}">
+      <div style="background:#FEF3D3; border:1px solid #F5D98A; color:#8a6413; border-radius:12px; padding:14px 18px; font-size:14px; margin-bottom:18px; display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;">
+        <span>ℹ️ {{ bannerText }}</span>
+        <a href="{{ bannerLink }}" style="font-weight:700; text-decoration:underline; white-space:nowrap;">{{ bannerCta }}</a>
+      </div>
+    </sc-if>
+    <sc-if value="{{ showQuotaBanner }}" hint-placeholder-val="{{ false }}">
+      <div style="background:#0F2A4A; color:#fff; border-radius:12px; padding:14px 18px; font-size:14px; margin-bottom:18px; display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;">
+        <span>📤 <span class="l-vi">Đăng nhập là</span><span class="l-en">Logged in as</span> <b>{{ sessionLabel }}</b> — <span class="l-vi">còn</span><span class="l-en">remaining</span> <b style="color:#F2B51D;">{{ quotaRemaining }}/{{ quotaTotal }}</b> proposal</span>
+        <a href="Deals68 Business Dashboard.dc.html" style="color:#F2B51D; font-weight:700; text-decoration:underline; white-space:nowrap;"><span class="l-vi">Dashboard</span><span class="l-en">Dashboard</span></a>
+      </div>
+    </sc-if>
+  </div>
+
+  <div class="d68-list-cols" style="max-width:1240px; margin:0 auto; padding:8px 24px 40px; display:grid; grid-template-columns:280px minmax(0,1fr); gap:26px; align-items:start;">
+
+    <!-- SIDEBAR FILTERS -->
+    <aside class="d68-sidebar" style="position:sticky; top:90px; background:#fff; border:1px solid #E7EDF3; border-radius:16px; overflow:hidden; box-shadow:0 1px 2px rgba(15,42,74,.04);">
+      <div style="display:flex; align-items:center; justify-content:space-between; padding:16px 18px; border-bottom:1px solid #EEF2F6;">
+        <span style="font-weight:800; font-size:15px;"><span class="l-vi">Bộ lọc</span><span class="l-en">Filters</span></span>
+        <button onClick="{{ clearFilters }}" style="border:none; background:none; color:#1596cc; font-weight:600; font-size:13px; cursor:pointer;"><span class="l-vi">Xóa lọc</span><span class="l-en">Clear</span></button>
+      </div>
+      <div style="padding:6px 18px 18px; max-height:70vh; overflow-y:auto;">
+        <div style="padding:16px 0 6px; font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:.6px; color:#94A3B8;"><span class="l-vi">Loại nhà đầu tư</span><span class="l-en">Investor type</span></div>
+        <sc-for list="{{ typeFilters }}" as="tf" hint-placeholder-count="7">
+          <label style="display:flex; align-items:center; gap:10px; padding:6px 0; cursor:pointer; font-size:13.5px; color:#334155;">
+            <input type="checkbox" checked="{{ tf.checked }}" onChange="{{ tf.toggle }}" style="width:15px; height:15px; accent-color:#1BADEA;">
+            <span style="flex:1;">{{ tf.label }}</span><span style="font-size:12px; color:#94A3B8;">{{ tf.count }}</span>
+          </label>
+        </sc-for>
+
+        <div style="padding:16px 0 6px; font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:.6px; color:#94A3B8; border-top:1px solid #EEF2F6; margin-top:10px;"><span class="l-vi">Khu vực</span><span class="l-en">Region</span></div>
+        <select value="{{ regionFilter }}" onChange="{{ onRegionFilter }}" style="width:100%; border:1px solid #E2E8F0; border-radius:9px; padding:9px 11px; font-size:13.5px; background:#F7FAFC; font-weight:500; cursor:pointer;">
+          <sc-for list="{{ regionOptions }}" as="ro" hint-placeholder-count="4"><option value="{{ ro.value }}">{{ ro.label }}</option></sc-for>
+        </select>
+
+        <div style="padding:16px 0 6px; font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:.6px; color:#94A3B8;"><span class="l-vi">Quốc gia</span><span class="l-en">Country</span></div>
+        <select value="{{ countryFilter }}" onChange="{{ onCountryFilter }}" style="width:100%; border:1px solid #E2E8F0; border-radius:9px; padding:9px 11px; font-size:13.5px; background:#F7FAFC; font-weight:500; cursor:pointer;">
+          <sc-for list="{{ countryOptions }}" as="co" hint-placeholder-count="8"><option>{{ co }}</option></sc-for>
+        </select>
+
+        <div style="padding:16px 0 6px; font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:.6px; color:#94A3B8;"><span class="l-vi">Ngành quan tâm</span><span class="l-en">Preferred industry</span></div>
+        <select value="{{ industryFilter }}" onChange="{{ onIndustryFilter }}" style="width:100%; border:1px solid #E2E8F0; border-radius:9px; padding:9px 11px; font-size:13.5px; background:#F7FAFC; font-weight:500; cursor:pointer;">
+          <sc-for list="{{ industryOptions }}" as="io" hint-placeholder-count="12"><option>{{ io }}</option></sc-for>
+        </select>
+
+        <div style="padding:16px 0 6px; font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:.6px; color:#94A3B8;"><span class="l-vi">Giai đoạn</span><span class="l-en">Stage</span></div>
+        <select value="{{ stageFilter }}" onChange="{{ onStageFilter }}" style="width:100%; border:1px solid #E2E8F0; border-radius:9px; padding:9px 11px; font-size:13.5px; background:#F7FAFC; font-weight:500; cursor:pointer;">
+          <sc-for list="{{ stageOptions }}" as="so" hint-placeholder-count="5"><option>{{ so }}</option></sc-for>
+        </select>
+
+        <div style="padding:16px 0 6px; font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:.6px; color:#94A3B8;"><span class="l-vi">Ticket tối thiểu (USD)</span><span class="l-en">Min ticket (USD)</span></div>
+        <select value="{{ ticketFilter }}" onChange="{{ onTicketFilter }}" style="width:100%; border:1px solid #E2E8F0; border-radius:9px; padding:9px 11px; font-size:13.5px; background:#F7FAFC; font-weight:500; cursor:pointer;">
+          <option value="0">{{ anyLabel }}</option>
+          <option value="100000">≤ $100K</option>
+          <option value="1000000">≤ $1M</option>
+          <option value="5000000">≤ $5M</option>
+          <option value="50000000">≤ $50M</option>
+        </select>
+      </div>
+    </aside>
+
+    <!-- RESULTS -->
+    <div>
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:14px; margin-bottom:16px; flex-wrap:wrap;">
+        <div style="font-size:14px; color:#64748B; font-weight:600;">{{ shownCount }} / {{ totalCount }} <span class="l-vi">nhà đầu tư</span><span class="l-en">investors</span></div>
+        <div style="display:flex; align-items:center; gap:10px;">
+          <span style="font-size:13.5px; color:#64748B;"><span class="l-vi">Sắp xếp: Xếp hạng hoạt động</span><span class="l-en">Sort: Ranking score</span></span>
+          <div style="display:flex; gap:6px;">
+            <button onClick="{{ prevPage }}" style="border:1px solid #E2E8F0; background:#fff; color:#334155; width:34px; height:34px; border-radius:8px; cursor:pointer;">‹</button>
+            <span style="font-size:13.5px; font-weight:700; padding:6px 4px;">{{ pageLabel }}</span>
+            <button onClick="{{ nextPage }}" style="border:1px solid #E2E8F0; background:#fff; color:#334155; width:34px; height:34px; border-radius:8px; cursor:pointer;">›</button>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:14px;">
+        <sc-for list="{{ pageInvestors }}" as="inv" hint-placeholder-count="10">
+          <div style="background:#fff; border:1px solid #E7EDF3; border-radius:14px; padding:18px 20px; display:flex; gap:16px; align-items:flex-start; flex-wrap:wrap; box-shadow:0 1px 2px rgba(15,42,74,.04);">
+            <div style="width:44px; height:44px; border-radius:11px; background:{{ inv.iconBg }}; color:{{ inv.iconColor }}; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:13px; flex-shrink:0;">{{ inv.initials }}</div>
+            <div style="flex:1; min-width:240px;">
+              <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:6px;">
+                <span style="font-size:12px; font-weight:700; color:#1596cc; background:#E7F6FD; padding:3px 9px; border-radius:6px;">{{ inv.type }}</span>
+                <span style="font-size:12px; font-weight:600; color:#64748B; background:#F1F5F9; padding:3px 9px; border-radius:6px;">📍 {{ inv.country }}</span>
+                <sc-if value="{{ inv.verified }}" hint-placeholder-val="{{ true }}"><span style="font-size:12px; font-weight:700; color:#16A34A; background:#E9F9EF; padding:3px 9px; border-radius:6px;">✓ <span class="l-vi">Xác minh</span><span class="l-en">Verified</span></span></sc-if>
+                <span style="font-size:11.5px; font-weight:700; color:{{ inv.activityColor }};">● {{ inv.activityLabel }}</span>
+              </div>
+              <h3 style="font-size:15.5px; font-weight:700; margin:0 0 6px; line-height:1.4;">{{ inv.title }}</h3>
+              <p style="font-size:13.5px; color:#64748B; margin:0 0 10px; line-height:1.5;">{{ inv.desc }}</p>
+              <div style="display:flex; flex-wrap:wrap; gap:14px; font-size:12.5px; color:#475569;">
+                <span><b><span class="l-vi">Ticket:</span><span class="l-en">Ticket:</span></b> {{ inv.ticket }}</span>
+                <span><b><span class="l-vi">Ngành:</span><span class="l-en">Industries:</span></b> {{ inv.industries }}</span>
+                <span><b><span class="l-vi">Giai đoạn:</span><span class="l-en">Stage:</span></b> {{ inv.stage }}</span>
+              </div>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:8px; flex-shrink:0; min-width:170px;">
+              <a href="{{ inv.detailHref }}" style="text-align:center; border:1px solid #E2E8F0; color:#334155; font-weight:600; font-size:13.5px; padding:10px 14px; border-radius:9px;" style-hover="border-color:#1BADEA; color:#1596cc;"><span class="l-vi">Xem chi tiết</span><span class="l-en">View detail</span></a>
+              <button onClick="{{ inv.onSend }}" disabled="{{ inv.sendDisabled }}" style="{{ inv.sendBtnStyle }}">{{ inv.sendLabel }}</button>
+              <sc-if value="{{ inv.showFeedback }}" hint-placeholder-val="{{ false }}"><div style="font-size:11.5px; text-align:center; color:{{ inv.feedbackColor }}; font-weight:600;">{{ inv.feedback }}</div></sc-if>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer style="background:#0B2038; color:#c6d5e6;">
+    <div style="max-width:1240px; margin:0 auto; padding:44px 24px 26px; display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;">
+      <img src="assets/logo-white.png" alt="Deals68.com" style="height:28px;">
+      <span style="font-size:13.5px; color:#8fa6c0;">© 2026 Deals68.com · <a href="mailto:partner@deals68.com" style="color:#8fa6c0;">partner@deals68.com</a></span>
+    </div>
+  </footer>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = {
+    lang:'vi', typeFilters:[], region:'all', country:'Tất cả', industry:'Tất cả', stage:'Tất cả', ticket:'0',
+    page:1, pageSize:12, feedback:{}, tick:0
+  };
+
+  setLang(l){ this.setState({ lang:l }); }
+  toggleType(name) {
+    const cur = this.state.typeFilters;
+    this.setState({ typeFilters: cur.includes(name) ? cur.filter(x=>x!==name) : cur.concat([name]), page:1 });
+  }
+
+  sendProposal(code) {
+    const res = window.D68.sendProposal(code);
+    const fb = Object.assign({}, this.state.feedback);
+    if (res.ok) fb[code] = { ok:true, msg: 'sent' };
+    else fb[code] = { ok:false, msg: res.reason };
+    this.setState({ feedback: fb, tick: this.state.tick + 1 });
+  }
+
+  renderVals() {
+    const vi = this.state.lang === 'vi';
+    const T = (a,b) => vi ? a : b;
+    const st = this.state;
+    const D68 = window.D68;
+    const allRaw = D68 ? D68.getInvestors() : [];
+    const all = allRaw.map(inv => {
+      const ov = D68 && D68.getInvestorAdminOverride ? D68.getInvestorAdminOverride(inv.code) : {};
+      if (ov.editedDescVi === undefined && !ov.editedDealTypes) return inv;
+      return Object.assign({}, inv, {
+        descVi: ov.editedDescVi !== undefined ? ov.editedDescVi : inv.descVi,
+        dealTypes: ov.editedDealTypes || inv.dealTypes
+      });
+    });
+    const session = D68 ? D68.getSession() : null;
+    const bizState = (session && session.role==='business') ? D68.getBusinessState(session.id) : null;
+
+    const regionMap = { asia:T('Châu Á','Asia'), americas:T('Châu Mỹ','Americas'), mideast:T('Trung Đông','Middle East') };
+    const regionOptions = [{ value:'all', label:T('Tất cả khu vực','All regions') }].concat(
+      ['asia','americas','mideast'].map(r => ({ value:r, label: regionMap[r] }))
+    );
+
+    const typeDefs = ['VC','PE','Institutional','Corporate/Strategic','Individual/Angel','Family Office','Lender/Debt'];
+    const typeCount = {}; all.forEach(inv => { typeCount[inv.type] = (typeCount[inv.type]||0)+1; });
+    const typeFilters = typeDefs.map(t => ({
+      label: t, count: typeCount[t]||0, checked: st.typeFilters.includes(t), toggle: ()=>this.toggleType(t)
+    }));
+
+    const countrySet = Array.from(new Set(all.map(i=>i.country))).sort();
+    const industrySet = D68 ? D68.INDUSTRIES : [];
+    const stageSet = D68 ? D68.STAGES : [];
+
+    let list = all.filter(inv => {
+      if (st.typeFilters.length && !st.typeFilters.includes(inv.type)) return false;
+      if (st.region !== 'all' && inv.region !== st.region) return false;
+      if (st.country !== 'Tất cả' && st.country !== 'All' && inv.country !== st.country) return false;
+      if (st.industry !== 'Tất cả' && st.industry !== 'All' && inv.industries.indexOf(st.industry) === -1) return false;
+      if (st.stage !== 'Tất cả' && st.stage !== 'All' && inv.stage !== st.stage) return false;
+      if (Number(st.ticket) > 0 && inv.ticketMin > Number(st.ticket)) return false;
+      return true;
+    });
+
+    const totalPages = Math.max(1, Math.ceil(list.length / st.pageSize));
+    const page = Math.min(st.page, totalPages);
+    const pageList = list.slice((page-1)*st.pageSize, page*st.pageSize);
+
+    const initialsOf = (type) => ({ 'VC':'VC','PE':'PE','Institutional':'IN','Corporate/Strategic':'CS','Individual/Angel':'IA','Family Office':'FO','Lender/Debt':'LD' }[type] || '?');
+    const iconStyle = (type) => {
+      const map = { 'VC':['#E7F6FD','#1596cc'], 'PE':['#FEF3D3','#B8860B'], 'Institutional':['#EAF0F6','#0F2A4A'], 'Corporate/Strategic':['#FDECEC','#DC2626'], 'Individual/Angel':['#E9F9EF','#16A34A'], 'Family Office':['#F3E8FF','#7c3aed'], 'Lender/Debt':['#F1F5F9','#334155'] };
+      return map[type] || ['#F1F5F9','#334155'];
+    };
+    const activityColor = (lv) => lv==='high' ? '#16A34A' : lv==='medium' ? '#B8860B' : '#94A3B8';
+    const activityLabel = (lv) => lv==='high' ? T('Hoạt động cao','High activity') : lv==='medium' ? T('Hoạt động vừa','Medium activity') : T('Ít hoạt động','Low activity');
+
+    const canSend = (code) => D68 ? D68.canSendProposal(session ? session.id : null, code) : { ok:false, reason:'not_logged_in' };
+    const reasonMsg = (reason) => ({
+      not_logged_in: T('Cần đăng ký tài khoản Doanh nghiệp để gửi proposal','Register a Business account to send proposals'),
+      not_paid: T('Thanh toán gói DN để gửi proposal','Subscribe as a Business to send proposals'),
+      not_live: T('Hồ sơ DN cần được duyệt Live','Your business profile must be Live'),
+      quota: T('Đã hết lượt proposal — nâng cấp/gia hạn gói','Proposal quota reached — upgrade/renew your plan'),
+      duplicate: T('Đã gửi proposal cho NĐT này','Proposal already sent to this investor'),
+      sent: T('Đã gửi proposal ✓','Proposal sent ✓')
+    }[reason] || reason);
+
+    const pageInvestors = pageList.map(inv => {
+      const ic = iconStyle(inv.type);
+      const fb = st.feedback[inv.code];
+      const check = session && session.role==='business' ? canSend(inv.code) : { ok:false, reason: session ? 'wrong_role' : 'not_logged_in' };
+      const alreadySent = fb && fb.ok;
+      const disabled = alreadySent || !check.ok;
+      let label;
+      if (alreadySent) label = T('Đã gửi ✓','Sent ✓');
+      else if (!session) label = T('Gửi hồ sơ DN','Send business proposal');
+      else if (session.role !== 'business') label = T('Chỉ tài khoản DN được gửi','Business accounts only');
+      else if (!check.ok && check.reason === 'quota') label = T('Hết lượt proposal','Quota reached');
+      else if (!check.ok && check.reason === 'duplicate') label = T('Đã gửi trước đó','Already sent');
+      else label = T('Gửi hồ sơ DN','Send business proposal');
+
+      return {
+        initials: initialsOf(inv.type), iconBg: ic[0], iconColor: ic[1],
+        type: inv.type, country: inv.countryVi, verified: inv.verified,
+        activityColor: activityColor(inv.activity_level), activityLabel: activityLabel(inv.activity_level),
+        title: T(inv.titleVi, inv.titleEn), desc: T(inv.descVi, inv.descEn),
+        ticket: '$' + (inv.ticketMin/1000).toFixed(0) + 'K – $' + (inv.ticketMax/1e6).toFixed(1) + 'M',
+        industries: inv.industries.join(', '), stage: inv.stage,
+        detailHref: 'Deals68 Investor Detail.dc.html?code=' + inv.code,
+        sendDisabled: disabled,
+        sendBtnStyle: disabled
+          ? 'background:#F1F5F9; color:#94A3B8; font-weight:700; font-size:13.5px; padding:10px 14px; border-radius:9px; border:none; cursor:not-allowed;'
+          : 'background:#0F2A4A; color:#fff; font-weight:700; font-size:13.5px; padding:10px 14px; border-radius:9px; border:none; cursor:pointer;',
+        sendLabel: label,
+        onSend: ()=>{
+          if (!session) { alert(T('Bạn cần Đăng ký tài khoản Doanh nghiệp trước khi gửi proposal.','You need to register a Business account before sending a proposal.')); return; }
+          if (session.role !== 'business') { alert(T('Chỉ tài khoản Doanh nghiệp mới gửi được proposal.','Only Business accounts can send proposals.')); return; }
+          if (!check.ok) { alert(reasonMsg(check.reason)); return; }
+          this.sendProposal(inv.code);
+        },
+        showFeedback: !!fb,
+        feedback: fb ? (fb.ok ? reasonMsg('sent') : reasonMsg(fb.msg)) : '',
+        feedbackColor: fb && fb.ok ? '#16A34A' : '#DC2626'
+      };
+    });
+
+    let sessionLabel = '', quotaRemaining = 0, quotaTotal = 0;
+    if (bizState) { sessionLabel = session.id; quotaRemaining = Math.max(0, bizState.quotaTotal - bizState.quotaUsed); quotaTotal = bizState.quotaTotal; }
+
+    return {
+      lang: st.lang, setVi: ()=>this.setLang('vi'), setEn: ()=>this.setLang('en'),
+      viBtnStyle: `padding:7px 14px; border:none; cursor:pointer; font-weight:700; font-size:13px; background:${vi?'#0F2A4A':'transparent'}; color:${vi?'#fff':'#64748B'};`,
+      enBtnStyle: `padding:7px 14px; border:none; cursor:pointer; font-weight:700; font-size:13px; background:${!vi?'#0F2A4A':'transparent'}; color:${!vi?'#fff':'#64748B'};`,
+
+      loginLink: session ? (session.role==='business' ? 'Deals68 Business Dashboard.dc.html' : 'Deals68 Investor Dashboard.dc.html') : 'Deals68 Login.dc.html',
+      loginLabel: session ? T('Dashboard của tôi','My dashboard') : T('Đăng nhập','Log in'),
+
+      showLoginBanner: !session,
+      bannerText: T('Bạn cần đăng nhập với tài khoản Doanh nghiệp để gửi proposal tới Nhà đầu tư.','You need a Business account login to send proposals to investors.'),
+      bannerLink: 'Deals68 Register Business.dc.html', bannerCta: T('Đăng ký Doanh nghiệp →','Register as Business →'),
+
+      showQuotaBanner: !!bizState,
+      sessionLabel, quotaRemaining, quotaTotal,
+
+      totalCount: all.length, shownCount: list.length,
+      typeFilters,
+      regionFilter: st.region, onRegionFilter: (e)=>this.setState({ region:e.target.value, page:1 }), regionOptions,
+      countryFilter: st.country, onCountryFilter: (e)=>this.setState({ country:e.target.value, page:1 }),
+      countryOptions: [T('Tất cả','All')].concat(countrySet),
+      industryFilter: st.industry, onIndustryFilter: (e)=>this.setState({ industry:e.target.value, page:1 }),
+      industryOptions: [T('Tất cả','All')].concat(industrySet),
+      stageFilter: st.stage, onStageFilter: (e)=>this.setState({ stage:e.target.value, page:1 }),
+      stageOptions: [T('Tất cả','All')].concat(stageSet),
+      ticketFilter: st.ticket, onTicketFilter: (e)=>this.setState({ ticket:e.target.value, page:1 }),
+      anyLabel: T('Bất kỳ','Any'),
+      clearFilters: ()=>this.setState({ typeFilters:[], region:'all', country:T('Tất cả','All'), industry:T('Tất cả','All'), stage:T('Tất cả','All'), ticket:'0', page:1 }),
+
+      pageInvestors, pageLabel: page + ' / ' + totalPages,
+      prevPage: ()=>this.setState({ page: Math.max(1, page-1) }),
+      nextPage: ()=>this.setState({ page: Math.min(totalPages, page+1) })
+    };
+  }
+}
+</script>
+</body>
+</html>

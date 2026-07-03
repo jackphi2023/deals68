@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<title>Affiliate Dashboard | Deals68</title>
+<meta name="description" content="Quản lý mã giới thiệu, theo dõi referral, hoa hồng theo bậc và lịch chi trả trên Deals68.">
+<meta name="robots" content="noindex,nofollow">
+<link rel="canonical" href="https://deals68.com/dashboard/affiliate">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="site.webmanifest">
+<meta name="theme-color" content="#0F2A4A">
+<meta property="og:title" content="Affiliate Dashboard | Deals68">
+<meta property="og:image" content="assets/og-image.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="assets/deals68-investors-import.js"></script>
+<script src="assets/deals68-mock.js"></script>
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body { font-family: 'Be Vietnam Pro', system-ui, sans-serif; color: #0F2A4A; background: #F7FAFC; -webkit-font-smoothing: antialiased; }
+  [data-lang="vi"] .l-en { display: none !important; }
+  [data-lang="en"] .l-vi { display: none !important; }
+  a { text-decoration: none; color: inherit; }
+  select, input, textarea, button { font-family: inherit; }
+  @media (max-width: 980px) { .d68-dash-cols { grid-template-columns: 1fr !important; } .d68-side-nav { position:static !important; } }
+  @media (max-width: 760px) { .d68-stat-grid { grid-template-columns: 1fr 1fr !important; } .d68-form-2 { grid-template-columns: 1fr !important; } }
+  @media (max-width: 640px) { .d68-ref-row { grid-template-columns: 1fr !important; gap:6px !important; } .d68-ref-head { display:none !important; } }
+</style>
+</helmet>
+
+<div data-lang="{{ lang }}" style="width:100%; overflow-x:hidden;">
+
+  <header style="position:sticky; top:0; z-index:60; background:rgba(255,255,255,.94); backdrop-filter:blur(10px); border-bottom:1px solid #E7EDF3;">
+    <div style="max-width:1240px; margin:0 auto; padding:0 24px; height:70px; display:flex; align-items:center; gap:20px;">
+      <a href="Deals68 Home.dc.html" style="display:flex; align-items:center; flex-shrink:0;"><img src="assets/logo-beta.png" alt="Deals68.com" style="height:34px; display:block;"></a>
+      <div style="margin-left:auto; display:flex; align-items:center; gap:14px; flex-shrink:0;">
+        <div style="display:flex; align-items:center; border:1px solid #E2E8F0; border-radius:999px; overflow:hidden; font-size:13px; font-weight:700;">
+          <button onClick="{{ setVi }}" style="{{ viBtnStyle }}">VI</button>
+          <button onClick="{{ setEn }}" style="{{ enBtnStyle }}">EN</button>
+        </div>
+        <a href="Deals68 Home.dc.html" style="background:#EEF2F6; color:#334155; font-weight:700; font-size:14px; padding:10px 16px; border-radius:9px;"><span class="l-vi">Thoát</span><span class="l-en">Exit</span></a>
+      </div>
+    </div>
+  </header>
+
+  <div style="max-width:1160px; margin:0 auto; padding:26px 24px 60px;">
+    <div style="margin-bottom:22px;">
+      <div style="font-size:12.5px; font-weight:700; color:#94A3B8; text-transform:uppercase; letter-spacing:.5px; margin-bottom:4px;">Affiliate Dashboard</div>
+      <h1 style="font-size:25px; font-weight:800; letter-spacing:-.5px; margin:0;">{{ affName }} <span style="font-weight:500; color:#64748B; font-size:16px;">· {{ affCode }}</span></h1>
+    </div>
+
+    <div class="d68-dash-cols" style="display:grid; grid-template-columns:220px minmax(0,1fr); gap:24px; align-items:start;">
+      <nav class="d68-side-nav" style="position:sticky; top:90px; background:#fff; border:1px solid #E7EDF3; border-radius:16px; padding:10px; display:flex; flex-direction:column; gap:2px;">
+        <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="5">
+          <button onClick="{{ t.onClick }}" style="{{ t.style }}">{{ t.icon }} {{ t.label }}</button>
+        </sc-for>
+        <div style="margin-top:8px; padding:14px; border-radius:12px; background:{{ tierBg }};">
+          <div style="font-size:11px; font-weight:700; color:{{ tierColor }}; text-transform:uppercase; letter-spacing:.5px;"><span class="l-vi">Bậc hiện tại</span><span class="l-en">Current tier</span></div>
+          <div style="font-size:18px; font-weight:800; color:{{ tierColor }}; margin-top:2px;">{{ tierName }} · {{ tierRate }}</div>
+        </div>
+      </nav>
+
+      <div>
+        <!-- OVERVIEW -->
+        <sc-if value="{{ isOverview }}" hint-placeholder-val="{{ true }}">
+          <div class="d68-stat-grid" style="display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:20px;">
+            <sc-for list="{{ statCards }}" as="s" hint-placeholder-count="4">
+              <div style="background:#fff; border:1px solid #E7EDF3; border-radius:14px; padding:18px 20px;">
+                <div style="font-size:12px; font-weight:700; color:#94A3B8; text-transform:uppercase; letter-spacing:.4px;">{{ s.label }}</div>
+                <div style="font-size:26px; font-weight:800; margin-top:6px; color:{{ s.color }};">{{ s.value }}</div>
+                <div style="font-size:12px; color:#64748B; margin-top:3px;">{{ s.sub }}</div>
+              </div>
+            </sc-for>
+          </div>
+
+          <div class="d68-form-2" style="display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-bottom:20px;">
+            <div style="background:#0F2A4A; color:#fff; border-radius:16px; padding:24px 26px;">
+              <div style="font-size:12px; font-weight:700; color:#9db4cc; text-transform:uppercase; letter-spacing:.5px; margin-bottom:14px;"><span class="l-vi">Số dư hoa hồng</span><span class="l-en">Commission balance</span></div>
+              <div style="display:flex; flex-direction:column; gap:11px; font-size:14px;">
+                <div style="display:flex; justify-content:space-between;"><span style="color:#c6d5e6;"><span class="l-vi">Đã ghi nhận (đã trả phí)</span><span class="l-en">Earned (paid conversions)</span></span><span style="font-weight:700;">{{ earnedDisp }}</span></div>
+                <div style="display:flex; justify-content:space-between;"><span style="color:#c6d5e6;"><span class="l-vi">Đang chờ xác nhận</span><span class="l-en">Pending confirmation</span></span><span style="font-weight:700; color:#F2B51D;">{{ pendingDisp }}</span></div>
+                <div style="display:flex; justify-content:space-between;"><span style="color:#c6d5e6;"><span class="l-vi">Đã chi trả</span><span class="l-en">Paid out</span></span><span style="font-weight:700;">{{ paidOutDisp }}</span></div>
+                <div style="display:flex; justify-content:space-between; align-items:center; padding-top:12px; border-top:1px solid rgba(255,255,255,.15);"><span style="font-weight:700;"><span class="l-vi">Khả dụng để rút</span><span class="l-en">Available to withdraw</span></span><span style="font-size:22px; font-weight:800; color:#F2B51D;">{{ availableDisp }}</span></div>
+              </div>
+              <p style="font-size:11.5px; color:#9db4cc; margin:14px 0 0; line-height:1.5;"><span class="l-vi">Chi trả vào Thứ Ba hàng tuần cho số dư khả dụng ≥ 500.000₫ đã qua đối soát.</span><span class="l-en">Payouts run every Tuesday for available balances ≥ 500,000₫ that have cleared reconciliation.</span></p>
+            </div>
+
+            <div style="background:#fff; border:1px solid #E7EDF3; border-radius:16px; padding:24px 26px;">
+              <div style="font-size:12px; font-weight:700; color:#94A3B8; text-transform:uppercase; letter-spacing:.5px; margin-bottom:14px;"><span class="l-vi">Tiến độ lên bậc</span><span class="l-en">Tier progress</span></div>
+              <div style="display:flex; align-items:baseline; gap:8px; margin-bottom:12px;">
+                <span style="font-size:30px; font-weight:800; color:{{ tierColor }};">{{ tierRate }}</span>
+                <span style="font-size:14px; color:#64748B;"><span class="l-vi">hoa hồng / giao dịch trả phí</span><span class="l-en">commission / paid deal</span></span>
+              </div>
+              <div style="height:10px; border-radius:999px; background:#EEF2F6; overflow:hidden; margin-bottom:8px;">
+                <div style="height:100%; width:{{ tierProgressPct }}%; background:{{ tierColor }};"></div>
+              </div>
+              <div style="font-size:13px; color:#64748B; line-height:1.55;">{{ tierProgressText }}</div>
+              <div style="margin-top:16px; display:flex; flex-direction:column; gap:8px;">
+                <sc-for list="{{ tierRows }}" as="tr" hint-placeholder-count="3">
+                  <div style="display:flex; align-items:center; justify-content:space-between; font-size:13px; padding:8px 12px; border-radius:9px; background:{{ tr.bg }};">
+                    <span style="font-weight:700; color:{{ tr.color }};">{{ tr.name }}</span>
+                    <span style="color:#64748B;">{{ tr.cond }}</span>
+                    <span style="font-weight:800; color:{{ tr.color }};">{{ tr.rate }}</span>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+
+          <div style="background:#E7F6FD; border:1px solid #BEE7F8; border-radius:16px; padding:22px 26px; display:flex; align-items:center; gap:18px; flex-wrap:wrap;">
+            <div style="flex:1; min-width:220px;">
+              <div style="font-size:15px; font-weight:800; color:#0F2A4A; margin-bottom:4px;"><span class="l-vi">Link giới thiệu của bạn</span><span class="l-en">Your referral link</span></div>
+              <div style="font-size:13px; color:#1596cc; font-weight:600; word-break:break-all;">{{ referralLink }}</div>
+              <div style="font-size:12.5px; color:#475569; margin-top:6px;"><span class="l-vi">Khách được giảm</span><span class="l-en">Customers get</span> <b>{{ custDiscount }}</b> <span class="l-vi">khi đăng ký qua link này.</span><span class="l-en">off when they sign up via this link.</span></div>
+            </div>
+            <button onClick="{{ copyLink }}" style="background:#0F2A4A; color:#fff; font-weight:700; font-size:14px; padding:12px 22px; border-radius:11px; border:none; cursor:pointer; flex-shrink:0;">{{ copyLabel }}</button>
+          </div>
+        </sc-if>
+
+        <!-- REFERRALS -->
+        <sc-if value="{{ isReferrals }}" hint-placeholder-val="{{ false }}">
+          <div style="background:#fff; border:1px solid #E7EDF3; border-radius:16px; padding:26px 28px;">
+            <h2 style="font-size:19px; font-weight:800; margin:0 0 6px;"><span class="l-vi">Người được giới thiệu</span><span class="l-en">Referrals</span></h2>
+            <p style="font-size:13.5px; color:#64748B; margin:0 0 18px;"><span class="l-vi">Danh tính người được giới thiệu luôn ẩn danh. Hoa hồng chỉ tính khi giao dịch chuyển sang trạng thái “Đã trả phí”.</span><span class="l-en">Referred identities stay anonymous. Commission counts only once a deal reaches "Paid".</span></p>
+            <div class="d68-ref-head d68-ref-row" style="display:grid; grid-template-columns:2fr 1fr 1fr 1fr; gap:12px; padding:0 14px 10px; font-size:11.5px; font-weight:700; color:#94A3B8; text-transform:uppercase; letter-spacing:.4px; border-bottom:1px solid #F1F5F9;">
+              <span><span class="l-vi">Hồ sơ</span><span class="l-en">Profile</span></span>
+              <span><span class="l-vi">Ngày</span><span class="l-en">Date</span></span>
+              <span><span class="l-vi">Trạng thái</span><span class="l-en">Status</span></span>
+              <span style="text-align:right;"><span class="l-vi">Hoa hồng</span><span class="l-en">Commission</span></span>
+            </div>
+            <div style="display:flex; flex-direction:column;">
+              <sc-for list="{{ referralRows }}" as="r" hint-placeholder-count="6">
+                <div class="d68-ref-row" style="display:grid; grid-template-columns:2fr 1fr 1fr 1fr; gap:12px; padding:14px; align-items:center; border-bottom:1px solid #F5F7FA;">
+                  <div>
+                    <div style="font-size:14px; font-weight:700;">{{ r.maskedName }}</div>
+                    <div style="font-size:12px; color:#94A3B8; margin-top:2px;">{{ r.roleLabel }}<sc-if value="{{ r.hasPlan }}" hint-placeholder-val="{{ false }}"> · {{ r.plan }}</sc-if></div>
+                  </div>
+                  <div style="font-size:13px; color:#64748B;">{{ r.date }}</div>
+                  <div><span style="{{ r.statusStyle }}">{{ r.statusLabel }}</span></div>
+                  <div style="text-align:right; font-size:14px; font-weight:700; color:{{ r.commColor }};">{{ r.commission }}</div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- PAYOUTS -->
+        <sc-if value="{{ isPayouts }}" hint-placeholder-val="{{ false }}">
+          <div style="background:#fff; border:1px solid #E7EDF3; border-radius:16px; padding:26px 28px; margin-bottom:20px;">
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:6px;">
+              <h2 style="font-size:19px; font-weight:800; margin:0;"><span class="l-vi">Chi trả</span><span class="l-en">Payouts</span></h2>
+              <button onClick="{{ requestPayout }}" style="{{ withdrawStyle }}" disabled="{{ withdrawDisabled }}">{{ withdrawLabel }}</button>
+            </div>
+            <p style="font-size:13.5px; color:#64748B; margin:0 0 18px;"><span class="l-vi">Chu kỳ chi trả: Thứ Ba hàng tuần. Ngưỡng tối thiểu 500.000₫.</span><span class="l-en">Payout cycle: every Tuesday. Minimum threshold 500,000₫.</span></p>
+            <sc-if value="{{ payoutRequested }}" hint-placeholder-val="{{ false }}"><div style="background:#E9F9EF; border:1px solid #BBF0CE; color:#16A34A; font-size:13.5px; font-weight:600; padding:12px 16px; border-radius:11px; margin-bottom:16px;">✓ <span class="l-vi">Đã gửi yêu cầu rút. Số dư sẽ được chi trả vào Thứ Ba gần nhất sau đối soát.</span><span class="l-en">Withdrawal requested. Your balance will be paid out next Tuesday after reconciliation.</span></div></sc-if>
+            <div style="display:flex; flex-direction:column; gap:12px;">
+              <sc-for list="{{ payoutRows }}" as="p" hint-placeholder-count="2">
+                <div style="border:1px solid #EEF2F6; border-radius:14px; padding:16px 18px; display:flex; align-items:center; gap:16px; flex-wrap:wrap;">
+                  <div style="flex:1; min-width:160px;">
+                    <div style="font-size:15px; font-weight:700;">{{ p.periodLabel }}</div>
+                    <div style="font-size:12.5px; color:#94A3B8; margin-top:2px;">{{ p.dateLabel }}</div>
+                  </div>
+                  <div style="font-size:18px; font-weight:800;">{{ p.amount }}</div>
+                  <span style="{{ p.statusStyle }}">{{ p.statusLabel }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- MARKETING -->
+        <sc-if value="{{ isMarketing }}" hint-placeholder-val="{{ false }}">
+          <div style="background:#fff; border:1px solid #E7EDF3; border-radius:16px; padding:26px 28px;">
+            <h2 style="font-size:19px; font-weight:800; margin:0 0 18px;"><span class="l-vi">Công cụ giới thiệu</span><span class="l-en">Marketing tools</span></h2>
+            <div style="display:flex; flex-direction:column; gap:16px;">
+              <label style="display:flex; flex-direction:column; gap:6px;">
+                <span style="font-size:12.5px; font-weight:700; color:#334155;"><span class="l-vi">Link giới thiệu</span><span class="l-en">Referral link</span></span>
+                <div style="display:flex; gap:8px;">
+                  <input value="{{ referralLink }}" readonly="{{ true }}" style="flex:1; border:1px solid #E2E8F0; border-radius:9px; padding:11px 13px; font-size:13.5px; background:#F7FAFC; color:#1596cc; font-weight:600;">
+                  <button onClick="{{ copyLink }}" style="background:#0F2A4A; color:#fff; font-weight:700; font-size:13.5px; padding:0 18px; border:none; border-radius:9px; cursor:pointer;">{{ copyLabel }}</button>
+                </div>
+              </label>
+              <label style="display:flex; flex-direction:column; gap:6px;">
+                <span style="font-size:12.5px; font-weight:700; color:#334155;"><span class="l-vi">Mã giới thiệu (khách nhập khi đăng ký)</span><span class="l-en">Referral code (customers enter at signup)</span></span>
+                <div style="display:flex; gap:8px;">
+                  <input value="{{ affCode }}" readonly="{{ true }}" style="flex:1; border:1px solid #E2E8F0; border-radius:9px; padding:11px 13px; font-size:13.5px; background:#F7FAFC; font-weight:700; letter-spacing:.5px;">
+                  <button onClick="{{ copyCode }}" style="background:#EAF0F6; color:#0F2A4A; font-weight:700; font-size:13.5px; padding:0 18px; border:none; border-radius:9px; cursor:pointer;">{{ copyCodeLabel }}</button>
+                </div>
+              </label>
+              <div style="background:#F7FAFC; border:1px solid #EEF2F6; border-radius:12px; padding:18px;">
+                <div style="font-size:13px; font-weight:700; color:#334155; margin-bottom:8px;"><span class="l-vi">Mẫu tin nhắn chia sẻ</span><span class="l-en">Share message template</span></div>
+                <p style="font-size:13.5px; color:#475569; line-height:1.6; margin:0 0 12px; white-space:pre-wrap;">{{ shareTemplate }}</p>
+                <button onClick="{{ copyTemplate }}" style="background:#fff; border:1px solid #E2E8F0; color:#334155; font-weight:700; font-size:13px; padding:9px 16px; border-radius:9px; cursor:pointer;">{{ copyTplLabel }}</button>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- SETTINGS -->
+        <sc-if value="{{ isSettings }}" hint-placeholder-val="{{ false }}">
+          <div style="background:#fff; border:1px solid #E7EDF3; border-radius:16px; padding:26px 28px; max-width:520px;">
+            <h2 style="font-size:19px; font-weight:800; margin:0 0 18px;"><span class="l-vi">Thông tin nhận chi trả</span><span class="l-en">Payout details</span></h2>
+            <div style="display:flex; flex-direction:column; gap:16px;">
+              <label style="display:flex; flex-direction:column; gap:6px;">
+                <span style="font-size:12.5px; font-weight:700; color:#334155;"><span class="l-vi">Ngân hàng</span><span class="l-en">Bank</span></span>
+                <input value="{{ payBank }}" onInput="{{ onPayBank }}" style="{{ inputStyle }}">
+              </label>
+              <div class="d68-form-2" style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+                <label style="display:flex; flex-direction:column; gap:6px;">
+                  <span style="font-size:12.5px; font-weight:700; color:#334155;"><span class="l-vi">Số tài khoản</span><span class="l-en">Account number</span></span>
+                  <input value="{{ payAccount }}" onInput="{{ onPayAccount }}" style="{{ inputStyle }}">
+                </label>
+                <label style="display:flex; flex-direction:column; gap:6px;">
+                  <span style="font-size:12.5px; font-weight:700; color:#334155;"><span class="l-vi">Chủ tài khoản</span><span class="l-en">Account holder</span></span>
+                  <input value="{{ payHolder }}" onInput="{{ onPayHolder }}" style="{{ inputStyle }}">
+                </label>
+              </div>
+              <div style="display:flex; justify-content:flex-end;">
+                <button onClick="{{ savePayout }}" style="background:#0F2A4A; color:#fff; font-weight:700; font-size:14.5px; padding:12px 24px; border-radius:10px; border:none; cursor:pointer;" style-hover="background:#14315A;"><span class="l-vi">Lưu thông tin</span><span class="l-en">Save details</span></button>
+              </div>
+              <sc-if value="{{ saved }}" hint-placeholder-val="{{ false }}"><div style="font-size:13px; font-weight:700; color:#16A34A;">✓ <span class="l-vi">Đã lưu.</span><span class="l-en">Saved.</span></div></sc-if>
+            </div>
+          </div>
+        </sc-if>
+      </div>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { lang:'vi', tab:'overview', saved:false, copied:'', payoutRequested:false, payDraft:null, affId:'aff' };
+
+  componentDidMount() {
+    try {
+      const p = new URLSearchParams(location.search);
+      const q = p.get('aff');
+      const session = window.D68.getSession();
+      const id = q || (session && session.role==='affiliate' ? session.id : null) || 'aff';
+      this.setState({ affId: id });
+      window.D68.setSession({ role:'affiliate', id:id, name:id });
+    } catch(e){ this.setState({ affId:'aff' }); }
+  }
+
+  setLang(l){ this.setState({ lang:l }); }
+
+  copy(text, key) {
+    try { navigator.clipboard && navigator.clipboard.writeText(text); } catch(e){}
+    this.setState({ copied:key });
+    setTimeout(()=>{ this.setState({ copied:'' }); }, 1600);
+  }
+
+  renderVals() {
+    const vi = this.state.lang === 'vi';
+    const T = (a,b) => vi ? a : b;
+    const st = this.state;
+    const D68 = window.D68;
+    const affId = st.affId || 'aff';
+    const isDemoAff = affId === 'aff';
+    let aff, stats;
+    if (isDemoAff) {
+      aff = D68 ? D68.getAffiliateState() : { code:'AFF-PHI68', name:'Affiliate', referrals:[], payouts:[], customerDiscountPercent:15, payoutMethod:{} };
+      stats = D68 ? D68.affiliateStats() : { clicks:0, signups:0, conversions:0, convRate:0, tier:{rate:0.1,name:'Starter',nameVi:'Khởi đầu'}, commissionEarned:0, commissionPending:0, paidOut:0, available:0, nextThreshold:5, toNextTier:5 };
+    } else {
+      // Newly self-registered affiliate — real identity, honest zeroed activity (no referral history yet).
+      const acct = D68 ? D68.getAffiliateAccount(affId) : null;
+      aff = acct ? Object.assign({ customerDiscountPercent:15, referrals:[], payouts:[] }, acct) : { code:'—', name:'Affiliate', referrals:[], payouts:[], customerDiscountPercent:15, payoutMethod:{} };
+      stats = { clicks:0, signups:0, conversions:0, convRate:0, tier:{rate:0.10,name:'Starter',nameVi:'Khởi đầu'}, commissionEarned:0, commissionPending:0, paidOut:0, available:0, nextThreshold:5, toNextTier:5 };
+    }
+    const money = (v) => Math.round(v||0).toLocaleString('vi-VN') + ' ₫';
+
+    const tierColorMap = { Starter:'#1596cc', Silver:'#64748B', Gold:'#B8860B' };
+    const tierBgMap = { Starter:'#E7F6FD', Silver:'#F1F5F9', Gold:'#FEF3D3' };
+    const tierColor = tierColorMap[stats.tier.name] || '#1596cc';
+    const tierBg = tierBgMap[stats.tier.name] || '#E7F6FD';
+
+    const tabDefs = [
+      { key:'overview', icon:'📊', vi:'Tổng quan', en:'Overview' },
+      { key:'referrals', icon:'👥', vi:'Referrals', en:'Referrals' },
+      { key:'payouts', icon:'💸', vi:'Chi trả', en:'Payouts' },
+      { key:'marketing', icon:'🔗', vi:'Công cụ', en:'Tools' },
+      { key:'settings', icon:'⚙️', vi:'Cài đặt', en:'Settings' }
+    ];
+    const tabs = tabDefs.map(t => ({
+      icon: t.icon, label: T(t.vi,t.en), onClick: ()=>this.setState({ tab:t.key, saved:false }),
+      style: `text-align:left; display:flex; align-items:center; gap:10px; padding:12px 14px; border:none; border-radius:10px; cursor:pointer; font-size:14.5px; font-weight:${st.tab===t.key?'700':'500'}; background:${st.tab===t.key?'#FEF3D3':'transparent'}; color:${st.tab===t.key?'#B8860B':'#64748B'};`
+    }));
+
+    // referral rows
+    const statusMap = {
+      clicked: { vi:'Đã click', en:'Clicked', c:['#64748B','#F1F5F9'] },
+      signup: { vi:'Đã đăng ký', en:'Signed up', c:['#1596cc','#E7F6FD'] },
+      pending: { vi:'Chờ xác nhận', en:'Pending', c:['#B8860B','#FEF3D3'] },
+      paid: { vi:'Đã trả phí', en:'Paid', c:['#16A34A','#E9F9EF'] }
+    };
+    const roleMap = { business:T('Doanh nghiệp','Business'), investor:T('Nhà đầu tư','Investor'), advisor:T('Cố vấn','Advisor') };
+    const referralRows = (aff.referrals||[]).slice().reverse().map(r => {
+      const sm = statusMap[r.status] || statusMap.clicked;
+      const comm = r.status === 'paid' ? Math.round((r.grossVnd||0) * stats.tier.rate) : (r.status === 'pending' ? Math.round((r.grossVnd||0) * stats.tier.rate) : 0);
+      return {
+        maskedName: r.maskedName, roleLabel: roleMap[r.role] || r.role, hasPlan: !!r.plan, plan: r.plan || '',
+        date: r.clickedAt ? new Date(r.clickedAt).toLocaleDateString(vi?'vi-VN':'en-US') : '—',
+        statusStyle: `font-size:12px; font-weight:700; padding:5px 11px; border-radius:7px; color:${sm.c[0]}; background:${sm.c[1]};`,
+        statusLabel: vi ? sm.vi : sm.en,
+        commission: comm > 0 ? (r.status==='pending' ? '~' : '') + money(comm) : '—',
+        commColor: r.status === 'paid' ? '#16A34A' : (r.status === 'pending' ? '#B8860B' : '#94A3B8')
+      };
+    });
+
+    // payout rows
+    const payoutStatusMap = { paid:{vi:'Đã chi trả',en:'Paid',c:['#16A34A','#E9F9EF']}, processing:{vi:'Đang xử lý',en:'Processing',c:['#B8860B','#FEF3D3']}, scheduled:{vi:'Đã lên lịch',en:'Scheduled',c:['#1596cc','#E7F6FD']} };
+    const payoutRows = (aff.payouts||[]).slice().reverse().map(p => {
+      const pm = payoutStatusMap[p.status] || payoutStatusMap.scheduled;
+      return {
+        periodLabel: p.periodLabel, amount: money(p.amountVnd),
+        dateLabel: p.paidAt ? (T('Chi trả: ','Paid: ') + new Date(p.paidAt).toLocaleDateString(vi?'vi-VN':'en-US')) : T('Chờ chu kỳ Thứ Ba','Awaiting Tuesday cycle'),
+        statusStyle: `font-size:12px; font-weight:700; padding:5px 11px; border-radius:7px; color:${pm.c[0]}; background:${pm.c[1]}; flex-shrink:0;`,
+        statusLabel: vi ? pm.vi : pm.en
+      };
+    });
+
+    // tier ladder
+    const tierDefs = [
+      { name:'Starter', nameVi:'Khởi đầu', cond:T('< 5 giao dịch','< 5 deals'), rate:'10%', key:'Starter' },
+      { name:'Silver', nameVi:'Bạc', cond:T('5–14 giao dịch','5–14 deals'), rate:'15%', key:'Silver' },
+      { name:'Gold', nameVi:'Vàng', cond:T('15+ giao dịch','15+ deals'), rate:'20%', key:'Gold' }
+    ];
+    const tierRows = tierDefs.map(t => {
+      const active = t.key === stats.tier.name;
+      return { name: vi ? t.nameVi : t.name, cond: t.cond, rate: t.rate,
+        bg: active ? tierBg : '#FAFBFC', color: active ? tierColor : '#94A3B8' };
+    });
+
+    const tierProgressPct = stats.nextThreshold ? Math.min(100, Math.round(stats.conversions / stats.nextThreshold * 100)) : 100;
+    const tierProgressText = stats.nextThreshold
+      ? T(`Còn ${stats.toNextTier} giao dịch trả phí nữa để lên bậc tiếp theo và tăng % hoa hồng.`, `${stats.toNextTier} more paid deals to reach the next tier and a higher commission rate.`)
+      : T('Bạn đang ở bậc cao nhất — hưởng mức hoa hồng 20%.', 'You are at the top tier — earning the 20% commission rate.');
+
+    const referralLink = 'https://deals68.com/?ref=' + aff.code;
+    const shareTpl = T(
+      `Bạn đang cần gọi vốn, bán doanh nghiệp hoặc tìm nhà đầu tư? Đăng hồ sơ ẩn danh trên Deals68.com và được giảm ${aff.customerDiscountPercent}% khi dùng link của mình:\n${referralLink}`,
+      `Raising capital, selling a business, or looking for investors? List anonymously on Deals68.com and get ${aff.customerDiscountPercent}% off with my link:\n${referralLink}`
+    );
+
+    const pd = st.payDraft || aff.payoutMethod || {};
+    const inputStyle = 'border:1px solid #E2E8F0; border-radius:9px; padding:10px 12px; font-size:14.5px; color:#0F2A4A; background:#F7FAFC; font-weight:500; outline:none; width:100%;';
+    const canWithdraw = stats.available >= 500000;
+
+    return {
+      lang: st.lang, setVi: ()=>this.setLang('vi'), setEn: ()=>this.setLang('en'),
+      viBtnStyle: `padding:7px 14px; border:none; cursor:pointer; font-weight:700; font-size:13px; background:${vi?'#0F2A4A':'transparent'}; color:${vi?'#fff':'#64748B'};`,
+      enBtnStyle: `padding:7px 14px; border:none; cursor:pointer; font-weight:700; font-size:13px; background:${!vi?'#0F2A4A':'transparent'}; color:${!vi?'#fff':'#64748B'};`,
+
+      affName: aff.name, affCode: aff.code, tabs,
+      tierName: vi ? stats.tier.nameVi : stats.tier.name, tierRate: Math.round(stats.tier.rate*100) + '%',
+      tierColor, tierBg,
+
+      isOverview: st.tab==='overview', isReferrals: st.tab==='referrals', isPayouts: st.tab==='payouts', isMarketing: st.tab==='marketing', isSettings: st.tab==='settings',
+
+      statCards: [
+        { label:T('Lượt click','Clicks'), value:String(stats.clicks), sub:T('qua link giới thiệu','via referral link'), color:'#0F2A4A' },
+        { label:T('Đăng ký','Sign-ups'), value:String(stats.signups), sub:T('tài khoản tạo mới','new accounts'), color:'#0F2A4A' },
+        { label:T('Giao dịch trả phí','Paid deals'), value:String(stats.conversions), sub:T(`tỷ lệ ${stats.convRate}%`, `${stats.convRate}% conv.`), color:'#16A34A' },
+        { label:T('Hoa hồng đã ghi nhận','Commission earned'), value:money(stats.commissionEarned), sub:T('tổng tích lũy','cumulative'), color:'#B8860B' }
+      ],
+
+      earnedDisp: money(stats.commissionEarned), pendingDisp: '~' + money(stats.commissionPending),
+      paidOutDisp: money(stats.paidOut), availableDisp: money(stats.available),
+
+      tierRows, tierProgressPct, tierProgressText,
+
+      referralLink, custDiscount: aff.customerDiscountPercent + '%',
+      copyLink: ()=>this.copy(referralLink, 'link'),
+      copyLabel: st.copied==='link' ? T('✓ Đã copy','✓ Copied') : T('Copy link','Copy link'),
+      copyCode: ()=>this.copy(aff.code, 'code'),
+      copyCodeLabel: st.copied==='code' ? T('✓ Đã copy','✓ Copied') : 'Copy',
+      shareTemplate: shareTpl,
+      copyTemplate: ()=>this.copy(shareTpl, 'tpl'),
+      copyTplLabel: st.copied==='tpl' ? T('✓ Đã copy mẫu','✓ Copied') : T('Copy mẫu tin','Copy message'),
+
+      referralRows,
+
+      payoutRows,
+      requestPayout: ()=>{ if (canWithdraw) this.setState({ payoutRequested:true }); },
+      withdrawDisabled: !canWithdraw,
+      withdrawLabel: canWithdraw ? T('Yêu cầu rút tiền','Request withdrawal') : T('Chưa đủ ngưỡng 500.000₫','Below 500,000₫ threshold'),
+      withdrawStyle: `font-weight:700; font-size:13.5px; padding:10px 18px; border-radius:9px; border:none; cursor:${canWithdraw?'pointer':'not-allowed'}; background:${canWithdraw?'#0F2A4A':'#EEF2F6'}; color:${canWithdraw?'#fff':'#94A3B8'};`,
+      payoutRequested: st.payoutRequested,
+
+      inputStyle,
+      payBank: pd.bank || '', onPayBank: (e)=>this.setState({ payDraft: Object.assign({}, pd, { bank:e.target.value }), saved:false }),
+      payAccount: pd.account || '', onPayAccount: (e)=>this.setState({ payDraft: Object.assign({}, pd, { account:e.target.value }), saved:false }),
+      payHolder: pd.holder || '', onPayHolder: (e)=>this.setState({ payDraft: Object.assign({}, pd, { holder:e.target.value }), saved:false }),
+      savePayout: ()=>{
+        if (isDemoAff) {
+          const s = D68.getAffiliateState();
+          s.payoutMethod = Object.assign({ type:'bank' }, this.state.payDraft || s.payoutMethod);
+          D68.saveAffiliateState(s);
+        } else {
+          const s = D68.getAffiliateAccount(affId) || aff;
+          s.payoutMethod = Object.assign({ type:'bank' }, this.state.payDraft || s.payoutMethod);
+          D68.saveAffiliateAccount(affId, s);
+        }
+        this.setState({ saved:true });
+      },
+      saved: st.saved
+    };
+  }
+}
+</script>
+</body>
+</html>

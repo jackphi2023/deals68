@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Deals68 — Class-based demo: Business Detail</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="../design-tokens.css" rel="stylesheet">
+<link href="../app.css" rel="stylesheet">
+<style>
+  a { text-decoration: none; color: inherit; }
+  .demo-banner { background: var(--d68-navy); color: #fff; font-size: 13px; text-align: center; padding: 8px; font-weight: 600; }
+  .demo-banner b { color: var(--d68-gold); }
+  .home-nav { display: flex; align-items: center; gap: 26px; margin-left: 8px; font-size: 15px; font-weight: 500; color: var(--d68-navy-2); }
+  .home-logo { font-size: 21px; font-weight: 800; letter-spacing: -.5px; color: var(--d68-navy); }
+  .home-logo span { color: var(--d68-blue); }
+  .breadcrumb { font-size: 13px; color: var(--d68-text-faint); padding: 24px 24px 0; max-width: 1240px; margin: 0 auto; }
+  .breadcrumb a:hover { color: var(--d68-blue-ink); }
+  .detail-grid { max-width: 1240px; margin: 0 auto; padding: 8px 24px 40px; display: grid; grid-template-columns: minmax(0,1fr) 348px; gap: 28px; align-items: start; }
+  .img-slider { position: relative; border-radius: 12px; overflow: hidden; height: 400px; background: repeating-linear-gradient(135deg, rgba(27,173,234,.3) 0 20px, rgba(255,255,255,.55) 20px 40px); display: flex; align-items: center; justify-content: center; }
+  .facts-grid { display: grid; grid-template-columns: 1fr 1fr; column-gap: 44px; padding: 8px 24px; }
+  .fact-row { display: flex; justify-content: space-between; gap: 16px; padding: 14px 0; border-bottom: 1px solid var(--d68-border-soft); font-size: 14px; }
+  .side { position: sticky; top: 24px; display: flex; flex-direction: column; gap: 16px; }
+  .sim-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 20px; }
+  @media (max-width: 980px) { .home-nav { display: none !important; } .detail-grid { grid-template-columns: 1fr !important; } .side { position: static !important; } }
+  @media (max-width: 620px) { .facts-grid, .sim-grid { grid-template-columns: 1fr !important; } }
+</style>
+</head>
+<body>
+
+<div class="demo-banner">CLASS-BASED DEMO — built from <code>design-tokens.css</code> + <code>app.css</code> to demonstrate the shared vocabulary. The <b>.dc.html</b> files remain the editable, authoritative UI reference.</div>
+
+<header class="d68-header">
+  <a href="home.html" class="home-logo">deals<span>68</span></a>
+  <nav class="home-nav">
+    <a href="#" style="color:var(--d68-blue); font-weight:700;">Doanh nghiệp</a>
+    <a href="#">Nhà đầu tư</a>
+    <a href="#">Cố vấn</a>
+    <a href="#">Định giá</a>
+    <a href="#">Bảng giá</a>
+  </nav>
+  <div class="d68-header__actions">
+    <div class="d68-seg"><button aria-selected="true">VI</button><button aria-selected="false">EN</button></div>
+    <a href="#" style="font-size:15px; font-weight:600; color:var(--d68-navy-2);">Đăng nhập</a>
+    <button class="d68-btn d68-btn--primary">Đăng ký ▾</button>
+  </div>
+</header>
+
+<div class="breadcrumb">
+  <a href="home.html">Trang chủ</a><span style="margin:0 8px;">›</span>
+  <a href="#">Doanh nghiệp</a><span style="margin:0 8px;">›</span>
+  <a href="#">Việt Nam</a><span style="margin:0 8px;">›</span>
+  <span style="color:#475569; font-weight:600;">F&amp;B</span>
+</div>
+
+<div class="detail-grid">
+  <!-- LEFT -->
+  <div>
+    <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px; flex-wrap:wrap;">
+      <span class="d68-badge d68-badge--live">● Đang hiển thị</span>
+      <span class="d68-badge d68-badge--featured">★ Featured</span>
+      <span class="d68-badge d68-badge--verified">✓ Đã xác minh</span>
+    </div>
+    <h1 style="font-size:30px; font-weight:800; letter-spacing:-.7px; margin:0 0 8px; line-height:1.15;">Chuỗi nhà hàng Hàn Quốc tự vận hành tại TP. Hồ Chí Minh</h1>
+    <p style="font-size:16px; color:var(--d68-text-muted); line-height:1.55; margin:0 0 18px; max-width:760px;">Chuỗi F&amp;B 25 bàn với đội ngũ vận hành ổn định, quy trình bàn giao đầy đủ và doanh số tăng đều — sang nhượng toàn bộ, ẩn danh trên Deals68.</p>
+
+    <div class="d68-card" style="padding:12px;">
+      <div class="img-slider">
+        <span style="font-family:monospace; font-size:13px; color:rgba(15,42,74,.5); background:rgba(255,255,255,.75); padding:8px 16px; border-radius:9px;">📷 Không gian nội thất</span>
+        <button style="position:absolute; left:14px; top:50%; transform:translateY(-50%); width:42px; height:42px; border-radius:50%; border:none; background:rgba(15,42,74,.86); color:#fff; font-size:20px; cursor:pointer;">‹</button>
+        <button style="position:absolute; right:14px; top:50%; transform:translateY(-50%); width:42px; height:42px; border-radius:50%; border:none; background:rgba(15,42,74,.86); color:#fff; font-size:20px; cursor:pointer;">›</button>
+        <span style="position:absolute; bottom:14px; right:14px; background:rgba(15,42,74,.86); color:#fff; font-size:12px; font-weight:700; padding:5px 11px; border-radius:999px;">1 / 5</span>
+      </div>
+    </div>
+
+    <div class="d68-card facts-grid" style="margin-top:22px; padding:8px 24px;">
+      <div class="fact-row"><span style="color:var(--d68-text-muted);">Thành lập</span><span style="font-weight:700;">1–5 năm</span></div>
+      <div class="fact-row"><span style="color:var(--d68-text-muted);">Nhân sự</span><span style="font-weight:700;">5 – 10</span></div>
+      <div class="fact-row"><span style="color:var(--d68-text-muted);">Doanh thu run-rate</span><span style="font-weight:700;">5,6 tỷ ₫</span></div>
+      <div class="fact-row"><span style="color:var(--d68-text-muted);">Biên EBITDA</span><span style="font-weight:700;">10 – 20 %</span></div>
+      <div class="fact-row"><span style="color:var(--d68-text-muted);">Ngành</span><span style="font-weight:700;">F&amp;B · Nhà hàng</span></div>
+      <div class="fact-row"><span style="color:var(--d68-text-muted);">Địa điểm</span><span style="font-weight:700;">TP. Hồ Chí Minh</span></div>
+    </div>
+
+    <div class="d68-card" style="margin-top:22px;">
+      <h2 style="font-size:19px; font-weight:800; margin:0 0 14px;">Tổng quan doanh nghiệp</h2>
+      <ul style="margin:0; padding-left:20px; display:flex; flex-direction:column; gap:9px; font-size:15px; color:#475569; line-height:1.6;">
+        <li>Chuỗi nhà hàng Hàn Quốc (samgyetang) tại khu vực trung tâm TP.HCM, tổng ~300 m² với 25 bàn.</li>
+        <li>Đội ngũ 7 nhân sự lành nghề duy trì vận hành và doanh số ngay cả khi chủ không có mặt.</li>
+        <li>Cấu trúc gần như tự vận hành: doanh thu ~700 triệu ₫/tháng, lợi nhuận ròng ~120 triệu ₫/tháng.</li>
+      </ul>
+    </div>
+
+    <div class="d68-card" style="margin-top:22px;">
+      <h2 style="font-size:19px; font-weight:800; margin:0 0 16px;">Tài chính</h2>
+      <table class="d68-table">
+        <thead><tr><th>Chỉ tiêu</th><th class="num">2023</th><th class="num">2024</th><th class="num">2025</th></tr></thead>
+        <tbody>
+          <tr><td>Doanh thu</td><td class="num">4,1 tỷ ₫</td><td class="num">4,9 tỷ ₫</td><td class="num" style="font-weight:700; color:var(--d68-navy);">5,6 tỷ ₫</td></tr>
+          <tr><td>EBITDA</td><td class="num">620 tr ₫</td><td class="num">780 tr ₫</td><td class="num" style="font-weight:700; color:var(--d68-navy);">950 tr ₫</td></tr>
+          <tr><td>Biên EBITDA</td><td class="num">15%</td><td class="num">16%</td><td class="num" style="font-weight:700; color:var(--d68-navy);">17%</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="d68-card" style="margin-top:22px;">
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:8px; flex-wrap:wrap;">
+        <h2 style="font-size:19px; font-weight:800; margin:0;">Tài liệu</h2>
+        <span class="d68-badge d68-badge--pending">🔒 Mở khóa sau kết nối</span>
+      </div>
+      <div style="display:flex; flex-direction:column;">
+        <div style="display:flex; align-items:center; gap:14px; padding:14px 0; border-bottom:1px solid var(--d68-border-soft);">
+          <span style="flex-shrink:0; width:40px; height:40px; border-radius:9px; background:#FDECEC; color:var(--d68-danger); display:flex; align-items:center; justify-content:center; font-weight:800; font-size:11px;">PDF</span>
+          <div style="flex:1;"><div style="font-size:14.5px; font-weight:600;">Báo cáo tài chính 2023–2025</div><div style="font-size:12.5px; color:var(--d68-text-faint);">PDF · 1.8 MB</div></div>
+          <span style="color:var(--d68-text-faint); font-size:18px;">🔒</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:14px; padding:14px 0;">
+          <span style="flex-shrink:0; width:40px; height:40px; border-radius:9px; background:var(--d68-warn-wash); color:#B8860B; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:11px;">ZIP</span>
+          <div style="flex:1;"><div style="font-size:14.5px; font-weight:600;">Hình ảnh mặt bằng &amp; nhà xưởng</div><div style="font-size:12.5px; color:var(--d68-text-faint);">ZIP · 12.4 MB</div></div>
+          <span style="color:var(--d68-text-faint); font-size:18px;">🔒</span>
+        </div>
+      </div>
+    </div>
+
+    <p style="margin-top:20px; font-size:12.5px; color:var(--d68-text-faint); line-height:1.6;"><b>Miễn trừ trách nhiệm:</b> Deals68 là sàn kết nối bên bán với nhà đầu tư, người mua, bên cho vay và cố vấn. Thông tin do người dùng cung cấp và chưa được Deals68 bảo đảm đầy đủ hay chính xác.</p>
+  </div>
+
+  <!-- RIGHT SIDEBAR -->
+  <aside class="side">
+    <div class="d68-card" style="padding:0; overflow:hidden; box-shadow:var(--d68-shadow-raised);">
+      <div style="background:var(--d68-navy); color:#fff; padding:18px 22px;">
+        <div style="font-size:12px; font-weight:700; color:#9db4cc; text-transform:uppercase; letter-spacing:.6px; margin-bottom:6px;">Loại giao dịch</div>
+        <div style="font-size:18px; font-weight:800;">Bán toàn bộ doanh nghiệp</div>
+      </div>
+      <div style="padding:20px 22px;">
+        <div style="font-size:12px; font-weight:700; color:var(--d68-text-faint); text-transform:uppercase; letter-spacing:.5px;">Giá chào</div>
+        <div style="font-size:30px; font-weight:800; letter-spacing:-.8px; margin:2px 0;">1,9 tỷ ₫</div>
+        <div style="font-size:12.5px; color:var(--d68-text-faint);">≈ 78.000 USD</div>
+        <div style="margin-top:14px; display:flex; flex-direction:column; gap:8px; font-size:13.5px;">
+          <div style="display:flex; justify-content:space-between;"><span style="color:var(--d68-text-muted);">Cổ phần chào bán</span><span style="font-weight:700;">100%</span></div>
+          <div style="display:flex; justify-content:space-between;"><span style="color:var(--d68-text-muted);">Xếp hạng Deals68</span><span style="font-weight:700; color:var(--d68-blue-ink);">7.5 / 10</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="d68-card">
+      <div style="font-size:15px; font-weight:800; margin-bottom:4px;">Kết nối với doanh nghiệp</div>
+      <p style="font-size:13px; color:var(--d68-text-muted); line-height:1.55; margin:0 0 14px;">Tên, số điện thoại và email hiển thị sau khi hai bên chấp nhận kết nối.</p>
+      <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:16px;">
+        <div style="display:flex; align-items:center; gap:10px; padding:10px 12px; background:var(--d68-bg); border:1px solid var(--d68-border-soft); border-radius:10px;"><span>🔒</span><span style="flex:1; font-size:13.5px; color:var(--d68-text-muted);">Tên doanh nghiệp</span><span style="font-size:11.5px; font-weight:700; color:var(--d68-text-faint);">Chưa công bố</span></div>
+        <div style="display:flex; align-items:center; gap:10px; padding:10px 12px; background:var(--d68-bg); border:1px solid var(--d68-border-soft); border-radius:10px;"><span>🔒</span><span style="flex:1; font-size:13.5px; color:var(--d68-text-muted);">Số điện thoại</span><span style="font-size:11.5px; font-weight:700; color:var(--d68-text-faint);">+84 •• ••• ••••</span></div>
+      </div>
+      <a href="#" class="d68-btn d68-btn--gold" style="display:block; text-align:center;">Bày tỏ quan tâm</a>
+      <div style="display:flex; gap:8px; margin-top:10px;">
+        <button class="d68-btn d68-btn--ghost d68-btn--sm" style="flex:1;">♡ Lưu</button>
+        <button class="d68-btn d68-btn--ghost d68-btn--sm" style="flex:1;">↗ Chia sẻ</button>
+      </div>
+      <div style="margin-top:16px; display:flex; align-items:center; gap:8px; font-size:12.5px; color:var(--d68-success); font-weight:600;">📈 22 nhà đầu tư đã xem tuần này</div>
+    </div>
+
+    <div class="d68-card">
+      <div style="font-size:13px; font-weight:800; margin-bottom:12px;">Đã xác minh</div>
+      <div style="display:flex; flex-wrap:wrap; gap:8px;">
+        <span class="d68-badge" style="background:#E9F9EF; color:var(--d68-success);">✓ Email</span>
+        <span class="d68-badge" style="background:#E9F9EF; color:var(--d68-success);">✓ Điện thoại</span>
+        <span class="d68-badge" style="background:#E9F9EF; color:var(--d68-success);">✓ Mã số thuế</span>
+      </div>
+    </div>
+  </aside>
+</div>
+
+<!-- SIMILAR -->
+<section style="background:#fff; border-top:1px solid var(--d68-border-card);">
+  <div class="d68-container" style="padding:56px 24px;">
+    <div style="display:flex; align-items:flex-end; justify-content:space-between; gap:16px; margin-bottom:26px; flex-wrap:wrap;">
+      <h2 style="font-size:26px; font-weight:800; letter-spacing:-.6px; margin:0;">Xem doanh nghiệp tương tự</h2>
+      <a href="#" style="font-weight:700; color:var(--d68-blue); font-size:15px;">Xem tất cả F&amp;B →</a>
+    </div>
+    <div class="sim-grid">
+      <a href="#" class="d68-card" style="padding:0; overflow:hidden;">
+        <div style="height:140px; background:repeating-linear-gradient(135deg, rgba(27,173,234,.28) 0 16px, rgba(255,255,255,.5) 16px 32px); position:relative;"><span style="position:absolute; top:10px; left:10px; background:var(--d68-navy); color:#fff; font-size:11px; font-weight:700; padding:4px 9px; border-radius:6px;">Đà Nẵng</span></div>
+        <div style="padding:16px 18px;">
+          <span class="d68-badge d68-badge--verified" style="margin-bottom:9px;">F&amp;B</span>
+          <h3 style="font-size:15.5px; font-weight:700; line-height:1.35; margin:0 0 12px;">Chuỗi 3 nhà hàng ẩm thực quốc tế tại miền Trung</h3>
+          <div style="display:flex; justify-content:space-between; padding-top:12px; border-top:1px solid var(--d68-border-soft); font-size:13px;">
+            <div><div style="color:var(--d68-text-faint); font-size:11px;">Doanh thu</div><div style="font-weight:700;">11,5 tỷ ₫</div></div>
+            <div style="text-align:right;"><div style="color:var(--d68-text-faint); font-size:11px;">Giá chào</div><div style="font-weight:700; color:var(--d68-blue-ink);">7,2 tỷ ₫</div></div>
+          </div>
+        </div>
+      </a>
+      <a href="#" class="d68-card" style="padding:0; overflow:hidden;">
+        <div style="height:140px; background:repeating-linear-gradient(135deg, rgba(242,181,29,.28) 0 16px, rgba(255,255,255,.5) 16px 32px); position:relative;"><span style="position:absolute; top:10px; left:10px; background:var(--d68-navy); color:#fff; font-size:11px; font-weight:700; padding:4px 9px; border-radius:6px;">Nha Trang</span></div>
+        <div style="padding:16px 18px;">
+          <span class="d68-badge d68-badge--verified" style="margin-bottom:9px;">F&amp;B</span>
+          <h3 style="font-size:15.5px; font-weight:700; line-height:1.35; margin:0 0 12px;">Nhà hàng Ý mới khai trương, doanh số nhân đôi</h3>
+          <div style="display:flex; justify-content:space-between; padding-top:12px; border-top:1px solid var(--d68-border-soft); font-size:13px;">
+            <div><div style="color:var(--d68-text-faint); font-size:11px;">Doanh thu</div><div style="font-weight:700;">3,8 tỷ ₫</div></div>
+            <div style="text-align:right;"><div style="color:var(--d68-text-faint); font-size:11px;">Giá chào</div><div style="font-weight:700; color:var(--d68-blue-ink);">365 tr ₫</div></div>
+          </div>
+        </div>
+      </a>
+      <a href="#" class="d68-card" style="padding:0; overflow:hidden;">
+        <div style="height:140px; background:repeating-linear-gradient(135deg, rgba(27,173,234,.24) 0 16px, rgba(255,255,255,.5) 16px 32px); position:relative;"><span style="position:absolute; top:10px; left:10px; background:var(--d68-navy); color:#fff; font-size:11px; font-weight:700; padding:4px 9px; border-radius:6px;">TP.HCM</span></div>
+        <div style="padding:16px 18px;">
+          <span class="d68-badge d68-badge--verified" style="margin-bottom:9px;">Làm đẹp</span>
+          <h3 style="font-size:15.5px; font-weight:700; line-height:1.35; margin:0 0 12px;">Chuỗi làm đẹp nhượng quyền cần bán 51%</h3>
+          <div style="display:flex; justify-content:space-between; padding-top:12px; border-top:1px solid var(--d68-border-soft); font-size:13px;">
+            <div><div style="color:var(--d68-text-faint); font-size:11px;">Doanh thu</div><div style="font-weight:700;">30 tỷ ₫</div></div>
+            <div style="text-align:right;"><div style="color:var(--d68-text-faint); font-size:11px;">Giá chào</div><div style="font-weight:700; color:var(--d68-blue-ink);">45 tỷ ₫</div></div>
+          </div>
+        </div>
+      </a>
+    </div>
+  </div>
+</section>
+
+<footer class="d68-footer">
+  <div class="d68-container" style="display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; font-size:13.5px; color:var(--d68-text-on-dark-mut);">
+    <span>© 2026 Deals68.com. Bảo lưu mọi quyền.</span>
+    <span>© Một nền tảng của Viet Capital Partners &amp; Consulting.</span>
+  </div>
+</footer>
+
+</body>
+</html>

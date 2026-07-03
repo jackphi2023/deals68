@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Deals68 — Component Reference</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="design-tokens.css" rel="stylesheet">
+<link href="app.css" rel="stylesheet">
+<style>
+  /* ============================================================
+     Reference-page chrome only (design-tokens.css + app.css
+     supply every component style shown below).
+     ============================================================ */
+  .doc { max-width: 1100px; margin: 0 auto; padding: 48px 24px 96px; }
+  .doc-h1 { font-size: var(--d68-fs-3xl); font-weight: var(--d68-fw-extrabold); margin: 0 0 6px; }
+  .doc-sub { color: var(--d68-text-muted); font-size: var(--d68-fs-md); margin: 0 0 40px; }
+  .sec { margin-top: 48px; }
+  .sec > h2 { font-size: var(--d68-fs-xl); font-weight: var(--d68-fw-extrabold); margin: 0 0 4px; padding-bottom: 10px; border-bottom: 2px solid var(--d68-border-card); }
+  .sec > .hint { color: var(--d68-text-muted); font-size: var(--d68-fs-sm); margin: 8px 0 20px; }
+  .row { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; }
+  .grid3 { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
+  .swatch { border-radius: var(--d68-radius-md); overflow: hidden; border: 1px solid var(--d68-border-card); background: #fff; }
+  .swatch .chip { height: 64px; }
+  .swatch .meta { padding: 10px 12px; font-size: var(--d68-fs-xs); }
+  .swatch .meta b { display: block; font-size: var(--d68-fs-sm); }
+  .swatch .meta code { color: var(--d68-text-muted); }
+  .scalebar { display: flex; align-items: flex-end; gap: 10px; }
+  .scalebar .u { background: var(--d68-blue); border-radius: 4px 4px 0 0; width: 34px; }
+  .scalebar .u span { display: block; text-align: center; margin-top: 6px; font-size: 11px; color: var(--d68-text-muted); }
+  .token-note { font-size: var(--d68-fs-xs); color: var(--d68-text-faint); margin-top: 8px; }
+</style>
+</head>
+<body>
+<div class="doc">
+  <h1 class="doc-h1">Deals68 — Component Reference</h1>
+  <p class="doc-sub">Canonical classes &amp; tokens. Every screen is built from these; the CSS above is copy-ready for the React app. Pair with <code>design-tokens.css</code>, <code>COMPONENTS.md</code>, <code>ROUTES.md</code>.</p>
+
+  <!-- COLORS -->
+  <div class="sec">
+    <h2>Color</h2>
+    <p class="hint">Brand + neutrals + status. Use the token, never the raw hex.</p>
+    <div class="grid3">
+      <div class="swatch"><div class="chip" style="background:#0F2A4A"></div><div class="meta"><b>Navy / primary</b><code>--d68-navy · #0F2A4A</code></div></div>
+      <div class="swatch"><div class="chip" style="background:#1BADEA"></div><div class="meta"><b>Blue accent</b><code>--d68-blue · #1BADEA</code></div></div>
+      <div class="swatch"><div class="chip" style="background:#F2B51D"></div><div class="meta"><b>Gold accent</b><code>--d68-gold · #F2B51D</code></div></div>
+      <div class="swatch"><div class="chip" style="background:#F7FAFC"></div><div class="meta"><b>Background</b><code>--d68-bg · #F7FAFC</code></div></div>
+      <div class="swatch"><div class="chip" style="background:#E2E8F0"></div><div class="meta"><b>Border</b><code>--d68-border · #E2E8F0</code></div></div>
+      <div class="swatch"><div class="chip" style="background:#64748B"></div><div class="meta"><b>Muted text</b><code>--d68-text-muted · #64748B</code></div></div>
+      <div class="swatch"><div class="chip" style="background:#16A34A"></div><div class="meta"><b>Success</b><code>--d68-success · #16A34A</code></div></div>
+      <div class="swatch"><div class="chip" style="background:#DC2626"></div><div class="meta"><b>Danger</b><code>--d68-danger · #DC2626</code></div></div>
+    </div>
+  </div>
+
+  <!-- TYPE -->
+  <div class="sec">
+    <h2>Typography — Be Vietnam Pro</h2>
+    <p class="hint">Weights 400 / 500 / 600 / 700 / 800. Anchors of the type scale below.</p>
+    <div style="font-size:40px; font-weight:800;">Hero / 40px / 800</div>
+    <div style="font-size:28px; font-weight:800;">Page title / 28px / 800</div>
+    <div style="font-size:20px; font-weight:800;">Section H2 / 20px / 800</div>
+    <div style="font-size:19px; font-weight:800;">Card H2 / 19px / 800</div>
+    <div style="font-size:16px; font-weight:600;">Emphasised body / 16px / 600</div>
+    <div style="font-size:14.5px;">Body &amp; inputs / 14.5px / 400</div>
+    <div style="font-size:13.5px; color:#64748B;">Caption / helper / 13.5px / muted</div>
+    <div style="font-size:12px; color:#94A3B8;">Legal / meta / 12px / faint</div>
+  </div>
+
+  <!-- SPACING -->
+  <div class="sec">
+    <h2>Spacing scale</h2>
+    <p class="hint">4 · 8 · 12 · 16 · 24 · 32 · 48 · 64 px. Nothing off-scale.</p>
+    <div class="scalebar">
+      <div><div class="u" style="height:4px"></div><span>4</span></div>
+      <div><div class="u" style="height:8px"></div><span>8</span></div>
+      <div><div class="u" style="height:12px"></div><span>12</span></div>
+      <div><div class="u" style="height:16px"></div><span>16</span></div>
+      <div><div class="u" style="height:24px"></div><span>24</span></div>
+      <div><div class="u" style="height:32px"></div><span>32</span></div>
+      <div><div class="u" style="height:48px"></div><span>48</span></div>
+      <div><div class="u" style="height:64px"></div><span>64</span></div>
+    </div>
+  </div>
+
+  <!-- RADIUS + SHADOW -->
+  <div class="sec">
+    <h2>Radius &amp; shadow</h2>
+    <div class="row" style="gap:24px; margin-bottom:24px;">
+      <div style="text-align:center"><div style="width:96px;height:64px;background:#fff;border:1px solid #E7EDF3;border-radius:9px"></div><div class="tokenlabel tokenlabel"></div><div class="tokenlabel"></div><small>sm · 9px</small></div>
+      <div style="text-align:center"><div style="width:96px;height:64px;background:#fff;border:1px solid #E7EDF3;border-radius:12px"></div><br><small>md · 12px</small></div>
+      <div style="text-align:center"><div style="width:96px;height:64px;background:#fff;border:1px solid #E7EDF3;border-radius:18px"></div><br><small>lg · 18px</small></div>
+      <div style="text-align:center"><div style="width:96px;height:64px;background:#fff;border:1px solid #E7EDF3;border-radius:20px"></div><br><small>xl · 20px</small></div>
+      <div style="text-align:center"><div style="width:96px;height:40px;background:#fff;border:1px solid #E7EDF3;border-radius:999px"></div><br><small>pill</small></div>
+    </div>
+    <div class="row" style="gap:24px;">
+      <div style="text-align:center"><div style="width:120px;height:64px;background:#fff;border-radius:12px;box-shadow:var(--d68-shadow-card)"></div><br><small>card</small></div>
+      <div style="text-align:center"><div style="width:120px;height:64px;background:#fff;border-radius:12px;box-shadow:var(--d68-shadow-dropdown)"></div><br><small>dropdown</small></div>
+      <div style="text-align:center"><div style="width:120px;height:64px;background:#fff;border-radius:12px;box-shadow:var(--d68-shadow-modal)"></div><br><small>modal</small></div>
+      <div style="text-align:center"><div style="width:120px;height:64px;background:#fff;border-radius:12px;box-shadow:var(--d68-shadow-raised)"></div><br><small>raised</small></div>
+    </div>
+  </div>
+
+  <!-- BUTTONS -->
+  <div class="sec">
+    <h2>Buttons — <code>.d68-btn</code></h2>
+    <div class="row">
+      <button class="d68-btn d68-btn--primary">Primary</button>
+      <button class="d68-btn d68-btn--gold">Gold / checkout</button>
+      <button class="d68-btn d68-btn--ghost">Ghost</button>
+      <button class="d68-btn d68-btn--success">Approve</button>
+      <button class="d68-btn d68-btn--danger">Decline</button>
+      <button class="d68-btn d68-btn--primary d68-btn--sm">Small</button>
+      <button class="d68-btn d68-btn--primary" disabled>Disabled</button>
+    </div>
+  </div>
+
+  <!-- BADGES -->
+  <div class="sec">
+    <h2>Status badges — <code>.d68-badge</code></h2>
+    <div class="row">
+      <span class="d68-badge d68-badge--live">● Live</span>
+      <span class="d68-badge d68-badge--pending">Pending review</span>
+      <span class="d68-badge d68-badge--verified">✓ Verified</span>
+      <span class="d68-badge d68-badge--featured">★ Featured</span>
+      <span class="d68-badge d68-badge--hidden">Hidden</span>
+    </div>
+  </div>
+
+  <!-- CARDS -->
+  <div class="sec">
+    <h2>Cards — <code>.d68-card</code></h2>
+    <div class="grid3">
+      <div class="d68-card">
+        <div class="d68-badge d68-badge--verified" style="margin-bottom:10px;">Technology</div>
+        <div style="font-weight:800; font-size:16px; margin-bottom:6px;">SaaS platform raising Series A</div>
+        <div style="color:#64748B; font-size:13.5px;">Vietnam · Asia</div>
+        <div style="margin-top:14px; display:flex; gap:18px; font-size:13.5px;"><span><b>Revenue</b><br>$2.4M</span><span><b>EBITDA</b><br>28%</span><span><b>Ask</b><br>$5M</span></div>
+      </div>
+      <div class="d68-card d68-card--featured">
+        <div class="d68-badge d68-badge--featured" style="margin-bottom:10px;">★ Featured</div>
+        <div style="font-weight:800; font-size:16px; margin-bottom:6px;">Cold-storage operator, 30% stake</div>
+        <div style="color:#64748B; font-size:13.5px;">Vietnam · Asia</div>
+        <div style="margin-top:14px; display:flex; gap:18px; font-size:13.5px;"><span><b>Revenue</b><br>$8.1M</span><span><b>EBITDA</b><br>22%</span><span><b>Ask</b><br>$12M</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FORMS -->
+  <div class="sec">
+    <h2>Form controls — <code>.d68-field / .d68-input / .d68-seg</code></h2>
+    <div class="grid3" style="align-items:start;">
+      <div class="d68-field"><label class="d68-label">Email</label><input class="d68-input" placeholder="you@example.com"></div>
+      <div class="d68-field"><label class="d68-label">Investor type</label><select class="d68-select"><option>Angel</option><option>VC</option><option>PE</option></select></div>
+      <div class="d68-field"><label class="d68-label">Language</label><div class="d68-seg"><button aria-selected="true">VI</button><button aria-selected="false">EN</button></div></div>
+    </div>
+  </div>
+
+  <!-- TABLE -->
+  <div class="sec">
+    <h2>Table — <code>.d68-table</code></h2>
+    <div class="d68-card" style="padding:0; overflow:hidden;">
+      <table class="d68-table">
+        <thead><tr><th>Metric</th><th>Label</th><th class="num">Value</th></tr></thead>
+        <tbody>
+          <tr><td>Revenue</td><td>Actual</td><td class="num">$2,400,000</td></tr>
+          <tr><td>EBITDA</td><td>Management Estimate</td><td class="num">$672,000</td></tr>
+          <tr><td>Growth (YoY)</td><td>Estimated</td><td class="num">34%</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ALERTS + EMPTY -->
+  <div class="sec">
+    <h2>Alerts &amp; empty state</h2>
+    <div style="display:flex; flex-direction:column; gap:12px; margin-bottom:20px;">
+      <div class="d68-alert d68-alert--info">Your profile is under review by an admin.</div>
+      <div class="d68-alert d68-alert--success">Connection accepted — full profile unlocked.</div>
+      <div class="d68-alert d68-alert--warn"><span>⚠</span><div>Profile is pending Admin re-review. Reason: sensitive edit.</div></div>
+      <div class="d68-alert d68-alert--danger">Payment failed — please retry.</div>
+    </div>
+    <div class="d68-card d68-empty">No saved businesses yet. Tap “Save” on any deal to add it here.</div>
+  </div>
+</div>
+</body>
+</html>

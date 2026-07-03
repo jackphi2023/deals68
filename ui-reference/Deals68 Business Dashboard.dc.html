@@ -1,0 +1,1000 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Business Dashboard | Deals68</title>
+<meta name="description" content="Quản lý hồ sơ doanh nghiệp, tài liệu, hạn mức proposal và thanh toán.">
+<meta name="robots" content="noindex,nofollow">
+<link rel="canonical" href="https://deals68.com/dashboard/business">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="site.webmanifest">
+<meta name="theme-color" content="#0F2A4A">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Deals68.com">
+<meta property="og:title" content="Business Dashboard | Deals68">
+<meta property="og:description" content="Quản lý hồ sơ doanh nghiệp, tài liệu, hạn mức proposal và thanh toán.">
+<meta property="og:image" content="assets/og-image.png">
+<meta property="og:url" content="https://deals68.com/dashboard/business">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Business Dashboard | Deals68">
+<meta name="twitter:description" content="Quản lý hồ sơ doanh nghiệp, tài liệu, hạn mức proposal và thanh toán.">
+<meta name="twitter:image" content="assets/og-image.png">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="assets/deals68-investors-import.js"></script>
+<script src="assets/deals68-mock.js"></script>
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body { font-family: 'Be Vietnam Pro', system-ui, sans-serif; color: #0F2A4A; background: #F7FAFC; -webkit-font-smoothing: antialiased; }
+  [data-lang="vi"] .l-en { display: none !important; }
+  [data-lang="en"] .l-vi { display: none !important; }
+  a { text-decoration: none; color: inherit; }
+  select, input, textarea, button { font-family: inherit; }
+  .d68-reg-dd:hover .d68-reg-menu { display: flex !important; }
+  image-slot { width: 100% !important; height: 150px !important; max-width: 100% !important; box-sizing: border-box !important; }
+  @media (max-width: 1080px) { .d68-nav { display: none !important; } }
+  @media (max-width: 980px) { .d68-dash-cols { grid-template-columns: 1fr !important; } .d68-side-nav { position:static !important; } }
+  @media (max-width: 700px) { .d68-cards-4 { grid-template-columns: 1fr 1fr !important; } .d68-form-2 { grid-template-columns: 1fr !important; } }
+</style>
+</helmet>
+
+<div data-lang="{{ lang }}" style="width:100%; overflow-x:hidden;">
+
+  <header style="position:sticky; top:0; z-index:60; background:rgba(255,255,255,.94); backdrop-filter:blur(10px); border-bottom:1px solid #E7EDF3;">
+    <div style="max-width:1240px; margin:0 auto; padding:0 24px; height:70px; display:flex; align-items:center; gap:20px;">
+      <a href="Deals68 Home.dc.html" style="display:flex; align-items:center; flex-shrink:0;"><img src="assets/logo-beta.png" alt="Deals68.com" style="height:34px; display:block;"></a>
+      <div style="margin-left:auto; display:flex; align-items:center; gap:14px; flex-shrink:0;">
+        <div style="display:flex; align-items:center; border:1px solid #E2E8F0; border-radius:999px; overflow:hidden; font-size:13px; font-weight:700;">
+          <button onClick="{{ setVi }}" style="{{ viBtnStyle }}">VI</button>
+          <button onClick="{{ setEn }}" style="{{ enBtnStyle }}">EN</button>
+        </div>
+        <label style="display:flex; align-items:center; gap:8px; font-size:13.5px; color:#64748B;">
+          <span class="l-vi">Demo tài khoản:</span><span class="l-en">Demo account:</span>
+          <select value="{{ activeBiz }}" onChange="{{ onSwitchBiz }}" style="border:1px solid #E2E8F0; border-radius:9px; padding:8px 10px; font-size:13.5px; font-weight:700; color:#0F2A4A; background:#F7FAFC; cursor:pointer;">
+            <sc-for list="{{ bizOptions }}" as="b" hint-placeholder-count="6"><option value="{{ b.id }}">{{ b.label }}</option></sc-for>
+          </select>
+        </label>
+        <a href="Deals68 Home.dc.html" style="background:#EEF2F6; color:#334155; font-weight:700; font-size:14px; padding:10px 16px; border-radius:9px;"><span class="l-vi">Thoát</span><span class="l-en">Exit</span></a>
+      </div>
+    </div>
+  </header>
+
+  <div style="max-width:1240px; margin:0 auto; padding:26px 24px 60px;">
+    <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:22px;">
+      <div>
+        <div style="font-size:12.5px; font-weight:700; color:#94A3B8; text-transform:uppercase; letter-spacing:.5px; margin-bottom:4px;"><span class="l-vi">Business Dashboard</span><span class="l-en">Business Dashboard</span></div>
+        <h1 style="font-size:25px; font-weight:800; letter-spacing:-.5px; margin:0;">{{ bizTitle }}</h1>
+      </div>
+      <div style="display:flex; gap:8px;">
+        <span style="{{ planBadgeStyle }}">{{ planLabel }}</span>
+        <span style="{{ statusBadgeStyle }}">{{ statusLabel }}</span>
+      </div>
+    </div>
+
+    <sc-if value="{{ locked }}" hint-placeholder-val="{{ false }}">
+      <div style="background:#fff; border:1px solid #E7EDF3; border-radius:16px; padding:52px 32px; text-align:center; max-width:560px; margin:0 auto;">
+        <div style="font-size:44px; margin-bottom:16px;">{{ lockIcon }}</div>
+        <h2 style="font-size:20px; font-weight:800; margin:0 0 10px;">{{ lockTitle }}</h2>
+        <p style="font-size:14.5px; color:#64748B; line-height:1.6; margin:0 0 18px;">{{ lockDesc }}</p>
+        <sc-if value="{{ lockHasOrder }}" hint-placeholder-val="{{ false }}">
+          <p style="font-size:13px; color:#94A3B8; margin:0 0 22px;"><span class="l-vi">Mã đơn:</span><span class="l-en">Order ref:</span> <b style="color:#B8860B;">{{ lockOrderCode }}</b><sc-if value="{{ lockHasDays }}" hint-placeholder-val="{{ false }}"> · {{ lockDaysLeft }}</sc-if></p>
+        </sc-if>
+        <a href="Deals68 Pricing.dc.html" style="display:inline-block; background:#0F2A4A; color:#fff; font-weight:700; font-size:14.5px; padding:12px 24px; border-radius:11px;"><span class="l-vi">Xem Bảng giá</span><span class="l-en">View Pricing</span></a>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ !locked }}" hint-placeholder-val="{{ true }}">
+    <div class="d68-dash-cols" style="display:grid; grid-template-columns:230px minmax(0,1fr); gap:24px; align-items:start;">
+
+      <!-- SIDE NAV -->
+      <nav class="d68-side-nav" style="position:sticky; top:90px; background:#fff; border:1px solid #E7EDF3; border-radius:16px; padding:10px; display:flex; flex-direction:column; gap:2px;">
+        <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="4">
+          <button onClick="{{ t.onClick }}" style="{{ t.style }}">{{ t.icon }} {{ t.label }}</button>
+        </sc-for>
+        <div style="border-top:1px solid #EEF2F6; margin-top:6px; padding-top:10px;">
+          <a href="Deals68 Deal.dc.html?bizid={{ publicBizid }}" style="display:block; text-align:center; font-size:13px; font-weight:700; color:#1596cc; padding:10px;"><span class="l-vi">Xem trang public</span><span class="l-en">View public page</span> ↗</a>
+        </div>
+        <div style="margin-top:8px; background:#FEFCE8; border:2px solid #0F2A4A; border-radius:12px; padding:14px;">
+          <div style="font-size:12.5px; font-weight:600; color:#334155; line-height:1.5;"><span class="l-vi">Bạn cần hỗ trợ làm Hồ sơ Huy động vốn, Định giá để làm việc với Nhà đầu tư?</span><span class="l-en">Need help preparing your fundraising profile & valuation to work with investors?</span></div>
+          <a href="https://vietcapitalpartners.com" target="_blank" rel="noopener" style="display:inline-block; margin-top:10px; font-size:12.5px; font-weight:700; color:#1596cc;">vietcapitalpartners.com ↗</a>
+          <div style="font-size:12.5px; font-weight:700; color:#0F2A4A; margin-top:6px;">Hotline: 0909.584.075</div>
+        </div>
+      </nav>
+
+      <div>
+        <!-- OVERVIEW -->
+        <sc-if value="{{ isOverview }}" hint-placeholder-val="{{ true }}">
+          <sc-if value="{{ bdReviewPending }}" hint-placeholder-val="{{ false }}">
+            <div style="background:#FEF3D3; border:1px solid #F2B51D; border-radius:14px; padding:16px 20px; margin-bottom:18px; display:flex; align-items:flex-start; gap:12px;">
+              <span style="font-size:20px;">⏳</span>
+              <div>
+                <div style="font-size:14.5px; font-weight:800; color:#8a6300;"><span class="l-vi">Hồ sơ đang chờ Admin duyệt lại</span><span class="l-en">Profile is pending Admin re-review</span></div>
+                <div style="font-size:13px; color:#8a6300; margin-top:3px; line-height:1.5;"><span class="l-vi">Lý do:</span><span class="l-en">Reason:</span> {{ bdReviewReason }} · <span class="l-vi">từ</span><span class="l-en">since</span> {{ bdReviewSince }}. <span class="l-vi">Hồ sơ tạm dừng nhận proposal mới cho tới khi Admin duyệt lại.</span><span class="l-en">The listing pauses new proposals until Admin re-approves it.</span></div>
+              </div>
+            </div>
+          </sc-if>
+          <div style="background:#fff; border:1px solid #E7EDF3; border-radius:16px; padding:22px 24px; margin-bottom:22px; display:flex; align-items:center; gap:24px; flex-wrap:wrap;">
+            <div style="flex-shrink:0; width:120px; height:120px; border-radius:50%; background:conic-gradient({{ qsColor }} {{ qsDeg }}deg, #EEF2F6 0deg); display:flex; align-items:center; justify-content:center;">
+              <div style="width:92px; height:92px; border-radius:50%; background:#fff; display:flex; flex-direction:column; align-items:center; justify-content:center;">
+                <span style="font-size:29px; font-weight:800; color:{{ qsColor }};">{{ qsScore }}</span>
+                <span style="font-size:10px; font-weight:700; color:#94A3B8; text-transform:uppercase;">/ 100</span>
+              </div>
+            </div>
+            <div style="flex:1; min-width:250px;">
+              <div style="display:flex; align-items:center; gap:10px; margin-bottom:6px;">
+                <span style="font-size:15.5px; font-weight:800;">Business Quality Score</span>
+                <span style="{{ qsBandStyle }}">{{ qsBandLabel }}</span>
+              </div>
+              <p style="font-size:13px; color:#64748B; line-height:1.55; margin:0 0 12px;">{{ qsDesc }}</p>
+              <div style="display:flex; flex-wrap:wrap; gap:6px;">
+                <sc-for list="{{ qsParts }}" as="qp" hint-placeholder-count="8">
+                  <span style="{{ qp.chipStyle }}">{{ qp.icon }} {{ qp.label }} {{ qp.points }}/{{ qp.max }}</span>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+
+          <div class="d68-cards-4" style="display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:22px;">
+            <div style="background:#fff; border:1px solid #E7EDF3; border-radius:14px; padding:18px;">
+              <div style="font-size:11.5px; font-weight:700; color:#94A3B8; text-transform:uppercase;"><span class="l-vi">Trạng thái hồ sơ</span><span class="l-en">Profile status</span></div>
+              <div style="font-size:19px; font-weight:800; margin-top:6px; color:#16A34A;">{{ statusLabel }}</div>
+            </div>
+            <div style="background:#fff; border:1px solid #E7EDF3; border-radius:14px; padding:18px;">
+              <div style="font-size:11.5px; font-weight:700; color:#94A3B8; text-transform:uppercase;"><span class="l-vi">Gói hiển thị</span><span class="l-en">Plan tier</span></div>
+              <div style="font-size:19px; font-weight:800; margin-top:6px;">{{ planLabel }}</div>
+            </div>
+            <div style="background:#fff; border:1px solid #E7EDF3; border-radius:14px; padding:18px;">
+              <div style="font-size:11.5px; font-weight:700; color:#94A3B8; text-transform:uppercase;"><span class="l-vi">Đã gửi / Duyệt</span><span class="l-en">Sent / Approved</span></div>
+              <div style="font-size:19px; font-weight:800; margin-top:6px;">{{ sentCount }} / {{ approvedCount }}</div>
+            </div>
+            <div style="background:#fff; border:1px solid #E7EDF3; border-radius:14px; padding:18px;">
+              <div style="font-size:11.5px; font-weight:700; color:#94A3B8; text-transform:uppercase;"><span class="l-vi">Lượt xem hồ sơ</span><span class="l-en">Profile views</span></div>
+              <div style="font-size:19px; font-weight:800; margin-top:6px;">{{ views }}</div>
+            </div>
+          </div>
+
+          <div style="background:#0F2A4A; color:#fff; border-radius:16px; padding:24px; margin-bottom:22px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+              <span style="font-size:14px; font-weight:700; color:#c6d5e6;"><span class="l-vi">Hạn mức gửi Proposal</span><span class="l-en">Proposal quota</span></span>
+              <span style="font-size:18px; font-weight:800; color:#F2B51D;">{{ quotaUsed }} / {{ quotaTotal }}</span>
+            </div>
+            <div style="height:10px; border-radius:999px; background:rgba(255,255,255,.12); overflow:hidden;">
+              <div style="height:100%; width:{{ quotaPct }}%; background:linear-gradient(90deg,#1BADEA,#F2B51D); border-radius:999px;"></div>
+            </div>
+            <p style="font-size:12.5px; color:#9db4cc; margin:12px 0 0;"><span class="l-vi">Còn {{ quotaRemaining }}/{{ quotaTotal }} proposal.</span><span class="l-en">{{ quotaRemaining }}/{{ quotaTotal }} proposals remaining.</span> <a href="Deals68 Investors.dc.html" style="color:#F2B51D; font-weight:700;"><span class="l-vi">Tìm Nhà đầu tư</span><span class="l-en">Find investors</span> →</a></p>
+          </div>
+
+          <div style="background:#fff; border:1px solid #E7EDF3; border-radius:16px; padding:22px;">
+            <h3 style="font-size:16px; font-weight:800; margin:0 0 14px;"><span class="l-vi">Thanh toán</span><span class="l-en">Payment</span></h3>
+            <div style="display:flex; align-items:center; justify-content:space-between; padding:12px 14px; background:#E9F9EF; border-radius:10px; font-size:14px; font-weight:600; color:#16A34A;">
+              <span>✓ <span class="l-vi">Đã thanh toán — gói {{ planLabel }}</span><span class="l-en">Paid — {{ planLabel }} plan</span></span>
+              <a href="Deals68 Pricing.dc.html" style="color:#16A34A; text-decoration:underline; font-weight:700; font-size:13px;"><span class="l-vi">Gia hạn / Nâng cấp</span><span class="l-en">Renew / Upgrade</span></a>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- PROFILE -->
+        <sc-if value="{{ isProfile }}" hint-placeholder-val="{{ false }}">
+          <div style="background:#fff; border:1px solid #E7EDF3; border-radius:16px; padding:26px 28px;">
+            <h2 style="font-size:19px; font-weight:800; margin:0 0 6px;"><span class="l-vi">Chỉnh sửa hồ sơ</span><span class="l-en">Edit profile</span></h2>
+            <p style="font-size:13px; color:#64748B; margin:0 0 20px; line-height:1.55;"><span class="l-vi">Tiêu đề hiển thị công khai (VI/EN) do Admin biên soạn để đảm bảo ẩn danh &amp; chuẩn SEO — bạn chỉ cập nhật tên thật, tổng quan và số liệu.</span><span class="l-en">The public VI/EN title is written by Admin to stay anonymous &amp; SEO-ready — you only update the real name, overview and figures.</span></p>
+            <div style="display:flex; flex-direction:column; gap:16px;">
+              <div style="background:#F7FAFC; border:1px solid #EEF2F6; border-radius:12px; padding:14px 16px;">
+                <div style="font-size:11.5px; font-weight:700; color:#94A3B8; text-transform:uppercase; letter-spacing:.4px; margin-bottom:4px;"><span class="l-vi">Tiêu đề công khai (Admin biên soạn)</span><span class="l-en">Public title (curated by Admin)</span></div>
+                <div style="font-size:14px; font-weight:600; color:#334155;">{{ publicTitleDisplay }}</div>
+              </div>
+              <label style="display:flex; flex-direction:column; gap:6px;">
+                <span style="font-size:12.5px; font-weight:700; color:#334155;"><span class="l-vi">Tên doanh nghiệp (thật — chỉ Admin thấy)</span><span class="l-en">Business name (real — Admin only)</span></span>
+                <input value="{{ editCompanyName }}" onInput="{{ onEditCompanyName }}" style="{{ inputStyle }}">
+              </label>
+              <label style="display:flex; flex-direction:column; gap:6px;">
+                <span style="font-size:12.5px; font-weight:700; color:#334155;"><span class="l-vi">Tổng quan doanh nghiệp (mỗi dòng 1 ý — hiển thị tại trang chi tiết public)</span><span class="l-en">Business overview (one point per line — shown on the public detail page)</span></span>
+                <textarea value="{{ editHighlights }}" onInput="{{ onEditHighlights }}" rows="4" placeholder="VD: Chuỗi 5 chi nhánh vận hành ổn định&#10;Đội ngũ nhân sự lành nghề" style="{{ inputStyle }} resize:vertical;"></textarea>
+              </label>
+              <div style="border-top:1px solid #EEF2F6; padding-top:16px;">
+                <div style="font-size:13.5px; font-weight:800; margin-bottom:4px;"><span class="l-vi">Giao dịch &amp; tài chính</span><span class="l-en">Deal &amp; financials</span></div>
+                <p style="font-size:12px; color:#94A3B8; margin:0 0 14px; line-height:1.5;"><span class="l-vi">Nhập đầy đủ để tool định giá AI hoạt động chính xác.</span><span class="l-en">Complete these so the AI valuation tool works accurately.</span></p>
+
+                <label style="display:flex; flex-direction:column; gap:6px; margin-bottom:16px;">
+                  <span style="font-size:12.5px; font-weight:700; color:#334155;"><span class="l-vi">Phân khúc giao dịch</span><span class="l-en">Deal segment</span></span>
+                  <select value="{{ finSegment }}" onChange="{{ onFinSegment }}" style="{{ inputStyle }}">
+                    <sc-for list="{{ finSegmentOptions }}" as="sg" hint-placeholder-count="9"><option value="{{ sg.value }}">{{ sg.label }}</option></sc-for>
+                  </select>
+                </label>
+                <div class="d68-form-2" style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+                  <label style="display:flex; flex-direction:column; gap:6px;">
+                    <span style="font-size:12.5px; font-weight:700; color:#334155;"><span class="l-vi">Doanh thu bình quân tháng hiện tại ({{ finCur }})</span><span class="l-en">Average monthly sales ({{ finCur }})</span></span>
+                    <input type="number" value="{{ finAvgMonthly }}" onInput="{{ onFinAvgMonthly }}" style="{{ inputStyle }}">
+                  </label>
+                  <label style="display:flex; flex-direction:column; gap:6px;">
+                    <span style="font-size:12.5px; font-weight:700; color:#334155;"><span class="l-vi">Doanh thu năm gần nhất ({{ finCur }})</span><span class="l-en">Latest annual sales ({{ finCur }})</span></span>
+                    <input type="number" value="{{ finLatestAnnual }}" onInput="{{ onFinLatestAnnual }}" style="{{ inputStyle }}">
+                  </label>
+                </div>
+                <div class="d68-form-2" style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:16px;">
+                  <label style="display:flex; flex-direction:column; gap:6px;">
+                    <span style="font-size:12.5px; font-weight:700; color:#334155;"><span class="l-vi">Biên EBITDA / lợi nhuận (%)</span><span class="l-en">EBITDA / profit margin (%)</span></span>
+                    <input type="number" value="{{ finEbitdaPct }}" onInput="{{ onFinEbitdaPct }}" style="{{ inputStyle }}">
+                  </label>
+                  <label style="display:flex; flex-direction:column; gap:6px;">
+                    <span style="font-size:12.5px; font-weight:700; color:#334155;"><span class="l-vi">Tăng trưởng doanh thu năm gần nhất (%)</span><span class="l-en">Latest revenue growth (%)</span></span>
+                    <input type="number" value="{{ finGrowthPct }}" onInput="{{ onFinGrowthPct }}" style="{{ inputStyle }}">
+                  </label>
+                </div>
+
+                <div style="font-size:12.5px; font-weight:800; color:#0F2A4A; margin:20px 0 12px;"><span class="l-vi">Tài sản</span><span class="l-en">Assets</span></div>
+                <label style="display:flex; flex-direction:column; gap:6px; margin-bottom:16px;">
+                  <span style="font-size:12.5px; font-weight:700; color:#334155;"><span class="l-vi">Tài sản hữu hình &amp; vô hình DN sở hữu</span><span class="l-en">Tangible &amp; intangible assets owned</span></span>
+                  <textarea value="{{ finAssets }}" onInput="{{ onFinAssets }}" rows="2" style="{{ inputStyle }} resize:vertical;"></textarea>
+                </label>
+                <div class="d68-form-2" style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+                  <label style="display:flex; flex-direction:column; gap:6px;">
+                    <span style="font-size:12.5px; font-weight:700; color:#334155;"><span class="l-vi">Giá trị tài sản KHÔNG nằm trong giao dịch ({{ finCur }})</span><span class="l-en">Value of assets NOT in the transaction ({{ finCur }})</span></span>
+                    <input type="number" value="{{ finExcludedAsset }}" onInput="{{ onFinExcludedAsset }}" style="{{ inputStyle }}">
+                  </label>
+                  <label style="display:flex; flex-direction:column; gap:6px;">
+                    <span style="font-size:12.5px; font-weight:700; color:#334155;"><span class="l-vi">Nguồn số liệu</span><span class="l-en">Data source</span></span>
+                    <select value="{{ finDataSource }}" onChange="{{ onFinDataSource }}" style="{{ inputStyle }}">
+                      <sc-for list="{{ finDataSourceOptions }}" as="dso" hint-placeholder-count="5"><option value="{{ dso.value }}">{{ dso.label }}</option></sc-for>
+                    </select>
+                  </label>
+                </div>
+
+                <div style="font-size:12.5px; font-weight:800; color:#0F2A4A; margin:20px 0 12px;"><span class="l-vi">Nhu cầu giao dịch</span><span class="l-en">Deal ask</span></div>
+                <div class="d68-form-2" style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+                  <label style="display:flex; flex-direction:column; gap:6px;">
+                    <span style="font-size:12.5px; font-weight:700; color:#334155;"><span class="l-vi">Tỷ lệ cổ phần tối đa bán / pha loãng (%)</span><span class="l-en">Max stake to sell / dilute (%)</span></span>
+                    <input type="number" value="{{ finMaxStake }}" onInput="{{ onFinMaxStake }}" style="{{ inputStyle }}">
+                  </label>
+                  <label style="display:flex; flex-direction:column; gap:6px;">
+                    <span style="font-size:12.5px; font-weight:700; color:#334155;"><span class="l-vi">Số tiền gọi vốn / giá trị giao dịch ({{ finCur }})</span><span class="l-en">Amount sought / asking ({{ finCur }})</span></span>
+                    <input type="number" value="{{ finAmountSought }}" onInput="{{ onFinAmountSought }}" style="{{ inputStyle }}">
+                  </label>
+                </div>
+                <label style="display:flex; flex-direction:column; gap:6px; margin-top:16px;">
+                  <span style="font-size:12.5px; font-weight:700; color:#334155;"><span class="l-vi">Lý do gọi vốn / bán / cách dùng tiền</span><span class="l-en">Reason for raise / sale / use of funds</span></span>
+                  <textarea value="{{ editReason }}" onInput="{{ onEditReason }}" rows="3" style="{{ inputStyle }} resize:vertical;"></textarea>
+                </label>
+              </div>
+              <div style="display:flex; justify-content:flex-end; gap:10px;">
+                <button onClick="{{ saveProfile }}" style="background:#0F2A4A; color:#fff; font-weight:700; font-size:14.5px; padding:12px 24px; border-radius:10px; border:none; cursor:pointer;" style-hover="background:#14315A;"><span class="l-vi">Lưu thay đổi</span><span class="l-en">Save changes</span></button>
+              </div>
+              <sc-if value="{{ saved }}" hint-placeholder-val="{{ false }}">
+                <div style="font-size:13px; font-weight:700; color:#16A34A;">✓ <span class="l-vi">Đã lưu. Trang public đã cập nhật.</span><span class="l-en">Saved. Public page updated.</span></div>
+              </sc-if>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- DOCUMENTS -->
+        <sc-if value="{{ isDocuments }}" hint-placeholder-val="{{ false }}">
+          <sc-if value="{{ hasBizReqData }}" hint-placeholder-val="{{ false }}">
+            <div style="background:#fff; border:1px solid #E7EDF3; border-radius:16px; padding:22px 24px; margin-bottom:18px;">
+              <h3 style="font-size:15.5px; font-weight:800; margin:0 0 4px;">📂 <span class="l-vi">Yêu cầu tài liệu từ Nhà đầu tư</span><span class="l-en">Data requests from investors</span></h3>
+              <p style="font-size:12.5px; color:#64748B; margin:0 0 14px; line-height:1.5;"><span class="l-vi">Yêu cầu gửi qua Deals68 — Admin điều phối, không lộ liên hệ trực tiếp. Vui lòng tải tài liệu tương ứng vào mục bên dưới; Admin sẽ xác nhận và chuyển cho Nhà đầu tư.</span><span class="l-en">Requests are routed via Deals68 — Admin coordinates, no direct contact exposure. Please upload the matching document below; Admin will confirm and forward it.</span></p>
+              <div style="display:flex; flex-direction:column; gap:8px;">
+                <sc-for list="{{ bizReqDataRows }}" as="rq" hint-placeholder-count="2">
+                  <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap; border:1px solid #EEF2F6; border-radius:10px; padding:11px 14px;">
+                    <span style="font-size:12px; font-weight:700; color:#94A3B8;">{{ rq.investorCode }}</span>
+                    <span style="flex:1; min-width:160px; font-size:13.5px; font-weight:600; color:#334155;">{{ rq.fields }}</span>
+                    <span style="font-size:12px; color:#94A3B8;">{{ rq.date }}</span>
+                    <span style="font-size:12px; font-weight:700; padding:4px 10px; border-radius:6px; {{ rq.statusStyle }}">{{ rq.statusLabel }}</span>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </sc-if>
+          <div style="background:#fff; border:1px solid #E7EDF3; border-radius:16px; padding:26px 28px;">
+            <h2 style="font-size:19px; font-weight:800; margin:0 0 6px;"><span class="l-vi">Tài liệu doanh nghiệp</span><span class="l-en">Business documents</span></h2>
+            <p style="font-size:13.5px; color:#64748B; margin:0 0 20px;"><span class="l-vi">Tài liệu nhạy cảm (khóa) chỉ mở cho Nhà đầu tư sau khi proposal được duyệt. Tài liệu công khai hiển thị ngay ở trang hồ sơ. Hỗ trợ PDF, Excel, PowerPoint, Word — tối đa 25MB/file.</span><span class="l-en">Locked documents unlock for investors only after a proposal is approved. Public documents show on the profile page. PDF, Excel, PowerPoint, Word — max 25MB each.</span></p>
+            <div style="display:flex; flex-direction:column;">
+              <sc-for list="{{ docs }}" as="d" hint-placeholder-count="4">
+                <div style="display:flex; align-items:center; gap:14px; padding:14px 0; border-bottom:1px solid #F1F5F9;">
+                  <span style="flex-shrink:0; width:38px; height:38px; border-radius:9px; background:{{ d.iconBg }}; color:{{ d.iconColor }}; display:flex; align-items:center; justify-content:center; font-size:15px;">{{ d.icon }}</span>
+                  <div style="flex:1; min-width:0;">
+                    <div style="font-size:14.5px; font-weight:600; color:#334155;">{{ d.name }}</div>
+                    <div style="display:flex; align-items:center; gap:8px; margin-top:3px; flex-wrap:wrap;">
+                      <span style="font-size:11.5px; font-weight:600; color:#64748B; background:#F1F5F9; padding:2px 8px; border-radius:6px;">{{ d.categoryLabel }}</span>
+                      <span style="font-size:12px; color:{{ d.statusColor }};">{{ d.status }}</span>
+                    </div>
+                  </div>
+                  <button onClick="{{ d.toggleVisibility }}" style="{{ d.visStyle }}">{{ d.visLabel }}</button>
+                  <button onClick="{{ d.upload }}" style="flex-shrink:0; border:1px solid #E2E8F0; background:#fff; color:#334155; font-size:13px; font-weight:600; padding:8px 14px; border-radius:8px; cursor:pointer;" style-hover="border-color:#1BADEA; color:#1596cc;">{{ d.uploadLabel }}</button>
+                  <sc-if value="{{ d.removable }}" hint-placeholder-val="{{ false }}"><button onClick="{{ d.remove }}" style="flex-shrink:0; border:none; background:none; color:#DC2626; font-size:16px; cursor:pointer;">×</button></sc-if>
+                </div>
+              </sc-for>
+            </div>
+
+            <div style="margin-top:22px; padding-top:20px; border-top:1px solid #EEF2F6;">
+              <div style="font-size:13.5px; font-weight:800; margin-bottom:12px;"><span class="l-vi">Thêm tài liệu mới</span><span class="l-en">Add a document</span></div>
+              <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end;">
+                <label style="display:flex; flex-direction:column; gap:5px; flex:1; min-width:180px;">
+                  <span style="font-size:11.5px; font-weight:700; color:#94A3B8;"><span class="l-vi">Tên tài liệu</span><span class="l-en">Document name</span></span>
+                  <input value="{{ newDocName }}" onInput="{{ onNewDocName }}" placeholder="{{ newDocPlaceholder }}" style="border:1px solid #E2E8F0; border-radius:8px; padding:9px 11px; font-size:13.5px; background:#F7FAFC;">
+                </label>
+                <label style="display:flex; flex-direction:column; gap:5px; min-width:150px;">
+                  <span style="font-size:11.5px; font-weight:700; color:#94A3B8;"><span class="l-vi">Danh mục</span><span class="l-en">Category</span></span>
+                  <select value="{{ newDocCategory }}" onChange="{{ onNewDocCategory }}" style="border:1px solid #E2E8F0; border-radius:8px; padding:9px 11px; font-size:13.5px; background:#F7FAFC;">
+                    <sc-for list="{{ categoryOptions }}" as="co" hint-placeholder-count="5"><option value="{{ co.value }}">{{ co.label }}</option></sc-for>
+                  </select>
+                </label>
+                <label style="display:flex; flex-direction:column; gap:5px; min-width:130px;">
+                  <span style="font-size:11.5px; font-weight:700; color:#94A3B8;"><span class="l-vi">Hiển thị</span><span class="l-en">Visibility</span></span>
+                  <select value="{{ newDocVisibility }}" onChange="{{ onNewDocVisibility }}" style="border:1px solid #E2E8F0; border-radius:8px; padding:9px 11px; font-size:13.5px; background:#F7FAFC;">
+                    <option value="locked">{{ lockedLabel }}</option>
+                    <option value="public">{{ publicLabel }}</option>
+                  </select>
+                </label>
+                <button onClick="{{ addDoc }}" style="background:#0F2A4A; color:#fff; font-weight:700; font-size:13.5px; padding:10px 20px; border-radius:9px; border:none; cursor:pointer; height:39px;">+ <span class="l-vi">Thêm</span><span class="l-en">Add</span></button>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- IMAGES (V1.6) -->
+        <sc-if value="{{ isImages }}" hint-placeholder-val="{{ false }}">
+          <div style="background:#fff; border:1px solid #E7EDF3; border-radius:16px; padding:26px 28px;">
+            <h2 style="font-size:19px; font-weight:800; margin:0 0 6px;"><span class="l-vi">Ảnh doanh nghiệp</span><span class="l-en">Business images</span></h2>
+            <p style="font-size:13.5px; color:#64748B; margin:0 0 18px; line-height:1.55;"><span class="l-vi">Tối đa 6 ảnh, mỗi ảnh tối đa 10MB. Khuyến nghị 1600×900px (hero) hoặc 1280×720px. Admin có thể làm mờ tên/logo nhạy cảm hoặc thay ảnh public teaser.</span><span class="l-en">Up to 6 images, max 10MB each. Recommended 1600×900px (hero) or 1280×720px. Admin can blur sensitive names/logos or replace the public teaser image.</span></p>
+            <div class="d68-form-2" style="display:grid; grid-template-columns:repeat(3,1fr); gap:14px;">
+              <sc-for list="{{ dashImageSlots }}" as="dim" hint-placeholder-count="6">
+                <div style="display:flex; flex-direction:column; gap:6px;">
+                  <input value="{{ dim.title }}" onInput="{{ dim.onTitle }}" placeholder="{{ dim.titlePlaceholder }}" style="border:1px solid #E2E8F0; border-radius:8px; padding:8px 10px; font-size:12.5px; background:#F7FAFC;">
+                  <x-import component-from-global-scope="image-slot" from="./image-slot.js" id="{{ dim.slotId }}" shape="rounded" radius="10" placeholder="{{ dim.placeholder }}" hint-size="100%,150px"></x-import>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- DATA CENTER (V1.6) -->
+        <sc-if value="{{ isDatacenter }}" hint-placeholder-val="{{ false }}">
+          <div style="background:#fff; border:1px solid #E7EDF3; border-radius:16px; padding:26px 28px; margin-bottom:20px;">
+            <h2 style="font-size:19px; font-weight:800; margin:0 0 6px;">Business Data Center</h2>
+            <p style="font-size:13.5px; color:#64748B; margin:0 0 20px;"><span class="l-vi">Tăng điểm tin cậy hồ sơ bằng cách bổ sung báo cáo doanh thu, dữ liệu phần mềm, sao kê, hợp đồng và tài liệu pháp lý.</span><span class="l-en">Raise your profile's confidence score by adding revenue reports, software exports, bank statements, contracts and legal documents.</span></p>
+            <div style="display:flex; align-items:center; gap:20px; flex-wrap:wrap; margin-bottom:20px;">
+              <div style="flex-shrink:0; width:110px; height:110px; border-radius:50%; background:conic-gradient({{ dcScoreColor }} {{ dcScoreDeg }}deg, #EEF2F6 0deg); display:flex; align-items:center; justify-content:center;">
+                <div style="width:84px; height:84px; border-radius:50%; background:#fff; display:flex; flex-direction:column; align-items:center; justify-content:center;">
+                  <span style="font-size:24px; font-weight:800; color:{{ dcScoreColor }};">{{ dcScore }}</span>
+                  <span style="font-size:10px; font-weight:700; color:#94A3B8; text-transform:uppercase;">/100</span>
+                </div>
+              </div>
+              <div style="flex:1; min-width:220px;">
+                <div style="font-size:14.5px; font-weight:800; margin-bottom:4px;"><span class="l-vi">Data Confidence Score</span><span class="l-en">Data Confidence Score</span></div>
+                <div style="font-size:13px; color:#64748B; line-height:1.55; margin-bottom:10px;">{{ dcScoreDesc }}</div>
+                <span style="display:inline-block; font-size:12px; font-weight:700; padding:5px 12px; border-radius:7px; background:#EAF0F6; color:#0F2A4A;">{{ dcSourceLabel }}</span>
+              </div>
+            </div>
+            <div style="border-top:1px solid #F1F5F9; padding-top:16px;">
+              <div style="font-size:13.5px; font-weight:800; margin-bottom:10px;"><span class="l-vi">Checklist dữ liệu còn thiếu</span><span class="l-en">Missing data checklist</span></div>
+              <div style="display:flex; flex-direction:column; gap:8px;">
+                <sc-for list="{{ dcChecklist }}" as="chk" hint-placeholder-count="5">
+                  <div style="display:flex; align-items:center; gap:10px; font-size:13.5px;">
+                    <span style="{{ chk.iconStyle }}">{{ chk.icon }}</span>
+                    <span style="color:{{ chk.color }};">{{ chk.label }}</span>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- PROPOSALS -->
+        <sc-if value="{{ isProposals }}" hint-placeholder-val="{{ false }}">
+          <div style="background:#fff; border:1px solid #E7EDF3; border-radius:16px; padding:26px 28px; overflow-x:auto;">
+            <h2 style="font-size:19px; font-weight:800; margin:0 0 18px;"><span class="l-vi">Proposal đã gửi</span><span class="l-en">Proposals sent</span></h2>
+            <sc-if value="{{ hasProposals }}" hint-placeholder-val="{{ false }}">
+              <table style="width:100%; border-collapse:collapse; font-size:13.5px; min-width:520px;">
+                <thead><tr style="text-align:left; color:#94A3B8;">
+                  <th style="padding:9px 8px; border-bottom:2px solid #EEF2F6;"><span class="l-vi">NĐT</span><span class="l-en">Investor</span></th>
+                  <th style="padding:9px 8px; border-bottom:2px solid #EEF2F6;"><span class="l-vi">Loại / Quốc gia</span><span class="l-en">Type / Country</span></th>
+                  <th style="padding:9px 8px; border-bottom:2px solid #EEF2F6;"><span class="l-vi">Trạng thái</span><span class="l-en">Status</span></th>
+                  <th style="padding:9px 8px; border-bottom:2px solid #EEF2F6;"><span class="l-vi">Ngày gửi</span><span class="l-en">Sent at</span></th>
+                </tr></thead>
+                <tbody>
+                  <sc-for list="{{ proposalRows }}" as="p" hint-placeholder-count="4">
+                    <tr>
+                      <td style="padding:11px 8px; font-weight:700; color:#0F2A4A; border-bottom:1px solid #F1F5F9;">{{ p.code }}</td>
+                      <td style="padding:11px 8px; color:#475569; border-bottom:1px solid #F1F5F9;">{{ p.type }} · {{ p.country }}</td>
+                      <td style="padding:11px 8px; border-bottom:1px solid #F1F5F9;"><span style="{{ p.statusStyle }}">{{ p.statusLabel }}</span></td>
+                      <td style="padding:11px 8px; color:#94A3B8; border-bottom:1px solid #F1F5F9;">{{ p.sentAt }}</td>
+                    </tr>
+                  </sc-for>
+                </tbody>
+              </table>
+            </sc-if>
+            <sc-if value="{{ !hasProposals }}" hint-placeholder-val="{{ true }}">
+              <div style="text-align:center; padding:40px 20px; color:#94A3B8;">
+                <div style="font-size:15px; font-weight:600; margin-bottom:10px;"><span class="l-vi">Chưa gửi proposal nào.</span><span class="l-en">No proposals sent yet.</span></div>
+                <a href="Deals68 Investors.dc.html" style="display:inline-block; background:#0F2A4A; color:#fff; font-weight:700; font-size:14px; padding:11px 20px; border-radius:10px;"><span class="l-vi">Tìm Nhà đầu tư</span><span class="l-en">Find investors</span></a>
+              </div>
+            </sc-if>
+          </div>
+        </sc-if>
+
+        <!-- INTERESTED INVESTORS (NEW-3) -->
+        <sc-if value="{{ isInterested }}" hint-placeholder-val="{{ false }}">
+          <div style="background:#fff; border:1px solid #E7EDF3; border-radius:16px; padding:26px 28px;">
+            <h2 style="font-size:19px; font-weight:800; margin:0 0 6px;"><span class="l-vi">Nhà đầu tư quan tâm</span><span class="l-en">Interested investors</span></h2>
+            <p style="font-size:13.5px; color:#64748B; margin:0 0 18px; line-height:1.55;"><span class="l-vi">Nhà đầu tư đã bấm “Bày tỏ quan tâm” tại hồ sơ công khai của bạn. Bấm “Đồng ý kết nối” để hai bên xem hồ sơ chi tiết của nhau.</span><span class="l-en">Investors who clicked “Express interest” on your public profile. Click “Accept connection” so both sides can view each other's full profile.</span></p>
+            <sc-if value="{{ hasInterested }}" hint-placeholder-val="{{ true }}">
+              <div style="display:flex; flex-direction:column; gap:14px;">
+                <sc-for list="{{ interestedRows }}" as="iv" hint-placeholder-count="3">
+                  <div style="border:1px solid #EEF2F6; border-radius:14px; padding:18px;">
+                    <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:14px; flex-wrap:wrap; margin-bottom:10px;">
+                      <div style="flex:1; min-width:220px;">
+                        <div style="font-size:12px; font-weight:700; color:#94A3B8;">{{ iv.code }} · {{ iv.type }} · {{ iv.country }}</div>
+                        <div style="font-size:15px; font-weight:700; margin-top:3px;">{{ iv.title }}</div>
+                        <div style="font-size:12.5px; color:#64748B; margin-top:4px;">{{ iv.industries }}</div>
+                      </div>
+                      <span style="{{ iv.statusStyle }}">{{ iv.statusLabel }}</span>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap; padding-top:12px; border-top:1px solid #F1F5F9;">
+                      <span style="font-size:12.5px; color:#475569;">💰 {{ iv.ticket }}</span>
+                      <span style="font-size:12px; color:#94A3B8;">{{ iv.when }}</span>
+                      <div style="margin-left:auto; display:flex; gap:8px;">
+                        <sc-if value="{{ iv.connected }}" hint-placeholder-val="{{ false }}">
+                          <a href="{{ iv.detailHref }}" style="background:#0F2A4A; color:#fff; font-weight:700; font-size:12.5px; padding:9px 15px; border-radius:8px;"><span class="l-vi">Xem hồ sơ NĐT</span><span class="l-en">View investor</span></a>
+                        </sc-if>
+                        <sc-if value="{{ !iv.connected }}" hint-placeholder-val="{{ true }}">
+                          <button onClick="{{ iv.accept }}" style="background:#16A34A; color:#fff; font-weight:700; font-size:12.5px; padding:9px 16px; border-radius:8px; border:none; cursor:pointer;"><span class="l-vi">Đồng ý kết nối</span><span class="l-en">Accept connection</span></button>
+                        </sc-if>
+                      </div>
+                    </div>
+                    <sc-if value="{{ iv.connected }}" hint-placeholder-val="{{ false }}">
+                      <div style="margin-top:12px; padding:12px 14px; background:#E9F9EF; border-radius:10px; font-size:12.5px; color:#166534;">
+                        <div style="font-weight:700; margin-bottom:4px;">✓ <span class="l-vi">Đã kết nối — liên hệ được chia sẻ nếu NĐT cho phép:</span><span class="l-en">Connected — contact shared if the investor allows:</span></div>
+                        <sc-if value="{{ iv.showEmail }}" hint-placeholder-val="{{ false }}"><div>✉️ {{ iv.email }}</div></sc-if>
+                        <sc-if value="{{ iv.showPhone }}" hint-placeholder-val="{{ false }}"><div>📱 {{ iv.phone }}</div></sc-if>
+                        <sc-if value="{{ iv.noContact }}" hint-placeholder-val="{{ true }}"><div style="color:#64748B;"><span class="l-vi">NĐT chưa công khai liên hệ — trao đổi qua Deals68.</span><span class="l-en">Investor hasn't shared contact — communicate via Deals68.</span></div></sc-if>
+                      </div>
+                    </sc-if>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-if>
+            <sc-if value="{{ !hasInterested }}" hint-placeholder-val="{{ false }}">
+              <div style="text-align:center; padding:40px 20px; color:#94A3B8; font-size:15px; font-weight:600;"><span class="l-vi">Chưa có nhà đầu tư nào bày tỏ quan tâm.</span><span class="l-en">No investors have expressed interest yet.</span></div>
+            </sc-if>
+          </div>
+        </sc-if>
+
+        <!-- SERVICES & BILLING (V1.6.1) -->
+        <sc-if value="{{ isServices }}" hint-placeholder-val="{{ false }}">
+          <div style="background:#fff; border:1px solid #E7EDF3; border-radius:16px; padding:26px 28px; margin-bottom:20px;">
+            <h2 style="font-size:19px; font-weight:800; margin:0 0 6px;"><span class="l-vi">Gói dịch vụ hiện tại</span><span class="l-en">Current plan</span></h2>
+            <p style="font-size:13.5px; color:#64748B; margin:0 0 18px;"><span class="l-vi">Gói Ưu tiên cao hơn gói Thường 30%. Nâng cấp chỉ thanh toán phần chênh lệch cho thời hạn còn lại.</span><span class="l-en">Featured costs 30% more than Standard. Upgrading only charges the difference for the remaining term.</span></p>
+            <div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap; padding:16px 18px; background:#F7FAFC; border:1px solid #EEF2F6; border-radius:12px;">
+              <span style="{{ svcPlanBadge }}">{{ svcPlanName }}</span>
+              <span style="font-size:13.5px; color:#475569;">📨 {{ svcQuota }}</span>
+              <span style="font-size:13.5px; color:#475569;">🗓 {{ svcTerm }}</span>
+            </div>
+          </div>
+
+          <sc-if value="{{ svcCanUpgrade }}" hint-placeholder-val="{{ true }}">
+            <div style="background:#fff; border:1px solid #E7EDF3; border-radius:16px; padding:26px 28px;">
+              <h3 style="font-size:16px; font-weight:800; margin:0 0 14px;"><span class="l-vi">Nâng cấp lên Gói Ưu tiên</span><span class="l-en">Upgrade to Featured</span> <span style="color:#F2B51D;">★</span></h3>
+              <div class="d68-form-2" style="display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:18px;">
+                <div style="border:1px solid #EEF2F6; border-radius:12px; padding:16px;">
+                  <div style="font-size:13px; font-weight:800; margin-bottom:4px;"><span class="l-vi">Gói Thường</span><span class="l-en">Standard</span></div>
+                  <div style="font-size:12.5px; color:#64748B; margin-bottom:8px;">100 proposal</div>
+                  <div style="font-size:15px; font-weight:800; color:#0F2A4A;">{{ svcStdPrice }}</div>
+                </div>
+                <div style="border:2px solid #F2B51D; border-radius:12px; padding:16px; background:#FFFDF5;">
+                  <div style="font-size:13px; font-weight:800; margin-bottom:4px;"><span class="l-vi">Gói Ưu tiên</span><span class="l-en">Featured</span> ★</div>
+                  <div style="font-size:12.5px; color:#64748B; margin-bottom:8px;">200 proposal + <span class="l-vi">nổi bật</span><span class="l-en">boosted</span></div>
+                  <div style="font-size:15px; font-weight:800; color:#B8860B;">{{ svcFeatPrice }}</div>
+                </div>
+              </div>
+              <div style="background:#0F2A4A; color:#fff; border-radius:12px; padding:18px 20px; margin-bottom:16px;">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                  <span style="font-weight:700;"><span class="l-vi">Phần chênh lệch cần thanh toán</span><span class="l-en">Upgrade difference due</span></span>
+                  <span style="font-size:22px; font-weight:800; color:#F2B51D;">{{ svcUpgradeCost }}</span>
+                </div>
+                <p style="font-size:11.5px; color:#9db4cc; margin:10px 0 0; line-height:1.5;">{{ svcUpgradeNote }}</p>
+              </div>
+              <button onClick="{{ svcConfirmUpgrade }}" style="width:100%; background:#F2B51D; color:#0F2A4A; font-weight:800; font-size:15px; padding:14px; border-radius:11px; border:none; cursor:pointer;" style-hover="background:#e0a70f;"><span class="l-vi">Thanh toán chênh lệch &amp; nâng cấp</span><span class="l-en">Pay difference &amp; upgrade</span> →</button>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ svcUpgraded }}" hint-placeholder-val="{{ false }}">
+            <div style="background:#E9F9EF; border:1px solid #BBF0CE; border-radius:16px; padding:24px 26px; text-align:center;">
+              <div style="font-size:36px; margin-bottom:10px;">✅</div>
+              <div style="font-size:16px; font-weight:800; color:#16A34A; margin-bottom:6px;"><span class="l-vi">Đã ghi nhận nâng cấp lên Gói Ưu tiên</span><span class="l-en">Upgrade to Featured recorded</span></div>
+              <p style="font-size:13.5px; color:#475569; margin:0;"><span class="l-vi">Hạn mức đã tăng lên 200 proposal. Admin sẽ xác nhận khoản thanh toán chênh lệch.</span><span class="l-en">Your quota is now 200 proposals. Admin will confirm the difference payment.</span></p>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ svcIsFeatured }}" hint-placeholder-val="{{ false }}">
+            <sc-if value="{{ !svcUpgraded }}" hint-placeholder-val="{{ true }}">
+              <div style="background:#FEF3D3; border:1px solid #F5D98B; border-radius:16px; padding:20px 24px; display:flex; align-items:center; gap:12px;">
+                <span style="font-size:22px;">★</span>
+                <div style="font-size:13.5px; color:#8a6400; font-weight:600;"><span class="l-vi">Bạn đang dùng Gói Ưu tiên — hồ sơ được nổi bật trên listing và trang chủ.</span><span class="l-en">You're on the Featured plan — your profile is boosted on the listing and homepage.</span></div>
+              </div>
+            </sc-if>
+          </sc-if>
+        </sc-if>
+      </div>
+    </div>
+    </sc-if>
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { lang:'vi', tab:'overview', bizId:null, saved:false, edits:{}, upgradeDone:false, newDocName:'', newDocCategory:'financials', newDocVisibility:'locked' };
+
+  componentDidMount() {
+    try {
+      var p = new URLSearchParams(location.search);
+      var q = p.get('biz');
+      var session = window.D68.getSession();
+      var id = q || (session && session.role==='business' ? session.id : null) || 'hkmedi';
+      this.setState({ bizId: id });
+      window.D68.setSession({ role:'business', id:id, name:id });
+    } catch(e) { this.setState({ bizId:'hkmedi' }); }
+  }
+
+  setLang(l){ this.setState({ lang:l }); }
+
+  // V1.6: Images tab — 6 persistent image slots per business, titles saved into bizState.
+  imagesVals(bizId, bizState, T) {
+    const meta = bizState.imagesMeta || [];
+    return {
+      dashImageSlots: [0,1,2,3,4,5].map(i => ({
+        slotId: 'dash-' + bizId + '-img' + (i+1),
+        title: (meta[i] && meta[i].title) || '',
+        titlePlaceholder: T('Tên ảnh ' + (i+1), 'Image title ' + (i+1)),
+        placeholder: T('Kéo ảnh vào đây', 'Drop image here'),
+        onTitle: (e)=>{
+          const D68 = window.D68;
+          const s = D68.getBusinessState(bizId);
+          const m = (s.imagesMeta || []).slice();
+          while (m.length < 6) m.push({ title:'' });
+          m[i] = { title: e.target.value };
+          s.imagesMeta = m;
+          D68.saveBusinessState(bizId, s);
+          this.forceUpdate();
+        }
+      }))
+    };
+  }
+
+  // V1.6.1: Services & Billing — show current plan, allow Standard→Featured upgrade (pay difference).
+  servicesVals(bizId, bizState, T, vi) {
+    const D68 = window.D68;
+    const plan = bizState.plan || 'Standard';
+    const country = (bizState.profile && bizState.profile.country) || 'Vietnam';
+    const cur = country === 'Vietnam' ? 'VND' : 'USD';
+    const money = (v) => v > 0 ? (cur==='VND' ? Math.round(v).toLocaleString('vi-VN') + ' ₫' : '$' + Math.round(v).toLocaleString('en-US')) : (cur==='VND' ? '0 ₫' : '$0');
+    const units = bizState.units || 4;
+    const stdUnit = D68 ? D68.bizPlanUnitPrice('Standard', country) : (country==='Vietnam'?500000:20);
+    const featUnit = D68 ? D68.bizPlanUnitPrice('Featured', country) : (country==='Vietnam'?650000:26);
+    const upgradeCost = D68 ? D68.bizUpgradeCost('Standard', 'Featured', country, units) : Math.round((featUnit-stdUnit)*units);
+    const isFeatured = plan === 'Featured';
+    const upgraded = this.state.upgradeDone;
+
+    return {
+      svcPlanName: isFeatured ? T('Gói Ưu tiên','Featured') : T('Gói Thường','Standard'),
+      svcPlanBadge: `font-size:12px; font-weight:800; padding:6px 12px; border-radius:8px; background:${isFeatured?'#FEF3D3':'#EAF0F6'}; color:${isFeatured?'#B8860B':'#0F2A4A'};`,
+      svcQuota: (bizState.quotaTotal || (isFeatured?200:100)) + ' proposal',
+      svcTerm: units + ' ' + T('tuần','weeks'),
+      svcStdPrice: money(stdUnit) + '/' + T('tuần','wk'),
+      svcFeatPrice: money(featUnit) + '/' + T('tuần','wk'),
+      svcIsFeatured: isFeatured,
+      svcCanUpgrade: !isFeatured && !upgraded,
+      svcUpgradeCost: money(upgradeCost),
+      svcUpgradeNote: T(`Nâng cấp lên Ưu tiên chỉ thanh toán phần chênh lệch cho ${units} tuần còn lại: 30% × ${money(stdUnit*units)} = ${money(upgradeCost)}.`, `Upgrading to Featured only charges the difference for the remaining ${units} weeks: 30% × ${money(stdUnit*units)} = ${money(upgradeCost)}.`),
+      svcUpgraded: upgraded,
+      svcConfirmUpgrade: ()=>{
+        const s = D68.getBusinessState(bizId);
+        s.plan = 'Featured';
+        s.quotaTotal = Math.max(s.quotaTotal || 100, 200);
+        s.pendingUpgrade = { from:'Standard', to:'Featured', amount: upgradeCost, at: new Date().toISOString() };
+        D68.saveBusinessState(bizId, s);
+        D68.logAudit && D68.logAudit('business_upgrade', bizId + ' Standard→Featured, +' + money(upgradeCost));
+        this.setState({ upgradeDone:true });
+      }
+    };
+  }
+
+  // V1.6.1: full financial fields (matching Register step 2) editable in the dashboard, backed by profile.financialInput.
+  financialsVals(profile, T, vi, bind) {
+    const st = this.state;
+    const fin = profile.financialInput || {};
+    const fe = (st.edits && st.edits.fin) || {};
+    const cur = (profile.country === 'Vietnam') ? '₫' : 'USD';
+    const val = (k, fallback) => fe[k] !== undefined ? fe[k] : (fin[k] !== undefined ? fin[k] : (fallback || ''));
+    const setFin = (k) => (e) => {
+      const edits = Object.assign({}, st.edits);
+      edits.fin = Object.assign({}, edits.fin, { [k]: e.target.value });
+      this.setState({ edits: edits, saved:false });
+    };
+    return {
+      finCur: cur,
+      finSegment: (fe.segment !== undefined ? fe.segment : (profile.segment || 'fundraising')),
+      onFinSegment: (e)=>{ const edits = Object.assign({}, st.edits); edits.fin = Object.assign({}, edits.fin, { segment: e.target.value }); edits.segment = e.target.value; this.setState({ edits: edits, saved:false }); },
+      finSegmentOptions: [
+        { value:'store_transfer', label:T('Sang nhượng cửa hàng','Store transfer') },
+        { value:'small_business_sale', label:T('Bán business nhỏ','Small business sale') },
+        { value:'full_sale', label:T('Bán 100% doanh nghiệp','Sell 100% of business') },
+        { value:'stake_sale', label:T('Bán cổ phần','Stake sale') },
+        { value:'fundraising', label:T('Huy động vốn','Fundraising') },
+        { value:'loan', label:T('Vay vốn','Business loan') },
+        { value:'operating_partner', label:T('Tìm đối tác vận hành','Operating partner search') },
+        { value:'franchise', label:T('Franchise / đại lý','Franchise / agency') },
+        { value:'asset_sale', label:T('Bán tài sản vận hành','Operating asset sale') }
+      ],
+      finAvgMonthly: val('avg_monthly_sales'), onFinAvgMonthly: setFin('avg_monthly_sales'),
+      finLatestAnnual: val('latest_annual_sales'), onFinLatestAnnual: setFin('latest_annual_sales'),
+      finEbitdaPct: val('ebitda_margin_pct'), onFinEbitdaPct: setFin('ebitda_margin_pct'),
+      finGrowthPct: val('growth_rate_pct'), onFinGrowthPct: setFin('growth_rate_pct'),
+      finAssets: val('tangible_intangible_assets_text'), onFinAssets: setFin('tangible_intangible_assets_text'),
+      finExcludedAsset: val('excluded_physical_asset_value'), onFinExcludedAsset: setFin('excluded_physical_asset_value'),
+      finDataSource: val('data_source', 'owner_estimate'), onFinDataSource: setFin('data_source'),
+      finDataSourceOptions: [
+        { value:'owner_estimate', label:T('Ước tính của chủ DN','Owner estimate') },
+        { value:'accounting_data', label:T('Dữ liệu kế toán','Accounting data') },
+        { value:'pos_export', label:T('Xuất từ POS','POS export') },
+        { value:'bank_statement', label:T('Sao kê ngân hàng','Bank statement') },
+        { value:'tax_data', label:T('Dữ liệu thuế','Tax data') }
+      ],
+      finMaxStake: val('max_stake_pct'), onFinMaxStake: setFin('max_stake_pct'),
+      finAmountSought: val('investment_amount_sought'), onFinAmountSought: setFin('investment_amount_sought')
+    };
+  }
+
+  // V1.6: Documents — persisted per-business list with category + public/locked visibility.
+  documentsVals(bizId, bizState, T, vi) {
+    const D68 = window.D68;
+    const catLabels = {
+      financials: T('Tài chính','Financials'),
+      profile: T('Hồ sơ DN','Company profile'),
+      im: T('Teaser / IM','Teaser / IM'),
+      legal: T('Pháp lý','Legal'),
+      other: T('Khác','Other')
+    };
+    const catIcon = { financials:['📊','#E9F9EF','#16A34A'], profile:['🏢','#EAF0F6','#0F2A4A'], im:['📈','#E7F6FD','#1596cc'], legal:['⚖️','#FEF3D3','#B8860B'], other:['📄','#F1F5F9','#64748B'] };
+
+    let docs = bizState.documents;
+    if (!docs) {
+      docs = [
+        { id:'d1', name:T('Hồ sơ / Profile DN','Business profile'), category:'profile', visibility:'public', uploaded:true, seed:true },
+        { id:'d2', name:T('Báo cáo tài chính 2024–2025','Financial report 2024–2025'), category:'financials', visibility:'locked', uploaded:true, seed:true },
+        { id:'d3', name:T('Teaser / IM','Teaser / IM'), category:'im', visibility:'public', uploaded:true, seed:true },
+        { id:'d4', name:T('Giấy phép / Hồ sơ pháp lý','Licenses / legal docs'), category:'legal', visibility:'locked', uploaded:false, seed:true }
+      ];
+      const s = D68.getBusinessState(bizId); s.documents = docs; D68.saveBusinessState(bizId, s);
+    }
+    const persist = (next) => { const s = D68.getBusinessState(bizId); s.documents = next; D68.saveBusinessState(bizId, s); this.forceUpdate(); };
+
+    return {
+      docs: docs.map(d => {
+        const ic = catIcon[d.category] || catIcon.other;
+        return {
+          name: d.name, icon: ic[0], iconBg: ic[1], iconColor: ic[2],
+          categoryLabel: catLabels[d.category] || catLabels.other,
+          status: d.uploaded ? T('Đã tải lên','Uploaded') : T('Chưa tải lên','Not uploaded'),
+          statusColor: d.uploaded ? '#16A34A' : '#94A3B8',
+          visLabel: d.visibility === 'public' ? T('🌐 Công khai','🌐 Public') : T('🔒 Khóa','🔒 Locked'),
+          visStyle: `flex-shrink:0; border:1px solid ${d.visibility==='public'?'#BBF0CE':'#E2E8F0'}; background:${d.visibility==='public'?'#E9F9EF':'#F7FAFC'}; color:${d.visibility==='public'?'#16A34A':'#64748B'}; font-size:12px; font-weight:700; padding:8px 12px; border-radius:8px; cursor:pointer;`,
+          toggleVisibility: ()=>persist(docs.map(x => x.id===d.id ? Object.assign({}, x, { visibility: x.visibility==='public'?'locked':'public' }) : x)),
+          uploadLabel: d.uploaded ? T('Thay thế','Replace') : T('Tải lên','Upload'),
+          upload: ()=>persist(docs.map(x => x.id===d.id ? Object.assign({}, x, { uploaded:true }) : x)),
+          removable: !d.seed,
+          remove: ()=>persist(docs.filter(x => x.id!==d.id))
+        };
+      }),
+      categoryOptions: Object.keys(catLabels).map(k => ({ value:k, label:catLabels[k] })),
+      lockedLabel: T('🔒 Khóa (mở sau khi duyệt)','🔒 Locked (unlock after approval)'),
+      publicLabel: T('🌐 Công khai','🌐 Public'),
+      newDocName: this.state.newDocName || '',
+      newDocPlaceholder: T('VD: Sao kê ngân hàng Q1/2026','e.g. Bank statement Q1/2026'),
+      onNewDocName: (e)=>this.setState({ newDocName: e.target.value }),
+      newDocCategory: this.state.newDocCategory || 'financials',
+      onNewDocCategory: (e)=>this.setState({ newDocCategory: e.target.value }),
+      newDocVisibility: this.state.newDocVisibility || 'locked',
+      onNewDocVisibility: (e)=>this.setState({ newDocVisibility: e.target.value }),
+      addDoc: ()=>{
+        const name = (this.state.newDocName || '').trim();
+        if (!name) return;
+        const next = docs.concat([{ id:'d'+Date.now(), name, category: this.state.newDocCategory||'financials', visibility: this.state.newDocVisibility||'locked', uploaded:true, seed:false }]);
+        this.setState({ newDocName:'' });
+        persist(next);
+      }
+    };
+  }
+
+  // V1.6: Data Center — confidence score from data source + files, missing-data checklist.
+  datacenterVals(profile, T, vi) {
+    const fin = profile.financialInput || null;
+    const srcScores = { owner_estimate:40, accounting_data:70, pos_export:75, bank_statement:80, tax_data:85 };
+    const srcLabels = {
+      owner_estimate: T('Nguồn: Ước tính của chủ DN','Source: Owner estimate'),
+      accounting_data: T('Nguồn: Dữ liệu kế toán','Source: Accounting data'),
+      pos_export: T('Nguồn: Xuất từ POS','Source: POS export'),
+      bank_statement: T('Nguồn: Sao kê ngân hàng','Source: Bank statement'),
+      tax_data: T('Nguồn: Dữ liệu thuế','Source: Tax data')
+    };
+    const src = fin ? fin.data_source : 'owner_estimate';
+    const fileCount = (profile.files || []).length;
+    let score = (srcScores[src] || 40) + Math.min(15, fileCount * 5);
+    if (profile.highlights) score += 3;
+    if (profile.investmentReason) score += 2;
+    score = Math.min(95, score);
+    const color = score >= 70 ? '#16A34A' : score >= 50 ? '#B8860B' : '#DC2626';
+    const items = [
+      { ok: !!fin, vi:'Nhập số liệu tài chính chi tiết (doanh thu tháng/năm, EBITDA, % cổ phần)', en:'Enter detailed financials (monthly/annual sales, EBITDA, stake %)' },
+      { ok: fileCount >= 3, vi:'Upload tối thiểu 3 tài liệu (BCTC, Profile DN, IM...)', en:'Upload at least 3 documents (financials, company profile, IM...)' },
+      { ok: !!profile.highlights, vi:'Bổ sung tổng quan doanh nghiệp (highlights)', en:'Add business overview highlights' },
+      { ok: !!profile.investmentReason, vi:'Giải thích lý do gọi vốn / bán và cách dùng tiền', en:'Explain reason for raise/sale and use of funds' },
+      { ok: src !== 'owner_estimate', vi:'Nâng nguồn số liệu lên POS/kế toán/sao kê/thuế', en:'Upgrade data source to POS/accounting/bank/tax' }
+    ];
+    return {
+      dcScore: score, dcScoreDeg: Math.round(score / 100 * 360), dcScoreColor: color,
+      dcScoreDesc: score >= 70
+        ? T('Hồ sơ có độ tin cậy tốt — nhà đầu tư dễ phản hồi hơn.','Good confidence — investors are more likely to respond.')
+        : T('Hồ sơ cần bổ sung dữ liệu để tăng khả năng được nhà đầu tư phản hồi. Hãy upload BCTC/POS/sao kê hoặc giải thích logic định giá.','Add more data to improve investor response. Upload financials/POS/bank statements or explain your valuation logic.'),
+      dcSourceLabel: srcLabels[src] || srcLabels.owner_estimate,
+      dcChecklist: items.map(it => ({
+        icon: it.ok ? '✓' : '○',
+        iconStyle: `flex-shrink:0; width:20px; height:20px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:800; background:${it.ok?'#E9F9EF':'#F1F5F9'}; color:${it.ok?'#16A34A':'#94A3B8'};`,
+        color: it.ok ? '#334155' : '#64748B',
+        label: T(it.vi, it.en)
+      }))
+    };
+  }
+
+  // V1.6.1: Business Quality Score (separate from Data Confidence) — computed by the shared mock layer.
+  qualityVals(bizId, T, vi) {
+    const D68 = window.D68;
+    const q = D68.computeQualityScore(bizId);
+    const band = q.band;
+    const missing = q.parts.filter(p => !p.ok).sort((a,b)=>(b.max-b.points)-(a.max-a.points));
+    const desc = q.reviewStatus !== 'approved'
+      ? T('Đang chờ Admin duyệt chất lượng (+10 điểm). ' + (missing.length ? 'Nên bổ sung: ' + missing.slice(0,2).map(p=>p.labelVi).join(', ') + '.' : ''),
+          'Awaiting Admin quality review (+10 pts). ' + (missing.length ? 'Suggested: ' + missing.slice(0,2).map(p=>p.labelEn).join(', ') + '.' : ''))
+      : (missing.length
+        ? T('Bổ sung ' + missing.slice(0,2).map(p=>p.labelVi).join(', ') + ' để tăng điểm chất lượng hồ sơ.', 'Improve ' + missing.slice(0,2).map(p=>p.labelEn).join(', ') + ' to raise your profile quality.')
+        : T('Hồ sơ đạt chất lượng cao — nhà đầu tư ưu tiên xem các hồ sơ điểm cao.', 'High-quality profile — investors prioritise high-scoring listings.'));
+    return {
+      qsScore: q.score, qsColor: band.color, qsDeg: Math.round(q.score/100*360),
+      qsBandLabel: T(band.labelVi, band.labelEn),
+      qsBandStyle: `font-size:11.5px; font-weight:800; padding:4px 11px; border-radius:7px; background:${band.bg}; color:${band.color};`,
+      qsDesc: desc,
+      qsParts: q.parts.map(p => ({
+        icon: p.ok ? '✓' : '○', label: T(p.labelVi, p.labelEn), points: p.points, max: p.max,
+        chipStyle: `font-size:11px; font-weight:600; padding:4px 9px; border-radius:6px; background:${p.ok?'#E9F9EF':'#F1F5F9'}; color:${p.ok?'#16A34A':'#64748B'};`
+      }))
+    };
+  }
+
+  // NEW-3: Interested investors — investors who expressed interest on the public profile; DN accepts to connect.
+  interestedVals(bizId, T, vi) {
+    const D68 = window.D68;
+    if (!D68) return { hasInterested:false, interestedRows:[] };
+    const rows = D68.getInterestsForBusiness(bizId).slice().sort((a,b)=>b.ts-a.ts);
+    const invByCode = {}; D68.getInvestors().forEach(i=>invByCode[i.code]=i);
+    return {
+      hasInterested: rows.length>0,
+      interestedRows: rows.map(r => {
+        const inv = invByCode[r.investorCode] || {};
+        const connected = r.status === 'connected';
+        const istate = D68.getInvestorState(D68.investorStateId(r.investorCode));
+        const priv = (istate.overrides && istate.overrides.privacy) || {};
+        const showEmail = connected && !!priv.shareEmail && !!priv.email;
+        const showPhone = connected && !!priv.sharePhone && !!priv.phone;
+        return {
+          code: r.investorCode,
+          title: vi ? (inv.titleVi || inv.code) : (inv.titleEn || inv.code),
+          type: inv.type || '—', country: (vi ? inv.countryVi : inv.country) || inv.country || '—',
+          industries: (inv.industries || []).slice(0,3).join(', ') || '—',
+          ticket: (inv.ticketMin && inv.ticketMax) ? ('$' + Math.round(inv.ticketMin/1000) + 'K – $' + Math.round(inv.ticketMax/1000) + 'K') : '—',
+          when: new Date(r.ts).toLocaleDateString(vi?'vi-VN':'en-US'),
+          connected,
+          statusStyle: connected
+            ? 'font-size:12px; font-weight:800; padding:5px 11px; border-radius:7px; background:#E9F9EF; color:#16A34A;'
+            : 'font-size:12px; font-weight:800; padding:5px 11px; border-radius:7px; background:#FEF3D3; color:#B8860B;',
+          statusLabel: connected ? T('Đã kết nối','Connected') : T('Đang chờ','Pending'),
+          showEmail, email: priv.email || '',
+          showPhone, phone: ((priv.phoneCountry || '') + ' ' + (priv.phone || '')).trim(),
+          noContact: connected && !showEmail && !showPhone,
+          accept: ()=>{ D68.setInterestStatus(bizId, r.investorCode, 'connected'); this.forceUpdate(); },
+          detailHref: 'Deals68 Investor Detail.dc.html?code=' + r.investorCode
+        };
+      })
+    };
+  }
+
+  // NEW: Request Data workflow — requests investors send via Admin, surfaced read-only on the Documents tab.
+  bizRequestDataVals(bizId, T, vi) {
+    const D68 = window.D68; if (!D68) return {};
+    const reqs = D68.getRequestDataForBusiness(bizId).slice().sort((a,b)=>b.requestedAt-a.requestedAt);
+    const statusMap = { pending: [T('Chờ xử lý','Pending'), 'color:#B8860B; background:#FEF3D3;'], fulfilled: [T('Đã cung cấp','Fulfilled'), 'color:#16A34A; background:#E9F9EF;'], declined: [T('Từ chối','Declined'), 'color:#DC2626; background:#FDECEC;'] };
+    return {
+      hasBizReqData: reqs.length > 0,
+      bizReqDataRows: reqs.map(r => ({
+        investorCode: r.investorCode, fields: r.fields,
+        date: new Date(r.requestedAt).toLocaleDateString(vi?'vi-VN':'en-US'),
+        statusLabel: (statusMap[r.status]||[r.status,''])[0], statusStyle: (statusMap[r.status]||['',''])[1]
+      }))
+    };
+  }
+
+  switchBiz(id) {
+    window.D68.setSession({ role:'business', id:id, name:id });
+    this.setState({ bizId:id, tab:'overview', saved:false, edits:{} });
+  }
+
+  renderVals() {
+    const vi = this.state.lang === 'vi';
+    const T = (a,b) => vi ? a : b;
+    const st = this.state;
+    const D68 = window.D68;
+    const bizId = st.bizId || 'hkmedi';
+    const seed = D68 ? D68.getBusinessSeed(bizId) : null;
+    const bizState = D68 ? D68.getBusinessState(bizId) : { plan:'Standard', quotaTotal:100, quotaUsed:0, profileStatus:'Live' };
+    const proposals = D68 ? D68.getProposals().filter(p => p.businessId === bizId) : [];
+    const investors = D68 ? D68.getInvestors() : [];
+    const byCode = {}; investors.forEach(inv => byCode[inv.code] = inv);
+
+    const quotaTotal = bizState.quotaTotal;
+    const quotaUsed = bizState.quotaUsed;
+    const quotaRemaining = Math.max(0, quotaTotal - quotaUsed);
+    const quotaPct = Math.min(100, Math.round((quotaUsed / quotaTotal) * 100));
+
+    const locked = D68 ? !D68.canAccessDashboard(bizState) : false;
+    const lockInfoMap = {
+      payment_pending: { icon:'🕒', titleVi:'Dashboard chưa mở — chờ xác nhận thanh toán', titleEn:'Dashboard locked — awaiting payment confirmation',
+        descVi:'Hồ sơ của bạn đã được lưu trong 7 ngày. Vui lòng chuyển khoản đúng nội dung để Admin xác nhận.', descEn:'Your profile is saved for 7 days. Please transfer with the correct reference for admin confirmation.' },
+      pending_admin_review: { icon:'⏳', titleVi:'Dashboard chưa mở — chờ Admin duyệt', titleEn:'Dashboard locked — pending admin review',
+        descVi:'Thanh toán đã được ghi nhận. Dashboard sẽ mở ngay khi Admin duyệt xong hồ sơ.', descEn:'Payment received. Your dashboard unlocks as soon as Admin approves your profile.' },
+      expired: { icon:'⌛', titleVi:'Hồ sơ đã hết hạn', titleEn:'Profile expired',
+        descVi:'Quá 7 ngày chưa xác nhận thanh toán nên hồ sơ đã tự động ẩn. Vui lòng liên hệ hỗ trợ hoặc đăng ký lại.', descEn:'The 7-day payment window passed, so this profile was automatically hidden. Please contact support or register again.' },
+      hidden: { icon:'🚫', titleVi:'Tài khoản đang bị tạm ngưng', titleEn:'Account suspended',
+        descVi:'Tài khoản này đang bị Admin tạm ngưng. Vui lòng liên hệ partner@deals68.com.', descEn:'This account has been suspended by Admin. Please contact partner@deals68.com.' }
+    };
+    const lockInfo = lockInfoMap[bizState.accountStatus] || lockInfoMap.payment_pending;
+    const lockDaysLeftNum = (D68 && bizState.pendingExpiresAt) ? D68.daysLeft(bizState.pendingExpiresAt) : null;
+
+    const inputStyle = 'border:1px solid #E2E8F0; border-radius:10px; padding:12px 13px; font-size:15px; color:#0F2A4A; background:#F7FAFC; font-weight:500; outline:none; width:100%;';
+    const tabDefs = [
+      { key:'overview', icon:'📊', vi:'Tổng quan', en:'Overview' },
+      { key:'profile', icon:'📝', vi:'Hồ sơ', en:'Profile' },
+      { key:'documents', icon:'📄', vi:'Tài liệu', en:'Documents' },
+      { key:'images', icon:'📷', vi:'Ảnh DN', en:'Images' },
+      { key:'datacenter', icon:'📈', vi:'Data Center', en:'Data Center' },
+      { key:'proposals', icon:'📨', vi:'Proposals', en:'Proposals' },
+      { key:'interested', icon:'🤝', vi:'Nhà đầu tư Quan tâm', en:'Interested investors' },
+      { key:'services', icon:'💳', vi:'Dịch vụ & Thanh toán', en:'Services & Billing' }
+    ];
+    const tabs = tabDefs.map(t => ({
+      icon: t.icon, label: T(t.vi,t.en), onClick: ()=>this.setState({ tab:t.key, saved:false }),
+      style: `text-align:left; display:flex; align-items:center; gap:10px; padding:12px 14px; border:none; border-radius:10px; cursor:pointer; font-size:14.5px; font-weight:${st.tab===t.key?'700':'500'}; background:${st.tab===t.key?'#EAF0F6':'transparent'}; color:${st.tab===t.key?'#0F2A4A':'#64748B'};`
+    }));
+
+    const edits = st.edits || {};
+    const profile = bizState.profile || {};
+    const currentTitleVi = edits.titleVi !== undefined ? edits.titleVi : (profile.titleVi || (seed ? seed.titleVi : ''));
+    const currentTitleEn = edits.titleEn !== undefined ? edits.titleEn : (profile.titleEn || (seed ? seed.titleEn : ''));
+    const currentRevenue = edits.revenue !== undefined ? edits.revenue : (profile.revenue || '');
+    const currentEbitda = edits.ebitda !== undefined ? edits.ebitda : (profile.ebitda || '');
+    const currentAsk = edits.ask !== undefined ? edits.ask : (profile.ask || '');
+    const currentHighlights = edits.highlights !== undefined ? edits.highlights : (profile.highlights || '');
+    const currentCompanyName = edits.companyName !== undefined ? edits.companyName : (profile.companyName || (seed ? seed.username : '') || '');
+    const currentReason = edits.investmentReason !== undefined ? edits.investmentReason : (profile.investmentReason || '');
+    const publicTitleDisplay = currentTitleVi ? (vi ? currentTitleVi : currentTitleEn) : (profile.titlePendingAdmin !== false && !currentTitleVi ? T('⏳ Đang chờ Admin biên soạn tiêu đề công khai','⏳ Awaiting Admin to write the public title') : (seed ? (vi?seed.titleVi:seed.titleEn) : ''));
+
+    const bind = (key) => (e) => { const patch = Object.assign({}, st.edits); patch[key] = e.target.value; this.setState({ edits: patch, saved:false }); };
+
+    const approvedCount = proposals.filter(p => p.status === 'approved').length;
+    const statusStyle = (s) => {
+      const map = { sent:['#1596cc','#E7F6FD'], approved:['#16A34A','#E9F9EF'], declined:['#DC2626','#FDECEC'], viewed:['#B8860B','#FEF3D3'] };
+      const c = map[s] || ['#64748B','#F1F5F9'];
+      return `font-size:12px; font-weight:700; padding:4px 10px; border-radius:7px; color:${c[0]}; background:${c[1]};`;
+    };
+    const statusLabelMap = { sent: T('Đã gửi','Sent'), approved: T('Đã duyệt','Approved'), declined: T('Từ chối','Declined'), viewed: T('Đã xem','Viewed') };
+
+    return {
+      lang: st.lang, setVi: ()=>this.setLang('vi'), setEn: ()=>this.setLang('en'),
+      viBtnStyle: `padding:7px 14px; border:none; cursor:pointer; font-weight:700; font-size:13px; background:${vi?'#0F2A4A':'transparent'}; color:${vi?'#fff':'#64748B'};`,
+      enBtnStyle: `padding:7px 14px; border:none; cursor:pointer; font-weight:700; font-size:13px; background:${!vi?'#0F2A4A':'transparent'}; color:${!vi?'#fff':'#64748B'};`,
+
+      activeBiz: bizId, onSwitchBiz: (e)=>this.switchBiz(e.target.value),
+      bizOptions: D68 ? D68.BUSINESS_SEED.map((b, i) => ({ id:b.id, label: (vi ? 'Hồ sơ demo ' : 'Demo profile ') + (i+1) })) : [],
+      publicBizid: seed ? seed.bizid : bizId,
+
+      bizTitle: currentTitleVi ? (vi?currentTitleVi:currentTitleEn) : bizId,
+      planLabel: bizState.plan,
+      planBadgeStyle: `font-size:12px; font-weight:800; padding:6px 12px; border-radius:8px; background:${bizState.plan==='Featured'?'#FEF3D3':'#EAF0F6'}; color:${bizState.plan==='Featured'?'#B8860B':'#0F2A4A'};`,
+      statusLabel: locked ? T('Chưa kích hoạt','Not active') : (bizState.profileStatus==='Pending review' ? T('Chờ duyệt lại','Pending review') : T('Đang hiển thị','Live')),
+      statusBadgeStyle: (locked || bizState.profileStatus==='Pending review') ? 'font-size:12px; font-weight:800; padding:6px 12px; border-radius:8px; background:#FEF3D3; color:#B8860B;' : 'font-size:12px; font-weight:800; padding:6px 12px; border-radius:8px; background:#E9F9EF; color:#16A34A;',
+
+      locked, lockIcon: lockInfo.icon, lockTitle: T(lockInfo.titleVi, lockInfo.titleEn), lockDesc: T(lockInfo.descVi, lockInfo.descEn),
+      lockHasOrder: !!bizState.orderCode, lockOrderCode: bizState.orderCode ? ('DEALS68-'+bizState.orderCode) : '',
+      lockHasDays: lockDaysLeftNum != null, lockDaysLeft: lockDaysLeftNum != null ? (lockDaysLeftNum + ' ' + T('ngày còn lại','days left')) : '',
+
+      bdReviewPending: bizState.profileStatus === 'Pending review',
+      bdReviewReason: T(bizState.pendingReviewReasonVi, bizState.pendingReviewReasonEn) || T('Cập nhật thông tin nhạy cảm','Updated sensitive information'),
+      bdReviewSince: bizState.pendingReviewSince ? new Date(bizState.pendingReviewSince).toLocaleDateString(vi?'vi-VN':'en-US') : '',
+
+      ...this.bizRequestDataVals(bizId, T, vi),
+
+      tabs, isOverview: st.tab==='overview', isProfile: st.tab==='profile', isDocuments: st.tab==='documents', isImages: st.tab==='images', isDatacenter: st.tab==='datacenter', isProposals: st.tab==='proposals', isInterested: st.tab==='interested', isServices: st.tab==='services',
+
+      ...this.imagesVals(bizId, bizState, T),
+      ...this.datacenterVals(profile, T, vi),
+      ...this.qualityVals(bizId, T, vi),
+      ...this.interestedVals(bizId, T, vi),
+
+      sentCount: quotaUsed, approvedCount, views: 128 + quotaUsed * 7,
+      quotaUsed, quotaTotal, quotaRemaining, quotaPct,
+
+      inputStyle,
+      publicTitleDisplay,
+      editCompanyName: currentCompanyName, onEditCompanyName: bind('companyName'),
+      editRevenue: currentRevenue, onEditRevenue: bind('revenue'),
+      editEbitda: currentEbitda, onEditEbitda: bind('ebitda'),
+      editAsk: currentAsk, onEditAsk: bind('ask'),
+      editHighlights: currentHighlights, onEditHighlights: bind('highlights'),
+      editReason: currentReason, onEditReason: bind('investmentReason'),
+
+      ...this.financialsVals(profile, T, vi, bind),
+
+      saved: st.saved,
+      saveProfile: ()=>{
+        const fe = (st.edits && st.edits.fin) || {};
+        const prevFin = profile.financialInput || {};
+        const newFin = Object.assign({}, prevFin, fe);
+        // Keep the public revenue/ask strings in sync with the raw figures the DN just edited.
+        const cur = (profile.country === 'Vietnam') ? 'VND' : 'USD';
+        const money = (v) => { v = parseFloat(v)||0; return v>0 ? (cur==='VND' ? Math.round(v).toLocaleString('vi-VN')+' ₫' : '$'+Math.round(v).toLocaleString('en-US')) : ''; };
+        const derivedRevenue = newFin.latest_annual_sales ? money(newFin.latest_annual_sales) : currentRevenue;
+        const derivedAsk = (newFin.investment_amount_sought && newFin.max_stake_pct) ? (money(newFin.investment_amount_sought) + ' / ' + newFin.max_stake_pct + '%') : (newFin.investment_amount_sought ? money(newFin.investment_amount_sought) : currentAsk);
+        const derivedEbitda = newFin.ebitda_margin_pct ? (newFin.ebitda_margin_pct + '%') : currentEbitda;
+        const newProfile = Object.assign({}, profile, {
+          companyName: currentCompanyName, revenue: derivedRevenue, ebitda: derivedEbitda, ask: derivedAsk,
+          highlights: currentHighlights, investmentReason: currentReason, segment: (fe.segment !== undefined ? fe.segment : profile.segment),
+          financialInput: newFin
+        });
+        const newState = Object.assign({}, bizState, { profile: newProfile });
+        D68.saveBusinessState(bizId, newState);
+        // Sensitive edits (financials / deal terms / valuation reason) send a Live profile back to Admin review.
+        const sensitiveKeys = ['avg_monthly_sales','latest_annual_sales','ebitda_margin_pct','growth_rate_pct','investment_amount_sought','max_stake_pct'];
+        const sensitiveChanged = sensitiveKeys.some(k => fe[k] !== undefined && String(fe[k]) !== String(prevFin[k] != null ? prevFin[k] : '')) || (currentReason !== (profile.investmentReason || ''));
+        if (sensitiveChanged) {
+          D68.flagBusinessForReview(bizId, T('Doanh nghiệp cập nhật số liệu tài chính / điều khoản giao dịch','Business updated financial figures / deal terms'));
+        }
+        this.setState({ saved:true, edits:{} });
+      },
+
+      ...this.servicesVals(bizId, bizState, T, vi),
+
+      ...this.documentsVals(bizId, bizState, T, vi),
+
+      hasProposals: proposals.length > 0,
+      proposalRows: proposals.slice().reverse().map(p => {
+        const inv = byCode[p.investorCode] || {};
+        return {
+          code: p.investorCode, type: inv.type || '—', country: inv.countryVi || inv.country || '—',
+          statusStyle: statusStyle(p.status), statusLabel: statusLabelMap[p.status] || p.status,
+          sentAt: p.sentAt ? new Date(p.sentAt).toLocaleDateString(vi?'vi-VN':'en-US') : '—'
+        };
+      })
+    };
+  }
+}
+</script>
+</body>
+</html>

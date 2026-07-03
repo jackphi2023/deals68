@@ -1,0 +1,53 @@
+# Deals68.com — Static UI Reference (Netlify)
+# This deploys the 21 *.dc.html pixel-reference pages as-is, no build step.
+# The pages are self-rendering: each one loads ./support.js client-side,
+# which is the template runtime — do NOT strip or "clean up" that script tag.
+# See STATIC_PREVIEW_README.md for full deploy instructions.
+
+[build]
+  publish = "."
+  command = ""
+
+# Root "/" has no index.html — send it straight to the Home reference page.
+[[redirects]]
+  from = "/"
+  to = "/Deals68%20Home.dc.html"
+  status = 200
+
+# Friendly aliases so reviewers can share clean links instead of "*.dc.html"
+# with spaces. Add more as needed; left-hand paths are what you'd bookmark.
+[[redirects]]
+  from = "/home"
+  to = "/Deals68%20Home.dc.html"
+  status = 200
+[[redirects]]
+  from = "/businesses"
+  to = "/Deals68%20Businesses.dc.html"
+  status = 200
+[[redirects]]
+  from = "/investors"
+  to = "/Deals68%20Investors.dc.html"
+  status = 200
+[[redirects]]
+  from = "/pricing"
+  to = "/Deals68%20Pricing.dc.html"
+  status = 200
+[[redirects]]
+  from = "/valuation"
+  to = "/Deals68%20Valuation.dc.html"
+  status = 200
+[[redirects]]
+  from = "/admin"
+  to = "/Deals68%20Admin.dc.html"
+  status = 200
+
+[[headers]]
+  for = "/*.html"
+  [headers.values]
+    X-Robots-Tag = "noindex"
+    Cache-Control = "no-cache"
+
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
