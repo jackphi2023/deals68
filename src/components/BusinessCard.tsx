@@ -1,22 +1,22 @@
 import { Link } from 'react-router-dom';
-import { formatCompactMoney, percent } from '../lib/format';
+import { formatCompactMoney } from '../lib/format';
 import type { Lang } from '../lib/i18n';
 
 export default function BusinessCard({ b, lang='vi' }: { b: any; lang?: Lang }) {
-  const title = lang === 'en' ? b.title_en : b.title_vi;
-  return <div className="card">
-    <img className="deal-img" src={b.image_url || '/assets/deal1.svg'} alt={title}/>
+  const title = lang === 'en' ? (b.title_en || b.title_vi) : (b.title_vi || b.title_en);
+  const industry = String(b.industry || '').split(';')[0] || (lang === 'en' ? 'Business' : 'Doanh nghiệp');
+  const dealType = String(b.deal_type || '').split(';')[0] || 'Deal';
+  const ask = b.stake_pct ? `${formatCompactMoney(b.ask_amount, b.ask_currency)} · ${b.stake_pct}%` : formatCompactMoney(b.ask_amount, b.ask_currency);
+  return <Link className="deal-card" to={`/businesses/${b.slug}`}>
+    <div className="deal-img-wrap"><img src={b.image_url || '/assets/deal1.png'} alt={title}/>{b.plan === 'featured' && <span className="featured-pill">★ Featured</span>}</div>
     <div className="card-body">
-      <span className="pill gold">{b.plan === 'featured' ? 'Featured' : 'Standard'}</span>
-      <span className="pill green">Quality {b.quality_score || 0}/100</span>
+      <div className="pills"><span className="pill">{industry}</span><span className="pill gray">{dealType}</span>{b.quality_score && <span className="pill green">Quality {b.quality_score}/100</span>}</div>
       <h3>{title}</h3>
-      <p className="muted">{b.industry} · {b.city || b.country_iso2}</p>
       <div className="kpis">
-        <div className="kpi"><span>2025 Revenue</span><b>{formatCompactMoney(b.revenue_2025, b.revenue_currency)}</b></div>
-        <div className="kpi"><span>EBITDA</span><b>{percent(b.ebitda_margin)}</b></div>
-        <div className="kpi"><span>Ask</span><b>{formatCompactMoney(b.ask_amount, b.ask_currency)}</b></div>
+        <div className="kpi"><span>{lang === 'en' ? 'Revenue 2025E' : 'Doanh thu 2025E'}</span><b>{formatCompactMoney(b.revenue_2025, b.revenue_currency)}</b></div>
+        <div className="kpi accent"><span>{lang === 'en' ? 'Amount / Stake' : 'Giá trị / Cổ phần'}</span><b>{ask}</b></div>
       </div>
-      <Link className="btn secondary" to={`/businesses/${b.slug}`}>{lang === 'en' ? 'View profile' : 'Xem hồ sơ'}</Link>
+      <span className="btn block" style={{marginTop:18}}>{lang === 'en' ? 'View details' : 'Xem chi tiết'}</span>
     </div>
-  </div>
+  </Link>
 }
