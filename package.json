@@ -1,6 +1,6 @@
 {
   "name": "deals68-production-full-beta",
-  "version": "2.0.1",
+  "version": "2.0.2-ui-match",
   "private": true,
   "type": "module",
   "scripts": {
