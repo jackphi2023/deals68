@@ -1,99 +1,128 @@
-# Deals68 UI Reference Patch — Pricing + Valuation + Register
+# Deals68 UI reference patch — Login + Business/Investor Dashboards
 
 Target repo: `jackphi2023/deals68`
 
 ## Reference files read directly
 
-- `ui-reference/Deals68 Pricing.dc.html`
-  - SHA: `ccfc3c0d99511002a659fd611d770d470e4812e9`
-- `ui-reference/Deals68 Valuation.dc.html`
-  - SHA: `016f46568f86df5d16de8b65de792ab14f221249`
-- `ui-reference/Deals68 Register Business.dc.html`
-  - SHA: `b519e199a50627da94f9d735eac673ec3f3ff861`
-- `ui-reference/Deals68 Register Investor.dc.html`
-  - SHA: `97388427639eabf9015731d3991f5088c605c749`
+- `ui-reference/Deals68 Login.dc.html` — SHA `99bfbd2733ed8298c2fc8991ba169162acb42ad6`
+- `ui-reference/Deals68 Business Dashboard.dc.html` — SHA `ae60741a7aacdc7cd1c69521e2c64b21fe5688fa`
+- `ui-reference/Deals68 Investor Dashboard.dc.html` — SHA `f9fec3e409eafab3583a0eef1670a8ac84dedd85`
 
-## Current React files replaced
+## Files included
 
-- `src/pages/Pricing.tsx`
-  - Original SHA read from GitHub: `69dcb93acb979b73dad06cb43d349bd54eec20e2`
-- `src/pages/Valuation.tsx`
-  - Original SHA read from GitHub: `9c69665dce339717629d94a06b62d46bec040e48`
-- `src/pages/Register.tsx`
-  - Original SHA read from GitHub: `787d035c96e5c7d75dd08b27bb42f61db6823a3d`
+- `src/pages/Login.tsx`
+- `src/pages/BusinessDashboard.tsx`
+- `src/pages/InvestorDashboard.tsx`
 
 ## What changed
 
-### Pricing
-- Ported from `Deals68 Pricing.dc.html` body sections.
-- Preserved section order:
-  1. Hero
-  2. Calculator
-  3. Result summary card
-  4. Plan cards
-  5. Discount tiers
-  6. Pricing FAQ
-- Converted `{{ }}` to React state/computed values.
-- Converted `sc-for` to `.map()`.
-- Converted `sc-if` to conditionals.
-- Converted checkout link/action to `localStorage` checkout intent + React navigation.
+### Login
 
-### Valuation
-- Ported from `Deals68 Valuation.dc.html` body sections.
-- Preserved section order:
-  1. Hero
-  2. Calculator input card
-  3. Result card
-  4. Lead capture / CTA
-  5. How it works
-- Implemented reference valuation logic:
-  - country adjustment
-  - industry revenue/EBITDA benchmark multiples
-  - growth adjustment
-  - margin adjustment
-  - weighted blend of EBITDA and revenue valuation
-  - confidence badge and adjustment reasons.
+Ported the reference login body structure:
 
-### Register
-- `Register.tsx` remains the single React route `/register/:role`.
-- Ported Business and Investor UI flows from their reference pages into role-specific rendering.
-- Business flow:
-  1. Basic info
-  2. Transaction & financials
-  3. Account
-  4. Review
-- Investor flow:
-  1. Investor profile
-  2. Ticket size
-  3. Account
-- Keeps existing production hooks:
-  - `signUp`
-  - `createBusinessFromProfile`
-  - `createInvestorForOwner`
-  - pricing intent from `localStorage`.
+1. Centered login page
+2. VI/EN switch
+3. Role tabs: Business, Investor, Advisor, Market Partner
+4. Login form
+5. Gated/account pending state
+6. Demo account hint
+7. Register link per role
 
-## Local check
+Kept production logic:
 
-Executed TSX transpile/parse check:
+- `useAuth().signIn`
+- role-based dashboard redirects
+- `next` query param redirect
+- `/forgot-password` route
 
-```bash
-PASS Pricing.tsx
-PASS Valuation.tsx
-PASS Register.tsx
+### Business Dashboard
+
+Ported the reference dashboard structure:
+
+1. Dashboard title/top status bar
+2. Side nav
+3. Overview
+4. Business Quality Score card
+5. KPI cards
+6. Proposal quota card
+7. Profile/Data Center editable fields
+8. Documents upload/list
+9. Images upload grid
+10. Investor interests
+11. Data requests
+12. Services & Billing
+
+Kept production logic:
+
+- `getMyBusiness`
+- `business_files`, `business_images`, `request_data`, `investor_interests`
+- `uploadBusinessFile`
+- `uploadBusinessImage`
+- `pending_changes_json` + `pending_admin_review` for sensitive profile edits
+- accept/reject investor interests
+- fulfill data requests
+
+### Investor Dashboard
+
+Ported the reference dashboard structure:
+
+1. Dashboard title
+2. Side nav
+3. Investor profile edit
+4. Investment criteria + recommended matches
+5. Watchlist/saved businesses
+6. Alerts
+7. Contact & privacy
+8. Security/proposals summary
+
+Kept production logic:
+
+- `getInvestorByOwner`
+- `listBusinesses`
+- `computeFitScore`
+- `saved_businesses`, `proposals`, `request_data`, `investor_interests`
+- investor privacy update
+- save business / request data / proposal status update
+
+## Local checks
+
+TSX syntax transpile check:
+
+```text
+PASS Login.tsx
+PASS BusinessDashboard.tsx
+PASS InvestorDashboard.tsx
 ```
 
-## Not executed
-
-Full `npm run build` and visual diff were not executed in this sandbox because the full repo dependencies are not available here and GitHub direct writes are blocked by connector permissions.
+Full `npm run build` was not executed in this sandbox because the environment does not have the full repo/node_modules available.
 
 ## Apply
 
 From repo root:
 
 ```bash
-unzip deals68_pricing_valuation_register_patch.zip -d /tmp/deals68-pricing-valuation-register
-cp -f /tmp/deals68-pricing-valuation-register/src/pages/Pricing.tsx src/pages/Pricing.tsx
-cp -f /tmp/deals68-pricing-valuation-register/src/pages/Valuation.tsx src/pages/Valuation.tsx
-cp -f /tmp/deals68-pricing-valuation-register/src/pages/Register.tsx src/pages/Register.tsx
+unzip deals68_login_dashboard_patch.zip -d /tmp/deals68-login-dashboard
+
+cp -f /tmp/deals68-login-dashboard/src/pages/Login.tsx src/pages/Login.tsx
+cp -f /tmp/deals68-login-dashboard/src/pages/BusinessDashboard.tsx src/pages/BusinessDashboard.tsx
+cp -f /tmp/deals68-login-dashboard/src/pages/InvestorDashboard.tsx src/pages/InvestorDashboard.tsx
+
 npm run build
+```
+
+Recommended smoke test:
+
+```text
+/login
+/login?role=business
+/login?role=investor
+/dashboard/business
+/dashboard/business/profile
+/dashboard/business/files
+/dashboard/business/images
+/dashboard/business/financials
+/dashboard/investor
+/dashboard/investor/profile
+/dashboard/investor/recommended
+/dashboard/investor/saved
 ```
