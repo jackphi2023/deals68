@@ -222,6 +222,16 @@ export const screenRegistry = [
       "Support request"
     ]
   },
+
+  {
+    "path": "/partners",
+    "title_vi": "Đối tác thị trường",
+    "title_en": "Market Partner",
+    "group": "Public",
+    "intent": "Market Partner landing page",
+    "roles": ["guest"],
+    "features": ["Market development", "Referral tracking", "Commission after paid non-refunded order"]
+  },
   {
     "path": "/terms",
     "title_vi": "Điều khoản sử dụng",
@@ -250,21 +260,6 @@ export const screenRegistry = [
       "Masked profiles",
       "Contact unlock",
       "Data room controls"
-    ]
-  },
-  {
-    "path": "/security",
-    "title_vi": "Bảo mật & dữ liệu",
-    "title_en": "Security & data",
-    "group": "Legal",
-    "intent": "Security page",
-    "roles": [
-      "guest"
-    ],
-    "features": [
-      "RLS",
-      "Signed URL",
-      "Audit logs"
     ]
   },
   {
@@ -742,9 +737,9 @@ export const screenRegistry = [
   },
   {
     "path": "/dashboard/market-partner/register",
-    "title_vi": "Đăng ký Market Partner",
+    "title_vi": "Đăng ký Đối tác thị trường",
     "title_en": "Market Partner register",
-    "group": "Market Partner",
+    "group": "Đối tác thị trường",
     "intent": "Market Partner registration workflow",
     "roles": [
       "guest",
@@ -758,9 +753,9 @@ export const screenRegistry = [
   },
   {
     "path": "/dashboard/market-partner/links",
-    "title_vi": "Link Market Partner",
+    "title_vi": "Link Đối tác thị trường",
     "title_en": "Market Partner links",
-    "group": "Market Partner",
+    "group": "Đối tác thị trường",
     "intent": "Manage referral links",
     "roles": [
       "affiliate"
@@ -773,9 +768,9 @@ export const screenRegistry = [
   },
   {
     "path": "/dashboard/market-partner/conversions",
-    "title_vi": "Chuyển đổi Market Partner",
+    "title_vi": "Chuyển đổi Đối tác thị trường",
     "title_en": "Market Partner conversions",
-    "group": "Market Partner",
+    "group": "Đối tác thị trường",
     "intent": "Referral performance",
     "roles": [
       "affiliate"
@@ -788,9 +783,9 @@ export const screenRegistry = [
   },
   {
     "path": "/dashboard/market-partner/payouts",
-    "title_vi": "Thanh toán Market Partner",
+    "title_vi": "Thanh toán Đối tác thị trường",
     "title_en": "Market Partner payouts",
-    "group": "Market Partner",
+    "group": "Đối tác thị trường",
     "intent": "Payout tracking",
     "roles": [
       "affiliate",
@@ -804,9 +799,9 @@ export const screenRegistry = [
   },
   {
     "path": "/dashboard/market-partner/settings",
-    "title_vi": "Cài đặt Market Partner",
+    "title_vi": "Cài đặt Đối tác thị trường",
     "title_en": "Market Partner settings",
-    "group": "Market Partner",
+    "group": "Đối tác thị trường",
     "intent": "Market Partner account settings",
     "roles": [
       "affiliate"
@@ -909,7 +904,7 @@ export const screenRegistry = [
   },
   {
     "path": "/admin/market-partners",
-    "title_vi": "Quản trị Market Partner",
+    "title_vi": "Quản trị Đối tác thị trường",
     "title_en": "Manage market partners",
     "group": "Admin",
     "intent": "Approval/commission/payout",
