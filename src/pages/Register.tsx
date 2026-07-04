@@ -3,7 +3,6 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { createBusinessFromProfile, createInvestorForOwner } from '../lib/data';
 import { slugify } from '../lib/format';
-import { autoEnglishFromVietnamese } from '../lib/i18n';
 import { calculatePricing, normaliseRole, roleLabel, type BusinessPlan } from '../lib/pricing';
 import type { Role } from '../lib/supabase';
 
@@ -92,15 +91,15 @@ export default function Register() {
       if (isBusiness) {
         const titleVi = `${dealType} · ${industry} · ${city}`;
         await createBusinessFromProfile(sr.user.id, {
-          username, slug: slugify(titleVi || realName) + '-' + Date.now().toString(36), public_code: 'D68-NEW', company_name_private: companyName || realName,
-          title_vi: titleVi, title_en: autoEnglishFromVietnamese(titleVi), country_iso2: countryCode, city, industry, deal_type: dealType, plan,
+          username, slug: slugify(titleVi || realName) + '-' + Date.now().toString(36), company_name_private: companyName || realName,
+          title_vi: titleVi, title_en: '', country_iso2: countryCode, city, industry, deal_type: dealType, plan,
           revenue_2025: Number(revenue || 0), revenue_currency: countryCode === 'VN' ? 'VND' : 'USD', ebitda_margin: Number(ebitda || 0), ask_amount: Number(ask || 0), ask_currency: countryCode === 'VN' ? 'VND' : 'USD', stake_pct: Number(stake || 0), quota_total: plan === 'featured' ? 200 : 100,
-          highlights_vi: highlights, highlights_en: autoEnglishFromVietnamese(highlights), investment_reason_vi: reason, investment_reason_en: autoEnglishFromVietnamese(reason)
+          highlights_vi: highlights, highlights_en: '', investment_reason_vi: reason, investment_reason_en: ''
         });
       } else if (isInvestor) {
-        await createInvestorForOwner(sr.user.id, { code: 'INV-NEW-' + Date.now().toString(36), username, title_vi: `${invType} quan tâm ${selectedIndustries.join(', ')}`, title_en: `${invType} interested in ${selectedIndustries.join(', ')}`, desc_vi: desc, desc_en: autoEnglishFromVietnamese(desc), country_iso2: countryCode, country, region: countryCode === 'VN' ? 'asia' : 'global', industries: selectedIndustries, deal_types: [investorDealType], ticket_min: Number(ticketMin || 0), ticket_max: Number(ticketMax || 0), type: invType, stage, criteria: { sectors: selectedIndustries, stage, dealType: investorDealType }, privacy: { shareEmail: false, email, sharePhone: false, phone, website } });
+        await createInvestorForOwner(sr.user.id, { code: 'INV-NEW-' + Date.now().toString(36), username, title_vi: `${invType} quan tâm ${selectedIndustries.join(', ')}`, title_en: `${invType} interested in ${selectedIndustries.join(', ')}`, desc_vi: desc, desc_en: '', country_iso2: countryCode, country, region: countryCode === 'VN' ? 'asia' : 'global', industries: selectedIndustries, deal_types: [investorDealType], ticket_min: Number(ticketMin || 0), ticket_max: Number(ticketMax || 0), type: invType, stage, criteria: { sectors: selectedIndustries, stage, dealType: investorDealType }, privacy: { shareEmail: false, email, sharePhone: false, phone, website } });
       }
-      setMsg(T(lang, 'Tài khoản đã được tạo. Vui lòng hoàn tất thanh toán hoặc chờ Admin duyệt.', 'Account created. Please complete payment or wait for Admin review.'));
+      setMsg(T(lang, 'Tài khoản và hồ sơ DN đã được tạo, đang chờ thanh toán/Admin duyệt trước khi hiển thị public.', 'Account/profile created and pending payment/Admin review before public listing.'));
       setTimeout(() => navigate('/login'), 1400);
     } catch (err: any) { setMsg(err?.message || T(lang, 'Tài khoản đã tạo, nhưng hồ sơ cần Admin kiểm tra lại.', 'Account created, but Admin needs to review the profile.')); }
     finally { setLoading(false); }
