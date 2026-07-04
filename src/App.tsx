@@ -30,6 +30,14 @@ function RouteFallback() {
   return <section style={{ maxWidth: 960, margin: '0 auto', padding: '48px 24px', color: '#64748B' }}>Loading...</section>;
 }
 
+function ScrollToTop() {
+  const location = useLocation();
+  useEffect(() => {
+    if (typeof window !== 'undefined') window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+  }, [location.pathname, location.search]);
+  return null;
+}
+
 export default function App(){
   const location = useLocation();
   const [lang,setLang]=useState<Lang>(() => location.pathname.startsWith('/en') ? 'en' : 'vi');
@@ -40,6 +48,7 @@ export default function App(){
   }, [location.pathname]);
 
   return <div data-lang={lang}>
+    <ScrollToTop />
     <Header lang={lang} setLang={setLang}/>
     <Suspense fallback={<RouteFallback/>}>
       <Routes>
