@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { FormEvent, useEffect, useState, type CSSProperties } from 'react';
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { getMyBusiness, uploadBusinessFile, uploadBusinessImage } from '../lib/data';
@@ -6,49 +6,45 @@ import { supabase } from '../lib/supabase';
 import { autoEnglishFromVietnamese } from '../lib/i18n';
 import { formatCompactMoney, percent } from '../lib/format';
 
-type Tab = 'overview' | 'profile' | 'financials' | 'files' | 'images' | 'interests' | 'requests' | 'quality' | 'plan' | 'settings';
-
-const tabMap: Record<string, Tab> = {
-  '': 'overview',
-  profile: 'profile',
-  financials: 'financials',
-  valuation: 'financials',
-  files: 'files',
-  images: 'images',
-  'investor-interest': 'interests',
-  interests: 'interests',
-  proposals: 'interests',
-  'data-requests': 'requests',
-  requests: 'requests',
-  quality: 'quality',
-  payments: 'plan',
-  plan: 'plan',
-  settings: 'settings',
-  audit: 'settings'
-};
-
-const tabs: { id: Tab; vi: string; en: string; href: string }[] = [
-  { id: 'overview', vi: 'Tổng quan', en: 'Overview', href: '/dashboard/business' },
-  { id: 'profile', vi: 'Hồ sơ', en: 'Profile', href: '/dashboard/business/profile' },
-  { id: 'financials', vi: 'Tài chính', en: 'Financials', href: '/dashboard/business/financials' },
-  { id: 'files', vi: 'Tài liệu', en: 'Files', href: '/dashboard/business/files' },
-  { id: 'images', vi: 'Hình ảnh', en: 'Images', href: '/dashboard/business/images' },
-  { id: 'interests', vi: 'NĐT quan tâm', en: 'Investor interest', href: '/dashboard/business/investor-interest' },
-  { id: 'requests', vi: 'Yêu cầu dữ liệu', en: 'Data requests', href: '/dashboard/business/data-requests' },
-  { id: 'quality', vi: 'Chất lượng', en: 'Quality', href: '/dashboard/business/quality' },
-  { id: 'plan', vi: 'Gói & quota', en: 'Plan', href: '/dashboard/business/payments' },
-  { id: 'settings', vi: 'Cài đặt', en: 'Settings', href: '/dashboard/business/settings' }
+type Tab = 'overview' | 'profile' | 'documents' | 'images' | 'datacenter' | 'interests' | 'requests' | 'services';
+const T = (lang: 'vi' | 'en', vi: string, en: string) => lang === 'en' ? en : vi;
+const tabs: { id: Tab; icon: string; vi: string; en: string; href: string }[] = [
+  { id: 'overview', icon: '◎', vi: 'Tổng quan', en: 'Overview', href: '/dashboard/business' },
+  { id: 'profile', icon: '✎', vi: 'Hồ sơ', en: 'Profile', href: '/dashboard/business/profile' },
+  { id: 'documents', icon: '📂', vi: 'Tài liệu', en: 'Documents', href: '/dashboard/business/files' },
+  { id: 'images', icon: '🖼', vi: 'Ảnh', en: 'Images', href: '/dashboard/business/images' },
+  { id: 'datacenter', icon: '◆', vi: 'Data Center', en: 'Data Center', href: '/dashboard/business/financials' },
+  { id: 'interests', icon: '🤝', vi: 'Nhà đầu tư', en: 'Investors', href: '/dashboard/business/investor-interest' },
+  { id: 'requests', icon: '📨', vi: 'Yêu cầu data', en: 'Data requests', href: '/dashboard/business/data-requests' },
+  { id: 'services', icon: '💳', vi: 'Dịch vụ & phí', en: 'Services', href: '/dashboard/business/payments' }
 ];
 
-function resolveTab(pathname: string): Tab {
-  const suffix = pathname.replace('/dashboard/business', '').replace(/^\//, '').split('/')[0];
-  return tabMap[suffix] || 'overview';
+const tabMap: Record<string, Tab> = { '': 'overview', profile: 'profile', files: 'documents', documents: 'documents', images: 'images', financials: 'datacenter', valuation: 'datacenter', 'investor-interest': 'interests', interests: 'interests', proposals: 'interests', 'data-requests': 'requests', requests: 'requests', payments: 'services', plan: 'services', services: 'services' };
+function resolveTab(pathname: string): Tab { const suffix = pathname.replace('/dashboard/business','').replace(/^\//,'').split('/')[0]; return tabMap[suffix] || 'overview'; }
+
+const inputStyle: CSSProperties = { border: '1px solid #E2E8F0', borderRadius: 10, padding: '12px 13px', fontSize: 15, color: '#0F2A4A', background: '#F7FAFC', fontWeight: 500, outline: 'none', width: '100%' };
+const cardStyle: CSSProperties = { background: '#fff', border: '1px solid #E7EDF3', borderRadius: 16, padding: '22px 24px' };
+const labelStyle: CSSProperties = { display: 'flex', flexDirection: 'column', gap: 6 };
+const labelText: CSSProperties = { fontSize: 12.5, fontWeight: 700, color: '#334155' };
+
+function metricCard(label: string, value: string, color = '#0F2A4A') {
+  return <div style={{ background: '#fff', border: '1px solid #E7EDF3', borderRadius: 14, padding: 18 }}>
+    <div style={{ fontSize: 11.5, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase' }}>{label}</div>
+    <div style={{ fontSize: 19, fontWeight: 800, marginTop: 6, color }}>{value}</div>
+  </div>;
 }
 
-export default function BusinessDashboard(){
-  const { profile, loading } = useAuth();
+function qBand(score: number) {
+  if (score >= 80) return { labelVi: 'Mạnh', labelEn: 'Strong', color: '#16A34A', bg: '#E9F9EF' };
+  if (score >= 65) return { labelVi: 'Tốt', labelEn: 'Good', color: '#1596cc', bg: '#E7F6FD' };
+  return { labelVi: 'Cần bổ sung', labelEn: 'Needs data', color: '#B8860B', bg: '#FEF3D3' };
+}
+
+export default function BusinessDashboard() {
+  const { profile, loading, signOut } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const [lang, setLang] = useState<'vi' | 'en'>('vi');
   const [tab, setTab] = useState<Tab>(() => resolveTab(location.pathname));
   const [b, setB] = useState<any>();
   const [files, setFiles] = useState<any[]>([]);
@@ -58,48 +54,53 @@ export default function BusinessDashboard(){
   const [msg, setMsg] = useState('');
   const [busy, setBusy] = useState(false);
   const [loadError, setLoadError] = useState('');
+  const [newDocName, setNewDocName] = useState('');
+  const [newDocCategory, setNewDocCategory] = useState('financials');
+  const [newDocVisibility, setNewDocVisibility] = useState('locked');
 
   useEffect(() => setTab(resolveTab(location.pathname)), [location.pathname]);
 
-  async function load(){
-    if(!profile) return;
+  async function load() {
+    if (!profile) return;
     setBusy(true); setLoadError('');
     try {
       const biz = await getMyBusiness(profile.id);
       setB(biz);
-      if(biz){
-        const [{data:f}, {data:im}, {data:req}, {data:int}] = await Promise.all([
-          supabase.from('business_files').select('*').eq('business_id',biz.id).order('created_at',{ascending:false}),
-          supabase.from('business_images').select('*').eq('business_id',biz.id).order('created_at',{ascending:false}),
-          supabase.from('request_data').select('*, investors(code,title_en,title_vi,type,country,privacy)').eq('business_id',biz.id).order('created_at',{ascending:false}),
-          supabase.from('investor_interests').select('*, investors(id,code,title_en,title_vi,type,country,industries,deal_types,ticket_min,ticket_max,privacy)').eq('business_id',biz.id).order('created_at',{ascending:false})
+      if (biz) {
+        const [{ data: f }, { data: im }, { data: req }, { data: int }] = await Promise.all([
+          supabase.from('business_files').select('*').eq('business_id', biz.id).order('created_at', { ascending: false }),
+          supabase.from('business_images').select('*').eq('business_id', biz.id).order('created_at', { ascending: false }),
+          supabase.from('request_data').select('*, investors(code,title_en,title_vi,type,country,privacy)').eq('business_id', biz.id).order('created_at', { ascending: false }),
+          supabase.from('investor_interests').select('*, investors(id,code,title_en,title_vi,type,country,industries,deal_types,ticket_min,ticket_max,privacy)').eq('business_id', biz.id).order('created_at', { ascending: false })
         ]);
-        setFiles(f||[]); setImages(im||[]); setRequests(req||[]); setInterests(int||[]);
+        setFiles(f || []); setImages(im || []); setRequests(req || []); setInterests(int || []);
       }
-    } catch (e:any) {
-      setLoadError(e?.message || 'Could not load dashboard data.');
-    } finally { setBusy(false); }
+    } catch (e: any) { setLoadError(e?.message || 'Could not load dashboard data.'); }
+    finally { setBusy(false); }
   }
 
-  useEffect(()=>{ if(!loading && !profile) navigate('/login?next=/dashboard/business'); if(profile) load(); },[profile?.id,loading]);
+  useEffect(() => { if (!loading && !profile) navigate('/login?next=/dashboard/business'); if (profile) load(); }, [profile?.id, loading]);
 
-  if(loading) return <DashboardLoading />;
-  if(!profile) return <Navigate to="/login?next=/dashboard/business" replace/>;
-  if(profile.role !== 'business' && profile.role !== 'admin') return <Forbidden role={profile.role} />;
-  if(!b) return <section className="section"><div className="container empty"><h2>Business profile not found</h2><p className="muted">Tài khoản này chưa có hồ sơ DN hoặc đang chờ admin kích hoạt.</p><Link className="btn" to="/register/business">Tạo hồ sơ DN</Link></div></section>;
+  if (loading) return <section style={{ maxWidth: 1240, margin: '0 auto', padding: '56px 24px' }}><div style={cardStyle}>Loading...</div></section>;
+  if (!profile) return <Navigate to="/login?next=/dashboard/business" replace />;
+  if (profile.role !== 'business' && profile.role !== 'admin') return <section style={{ maxWidth: 760, margin: '0 auto', padding: '56px 24px' }}><div style={cardStyle}><h2>Business access only</h2><p>Role hiện tại: {profile.role}</p><Link to="/" style={{ color: '#1596cc', fontWeight: 700 }}>Back home</Link></div></section>;
+  if (!b) return <section style={{ maxWidth: 760, margin: '0 auto', padding: '56px 24px' }}><div style={{ ...cardStyle, textAlign: 'center' }}><h2>Business profile not found</h2><p style={{ color: '#64748B' }}>Tài khoản này chưa có hồ sơ DN hoặc đang chờ admin kích hoạt.</p><Link to="/register/business" style={{ display: 'inline-block', background: '#0F2A4A', color: '#fff', fontWeight: 700, padding: '12px 22px', borderRadius: 10 }}>Tạo hồ sơ DN</Link></div></section>;
 
-  const stats = {
-    quotaLeft: Math.max(0, Number(b.quota_total || 0) - Number(b.quota_used || 0)),
-    score: Number(b.quality_score || 0),
-    status: String(b.status || 'pending'),
-    plan: String(b.plan || 'standard')
-  };
+  const score = Math.round(Number(b.quality_score || b.data_confidence || 0));
+  const band = qBand(score);
+  const quotaTotal = Number(b.quota_total || (String(b.plan || '').includes('featured') ? 200 : 100));
+  const quotaUsed = Number(b.quota_used || 0);
+  const quotaRemaining = Math.max(0, quotaTotal - quotaUsed);
+  const quotaPct = Math.min(100, Math.round((quotaUsed / Math.max(1, quotaTotal)) * 100));
+  const planLabel = String(b.plan || 'Standard');
+  const statusLabel = String(b.status || 'Live');
+  const title = b.company_name_private || b.title_vi || b.title_en || 'Business profile';
 
-  async function saveProfile(e:FormEvent){
-    e.preventDefault(); if(!b) return;
-    const form = e.currentTarget as HTMLFormElement;
-    const fd = new FormData(form);
-    const pending:any = {
+  async function saveProfile(e: FormEvent) {
+    e.preventDefault();
+    const fd = new FormData(e.currentTarget as HTMLFormElement);
+    const pending: any = {
+      company_name_private: fd.get('company_name_private'),
       title_vi: fd.get('title_vi'),
       title_en: autoEnglishFromVietnamese(String(fd.get('title_vi') || '')),
       description_vi: fd.get('description_vi'),
@@ -110,108 +111,106 @@ export default function BusinessDashboard(){
       highlights_vi: fd.get('highlights_vi'),
       highlights_en: autoEnglishFromVietnamese(String(fd.get('highlights_vi') || '')),
       investment_reason_vi: fd.get('investment_reason_vi'),
-      investment_reason_en: autoEnglishFromVietnamese(String(fd.get('investment_reason_vi') || ''))
-    };
-    const {error}=await supabase.from('businesses').update({pending_changes_json:pending,status:'pending_admin_review'}).eq('id',b.id);
-    setMsg(error?error.message:'Đã lưu thay đổi ở trạng thái chờ admin duyệt. Public profile chưa đổi.');
-    load();
-  }
-
-  async function saveFinancials(e:FormEvent){
-    e.preventDefault(); if(!b) return;
-    const fd = new FormData(e.currentTarget as HTMLFormElement);
-    const pending = {
-      ...(b.pending_changes_json || {}),
+      investment_reason_en: autoEnglishFromVietnamese(String(fd.get('investment_reason_vi') || '')),
       revenue_2025: Number(fd.get('revenue_2025') || 0),
       ebitda_margin: Number(fd.get('ebitda_margin') || 0),
       ask_amount: Number(fd.get('ask_amount') || 0),
       stake_pct: Number(fd.get('stake_pct') || 0),
       data_confidence: Number(fd.get('data_confidence') || 70)
     };
-    const {error}=await supabase.from('businesses').update({pending_changes_json:pending,status:'pending_admin_review'}).eq('id',b.id);
-    setMsg(error?error.message:'Đã lưu số liệu tài chính ở trạng thái chờ duyệt.');
-    load();
+    const { error } = await supabase.from('businesses').update({ pending_changes_json: pending, status: 'pending_admin_review' }).eq('id', b.id);
+    setMsg(error ? error.message : T(lang, 'Đã lưu thay đổi, chờ Admin duyệt lại.', 'Saved changes, pending Admin re-review.'));
+    await load();
   }
 
-  async function fileChange(e:any){
-    const file=e.target.files?.[0]; if(!file||!b||!profile)return;
+  async function fileChange(e: any) {
+    const file = e.target.files?.[0]; if (!file || !b || !profile) return;
     setBusy(true);
-    try { await uploadBusinessFile(b.id,profile.id,file,'financials','locked'); setMsg('File uploaded successfully.'); await load(); }
-    catch(err:any){ setMsg(err?.message || 'Upload failed.'); }
-    finally { setBusy(false); e.target.value=''; }
+    try { await uploadBusinessFile(b.id, profile.id, file, newDocCategory, newDocVisibility); setMsg('File uploaded successfully.'); await load(); }
+    catch (err: any) { setMsg(err?.message || 'Upload failed.'); }
+    finally { setBusy(false); e.target.value = ''; }
   }
 
-  async function imageChange(e:any){
-    const file=e.target.files?.[0]; if(!file||!b||!profile)return;
+  async function imageChange(e: any) {
+    const file = e.target.files?.[0]; if (!file || !b || !profile) return;
     setBusy(true);
-    try { await uploadBusinessImage(b.id,profile.id,file,file.name); setMsg('Image uploaded successfully.'); await load(); }
-    catch(err:any){ setMsg(err?.message || 'Upload failed.'); }
-    finally { setBusy(false); e.target.value=''; }
+    try { await uploadBusinessImage(b.id, profile.id, file, file.name); setMsg('Image uploaded successfully.'); await load(); }
+    catch (err: any) { setMsg(err?.message || 'Upload failed.'); }
+    finally { setBusy(false); e.target.value = ''; }
   }
 
-  async function acceptInterest(row:any){
-    const {error}=await supabase.from('investor_interests').update({status:'connected'}).eq('id',row.id);
-    setMsg(error?error.message:'Đã đồng ý kết nối. Quyền xem hồ sơ đầy đủ sẽ theo rule admin/RLS.'); load();
-  }
+  async function acceptInterest(row: any) { const { error } = await supabase.from('investor_interests').update({ status: 'connected' }).eq('id', row.id); setMsg(error ? error.message : 'Đã đồng ý kết nối.'); load(); }
+  async function rejectInterest(row: any) { const { error } = await supabase.from('investor_interests').update({ status: 'rejected' }).eq('id', row.id); setMsg(error ? error.message : 'Đã từ chối kết nối.'); load(); }
+  async function fulfillRequest(row: any) { const { error } = await supabase.from('request_data').update({ status: 'fulfilled' }).eq('id', row.id); setMsg(error ? error.message : 'Marked as fulfilled.'); load(); }
 
-  async function rejectInterest(row:any){
-    const {error}=await supabase.from('investor_interests').update({status:'rejected'}).eq('id',row.id);
-    setMsg(error?error.message:'Đã từ chối kết nối.'); load();
-  }
-
-  async function fulfillRequest(row:any){
-    const {error}=await supabase.from('request_data').update({status:'fulfilled'}).eq('id',row.id);
-    setMsg(error?error.message:'Marked as fulfilled.'); load();
-  }
-
-  return <section className="dashboard-page">
-    <div className="container dashboard-shell">
-      <aside className="dashboard-side">
-        <div className="dash-brand"><span className="pill gold">Business</span><b>{b.public_code || 'D68'}</b></div>
-        {tabs.map(item=><Link key={item.id} to={item.href} onClick={()=>setTab(item.id)} className={`side-link ${tab===item.id?'active':''}`}>{item.vi}<small>{item.en}</small></Link>)}
-        <div className="supportbox"><b>Bạn cần hỗ trợ hồ sơ gọi vốn?</b><p>VCPC có thể hỗ trợ IM, valuation, data room và làm việc với nhà đầu tư.</p><a href="https://vietcapitalpartners.com" target="_blank">vietcapitalpartners.com</a></div>
-      </aside>
-      <main className="dashboard-main">
-        <div className="dashboard-top">
-          <div><span className="badge-title blue">◆ Business Dashboard</span><h1>{b.company_name_private || b.title_vi}</h1><p className="muted">{b.title_vi} · {b.city || b.country_iso2} · {b.industry}</p></div>
-          <Link className="btn secondary" to={`/businesses/${b.slug}`}>View public profile</Link>
+  return <div style={{ width: '100%', overflowX: 'hidden', background: '#F7FAFC' }}>
+    <div style={{ maxWidth: 1240, margin: '0 auto', padding: '26px 24px 60px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap', marginBottom: 22 }}>
+        <div>
+          <div style={{ fontSize: 12.5, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: .5, marginBottom: 4 }}>Business Dashboard</div>
+          <h1 style={{ fontSize: 25, fontWeight: 800, letterSpacing: -.5, margin: 0 }}>{title}</h1>
         </div>
-        {b.pending_changes_json && <div className="notice warn"><b>Pending review:</b> thay đổi nhạy cảm đang chờ admin duyệt, public profile chưa cập nhật.</div>}
-        {loadError && <div className="notice warn">{loadError}</div>}
-        {msg && <div className="notice">{msg}</div>}
-        {busy && <div className="notice small-note">Đang xử lý dữ liệu...</div>}
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+          <button onClick={() => setLang(lang === 'vi' ? 'en' : 'vi')} style={{ border: '1px solid #E2E8F0', background: '#fff', borderRadius: 999, padding: '8px 14px', fontWeight: 700 }}>{lang.toUpperCase()}</button>
+          <span style={{ fontSize: 12, fontWeight: 800, padding: '6px 12px', borderRadius: 8, background: planLabel.toLowerCase().includes('featured') ? '#FEF3D3' : '#EAF0F6', color: planLabel.toLowerCase().includes('featured') ? '#B8860B' : '#0F2A4A' }}>{planLabel}</span>
+          <span style={{ fontSize: 12, fontWeight: 800, padding: '6px 12px', borderRadius: 8, background: '#E9F9EF', color: '#16A34A' }}>{statusLabel}</span>
+          <button onClick={() => signOut().then(() => navigate('/'))} style={{ background: '#EEF2F6', color: '#334155', fontWeight: 700, fontSize: 14, padding: '10px 16px', borderRadius: 9, border: 'none' }}>{T(lang, 'Thoát', 'Exit')}</button>
+        </div>
+      </div>
 
-        {tab==='overview' && <div className="dashboard-grid">
-          <Metric title="Status" value={stats.status} note={b.visible ? 'Public visible' : 'Hidden'} />
-          <Metric title="Plan" value={stats.plan} note={`${stats.quotaLeft} proposals left`} />
-          <Metric title="Quality Score" value={`${stats.score}/100`} note="Investor-gated breakdown" />
-          <Metric title="Investor interest" value={String(interests.length)} note="Pending/connected" />
-          <div className="dash card-wide"><h2>Deal snapshot</h2><div className="kpis"><div className="kpi"><span>Revenue 2025E</span><b>{formatCompactMoney(b.revenue_2025,b.revenue_currency)}</b></div><div className="kpi"><span>EBITDA</span><b>{percent(b.ebitda_margin)}</b></div><div className="kpi"><span>Ask / Stake</span><b>{formatCompactMoney(b.ask_amount,b.ask_currency)} / {percent(b.stake_pct)}</b></div><div className="kpi"><span>Files / Images</span><b>{files.length} / {images.length}</b></div></div></div>
-          <div className="dash"><h2>Next best actions</h2><ul className="check-list"><li>Upload financials, teaser IM and key legal docs.</li><li>Keep 2025 revenue and EBITDA updated.</li><li>Review investor interests weekly and approve only qualified connections.</li></ul></div>
-        </div>}
+      <div className="d68-dash-cols" style={{ display: 'grid', gridTemplateColumns: '230px minmax(0,1fr)', gap: 24, alignItems: 'start' }}>
+        <nav className="d68-side-nav" style={{ position: 'sticky', top: 90, background: '#fff', border: '1px solid #E7EDF3', borderRadius: 16, padding: 10, display: 'flex', flexDirection: 'column', gap: 2 }}>
+          {tabs.map((t) => <Link key={t.id} to={t.href} onClick={() => setTab(t.id)} style={{ textAlign: 'left', border: 'none', borderRadius: 10, padding: '11px 12px', fontSize: 13.5, fontWeight: tab === t.id ? 800 : 600, color: tab === t.id ? '#0F2A4A' : '#64748B', background: tab === t.id ? '#E7F6FD' : 'transparent' }}>{t.icon} {T(lang, t.vi, t.en)}</Link>)}
+          <div style={{ borderTop: '1px solid #EEF2F6', marginTop: 6, paddingTop: 10 }}><Link to={`/businesses/${b.slug}`} style={{ display: 'block', textAlign: 'center', fontSize: 13, fontWeight: 700, color: '#1596cc', padding: 10 }}>{T(lang, 'Xem trang public', 'View public page')} ↗</Link></div>
+          <div style={{ marginTop: 8, background: '#FEFCE8', border: '2px solid #0F2A4A', borderRadius: 12, padding: 14 }}>
+            <div style={{ fontSize: 12.5, fontWeight: 600, color: '#334155', lineHeight: 1.5 }}>{T(lang, 'Bạn cần hỗ trợ làm Hồ sơ Huy động vốn, Định giá để làm việc với Nhà đầu tư?', 'Need help preparing your fundraising profile & valuation to work with investors?')}</div>
+            <a href="https://vietcapitalpartners.com" target="_blank" rel="noopener" style={{ display: 'inline-block', marginTop: 10, fontSize: 12.5, fontWeight: 700, color: '#1596cc' }}>vietcapitalpartners.com ↗</a>
+            <div style={{ fontSize: 12.5, fontWeight: 700, color: '#0F2A4A', marginTop: 6 }}>Hotline: 0909.584.075</div>
+          </div>
+        </nav>
 
-        {tab==='profile' && <form onSubmit={saveProfile} className="dash formgrid"><label style={{gridColumn:'1/-1'}}>Tên hiển thị ẩn danh<input name="title_vi" className="input" defaultValue={b.title_vi}/></label><label>Ngành<input name="industry" className="input" defaultValue={b.industry}/></label><label>Thành phố<input name="city" className="input" defaultValue={b.city}/></label><label>Deal type<input name="deal_type" className="input" defaultValue={b.deal_type}/></label><label style={{gridColumn:'1/-1'}}>Mô tả ngắn<textarea name="description_vi" className="textarea" defaultValue={b.description_vi}/></label><label style={{gridColumn:'1/-1'}}>Điểm nổi bật<textarea name="highlights_vi" className="textarea" defaultValue={b.highlights_vi}/></label><label style={{gridColumn:'1/-1'}}>Lý do gọi vốn/bán<textarea name="investment_reason_vi" className="textarea" defaultValue={b.investment_reason_vi}/></label><button className="btn">Save pending changes</button></form>}
+        <main>
+          {b.pending_changes_json ? <div style={{ background: '#FEF3D3', border: '1px solid #F2B51D', borderRadius: 14, padding: '16px 20px', marginBottom: 18, display: 'flex', alignItems: 'flex-start', gap: 12 }}><span style={{ fontSize: 20 }}>⏳</span><div><b style={{ color: '#8a6300' }}>{T(lang, 'Hồ sơ đang chờ Admin duyệt lại', 'Profile is pending Admin re-review')}</b><div style={{ fontSize: 13, color: '#8a6300', marginTop: 3 }}>{T(lang, 'Hồ sơ tạm dừng nhận proposal mới cho tới khi Admin duyệt lại.', 'The listing pauses new proposals until Admin re-approves it.')}</div></div></div> : null}
+          {loadError ? <div style={{ ...cardStyle, marginBottom: 16, color: '#B91C1C' }}>{loadError}</div> : null}
+          {msg ? <div style={{ ...cardStyle, marginBottom: 16, color: '#16A34A', fontWeight: 700 }}>{msg}</div> : null}
+          {busy ? <div style={{ ...cardStyle, marginBottom: 16, color: '#64748B' }}>{T(lang, 'Đang xử lý dữ liệu...', 'Processing data...')}</div> : null}
 
-        {tab==='financials' && <form onSubmit={saveFinancials} className="dash formgrid"><label>2025 Revenue<input name="revenue_2025" className="input" type="number" defaultValue={b.revenue_2025}/></label><label>EBITDA %<input name="ebitda_margin" className="input" type="number" defaultValue={b.ebitda_margin}/></label><label>Ask amount<input name="ask_amount" className="input" type="number" defaultValue={b.ask_amount}/></label><label>Stake %<input name="stake_pct" className="input" type="number" defaultValue={b.stake_pct}/></label><label>Data confidence<input name="data_confidence" className="input" type="number" defaultValue={b.data_confidence || 70}/></label><button className="btn">Save financials for review</button></form>}
+          {tab === 'overview' ? <>
+            <div style={{ ...cardStyle, marginBottom: 22, display: 'flex', alignItems: 'center', gap: 24, flexWrap: 'wrap' }}>
+              <div style={{ flexShrink: 0, width: 120, height: 120, borderRadius: '50%', background: `conic-gradient(${band.color} ${Math.max(0, Math.min(100, score)) * 3.6}deg, #EEF2F6 0deg)`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <div style={{ width: 92, height: 92, borderRadius: '50%', background: '#fff', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}><span style={{ fontSize: 29, fontWeight: 800, color: band.color }}>{score}</span><span style={{ fontSize: 10, fontWeight: 700, color: '#94A3B8' }}>/ 100</span></div>
+              </div>
+              <div style={{ flex: 1, minWidth: 250 }}><div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}><span style={{ fontSize: 15.5, fontWeight: 800 }}>Business Quality Score</span><span style={{ fontSize: 12, fontWeight: 800, padding: '6px 10px', borderRadius: 8, color: band.color, background: band.bg }}>{T(lang, band.labelVi, band.labelEn)}</span></div><p style={{ fontSize: 13, color: '#64748B', lineHeight: 1.55, margin: '0 0 12px' }}>{T(lang, 'Điểm tổng hợp từ hồ sơ, tài chính, tài liệu, hình ảnh, data room và thẩm định Admin.', 'Composite score from profile, financials, documents, images, data room and Admin review.')}</p></div>
+            </div>
+            <div className="d68-cards-4" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 16, marginBottom: 22 }}>{metricCard(T(lang,'Trạng thái hồ sơ','Profile status'), statusLabel, '#16A34A')}{metricCard(T(lang,'Gói hiển thị','Plan tier'), planLabel)}{metricCard(T(lang,'Đã gửi / Duyệt','Sent / Approved'), `${quotaUsed} / ${interests.filter((x) => x.status === 'connected').length}`)}{metricCard(T(lang,'Lượt xem hồ sơ','Profile views'), String(Number(b.views || 0)))}</div>
+            <div style={{ background: '#0F2A4A', color: '#fff', borderRadius: 16, padding: 24, marginBottom: 22 }}><div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}><span style={{ fontSize: 14, fontWeight: 700, color: '#c6d5e6' }}>{T(lang,'Hạn mức gửi Proposal','Proposal quota')}</span><span style={{ fontSize: 18, fontWeight: 800, color: '#F2B51D' }}>{quotaUsed} / {quotaTotal}</span></div><div style={{ height: 10, borderRadius: 999, background: 'rgba(255,255,255,.12)', overflow: 'hidden' }}><div style={{ height: '100%', width: `${quotaPct}%`, background: 'linear-gradient(90deg,#1BADEA,#F2B51D)', borderRadius: 999 }} /></div><p style={{ fontSize: 12.5, color: '#9db4cc', margin: '12px 0 0' }}>{T(lang, `Còn ${quotaRemaining}/${quotaTotal} proposal.`, `${quotaRemaining}/${quotaTotal} proposals remaining.`)} <Link to="/investors" style={{ color: '#F2B51D', fontWeight: 700 }}>{T(lang,'Tìm Nhà đầu tư','Find investors')} →</Link></p></div>
+            <div style={cardStyle}><h3 style={{ fontSize: 16, fontWeight: 800, margin: '0 0 14px' }}>{T(lang, 'Thanh toán', 'Payment')}</h3><div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', background: '#E9F9EF', borderRadius: 10, fontSize: 14, fontWeight: 600, color: '#16A34A' }}><span>✓ {T(lang, `Đã thanh toán — gói ${planLabel}`, `Paid — ${planLabel} plan`)}</span><Link to="/pricing" style={{ color: '#16A34A', textDecoration: 'underline', fontWeight: 700, fontSize: 13 }}>{T(lang,'Gia hạn / Nâng cấp','Renew / Upgrade')}</Link></div></div>
+          </> : null}
 
-        {tab==='files' && <div className="dash"><h2>Data room files</h2><p className="muted">Word, Excel, PPT, PDF và CSV được lưu private. Investor chỉ xem khi có connection/proposal được duyệt.</p><div className="filedrop"><b>Upload Word, Excel, PPT, PDF</b><input type="file" accept=".doc,.docx,.xls,.xlsx,.ppt,.pptx,.pdf,.csv" onChange={fileChange}/></div><table className="table"><thead><tr><th>File</th><th>Category</th><th>Review</th><th>Size</th></tr></thead><tbody>{files.map(f=><tr key={f.id}><td>{f.file_name}</td><td>{f.category}</td><td>{f.review_status || f.privacy_level || 'locked'}</td><td>{f.size_bytes ? `${Math.round(f.size_bytes/1024)} KB` : '-'}</td></tr>)}</tbody></table>{!files.length && <div className="empty">No files uploaded yet.</div>}</div>}
+          {tab === 'profile' || tab === 'datacenter' ? <form onSubmit={saveProfile} style={{ ...cardStyle, display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <h2 style={{ fontSize: 19, fontWeight: 800, margin: '0 0 6px' }}>{tab === 'profile' ? T(lang, 'Chỉnh sửa hồ sơ', 'Edit profile') : 'Business Data Center'}</h2>
+            <p style={{ fontSize: 13, color: '#64748B', margin: '0 0 4px', lineHeight: 1.55 }}>{T(lang, 'Tiêu đề hiển thị công khai (VI/EN) do Admin biên soạn để đảm bảo ẩn danh & chuẩn SEO — bạn cập nhật dữ liệu gốc và số liệu.', 'Public VI/EN title is curated by Admin to stay anonymous & SEO-ready — update source data and numbers.')}</p>
+            <div style={{ background: '#F7FAFC', border: '1px solid #EEF2F6', borderRadius: 12, padding: '14px 16px' }}><div style={{ fontSize: 11.5, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', marginBottom: 4 }}>{T(lang,'Tiêu đề công khai','Public title')}</div><div style={{ fontSize: 14, fontWeight: 600, color: '#334155' }}>{b.title_vi || b.title_en}</div></div>
+            <label style={labelStyle}><span style={labelText}>{T(lang,'Tên doanh nghiệp (thật — chỉ Admin thấy)','Business name (real — Admin only)')}</span><input name="company_name_private" defaultValue={b.company_name_private || ''} style={inputStyle} /></label>
+            <label style={labelStyle}><span style={labelText}>{T(lang,'Tiêu đề / mô tả hồ sơ','Profile title')}</span><input name="title_vi" defaultValue={b.title_vi || ''} style={inputStyle} /></label>
+            <div className="d68-form-2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}><label style={labelStyle}><span style={labelText}>{T(lang,'Ngành','Industry')}</span><input name="industry" defaultValue={b.industry || ''} style={inputStyle} /></label><label style={labelStyle}><span style={labelText}>{T(lang,'Thành phố','City')}</span><input name="city" defaultValue={b.city || ''} style={inputStyle} /></label></div>
+            <label style={labelStyle}><span style={labelText}>{T(lang,'Tổng quan doanh nghiệp','Business overview')}</span><textarea name="description_vi" defaultValue={b.description_vi || ''} rows={3} style={{ ...inputStyle, resize: 'vertical' }} /></label>
+            <label style={labelStyle}><span style={labelText}>{T(lang,'Điểm nổi bật','Highlights')}</span><textarea name="highlights_vi" defaultValue={b.highlights_vi || ''} rows={4} style={{ ...inputStyle, resize: 'vertical' }} /></label>
+            <div style={{ borderTop: '1px solid #EEF2F6', paddingTop: 16 }}><div style={{ fontSize: 13.5, fontWeight: 800, marginBottom: 12 }}>{T(lang,'Giao dịch & tài chính','Deal & financials')}</div><div className="d68-form-2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}><label style={labelStyle}><span style={labelText}>{T(lang,'Phân khúc giao dịch','Deal segment')}</span><input name="deal_type" defaultValue={b.deal_type || ''} style={inputStyle} /></label><label style={labelStyle}><span style={labelText}>{T(lang,'Doanh thu năm gần nhất','Latest annual sales')}</span><input name="revenue_2025" type="number" defaultValue={b.revenue_2025 || 0} style={inputStyle} /></label><label style={labelStyle}><span style={labelText}>EBITDA / profit margin (%)</span><input name="ebitda_margin" type="number" defaultValue={b.ebitda_margin || 0} style={inputStyle} /></label><label style={labelStyle}><span style={labelText}>{T(lang,'Tăng trưởng / độ tin cậy dữ liệu','Data confidence')}</span><input name="data_confidence" type="number" defaultValue={b.data_confidence || 70} style={inputStyle} /></label><label style={labelStyle}><span style={labelText}>{T(lang,'Tỷ lệ cổ phần tối đa bán / pha loãng (%)','Max stake to sell / dilute (%)')}</span><input name="stake_pct" type="number" defaultValue={b.stake_pct || 0} style={inputStyle} /></label><label style={labelStyle}><span style={labelText}>{T(lang,'Số tiền gọi vốn / giá trị giao dịch','Amount sought / asking')}</span><input name="ask_amount" type="number" defaultValue={b.ask_amount || 0} style={inputStyle} /></label></div><label style={{ ...labelStyle, marginTop: 16 }}><span style={labelText}>{T(lang,'Lý do gọi vốn / bán / cách dùng tiền','Reason for raise / sale / use of funds')}</span><textarea name="investment_reason_vi" defaultValue={b.investment_reason_vi || ''} rows={3} style={{ ...inputStyle, resize: 'vertical' }} /></label></div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}><button type="submit" style={{ background: '#0F2A4A', color: '#fff', fontWeight: 700, fontSize: 14.5, padding: '12px 24px', borderRadius: 10, border: 'none', cursor: 'pointer' }}>{T(lang,'Lưu thay đổi','Save changes')}</button></div>
+          </form> : null}
 
-        {tab==='images' && <div className="dash"><h2>Business images</h2><p className="muted">Ảnh public nên được admin kiểm tra ẩn danh trước khi hiện ra listing.</p><div className="filedrop"><b>Upload images</b><input type="file" accept="image/*" onChange={imageChange}/></div><div className="grid2">{images.map(i=><div className="card" key={i.id}><img src={i.public_url} className="deal-img"/><div className="card-body"><b>{i.title || 'Business image'}</b><span className="muted">{i.review_status || 'uploaded'}</span></div></div>)}</div>{!images.length && <div className="empty">No images uploaded yet.</div>}</div>}
+          {tab === 'documents' ? <div style={cardStyle}><h2 style={{ fontSize: 19, fontWeight: 800, margin: '0 0 6px' }}>{T(lang,'Tài liệu doanh nghiệp','Business documents')}</h2><p style={{ fontSize: 13.5, color: '#64748B', margin: '0 0 20px' }}>{T(lang,'Tài liệu nhạy cảm (khóa) chỉ mở cho Nhà đầu tư sau khi proposal được duyệt. Hỗ trợ PDF, Excel, PowerPoint, Word.', 'Locked documents unlock for investors only after a proposal is approved. PDF, Excel, PowerPoint, Word supported.')}</p><div style={{ display: 'flex', flexDirection: 'column' }}>{files.map((d) => <div key={d.id} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 0', borderBottom: '1px solid #F1F5F9' }}><span style={{ flexShrink: 0, width: 38, height: 38, borderRadius: 9, background: '#E9F9EF', color: '#16A34A', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>📄</span><div style={{ flex: 1 }}><div style={{ fontSize: 14.5, fontWeight: 600 }}>{d.filename || d.name}</div><div style={{ fontSize: 12, color: '#94A3B8' }}>{d.category || 'financials'} · {d.visibility || 'locked'}</div></div></div>)}{!files.length ? <div style={{ color: '#94A3B8', padding: '20px 0' }}>{T(lang,'Chưa có tài liệu.','No documents yet.')}</div> : null}</div><div style={{ marginTop: 22, paddingTop: 20, borderTop: '1px solid #EEF2F6' }}><div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'flex-end' }}><label style={{ ...labelStyle, flex: 1, minWidth: 180 }}><span style={labelText}>{T(lang,'Tên tài liệu','Document name')}</span><input value={newDocName} onChange={(e) => setNewDocName(e.target.value)} placeholder={T(lang,'Báo cáo tài chính 2024-2025','Financial report 2024-2025')} style={inputStyle} /></label><label style={labelStyle}><span style={labelText}>{T(lang,'Danh mục','Category')}</span><select value={newDocCategory} onChange={(e) => setNewDocCategory(e.target.value)} style={inputStyle}><option value="financials">Financials</option><option value="profile">Profile</option><option value="im">Teaser / IM</option><option value="legal">Legal</option><option value="other">Other</option></select></label><label style={labelStyle}><span style={labelText}>{T(lang,'Hiển thị','Visibility')}</span><select value={newDocVisibility} onChange={(e) => setNewDocVisibility(e.target.value)} style={inputStyle}><option value="locked">🔒 Locked</option><option value="public">🌐 Public</option></select></label><label style={{ background: '#0F2A4A', color: '#fff', fontWeight: 700, fontSize: 13.5, padding: '12px 20px', borderRadius: 9, cursor: 'pointer' }}>+ {T(lang,'Tải lên','Upload')}<input type="file" onChange={fileChange} style={{ display: 'none' }} /></label></div></div></div> : null}
 
-        {tab==='interests' && <div className="dash"><h2>Interested investors</h2><table className="table"><thead><tr><th>Investor</th><th>Ticket</th><th>Focus</th><th>Contact privacy</th><th>Status</th><th>Action</th></tr></thead><tbody>{interests.map(row=><tr key={row.id}><td><b>{row.investors?.title_en || row.investors?.code}</b><br/><span className="muted">{row.investors?.type} · {row.investors?.country}</span></td><td>{formatCompactMoney(row.investors?.ticket_min,'USD')}–{formatCompactMoney(row.investors?.ticket_max,'USD')}</td><td>{(row.investors?.industries||[]).slice(0,3).join(', ')}</td><td>{row.status==='connected' && row.investors?.privacy?.shareEmail ? row.investors?.privacy?.email : 'Hidden until approved'}<br/>{row.status==='connected' && row.investors?.privacy?.sharePhone ? row.investors?.privacy?.phone : 'Phone hidden'}</td><td><span className="pill gray">{row.status}</span></td><td>{row.status!=='connected'&&<button className="btn small" onClick={()=>acceptInterest(row)}>Approve</button>} {row.status!=='rejected'&&<button className="btn small secondary" onClick={()=>rejectInterest(row)}>Reject</button>}</td></tr>)}</tbody></table>{!interests.length && <div className="empty">No investor interests yet.</div>}</div>}
+          {tab === 'images' ? <div style={cardStyle}><h2 style={{ fontSize: 19, fontWeight: 800, margin: '0 0 6px' }}>{T(lang,'Ảnh doanh nghiệp','Business images')}</h2><p style={{ fontSize: 13.5, color: '#64748B', margin: '0 0 18px' }}>{T(lang,'Tối đa 6 ảnh, khuyến nghị 1600×900px. Admin có thể làm mờ tên/logo nhạy cảm.', 'Up to 6 images, recommended 1600×900px. Admin can blur sensitive names/logos.')}</p><div className="d68-form-2" style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 14 }}>{[0,1,2,3,4,5].map((i) => { const img = images[i]; return <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: 6 }}><div style={{ height: 150, border: '1px dashed #CBD5E1', borderRadius: 10, background: '#F7FAFC', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94A3B8' }}>{img?.public_url || img?.url ? <img src={img.public_url || img.url} alt={img.title || ''} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : T(lang,'Kéo ảnh vào đây','Drop image here')}</div><label style={{ border: '1px solid #E2E8F0', borderRadius: 8, padding: '8px 10px', fontSize: 12.5, background: '#fff', cursor: 'pointer', textAlign: 'center' }}>{T(lang,'Chọn ảnh','Choose image')}<input type="file" accept="image/*" onChange={imageChange} style={{ display: 'none' }} /></label></div>; })}</div></div> : null}
 
-        {tab==='requests' && <div className="dash"><h2>Data requests</h2><table className="table"><thead><tr><th>Investor</th><th>Items</th><th>Note</th><th>Status</th><th></th></tr></thead><tbody>{requests.map(r=><tr key={r.id}><td>{r.investors?.title_en || r.investors?.code}</td><td>{(r.requested_items||[]).join(', ')}</td><td>{r.note || '-'}</td><td>{r.status}</td><td><button className="btn small secondary" onClick={()=>fulfillRequest(r)}>Mark fulfilled</button></td></tr>)}</tbody></table>{!requests.length && <div className="empty">No data requests.</div>}</div>}
+          {tab === 'interests' ? <div style={cardStyle}><h2>{T(lang,'Nhà đầu tư quan tâm','Investor interests')}</h2>{interests.length ? <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>{interests.map((row) => <div key={row.id} style={{ border: '1px solid #EEF2F6', borderRadius: 12, padding: 14, display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}><div style={{ flex: 1, minWidth: 220 }}><b>{row.investors?.title_vi || row.investors?.title_en || row.investors?.code}</b><div style={{ fontSize: 12, color: '#94A3B8' }}>{row.investors?.type} · {row.status}</div></div><button onClick={() => acceptInterest(row)} style={{ background: '#16A34A', color: '#fff', border: 'none', borderRadius: 8, padding: '9px 13px', fontWeight: 700 }}>{T(lang,'Duyệt','Approve')}</button><button onClick={() => rejectInterest(row)} style={{ background: '#F1F5F9', color: '#334155', border: 'none', borderRadius: 8, padding: '9px 13px', fontWeight: 700 }}>{T(lang,'Từ chối','Reject')}</button></div>)}</div> : <p style={{ color: '#94A3B8' }}>{T(lang,'Chưa có nhà đầu tư quan tâm.','No investor interest yet.')}</p>}</div> : null}
 
-        {tab==='quality' && <div className="dash"><h2>Business Quality Score</h2><div className="quality-dial"><strong>{stats.score}</strong><span>/100</span></div><div className="score"><span style={{width:`${Math.min(100,stats.score)}%`}}/></div><p className="muted">Full breakdown is investor-gated on public pages. Admin can revise criteria in Admin → Quality.</p><pre className="json-preview">{JSON.stringify(b.quality_breakdown || {}, null, 2)}</pre></div>}
+          {tab === 'requests' ? <div style={cardStyle}><h2>{T(lang,'Yêu cầu tài liệu từ Nhà đầu tư','Data requests from investors')}</h2>{requests.length ? <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>{requests.map((rq) => <div key={rq.id} style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', border: '1px solid #EEF2F6', borderRadius: 10, padding: '11px 14px' }}><span style={{ fontSize: 12, fontWeight: 700, color: '#94A3B8' }}>{rq.investors?.code}</span><span style={{ flex: 1, minWidth: 160, fontSize: 13.5, fontWeight: 600 }}>{Array.isArray(rq.requested_items) ? rq.requested_items.join(', ') : String(rq.requested_items || 'IM / Financials')}</span><span style={{ fontSize: 12, color: '#94A3B8' }}>{rq.status}</span><button onClick={() => fulfillRequest(rq)} style={{ background: '#0F2A4A', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 12px', fontWeight: 700 }}>Fulfilled</button></div>)}</div> : <p style={{ color: '#94A3B8' }}>{T(lang,'Chưa có yêu cầu tài liệu.','No data requests yet.')}</p>}</div> : null}
 
-        {tab==='plan' && <div className="dash"><h2>Plan & quota</h2><div className="kpis"><div className="kpi"><span>Plan</span><b>{stats.plan}</b></div><div className="kpi"><span>Quota used</span><b>{b.quota_used || 0}/{b.quota_total || 0}</b></div><div className="kpi"><span>Status</span><b>{b.status}</b></div><div className="kpi"><span>Visible</span><b>{b.visible ? 'Yes' : 'No'}</b></div></div><Link className="btn gold" to="/pricing">Upgrade / renew plan</Link></div>}
-
-        {tab==='settings' && <div className="dash"><h2>Settings & audit</h2><p className="notice warn">Sensitive settings are admin-controlled in Beta. Contact admin for legal name, tax code, visibility and plan changes.</p><p className="muted">Owner ID: {b.owner_id || 'unassigned'} · Business ID: {b.id}</p></div>}
-      </main>
+          {tab === 'services' ? <div style={cardStyle}><h2 style={{ fontSize: 19, fontWeight: 800, margin: '0 0 16px' }}>{T(lang,'Dịch vụ & Thanh toán','Services & Billing')}</h2><div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}><div style={{ border: '1px solid #EEF2F6', borderRadius: 14, padding: 18 }}><b>{T(lang,'Gói hiện tại','Current plan')}</b><div style={{ fontSize: 22, fontWeight: 800, marginTop: 8 }}>{planLabel}</div><p style={{ color: '#64748B', fontSize: 13 }}>{quotaTotal} proposal</p></div><div style={{ border: '1px solid #EEF2F6', borderRadius: 14, padding: 18 }}><b>{T(lang,'Hạn mức còn lại','Remaining quota')}</b><div style={{ fontSize: 22, fontWeight: 800, marginTop: 8 }}>{quotaRemaining}</div><p style={{ color: '#64748B', fontSize: 13 }}>{T(lang,'Gia hạn hoặc nâng cấp tại Bảng giá.','Renew or upgrade in Pricing.')}</p></div></div><Link to="/pricing" style={{ display: 'inline-block', marginTop: 18, background: '#F2B51D', color: '#0F2A4A', fontWeight: 800, fontSize: 15, padding: '13px 22px', borderRadius: 11 }}>{T(lang,'Gia hạn / Nâng cấp','Renew / Upgrade')}</Link></div> : null}
+        </main>
+      </div>
     </div>
-  </section>
+  </div>;
 }
-
-function DashboardLoading(){ return <section className="section"><div className="container empty">Loading dashboard...</div></section>; }
-function Forbidden({role}:{role?:string}){ return <section className="section"><div className="container empty"><h2>Không có quyền truy cập</h2><p className="muted">Role hiện tại: {role || 'guest'}. Dashboard này chỉ dành cho Business.</p><Link className="btn secondary" to="/">Back home</Link></div></section>; }
-function Metric({title,value,note}:{title:string;value:string;note:string}){ return <div className="dash metric-card"><span>{title}</span><b>{value}</b><p>{note}</p></div>; }
