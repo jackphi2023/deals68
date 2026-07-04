@@ -1,46 +1,67 @@
-# Deals68 Home UI Reference Port Patch
+# Deals68 UI Reference Patch — Header/Footer + Businesses
 
-Target repo: `jackphi2023/deals68`
-Target file: `src/pages/Home.tsx`
-Reference file read directly: `ui-reference/Deals68 Home.dc.html`
-Reference blob SHA: `5263e971526052ae30aecda354f746675aba3e47`
-Original Home blob SHA: `e48eddf4faeebbdd42e6ef845a7aaf35c3d1b200`
+## Scope
 
-## What changed
+This patch continues the UI-reference port work after Home:
 
-- Ported the Home page from the approved `.dc.html` reference.
-- Preserved section order from the reference:
-  1. Hero
-  2. Trust Stats
-  3. Role Cards
-  4. Promo Banner
-  5. Featured Deals
-  6. Industries
-  7. Valuation CTA
-  8. Featured Investors
-  9. How It Works
-  10. Market Partner CTA
-- Converted `{{ }}` values into React data arrays/state.
-- Converted `sc-for` into `.map()`.
-- Converted `sc-if` into conditional render.
-- Converted `.dc.html` page links into React Router `Link` routes.
-- Removed runtime dependency on `.dc.html`, `BusinessCard`, `InvestorCard`, and remote business/investor fetches for Home, so the page matches the approved source of truth.
+1. `src/components/Header.tsx`
+   - Ported shared public header to the inline style/class structure used by `ui-reference/Deals68 Home.dc.html` and `ui-reference/Deals68 Businesses.dc.html`.
+   - Keeps React Router navigation and VI/EN toggles.
+   - Uses `/assets/logo-beta.png` per reference.
 
-## Files included
+2. `src/components/Footer.tsx`
+   - Ported shared footer to reference layout.
+   - Keeps React Router links and bilingual labels.
 
-- `src/pages/Home.tsx` — replacement file.
+3. `src/pages/Businesses.tsx`
+   - Rebuilt page body from `ui-reference/Deals68 Businesses.dc.html`.
+   - Preserves section order:
+     - Transaction tabs
+     - Title / breadcrumbs
+     - Sidebar filters + results
+     - Grid/list view
+     - Empty state
+     - Mid CTA
+     - Pagination
+     - SEO / explainer
+     - Browse by location
+     - Browse by industry
+     - FAQ
+   - Keeps Supabase production data via `listBusinesses({ includeHidden: false })` and falls back to `fallbackSeedBusinesses()`/reference seed data if loading fails.
+   - Converts reference `{{ }}`/`sc-for`/`sc-if` into React data, `.map()`, and conditionals.
 
-## Local check performed in this sandbox
+## Validation
 
-- TypeScript TSX syntax transpile check: PASS.
-
-Full `npm run build` could not be executed here because this sandbox cannot clone GitHub or install npm packages from the network. Apply the replacement file in the repo and run:
+A local TSX parse/transpile check was run for all 3 files:
 
 ```bash
-npm install
-npm run build
+PASS /mnt/data/deals68_patch_next/src/components/Header.tsx
+PASS /mnt/data/deals68_patch_next/src/components/Footer.tsx
+PASS /mnt/data/deals68_patch_next/src/pages/Businesses.tsx
 ```
 
-## GitHub write note
+Full `npm run build` was not run inside this sandbox because the full repo/node_modules are not present here.
 
-Attempted to create branch `codex/port-home-ui-reference`, but the GitHub connector returned `403 Resource not accessible by integration`, so this zip is provided as the patch artifact instead of a pushed branch.
+## GitHub status
+
+Attempted to update `main` through the GitHub connector, but GitHub returned:
+
+```text
+403 Resource not accessible by integration
+```
+
+So this zip is the patch artifact to upload/apply manually.
+
+## Apply
+
+From the repo root:
+
+```bash
+unzip deals68_ui_reference_header_footer_businesses_patch.zip -d /tmp/deals68-ui-patch
+cp -f /tmp/deals68-ui-patch/src/components/Header.tsx src/components/Header.tsx
+cp -f /tmp/deals68-ui-patch/src/components/Footer.tsx src/components/Footer.tsx
+cp -f /tmp/deals68-ui-patch/src/pages/Businesses.tsx src/pages/Businesses.tsx
+npm run build
+npm run visual:home
+npm run visual:businesses
+```
