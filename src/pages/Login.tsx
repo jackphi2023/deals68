@@ -1,15 +1,16 @@
 import { FormEvent, useEffect, useMemo, useState, type CSSProperties } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import type { Lang } from '../lib/i18n';
 
-const T = (lang: 'vi' | 'en', vi: string, en: string) => lang === 'en' ? en : vi;
+const T = (lang: Lang, vi: string, en: string) => lang === 'en' ? en : vi;
 type LoginRole = 'business' | 'investor' | 'advisor' | 'affiliate' | 'admin';
 
-const roleDefs: { key: LoginRole; vi: string; en: string; register: string; demo: string }[] = [
-  { key: 'business', vi: 'Doanh nghiệp', en: 'Business', register: '/register/business', demo: 'demo_business / deals68demo' },
-  { key: 'investor', vi: 'Nhà đầu tư', en: 'Investor', register: '/register/investor', demo: 'demo_investor / deals68demo' },
-  { key: 'advisor', vi: 'Cố vấn', en: 'Advisor', register: '/register/advisor', demo: 'Đăng ký mới để tạo tài khoản cố vấn demo.' },
-  { key: 'affiliate', vi: 'Đối tác thị trường', en: 'Market Partner', register: '/market-partner', demo: 'affiliate@deals68.com / deals68aff' }
+const roleDefs: { key: LoginRole; vi: string; en: string; register: string }[] = [
+  { key: 'business', vi: 'Doanh nghiệp', en: 'Business', register: '/register/business' },
+  { key: 'investor', vi: 'Nhà đầu tư', en: 'Investor', register: '/register/investor' },
+  { key: 'advisor', vi: 'Cố vấn', en: 'Advisor', register: '/register/advisor' },
+  { key: 'affiliate', vi: 'Đối tác thị trường', en: 'Market Partner', register: '/market-partner' }
 ];
 
 function dashboardForRole(role?: string) {
@@ -37,16 +38,6 @@ function pillStyle(active: boolean): CSSProperties {
   };
 }
 
-const langBtn = (active: boolean): CSSProperties => ({
-  padding: '7px 14px',
-  border: 'none',
-  cursor: 'pointer',
-  fontWeight: 700,
-  fontSize: 13,
-  background: active ? '#0F2A4A' : 'transparent',
-  color: active ? '#fff' : '#64748B'
-});
-
 const inputStyle: CSSProperties = {
   border: '1px solid #E2E8F0',
   borderRadius: 10,
@@ -59,13 +50,11 @@ const inputStyle: CSSProperties = {
   width: '100%'
 };
 
-export default function Login() {
+export default function Login({ lang = 'vi' }: { lang?: Lang }) {
   const { signIn, profile } = useAuth();
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const initialRole = (params.get('role') || 'business') as LoginRole;
-  const initialLang = params.get('lang') === 'en' ? 'en' : 'vi';
-  const [lang, setLang] = useState<'vi' | 'en'>(initialLang);
   const [role, setRole] = useState<LoginRole>(roleDefs.some((r) => r.key === initialRole) ? initialRole : 'business');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -76,7 +65,6 @@ export default function Login() {
   const next = params.get('next');
 
   const currentRole = useMemo(() => roleDefs.find((r) => r.key === role) || roleDefs[0], [role]);
-  const roleLabel = T(lang, currentRole.vi, currentRole.en);
   const userFieldLabel = role === 'business' ? T(lang, 'Tên đăng nhập hoặc email', 'Username or email') : 'Email';
   const userFieldPlaceholder = role === 'business' ? T(lang, 'Tên đăng nhập / email', 'Username / email') : 'email@example.com';
 
@@ -99,10 +87,6 @@ export default function Login() {
   return <section style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px 24px', background: '#F7FAFC' }}>
     <div style={{ width: '100%', maxWidth: 480 }}>
       <div style={{ textAlign: 'center', marginBottom: 24 }}>
-        <div style={{ display: 'inline-flex', alignItems: 'center', border: '1px solid #E2E8F0', borderRadius: 999, overflow: 'hidden', fontSize: 13, fontWeight: 700, marginBottom: 18, background: '#fff' }}>
-          <button type="button" onClick={() => setLang('vi')} style={langBtn(lang === 'vi')}>VI</button>
-          <button type="button" onClick={() => setLang('en')} style={langBtn(lang === 'en')}>EN</button>
-        </div>
         <h1 style={{ fontSize: 26, fontWeight: 800, letterSpacing: -.6, margin: '0 0 6px' }}>{T(lang, 'Đăng nhập Deals68', 'Log in to Deals68')}</h1>
         <p style={{ fontSize: 14.5, color: '#64748B', margin: 0 }}>{T(lang, 'Chọn vai trò và đăng nhập vào tài khoản của bạn.', 'Choose your role and sign in to your account.')}</p>
       </div>
@@ -125,16 +109,13 @@ export default function Login() {
           <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ fontSize: 12.5, fontWeight: 700, color: '#334155' }}>{T(lang, 'Mật khẩu', 'Password')}</span>
-              <Link to={`/forgot-password?role=${role}&lang=${lang}`} style={{ fontSize: 12.5, fontWeight: 600, color: '#1596cc' }}>{T(lang, 'Quên mật khẩu?', 'Forgot password?')}</Link>
+              <Link to={`/forgot-password?role=${role}`} style={{ fontSize: 12.5, fontWeight: 600, color: '#1596cc' }}>{T(lang, 'Quên mật khẩu?', 'Forgot password?')}</Link>
             </div>
             <input required type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" style={inputStyle} />
           </label>
           {err ? <div style={{ background: '#FDECEC', border: '1px solid #F8B4B4', color: '#B91C1C', fontSize: 13, fontWeight: 600, padding: '11px 14px', borderRadius: 10 }}>⚠ {err}</div> : null}
           <button type="submit" disabled={loading} style={{ background: '#0F2A4A', color: '#fff', fontWeight: 700, fontSize: 15.5, padding: 13, borderRadius: 11, border: 'none', cursor: loading ? 'wait' : 'pointer', marginTop: 4 }}>{loading ? T(lang, 'Đang đăng nhập...', 'Logging in...') : T(lang, 'Đăng nhập', 'Log in')}</button>
         </form>
-        <div style={{ marginTop: 18, paddingTop: 16, borderTop: '1px solid #EEF2F6', fontSize: 12.5, color: '#94A3B8', lineHeight: 1.6 }}>
-          <b style={{ color: '#64748B' }}>{T(lang, 'Tài khoản demo', 'Demo account')} ({roleLabel}):</b><br />{currentRole.demo}
-        </div>
       </div>}
 
       <p style={{ textAlign: 'center', fontSize: 13.5, color: '#64748B', marginTop: 18 }}>
