@@ -9,6 +9,8 @@ import Investors from './pages/Investors';
 import InvestorDetail from './pages/InvestorDetail';
 import Pricing from './pages/Pricing';
 import Login from './pages/Login';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 import Register from './pages/Register';
 import BusinessDashboard from './pages/BusinessDashboard';
 import InvestorDashboard from './pages/InvestorDashboard';
@@ -31,6 +33,8 @@ export default function App(){
       <Route path="/pricing" element={<Pricing lang={lang}/>}/>
       <Route path="/valuation" element={<Valuation lang={lang}/>}/>
       <Route path="/login" element={<Login/>}/>
+      <Route path="/forgot-password" element={<ForgotPassword/>}/>
+      <Route path="/reset-password" element={<ResetPassword/>}/>
       <Route path="/register/:role" element={<Register/>}/>
       <Route path="/register" element={<Navigate to="/pricing" replace/>}/>
       <Route path="/dashboard/business" element={<BusinessDashboard/>}/>
