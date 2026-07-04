@@ -1,67 +1,39 @@
-# Deals68 UI Reference Patch — Header/Footer + Businesses
+# Deals68 UI Reference Patch — Business Detail / Deal Detail
 
-## Scope
+Source of truth read directly from:
+- `ui-reference/Deals68 Deal.dc.html` — SHA `c7127add458bb6a1961021636e437c6800fc7745`
 
-This patch continues the UI-reference port work after Home:
+Updated file:
+- `src/pages/BusinessDetail.tsx`
 
-1. `src/components/Header.tsx`
-   - Ported shared public header to the inline style/class structure used by `ui-reference/Deals68 Home.dc.html` and `ui-reference/Deals68 Businesses.dc.html`.
-   - Keeps React Router navigation and VI/EN toggles.
-   - Uses `/assets/logo-beta.png` per reference.
+Scope:
+- Port body layout of Deal/Business Detail from `.dc.html` into React.
+- Does not use `.dc.html` runtime.
+- Keeps shared Header/Footer from App, because Header/Footer were already ported as shared components.
+- Converts `{{ }}` to typed data/state.
+- Converts `sc-for` to `.map()`.
+- Converts `sc-if` to conditional render.
+- Converts `.dc.html` hrefs to React Router `Link` or actions.
+- Keeps Supabase actions for express interest/request data where a real business row exists.
 
-2. `src/components/Footer.tsx`
-   - Ported shared footer to reference layout.
-   - Keeps React Router links and bilingual labels.
+Section order preserved:
+1. Breadcrumb
+2. Main detail columns
+3. Badges + title/subtitle
+4. Hero image
+5. Key facts
+6. Business Quality Score
+7. Business profile
+8. Deal highlights
+9. Facility & technology conditional
+10. Financials 2024–2025
+11. Documents
+12. Disclaimer
+13. Sidebar transaction summary
+14. Connect card
+15. Verified card
+16. Similar deals
+17. FAQ
 
-3. `src/pages/Businesses.tsx`
-   - Rebuilt page body from `ui-reference/Deals68 Businesses.dc.html`.
-   - Preserves section order:
-     - Transaction tabs
-     - Title / breadcrumbs
-     - Sidebar filters + results
-     - Grid/list view
-     - Empty state
-     - Mid CTA
-     - Pagination
-     - SEO / explainer
-     - Browse by location
-     - Browse by industry
-     - FAQ
-   - Keeps Supabase production data via `listBusinesses({ includeHidden: false })` and falls back to `fallbackSeedBusinesses()`/reference seed data if loading fails.
-   - Converts reference `{{ }}`/`sc-for`/`sc-if` into React data, `.map()`, and conditionals.
-
-## Validation
-
-A local TSX parse/transpile check was run for all 3 files:
-
-```bash
-PASS /mnt/data/deals68_patch_next/src/components/Header.tsx
-PASS /mnt/data/deals68_patch_next/src/components/Footer.tsx
-PASS /mnt/data/deals68_patch_next/src/pages/Businesses.tsx
-```
-
-Full `npm run build` was not run inside this sandbox because the full repo/node_modules are not present here.
-
-## GitHub status
-
-Attempted to update `main` through the GitHub connector, but GitHub returned:
-
-```text
-403 Resource not accessible by integration
-```
-
-So this zip is the patch artifact to upload/apply manually.
-
-## Apply
-
-From the repo root:
-
-```bash
-unzip deals68_ui_reference_header_footer_businesses_patch.zip -d /tmp/deals68-ui-patch
-cp -f /tmp/deals68-ui-patch/src/components/Header.tsx src/components/Header.tsx
-cp -f /tmp/deals68-ui-patch/src/components/Footer.tsx src/components/Footer.tsx
-cp -f /tmp/deals68-ui-patch/src/pages/Businesses.tsx src/pages/Businesses.tsx
-npm run build
-npm run visual:home
-npm run visual:businesses
-```
+Validation:
+- TSX parse/transpile check passed locally in sandbox.
