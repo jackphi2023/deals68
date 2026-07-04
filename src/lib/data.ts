@@ -2,12 +2,49 @@ import { supabase } from './supabase';
 import { seedBusinesses } from '../data/seedBusinesses';
 import { computeBusinessQuality } from './scoring';
 
+const investorPublicSelect = [
+  'id',
+  'code',
+  'username',
+  'type',
+  'title_vi',
+  'title_en',
+  'desc_vi',
+  'desc_en',
+  'country_iso2',
+  'country',
+  'region',
+  'industries',
+  'deal_types',
+  'stage',
+  'ticket_min',
+  'ticket_max',
+  'criteria',
+  'visible',
+  'verified',
+  'admin_priority',
+  'activity_level',
+  'status',
+  'created_at',
+  'updated_at'
+].join(',');
+
 export async function listBusinesses(filters: any = {}) {
-  let q = supabase.from('businesses').select('*, business_files(count), business_images(count)').order('created_at', { ascending: false });
+  let q = supabase.from('businesses').select('*, business_files(count), business_images(count)');
   if (!filters.includeHidden) q = q.eq('visible', true).eq('status', 'active');
   if (filters.industry) q = q.ilike('industry', `%${filters.industry}%`);
   if (filters.country) q = q.eq('country_iso2', filters.country);
-  if (filters.search) q = q.or(`title_vi.ilike.%${filters.search}%,title_en.ilike.%${filters.search}%,industry.ilike.%${filters.search}%`);
+  if (filters.dealType) q = q.ilike('deal_type', `%${filters.dealType}%`);
+  if (filters.search || filters.q) {
+    const keyword = filters.search || filters.q;
+    q = q.or(`title_vi.ilike.%${keyword}%,title_en.ilike.%${keyword}%,description_vi.ilike.%${keyword}%,description_en.ilike.%${keyword}%,industry.ilike.%${keyword}%,public_code.ilike.%${keyword}%`);
+  }
+  const sort = filters.sort || 'featured';
+  if (sort === 'revenue') q = q.order('revenue_2025', { ascending: false, nullsFirst: false });
+  else if (sort === 'ask') q = q.order('ask_amount', { ascending: false, nullsFirst: false });
+  else if (sort === 'quality' || sort === 'featured') q = q.order('quality_score', { ascending: false, nullsFirst: false }).order('created_at', { ascending: false });
+  else q = q.order('created_at', { ascending: false });
+  if (filters.limit) q = q.limit(filters.limit);
   const { data, error } = await q;
   if (error) throw error;
   return data || [];
@@ -26,12 +63,25 @@ export async function getMyBusiness(ownerId: string) {
 }
 
 export async function listInvestors(filters: any = {}) {
-  let q = supabase.from('investors').select('*').order('admin_priority', { ascending: false }).order('created_at', { ascending: false });
+  let q = supabase.from('investors').select(investorPublicSelect);
   if (!filters.includeHidden) q = q.eq('visible', true).eq('status', 'active');
   if (filters.type) q = q.eq('type', filters.type);
   if (filters.country) q = q.eq('country_iso2', filters.country);
+  if (filters.region) q = q.ilike('region', `%${filters.region}%`);
   if (filters.industry) q = q.contains('industries', [filters.industry]);
-  if (filters.search) q = q.or(`title_vi.ilike.%${filters.search}%,title_en.ilike.%${filters.search}%,desc_en.ilike.%${filters.search}%`);
+  if (filters.dealType) q = q.contains('deal_types', [filters.dealType]);
+  if (filters.stage) q = q.ilike('stage', `%${filters.stage}%`);
+  if (filters.minTicket) q = q.gte('ticket_max', Number(filters.minTicket));
+  if (filters.maxTicket) q = q.lte('ticket_min', Number(filters.maxTicket));
+  if (filters.search || filters.q) {
+    const keyword = filters.search || filters.q;
+    q = q.or(`code.ilike.%${keyword}%,title_vi.ilike.%${keyword}%,title_en.ilike.%${keyword}%,desc_vi.ilike.%${keyword}%,desc_en.ilike.%${keyword}%,type.ilike.%${keyword}%,country.ilike.%${keyword}%`);
+  }
+  const sort = filters.sort || 'ranking';
+  if (sort === 'ticket') q = q.order('ticket_max', { ascending: false, nullsFirst: false });
+  else if (sort === 'newest') q = q.order('created_at', { ascending: false });
+  else if (sort === 'verified') q = q.order('verified', { ascending: false }).order('admin_priority', { ascending: false }).order('created_at', { ascending: false });
+  else q = q.order('admin_priority', { ascending: false }).order('verified', { ascending: false }).order('created_at', { ascending: false });
   const { data, error } = await q.limit(filters.limit || 1000);
   if (error) throw error;
   return data || [];
@@ -44,7 +94,7 @@ export async function getInvestorByOwner(ownerId: string) {
 }
 
 export async function getInvestorByCode(code: string) {
-  const { data, error } = await supabase.from('investors').select('*').eq('code', code).maybeSingle();
+  const { data, error } = await supabase.from('investors').select(investorPublicSelect).eq('code', code).maybeSingle();
   if (error) throw error;
   return data;
 }
