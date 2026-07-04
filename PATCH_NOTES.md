@@ -1,39 +1,29 @@
-# Deals68 UI Reference Patch — Business Detail / Deal Detail
+# Deals68 Investors + Investor Detail UI Reference Patch
 
-Source of truth read directly from:
-- `ui-reference/Deals68 Deal.dc.html` — SHA `c7127add458bb6a1961021636e437c6800fc7745`
+Target repo: `jackphi2023/deals68`
 
-Updated file:
-- `src/pages/BusinessDetail.tsx`
+Reference files read directly:
+- `ui-reference/Deals68 Investors.dc.html` — SHA `0679f11e37a10bcbb227735e7d149b78163c606d`
+- `ui-reference/Deals68 Investor Detail.dc.html` — SHA `9035b8e96d7c8cdd38dfe5efd249ecf25a3022fd`
 
-Scope:
-- Port body layout of Deal/Business Detail from `.dc.html` into React.
-- Does not use `.dc.html` runtime.
-- Keeps shared Header/Footer from App, because Header/Footer were already ported as shared components.
-- Converts `{{ }}` to typed data/state.
-- Converts `sc-for` to `.map()`.
-- Converts `sc-if` to conditional render.
-- Converts `.dc.html` hrefs to React Router `Link` or actions.
-- Keeps Supabase actions for express interest/request data where a real business row exists.
+Files included:
+- `src/pages/Investors.tsx`
+- `src/pages/InvestorDetail.tsx`
 
-Section order preserved:
-1. Breadcrumb
-2. Main detail columns
-3. Badges + title/subtitle
-4. Hero image
-5. Key facts
-6. Business Quality Score
-7. Business profile
-8. Deal highlights
-9. Facility & technology conditional
-10. Financials 2024–2025
-11. Documents
-12. Disclaimer
-13. Sidebar transaction summary
-14. Connect card
-15. Verified card
-16. Similar deals
-17. FAQ
+What changed:
+- Ported Investors listing layout from `.dc.html` into React.
+- Ported Investor Detail layout from `.dc.html` into React.
+- Converted `{{ }}` to data/state, `sc-for` to `.map()`, `sc-if` to conditional render.
+- Converted `.dc.html` links to React Router `Link`/route paths.
+- Kept production data source via `listInvestors()` and `getInvestorByCode()`.
+- Added small fallback reference investor data only for local/demo loading if Supabase fails.
+- Did not render real investor emails or sensitive contact info on public/business-facing pages.
 
-Validation:
-- TSX parse/transpile check passed locally in sandbox.
+Local validation:
+- TSX syntax transpile PASS for both files.
+
+Not executed here:
+- Full `npm run build` and visual diff, because this sandbox cannot install/resolve full project dependencies from the network.
+
+GitHub write attempt:
+- Direct `GitHub.update_file` still failed with 403 `Resource not accessible by integration`, so this zip must be applied/uploaded manually.
