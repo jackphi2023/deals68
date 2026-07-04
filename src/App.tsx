@@ -83,6 +83,13 @@ export default function App(){
 <Route path="/dashboard/advisor/clients" element={<ModuleScreen/>}/>
 <Route path="/dashboard/advisor/opportunities" element={<ModuleScreen/>}/>
 <Route path="/dashboard/advisor/settings" element={<ModuleScreen/>}/>
+
+<Route path="/dashboard/market-partner" element={<ModuleScreen/>}/>
+<Route path="/dashboard/market-partner/register" element={<ModuleScreen/>}/>
+<Route path="/dashboard/market-partner/links" element={<ModuleScreen/>}/>
+<Route path="/dashboard/market-partner/conversions" element={<ModuleScreen/>}/>
+<Route path="/dashboard/market-partner/payouts" element={<ModuleScreen/>}/>
+<Route path="/dashboard/market-partner/settings" element={<ModuleScreen/>}/>
 <Route path="/dashboard/affiliate/register" element={<ModuleScreen/>}/>
 <Route path="/dashboard/affiliate/links" element={<ModuleScreen/>}/>
 <Route path="/dashboard/affiliate/conversions" element={<ModuleScreen/>}/>
@@ -94,6 +101,7 @@ export default function App(){
 <Route path="/admin/investors" element={<ModuleScreen/>}/>
 <Route path="/admin/investor-imports" element={<ModuleScreen/>}/>
 <Route path="/admin/advisors" element={<ModuleScreen/>}/>
+<Route path="/admin/market-partners" element={<ModuleScreen/>}/>
 <Route path="/admin/affiliates" element={<ModuleScreen/>}/>
 <Route path="/admin/payments" element={<ModuleScreen/>}/>
 <Route path="/admin/promo" element={<ModuleScreen/>}/>
