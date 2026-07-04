@@ -2,8 +2,12 @@ import { supabase } from './supabase';
 import { seedBusinesses } from '../data/seedBusinesses';
 import { computeBusinessQuality } from './scoring';
 
+const businessPublicSelect = [
+  'id','public_code','slug','title_vi','title_en','description_vi','description_en','country_iso2','city','industry','deal_type','plan','revenue_2025','revenue_currency','ebitda_margin','ask_amount','ask_currency','stake_pct','highlights_vi','highlights_en','investment_reason_vi','investment_reason_en','data_confidence','quality_score','valuation_reasonableness','visible','status','quota_total','quota_used','image_url','created_at','updated_at','public_snapshot_json','public_version','last_approved_at','moderation_status','hero_image_url'
+].join(',');
+
 const investorPublicSelect = [
-  'id','code','username','type','title_vi','title_en','desc_vi','desc_en','country_iso2','country','region','industries','deal_types','stage','ticket_min','ticket_max','criteria','visible','verified','admin_priority','activity_level','status','created_at','updated_at'
+  'id','code','type','title_vi','title_en','desc_vi','desc_en','country_iso2','country','region','industries','deal_types','stage','ticket_min','ticket_max','criteria','visible','verified','admin_priority','activity_level','status','created_at','updated_at'
 ].join(',');
 
 function applyPagination(q: any, filters: any) {
@@ -64,7 +68,7 @@ export function getPublicBusinessView(row: any) {
 }
 
 function applyBusinessPublicFilters(q: any, filters: any) {
-  if (!filters.includeHidden) q = q.eq('visible', true).not('public_snapshot_json', 'is', null);
+  if (!filters.includeHidden) q = q.eq('visible', true).eq('status', 'active').not('public_snapshot_json', 'is', null);
   if (filters.industry) q = q.ilike('industry', `%${filters.industry}%`);
   if (filters.country) q = q.eq('country_iso2', filters.country);
   if (filters.dealType) q = q.ilike('deal_type', `%${filters.dealType}%`);
@@ -76,7 +80,8 @@ function applyBusinessPublicFilters(q: any, filters: any) {
 }
 
 export async function listBusinesses(filters: any = {}) {
-  let q = supabase.from('businesses').select('*, business_files(count), business_images(count)');
+  const select = filters.includeHidden ? '*, business_files(count), business_images(count)' : `${businessPublicSelect}, business_files(count), business_images(count)`;
+  let q = supabase.from('businesses').select(select);
   q = applyBusinessPublicFilters(q, filters);
   const sort = filters.sort || 'featured';
   if (sort === 'revenue') q = q.order('revenue_2025', { ascending: false, nullsFirst: false });
@@ -98,17 +103,21 @@ export async function countBusinesses(filters: any = {}) {
 }
 
 export async function getBusinessBySlug(slug: string, options: { includeHidden?: boolean } = {}) {
-  let q = supabase.from('businesses').select('*').eq('slug', slug);
-  if (!options.includeHidden) q = q.eq('visible', true).not('public_snapshot_json', 'is', null);
+  const select = options.includeHidden ? '*' : businessPublicSelect;
+  let q = supabase.from('businesses').select(select).eq('slug', slug);
+  if (!options.includeHidden) q = q.eq('visible', true).eq('status', 'active').not('public_snapshot_json', 'is', null);
   const { data, error } = await q.maybeSingle();
   if (error) throw error;
   return data ? getPublicBusinessView(data) : null;
 }
 
 export async function getBusinessFiles(businessId: string, options: { publicOnly?: boolean } = {}) {
+  const select = options.publicOnly
+    ? 'id,business_id,file_name,display_name,file_type,size_bytes,category,privacy_level,public_visible,created_at,updated_at'
+    : 'id,business_id,owner_id,file_name,display_name,file_path,file_type,size_bytes,category,privacy_level,public_visible,admin_note,created_at,updated_at';
   let q = supabase
     .from('business_files')
-    .select('id,business_id,owner_id,file_name,display_name,file_path,file_type,size_bytes,category,privacy_level,public_visible,admin_note,created_at,updated_at')
+    .select(select)
     .eq('business_id', businessId);
   if (options.publicOnly) q = q.eq('public_visible', true);
   const { data, error } = await q.order('created_at', { ascending: false });
@@ -117,9 +126,12 @@ export async function getBusinessFiles(businessId: string, options: { publicOnly
 }
 
 export async function getBusinessImages(businessId: string, options: { publicOnly?: boolean } = {}) {
+  const select = options.publicOnly
+    ? 'id,business_id,title,display_title,public_url,sort_order,public_visible,is_sanitized,is_hero,created_at,updated_at'
+    : 'id,business_id,owner_id,title,display_title,image_path,public_url,sort_order,public_visible,is_sanitized,is_hero,admin_note,created_at,updated_at';
   let q = supabase
     .from('business_images')
-    .select('id,business_id,owner_id,title,display_title,image_path,public_url,sort_order,public_visible,is_sanitized,is_hero,admin_note,created_at,updated_at')
+    .select(select)
     .eq('business_id', businessId);
   if (options.publicOnly) q = q.eq('public_visible', true).eq('is_sanitized', true);
   const { data, error } = await q.order('is_hero', { ascending: false }).order('sort_order', { ascending: true, nullsFirst: false }).order('created_at', { ascending: true });
@@ -183,7 +195,7 @@ export async function getInvestorByOwner(ownerId: string) {
 }
 
 export async function getInvestorByCode(code: string) {
-  const { data, error } = await supabase.from('investors').select(investorPublicSelect).eq('code', code).maybeSingle();
+  const { data, error } = await supabase.from('investors').select(investorPublicSelect).eq('code', code).eq('visible', true).eq('status', 'active').maybeSingle();
   if (error) throw error;
   return data;
 }
