@@ -8,7 +8,12 @@ const T = (lang: Lang, vi: string, en: string) => lang === 'en' ? en : vi;
 
 const roleOptions: PricingRole[] = ['business', 'investor', 'advisor', 'affiliate'];
 const countryOptions = [
-  ['VN', 'Vietnam'], ['SG', 'Singapore'], ['US', 'United States'], ['JP', 'Japan'], ['KR', 'Korea'], ['HK', 'Hong Kong']
+  { code: 'VN', vi: 'Việt Nam', en: 'Vietnam' },
+  { code: 'SG', vi: 'Singapore', en: 'Singapore' },
+  { code: 'US', vi: 'Hoa Kỳ', en: 'United States' },
+  { code: 'JP', vi: 'Nhật Bản', en: 'Japan' },
+  { code: 'KR', vi: 'Hàn Quốc', en: 'Korea' },
+  { code: 'HK', vi: 'Hồng Kông', en: 'Hong Kong' }
 ];
 
 export default function Pricing({ lang }: { lang: Lang }) {
@@ -53,7 +58,7 @@ export default function Pricing({ lang }: { lang: Lang }) {
         <div>
           <span className="badge-title gold">★ {T(lang, 'Bảng giá Beta', 'Beta Pricing')}</span>
           <h1>{T(lang, 'Bảng giá minh bạch cho từng vai trò', 'Transparent pricing for every role')}</h1>
-          <p>{T(lang, 'Doanh nghiệp, nhà đầu tư, cố vấn và Đối tác thị trường có thể chọn gói phù hợp. Thanh toán tự động đang ở Beta; admin vẫn có thể xác nhận thủ công.', 'Businesses, investors, advisors and Market Partners can choose the right plan. Payment automation is in Beta; admins can still confirm manually.')}</p>
+          <p>{T(lang, 'Doanh nghiệp, nhà đầu tư, cố vấn và Đối tác thị trường có thể chọn gói phù hợp. Thanh toán tự động đang ở Beta; quản trị viên vẫn có thể xác nhận thủ công.', 'Businesses, investors, advisors and Market Partners can choose the right plan. Payment automation is in Beta; admins can still confirm manually.')}</p>
         </div>
         <div className="list-hero-card">
           <b>{formatMoney(price.total, price.currency)}</b>
@@ -69,12 +74,12 @@ export default function Pricing({ lang }: { lang: Lang }) {
           <div className="pricing-estimator card">
             <div className="card-body">
               <div className="section-title" style={{marginBottom: 18}}>
-                <div><h2>{T(lang, 'Công cụ tính giá', 'Price estimator')}</h2><p>{T(lang, 'Một công thức dùng chung cho estimator và register intent để tránh lệch số.', 'One shared formula is used for the estimator and register intent to avoid mismatched totals.')}</p></div>
+                <div><h2>{T(lang, 'Công cụ tính giá', 'Price estimator')}</h2><p>{T(lang, 'Một công thức dùng chung cho phần tính giá và ý định đăng ký để tránh lệch số.', 'One shared formula is used for the estimator and register intent to avoid mismatched totals.')}</p></div>
               </div>
               <div className="formgrid">
                 <label>{T(lang, 'Vai trò', 'Role')}<select className="select" value={role} onChange={e=>{setRole(normaliseRole(e.target.value)); setPromoDiscountPct(0); setPromoMsg('');}}>{roleOptions.map(x=><option key={x} value={x}>{roleLabel(x, lang)}</option>)}</select></label>
-                <label>{T(lang, 'Quốc gia', 'Country')}<select className="select" value={country} onChange={e=>setCountry(e.target.value)}>{countryOptions.map(([v,n])=><option key={v} value={v}>{n}</option>)}</select></label>
-                {role === 'business' && <label>{T(lang, 'Gói DN', 'Business plan')}<select className="select" value={businessPlan} onChange={e=>setBusinessPlan(e.target.value as BusinessPlan)}><option value="standard">Standard · 100 proposals</option><option value="featured">Featured · 200 proposals</option></select></label>}
+                <label>{T(lang, 'Quốc gia', 'Country')}<select className="select" value={country} onChange={e=>setCountry(e.target.value)}>{countryOptions.map(c=><option key={c.code} value={c.code}>{lang === 'en' ? c.en : c.vi}</option>)}</select></label>
+                {role === 'business' && <label>{T(lang, 'Gói DN', 'Business plan')}<select className="select" value={businessPlan} onChange={e=>setBusinessPlan(e.target.value as BusinessPlan)}><option value="standard">{T(lang, 'Gói thường · 100 đề xuất', 'Standard · 100 proposals')}</option><option value="featured">{T(lang, 'Gói ưu tiên · 200 đề xuất', 'Featured · 200 proposals')}</option></select></label>}
                 <label>{T(lang, 'Thời hạn', 'Term')}<select className="select" value={termWeeks} onChange={e=>setTermWeeks(Number(e.target.value))}><option value={1}>1 {T(lang,'tuần','week')}</option><option value={4}>4 {T(lang,'tuần','weeks')}</option><option value={12}>12 {T(lang,'tuần','weeks')}</option><option value={24}>24 {T(lang,'tuần','weeks')}</option><option value={52}>52 {T(lang,'tuần','weeks')}</option></select></label>
                 <label>{T(lang, 'Mã khuyến mãi', 'Promo code')}<div className="promo-input-row"><input className="input" value={promoCode} onChange={e=>{setPromoCode(e.target.value); setPromoDiscountPct(0); setPromoMsg('');}} placeholder="FREE10JULY-DN16"/><button type="button" className="btn secondary" onClick={checkPromo} disabled={!promoCode.trim() || checkingPromo}>{checkingPromo ? '...' : T(lang,'Áp dụng','Apply')}</button></div></label>
               </div>
@@ -100,7 +105,7 @@ export default function Pricing({ lang }: { lang: Lang }) {
             <SummaryRow label={T(lang,'Giảm theo kỳ hạn','Term discount')} value={`${price.termDiscountPct}% · ${formatMoney(price.termDiscount, price.currency)}`} />
             <SummaryRow label={T(lang,'Mã khuyến mãi','Promo discount')} value={`${price.promoDiscountPct}% · ${formatMoney(price.promoDiscount, price.currency)}`} />
             <div className="total-row"><span>{T(lang,'Tổng cộng','Total')}</span><b>{formatMoney(price.total, price.currency)}</b></div>
-            {price.proposalQuota > 0 && <p className="notice small-note">{T(lang,'Quota đề xuất','Proposal quota')}: <b>{price.proposalQuota}</b></p>}
+            {price.proposalQuota > 0 && <p className="notice small-note">{T(lang,'Số lượt đề xuất','Proposal quota')}: <b>{price.proposalQuota}</b></p>}
             <button className="btn gold block" onClick={()=>choose()}>{T(lang, 'Tiếp tục', 'Continue')}</button>
             <p className="muted" style={{fontSize:13,lineHeight:1.55}}>{T(lang, 'QR ngân hàng/Sepay có thể xác nhận thủ công trong Beta. Stripe/PayPal sẽ tích hợp webhook sau.', 'Bank QR/Sepay can be confirmed manually in Beta. Stripe/PayPal webhooks will be integrated later.')}</p>
           </div>

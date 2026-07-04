@@ -85,10 +85,10 @@ export default function Businesses({ lang }: { lang: Lang }) {
       <aside className="d68-filter-card">
         <div className="d68-filter-head"><b>{T(lang,'Bộ lọc thương vụ','Deal filters')}</b><button onClick={clear}>{T(lang,'Xóa lọc','Clear')}</button></div>
         <div className="d68-filter-body">
-          <label><span>{T(lang,'Từ khóa','Keyword')}</span><input value={draft.q} onChange={e=>setDraft({...draft,q:e.target.value})} placeholder={T(lang,'ngành, thành phố, mã deal...','sector, city, deal code...')}/></label>
+          <label><span>{T(lang,'Từ khóa','Keyword')}</span><input value={draft.q} onChange={e=>setDraft({...draft,q:e.target.value})} placeholder={T(lang,'ngành, thành phố, mã hồ sơ...','sector, city, deal code...')}/></label>
           <label><span>{T(lang,'Quốc gia','Country')}</span><select value={draft.country} onChange={e=>setDraft({...draft,country:e.target.value})}>{countries.map(c=><option key={c.value} value={c.value}>{lang==='en'?c.en:c.vi}</option>)}</select></label>
           <label><span>{T(lang,'Ngành','Industry')}</span><select value={draft.industry} onChange={e=>setDraft({...draft,industry:e.target.value})}>{industries.map(i=><option key={i || 'all'} value={i}>{i || T(lang,'Tất cả ngành','All industries')}</option>)}</select></label>
-          <label><span>{T(lang,'Loại thương vụ','Deal type')}</span><select value={draft.dealType} onChange={e=>setDraft({...draft,dealType:e.target.value})}>{dealTypes.map(i=><option key={i || 'all'} value={i}>{i || T(lang,'Tất cả loại deal','All deal types')}</option>)}</select></label>
+          <label><span>{T(lang,'Loại thương vụ','Deal type')}</span><select value={draft.dealType} onChange={e=>setDraft({...draft,dealType:e.target.value})}>{dealTypes.map(i=><option key={i || 'all'} value={i}>{i || T(lang,'Tất cả hình thức','All deal types')}</option>)}</select></label>
           <button className="d68-ref-apply" onClick={()=>apply()}>{T(lang,'Áp dụng bộ lọc','Apply filters')}</button>
           <p className="d68-lock-note">🔒 {T(lang,'Thông tin nhạy cảm chỉ mở sau khi kết nối được duyệt.','Sensitive data unlocks only after approved connection.')}</p>
         </div>

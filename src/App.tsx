@@ -17,6 +17,7 @@ import InvestorDashboard from './pages/InvestorDashboard';
 import Admin from './pages/Admin';
 import Valuation from './pages/Valuation';
 import ModuleScreen from './pages/ModuleScreen';
+import { About, Terms, Privacy, Contact, MarketPartner } from './pages/StaticPages';
 import NotFound from './pages/NotFound';
 import type { Lang } from './lib/i18n';
 
@@ -46,7 +47,7 @@ export default function App(){
       <Route path="/admin" element={<Admin/>}/>
       <Route path="/admin/*" element={<Admin/>}/>
 
-      <Route path="/about" element={<ModuleScreen/>}/>
+      <Route path="/about" element={<About lang={lang}/>}/>
       <Route path="/how-it-works" element={<ModuleScreen/>}/>
       <Route path="/businesses/featured" element={<ModuleScreen/>}/>
       <Route path="/businesses/fundraising" element={<ModuleScreen/>}/>
@@ -59,11 +60,11 @@ export default function App(){
       <Route path="/pricing/investor" element={<ModuleScreen/>}/>
       <Route path="/valuation/rules" element={<ModuleScreen/>}/>
       <Route path="/faq" element={<ModuleScreen/>}/>
-      <Route path="/contact" element={<ModuleScreen/>}/>
-      <Route path="/terms" element={<ModuleScreen/>}/>
-      <Route path="/privacy" element={<ModuleScreen/>}/>
-      <Route path="/partners" element={<ModuleScreen/>}/>
-      <Route path="/market-partner" element={<ModuleScreen/>}/>
+      <Route path="/contact" element={<Contact lang={lang}/>}/>
+      <Route path="/terms" element={<Terms lang={lang}/>}/>
+      <Route path="/privacy" element={<Privacy lang={lang}/>}/>
+      <Route path="/partners" element={<MarketPartner lang={lang}/>}/>
+      <Route path="/market-partner" element={<MarketPartner lang={lang}/>}/>
       <Route path="/localization" element={<ModuleScreen/>}/>
       <Route path="/market-intelligence" element={<ModuleScreen/>}/>
 
@@ -92,6 +93,6 @@ export default function App(){
       <Route path="/support" element={<ModuleScreen/>}/>
       <Route path="*" element={<NotFound/>}/>
     </Routes>
-    <Footer/>
+    <Footer lang={lang}/>
   </div>;
 }

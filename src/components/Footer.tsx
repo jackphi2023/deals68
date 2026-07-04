@@ -1,40 +1,51 @@
 import { Link } from 'react-router-dom';
+import type { Lang } from '../lib/i18n';
 
-export default function Footer(){return <footer className="d68-ref-footer">
-  <div className="d68-ref-footer__inner">
-    <div className="d68-grid-2 d68-ref-footer__grid">
-      <div>
-        <img src="/assets/logo-white.png" alt="Deals68.com" className="d68-ref-footer__logo" />
-        <p><span className="l-vi">Sàn mua bán doanh nghiệp, M&amp;A, huy động vốn và kết nối nhà đầu tư cho Việt Nam, Đông Nam Á và toàn cầu.</span><span className="l-en">Marketplace for business sale, M&amp;A, fundraising and investor matching across Vietnam, Southeast Asia and beyond.</span></p>
-      </div>
-      <div>
-        <div className="d68-ref-footer__title"><span className="l-vi">Nền tảng</span><span className="l-en">Platform</span></div>
-        <div className="d68-ref-footer__links">
-          <Link to="/businesses"><span className="l-vi">Doanh nghiệp</span><span className="l-en">Businesses</span></Link>
-          <Link to="/investors"><span className="l-vi">Nhà đầu tư</span><span className="l-en">Investors</span></Link>
-          <Link to="/valuation"><span className="l-vi">Định giá doanh nghiệp</span><span className="l-en">Valuation</span></Link>
-          <Link to="/pricing"><span className="l-vi">Bảng giá</span><span className="l-en">Pricing</span></Link>
-          <Link to="/partners"><span className="l-vi">Đối tác thị trường</span><span className="l-en">Market Partner</span></Link>
+const T = (lang: Lang, vi: string, en: string) => lang === 'en' ? en : vi;
+
+export default function Footer({ lang }: { lang: Lang }) {
+  return <footer className="d68-ref-footer">
+    <div className="d68-ref-footer__inner">
+      <div className="d68-foot-grid d68-ref-footer__grid">
+        <div>
+          <img src="/assets/logo-white.png" alt="Deals68.com" className="d68-ref-footer__logo" />
+          <p>{T(lang,
+            'Sàn mua bán doanh nghiệp, M&A, huy động vốn và kết nối nhà đầu tư cho Việt Nam, Đông Nam Á và toàn cầu.',
+            'Marketplace for business sale, M&A, fundraising and investor matching across Vietnam, Southeast Asia and beyond.'
+          )}</p>
+        </div>
+        <div>
+          <div className="d68-ref-footer__title">{T(lang, 'Nền tảng', 'Platform')}</div>
+          <div className="d68-ref-footer__links">
+            <Link to="/businesses">{T(lang, 'Doanh nghiệp', 'Businesses')}</Link>
+            <Link to="/investors">{T(lang, 'Nhà đầu tư', 'Investors')}</Link>
+            <Link to="/valuation">{T(lang, 'Định giá doanh nghiệp', 'Valuation')}</Link>
+            <Link to="/pricing">{T(lang, 'Bảng giá', 'Pricing')}</Link>
+            <Link to="/partners">{T(lang, 'Đối tác thị trường', 'Market Partner')}</Link>
+          </div>
+        </div>
+        <div>
+          <div className="d68-ref-footer__title">{T(lang, 'Công ty', 'Company')}</div>
+          <div className="d68-ref-footer__links">
+            <Link to="/about">{T(lang, 'Giới thiệu', 'About')}</Link>
+            <Link to="/terms">{T(lang, 'Điều khoản', 'Terms')}</Link>
+            <Link to="/privacy">{T(lang, 'Bảo mật', 'Privacy')}</Link>
+            <Link to="/contact">{T(lang, 'Liên hệ', 'Contact')}</Link>
+          </div>
+        </div>
+        <div>
+          <div className="d68-ref-footer__title">{T(lang, 'Liên hệ', 'Contact')}</div>
+          <div className="d68-ref-footer__links">
+            <a href="mailto:partner@vietcapitalpartners.com">partner@vietcapitalpartners.com</a>
+            <span>{T(lang, 'Hotline/Zalo: 0909.584.075', 'Hotline/Zalo: 0909.584.075')}</span>
+            <span>{T(lang, 'Thanh toán an toàn qua QR, Sepay, PayPal', 'Secure payment via QR, Sepay, PayPal')}</span>
+          </div>
         </div>
       </div>
-      <div>
-        <div className="d68-ref-footer__title"><span className="l-vi">Công ty</span><span className="l-en">Company</span></div>
-        <div className="d68-ref-footer__links">
-          <Link to="/about"><span className="l-vi">Giới thiệu</span><span className="l-en">About</span></Link>
-          <Link to="/terms"><span className="l-vi">Điều khoản</span><span className="l-en">Terms</span></Link>
-          <Link to="/privacy"><span className="l-vi">Bảo mật</span><span className="l-en">Privacy</span></Link>
-          <Link to="/contact"><span className="l-vi">Liên hệ</span><span className="l-en">Contact</span></Link>
-        </div>
-      </div>
-      <div>
-        <div className="d68-ref-footer__title"><span className="l-vi">Liên hệ</span><span className="l-en">Contact</span></div>
-        <div className="d68-ref-footer__links">
-          <a href="mailto:partner@vietcapitalpartners.com">partner@vietcapitalpartners.com</a>
-          <span><span className="l-vi">Hotline/Zalo: 0909.584.075</span><span className="l-en">Hotline/Zalo: +84 909 584 075</span></span>
-          <span><span className="l-vi">Thanh toán an toàn qua mã QR, Sepay, PayPal</span><span className="l-en">Secure payment via QR, Sepay and PayPal</span></span>
-        </div>
+      <div className="d68-ref-footer__bottom">
+        <span>{T(lang, 'Deals68.com: Kết nối thương vụ, khai mở lộc phát', 'Deals68.com: Connecting Deals, Unlocking Prosperity')}</span>
+        <span>{T(lang, '© Một nền tảng của Viet Capital Partners & Consulting.', '© A platform by Viet Capital Partners & Consulting.')}</span>
       </div>
     </div>
-    <div className="d68-ref-footer__bottom"><span><span className="l-vi">Deals68.com: Kết nối thương vụ, khai mở lộc phát.</span><span className="l-en">Deals68.com: Connecting Deals, Unlocking Prosperity.</span></span><span>© 2026 Viet Capital Partners &amp; Consulting.</span></div>
-  </div>
-</footer>}
+  </footer>;
+}

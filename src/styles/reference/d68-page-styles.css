@@ -1,0 +1,428 @@
+/* AUTO-GENERATED — gộp & dedupe các <style> block trong reference pages. */
+
+@layer d68-components {
+
+/* from: About */
+
+* { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body { font-family: 'Be Vietnam Pro', system-ui, sans-serif; color: #0F2A4A; background: #FFFFFF; -webkit-font-smoothing: antialiased; }
+  [data-lang="vi"] .l-en { display: none !important; }
+  [data-lang="en"] .l-vi { display: none !important; }
+  a { text-decoration: none; color: inherit; }
+  select, input, button { font-family: inherit; }
+  .d68-reg-dd:hover .d68-reg-menu { display: flex !important; }
+  .d68-burger { display:none; }
+  .d68-mdrawer { display:none; }
+  @media (max-width: 1080px) { .d68-nav { display: none !important; } }
+  @media (max-width: 760px) {
+    .d68-hdr-actions { display:none !important; }
+    .d68-burger { display:flex !important; }
+    .d68-burger-cb:checked ~ .d68-mdrawer { display:flex !important; }
+  }
+  @media (max-width: 900px) { .d68-grid-2 { grid-template-columns: 1fr !important; } .d68-grid-3 { grid-template-columns: 1fr !important; } }
+  @media (max-width: 620px) { .d68-hero-h1 { font-size: 32px !important; } .d68-grid-5 { grid-template-columns: 1fr 1fr !important; } }
+
+/* from: Admin Login */
+
+* { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body { font-family: 'Be Vietnam Pro', system-ui, sans-serif; color: #0F2A4A; background: linear-gradient(180deg,#0F2A4A,#14315A); -webkit-font-smoothing: antialiased; }
+  a { text-decoration: none; color: inherit; }
+  select, input, button { font-family: inherit; }
+
+/* from: Admin */
+
+* { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body { font-family: 'Be Vietnam Pro', system-ui, sans-serif; color: #0F2A4A; background: #F4F6F9; -webkit-font-smoothing: antialiased; }
+  a { text-decoration: none; color: inherit; }
+  select, input, textarea, button { font-family: inherit; }
+  table { border-collapse: collapse; width: 100%; }
+  @media (max-width: 980px) { .d68-adm-cols { grid-template-columns: 1fr !important; } .d68-adm-side { position:static !important; } }
+  @media (max-width: 720px) { .d68-adm-cards { grid-template-columns: 1fr 1fr !important; } }
+  @media (max-width: 900px) { .d68-adm-detail { grid-template-columns: 1fr !important; } }
+
+/* from: Advisor Dashboard */
+
+* { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body { font-family: 'Be Vietnam Pro', system-ui, sans-serif; color: #0F2A4A; background: #F7FAFC; -webkit-font-smoothing: antialiased; }
+  [data-lang="vi"] .l-en { display: none !important; }
+  [data-lang="en"] .l-vi { display: none !important; }
+  a { text-decoration: none; color: inherit; }
+
+/* from: Business Dashboard */
+
+* { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body { font-family: 'Be Vietnam Pro', system-ui, sans-serif; color: #0F2A4A; background: #F7FAFC; -webkit-font-smoothing: antialiased; }
+  [data-lang="vi"] .l-en { display: none !important; }
+  [data-lang="en"] .l-vi { display: none !important; }
+  a { text-decoration: none; color: inherit; }
+  select, input, textarea, button { font-family: inherit; }
+  .d68-reg-dd:hover .d68-reg-menu { display: flex !important; }
+  image-slot { width: 100% !important; height: 150px !important; max-width: 100% !important; box-sizing: border-box !important; }
+  @media (max-width: 1080px) { .d68-nav { display: none !important; } }
+  @media (max-width: 980px) { .d68-dash-cols { grid-template-columns: 1fr !important; } .d68-side-nav { position:static !important; } }
+  @media (max-width: 700px) { .d68-cards-4 { grid-template-columns: 1fr 1fr !important; } .d68-form-2 { grid-template-columns: 1fr !important; } }
+
+/* from: Business Detail */
+
+* { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body { font-family: 'Be Vietnam Pro', system-ui, sans-serif; color: #0F2A4A; background: #F7FAFC; -webkit-font-smoothing: antialiased; }
+  [data-lang="vi"] .l-en { display: none !important; }
+  [data-lang="en"] .l-vi { display: none !important; }
+  a { text-decoration: none; color: inherit; }
+  select, input, button { font-family: inherit; }
+  .d68-reg-dd:hover .d68-reg-menu { display: flex !important; }
+  @media (max-width: 1080px) { .d68-nav { display: none !important; } }
+  .d68-burger { display:none; }
+  .d68-mdrawer { display:none; }
+  @media (max-width: 760px) {
+    .d68-hdr-actions { display:none !important; }
+    .d68-burger { display:flex !important; }
+    .d68-burger-cb:checked ~ .d68-mdrawer { display:flex !important; }
+  }
+  @media (max-width: 980px) {
+    .d68-detail-cols { grid-template-columns: 1fr !important; }
+    .d68-side { position: static !important; }
+    .d68-foot-grid { grid-template-columns: 1fr 1fr !important; }
+  }
+  @media (max-width: 620px) {
+    .d68-h1 { font-size: 24px !important; }
+    .d68-facts { grid-template-columns: 1fr !important; }
+    .d68-sim { grid-template-columns: 1fr !important; }
+    .d68-foot-grid { grid-template-columns: 1fr !important; }
+  }
+
+/* from: Businesses */
+
+* { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body { font-family: 'Be Vietnam Pro', system-ui, sans-serif; color: #0F2A4A; background: #F7FAFC; -webkit-font-smoothing: antialiased; }
+  [data-lang="vi"] .l-en { display: none !important; }
+  [data-lang="en"] .l-vi { display: none !important; }
+  a { text-decoration: none; color: inherit; }
+  select, input, button { font-family: inherit; }
+  .d68-txtabs::-webkit-scrollbar { height: 0; }
+  .d68-reg-dd:hover .d68-reg-menu { display: flex !important; }
+  @media (max-width: 1080px) { .d68-nav { display: none !important; } }
+  .d68-burger { display:none; }
+  .d68-mdrawer { display:none; }
+  @media (max-width: 760px) {
+    .d68-hdr-actions { display:none !important; }
+    .d68-burger { display:flex !important; }
+    .d68-burger-cb:checked ~ .d68-mdrawer { display:flex !important; }
+  }
+  @media (max-width: 960px) {
+    .d68-list-cols { grid-template-columns: 1fr !important; }
+    .d68-sidebar { position:static !important; max-height:none !important; }
+    .d68-card { grid-template-columns: 1fr !important; }
+    .d68-card-img { height: 190px !important; }
+  }
+  @media (max-width: 620px) { .d68-h1 { font-size: 26px !important; } .d68-metrics { grid-template-columns:1fr 1fr !important; } }
+
+/* from: Contact */
+
+* { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body { font-family: 'Be Vietnam Pro', system-ui, sans-serif; color: #0F2A4A; background: #FFFFFF; -webkit-font-smoothing: antialiased; }
+  [data-lang="vi"] .l-en { display: none !important; }
+  [data-lang="en"] .l-vi { display: none !important; }
+  a { text-decoration: none; color: inherit; }
+  select, input, button, textarea { font-family: inherit; }
+  input:focus, textarea:focus { outline: none; border-color: #1BADEA !important; }
+  .d68-reg-dd:hover .d68-reg-menu { display: flex !important; }
+  .d68-burger { display:none; }
+  .d68-mdrawer { display:none; }
+  @media (max-width: 1080px) { .d68-nav { display: none !important; } }
+  @media (max-width: 760px) {
+    .d68-hdr-actions { display:none !important; }
+    .d68-burger { display:flex !important; }
+    .d68-burger-cb:checked ~ .d68-mdrawer { display:flex !important; }
+  }
+  @media (max-width: 900px) { .d68-contact-cols { grid-template-columns: 1fr !important; } .d68-grid-2 { grid-template-columns: 1fr !important; } }
+  @media (max-width: 620px) { .d68-hero-h1 { font-size: 30px !important; } }
+
+/* from: Deal */
+
+* { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body { font-family: 'Be Vietnam Pro', system-ui, sans-serif; color: #0F2A4A; background: #F7FAFC; -webkit-font-smoothing: antialiased; }
+  [data-lang="vi"] .l-en { display: none !important; }
+  [data-lang="en"] .l-vi { display: none !important; }
+  a { text-decoration: none; color: inherit; }
+  select, input, button { font-family: inherit; }
+  @media (max-width: 1080px) { .d68-nav { display: none !important; } }
+  .d68-burger { display:none; }
+  .d68-mdrawer { display:none; }
+  @media (max-width: 760px) {
+    .d68-hdr-actions { display:none !important; }
+    .d68-burger { display:flex !important; }
+    .d68-burger-cb:checked ~ .d68-mdrawer { display:flex !important; }
+  }
+  .d68-reg-dd:hover .d68-reg-menu { display: flex !important; }
+  @media (max-width: 980px) {
+    .d68-detail-cols { grid-template-columns: 1fr !important; }
+    .d68-side { position: static !important; }
+    .d68-foot-grid { grid-template-columns: 1fr 1fr !important; }
+    .d68-sim { grid-template-columns: 1fr !important; }
+  }
+  @media (max-width: 620px) {
+    .d68-h1 { font-size: 23px !important; }
+    .d68-facts { grid-template-columns: 1fr !important; }
+    .d68-foot-grid { grid-template-columns: 1fr !important; }
+    .d68-hero-img { height: 220px !important; }
+  }
+
+/* from: Forgot Password, Login, Reset Password */
+
+* { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body { font-family: 'Be Vietnam Pro', system-ui, sans-serif; color: #0F2A4A; background: #F7FAFC; -webkit-font-smoothing: antialiased; }
+  a { text-decoration: none; color: inherit; }
+  select, input, button { font-family: inherit; }
+  [data-lang="vi"] .l-en { display: none !important; }
+  [data-lang="en"] .l-vi { display: none !important; }
+
+/* from: Home */
+
+* { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body { font-family: 'Be Vietnam Pro', system-ui, sans-serif; color: #0F2A4A; background: #FFFFFF; -webkit-font-smoothing: antialiased; }
+  [data-lang="vi"] .l-en { display: none !important; }
+  [data-lang="en"] .l-vi { display: none !important; }
+  a { text-decoration: none; color: inherit; }
+  select { font-family: inherit; }
+  .d68-fade { animation: d68up .6s cubic-bezier(.2,.7,.2,1) both; }
+  @keyframes d68up { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+  .d68-reg-dd:hover .d68-reg-menu { display: flex !important; }
+  .d68-burger { display:none; }
+  .d68-mdrawer { display:none; }
+  @media (max-width: 1080px) {
+    .d68-nav { display: none !important; }
+  }
+  @media (max-width: 760px) {
+    .d68-hdr-actions { display:none !important; }
+    .d68-burger { display:flex !important; }
+    .d68-burger-cb:checked ~ .d68-mdrawer { display:flex !important; }
+  }
+  @media (max-width: 900px) {
+    .d68-search-row { grid-template-columns: 1fr 1fr !important; }
+    .d68-hero-h1 { font-size: 40px !important; }
+    .d68-grid-3 { grid-template-columns: 1fr !important; }
+    .d68-grid-2 { grid-template-columns: 1fr !important; }
+  }
+  @media (max-width: 620px) {
+    .d68-search-row { grid-template-columns: 1fr !important; }
+    .d68-hero-h1 { font-size: 32px !important; }
+    .d68-deals { grid-template-columns: 1fr !important; }
+  }
+
+/* from: Investor Dashboard */
+
+* { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body { font-family: 'Be Vietnam Pro', system-ui, sans-serif; color: #0F2A4A; background: #F7FAFC; -webkit-font-smoothing: antialiased; }
+  [data-lang="vi"] .l-en { display: none !important; }
+  [data-lang="en"] .l-vi { display: none !important; }
+  a { text-decoration: none; color: inherit; }
+  select, input, textarea, button { font-family: inherit; }
+  @media (max-width: 980px) { .d68-dash-cols { grid-template-columns: 1fr !important; } .d68-side-nav { position:static !important; } }
+  @media (max-width: 700px) { .d68-form-2 { grid-template-columns: 1fr !important; } }
+
+/* from: Investor Detail */
+
+* { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body { font-family: 'Be Vietnam Pro', system-ui, sans-serif; color: #0F2A4A; background: #F7FAFC; -webkit-font-smoothing: antialiased; }
+  [data-lang="vi"] .l-en { display: none !important; }
+  [data-lang="en"] .l-vi { display: none !important; }
+  a { text-decoration: none; color: inherit; }
+  select, input, button { font-family: inherit; }
+  .d68-reg-dd:hover .d68-reg-menu { display: flex !important; }
+  @media (max-width: 1080px) { .d68-nav { display: none !important; } }
+  .d68-burger { display:none; }
+  .d68-mdrawer { display:none; }
+  @media (max-width: 760px) {
+    .d68-hdr-actions { display:none !important; }
+    .d68-burger { display:flex !important; }
+    .d68-burger-cb:checked ~ .d68-mdrawer { display:flex !important; }
+  }
+  @media (max-width: 480px) { .d68-foot-grid { grid-template-columns:1fr !important; } }
+  @media (max-width: 980px) { .d68-detail-cols { grid-template-columns: 1fr !important; } .d68-side { position:static !important; } }
+  @media (max-width: 700px) { .d68-facts { grid-template-columns: 1fr !important; } .d68-foot-grid { grid-template-columns: 1fr 1fr !important; } }
+
+/* from: Investors */
+
+* { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body { font-family: 'Be Vietnam Pro', system-ui, sans-serif; color: #0F2A4A; background: #F7FAFC; -webkit-font-smoothing: antialiased; }
+  [data-lang="vi"] .l-en { display: none !important; }
+  [data-lang="en"] .l-vi { display: none !important; }
+  a { text-decoration: none; color: inherit; }
+  select, input, button { font-family: inherit; }
+  .d68-reg-dd:hover .d68-reg-menu { display: flex !important; }
+  @media (max-width: 1080px) { .d68-nav { display: none !important; } }
+  .d68-burger { display:none; }
+  .d68-mdrawer { display:none; }
+  @media (max-width: 760px) {
+    .d68-hdr-actions { display:none !important; }
+    .d68-burger { display:flex !important; }
+    .d68-burger-cb:checked ~ .d68-mdrawer { display:flex !important; }
+    .d68-foot-grid { grid-template-columns:1fr 1fr !important; }
+  }
+  @media (max-width: 480px) { .d68-foot-grid { grid-template-columns:1fr !important; } }
+  @media (max-width: 900px) {
+    .d68-list-cols { grid-template-columns: 1fr !important; }
+    .d68-sidebar { position:static !important; max-height:none !important; }
+  }
+  @media (max-width: 620px) { .d68-h1 { font-size: 26px !important; } }
+
+/* from: Market Partner Dashboard */
+
+* { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body { font-family: 'Be Vietnam Pro', system-ui, sans-serif; color: #0F2A4A; background: #F7FAFC; -webkit-font-smoothing: antialiased; }
+  [data-lang="vi"] .l-en { display: none !important; }
+  [data-lang="en"] .l-vi { display: none !important; }
+  a { text-decoration: none; color: inherit; }
+  select, input, textarea, button { font-family: inherit; }
+  @media (max-width: 980px) { .d68-dash-cols { grid-template-columns: 1fr !important; } .d68-side-nav { position:static !important; } }
+  @media (max-width: 760px) { .d68-stat-grid { grid-template-columns: 1fr 1fr !important; } .d68-form-2 { grid-template-columns: 1fr !important; } }
+  @media (max-width: 640px) { .d68-ref-row { grid-template-columns: 1fr !important; gap:6px !important; } .d68-ref-head { display:none !important; } }
+
+/* from: Market Partner */
+
+* { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body { font-family: 'Be Vietnam Pro', system-ui, sans-serif; color: #0F2A4A; background: #FFFFFF; -webkit-font-smoothing: antialiased; }
+  [data-lang="vi"] .l-en { display: none !important; }
+  [data-lang="en"] .l-vi { display: none !important; }
+  a { text-decoration: none; color: inherit; }
+  select, input, textarea, button { font-family: inherit; }
+  input:focus, textarea:focus, select:focus { outline: none; border-color: #1BADEA !important; }
+  .d68-reg-dd:hover .d68-reg-menu { display: flex !important; }
+  .d68-burger { display:none; }
+  .d68-mdrawer { display:none; }
+  @media (max-width: 1080px) { .d68-nav { display: none !important; } }
+  @media (max-width: 760px) {
+    .d68-hdr-actions { display:none !important; }
+    .d68-burger { display:flex !important; }
+    .d68-burger-cb:checked ~ .d68-mdrawer { display:flex !important; }
+  }
+  @media (max-width: 900px) { .d68-grid-2 { grid-template-columns: 1fr !important; } .d68-grid-3 { grid-template-columns: 1fr !important; } .d68-form-2 { grid-template-columns: 1fr !important; } }
+  @media (max-width: 620px) { .d68-hero-h1 { font-size: 32px !important; } .d68-flags { font-size:26px !important; letter-spacing:4px !important; } }
+
+/* from: Pricing */
+
+* { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body { font-family: 'Be Vietnam Pro', system-ui, sans-serif; color: #0F2A4A; background: #F7FAFC; -webkit-font-smoothing: antialiased; }
+  [data-lang="vi"] .l-en { display: none !important; }
+  [data-lang="en"] .l-vi { display: none !important; }
+  a { text-decoration: none; color: inherit; }
+  select, input, button { font-family: inherit; }
+  @media (max-width: 1080px) { .d68-nav { display: none !important; } }
+  .d68-burger { display:none; }
+  .d68-mdrawer { display:none; }
+  @media (max-width: 760px) {
+    .d68-hdr-actions { display:none !important; }
+    .d68-burger { display:flex !important; }
+    .d68-burger-cb:checked ~ .d68-mdrawer { display:flex !important; }
+  }
+  .d68-reg-dd:hover .d68-reg-menu { display: flex !important; }
+  @media (max-width: 960px) {
+    .d68-calc-cols { grid-template-columns: 1fr !important; }
+    .d68-plans { grid-template-columns: 1fr !important; }
+    .d68-foot-grid { grid-template-columns: 1fr 1fr !important; }
+  }
+  @media (max-width: 620px) { .d68-hero-h1 { font-size: 30px !important; } .d68-foot-grid { grid-template-columns: 1fr !important; } }
+
+/* from: Privacy, Terms */
+
+* { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body { font-family: 'Be Vietnam Pro', system-ui, sans-serif; color: #0F2A4A; background: #FFFFFF; -webkit-font-smoothing: antialiased; }
+  [data-lang="vi"] .l-en { display: none !important; }
+  [data-lang="en"] .l-vi { display: none !important; }
+  a { text-decoration: none; color: inherit; }
+  select, input, button { font-family: inherit; }
+  .d68-reg-dd:hover .d68-reg-menu { display: flex !important; }
+  .d68-burger { display:none; }
+  .d68-mdrawer { display:none; }
+  @media (max-width: 1080px) { .d68-nav { display: none !important; } }
+  @media (max-width: 760px) {
+    .d68-hdr-actions { display:none !important; }
+    .d68-burger { display:flex !important; }
+    .d68-burger-cb:checked ~ .d68-mdrawer { display:flex !important; }
+  }
+  @media (max-width: 900px) { .d68-toc-grid { grid-template-columns: 1fr 1fr !important; } .d68-grid-2 { grid-template-columns: 1fr !important; } }
+  @media (max-width: 620px) { .d68-hero-h1 { font-size: 30px !important; } .d68-toc-grid { grid-template-columns: 1fr !important; } }
+
+/* from: Register Advisor */
+
+* { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body { font-family: 'Be Vietnam Pro', system-ui, sans-serif; color: #0F2A4A; background: #F7FAFC; -webkit-font-smoothing: antialiased; }
+  [data-lang="vi"] .l-en { display: none !important; }
+  [data-lang="en"] .l-vi { display: none !important; }
+  a { text-decoration: none; color: inherit; }
+  select, input, textarea, button { font-family: inherit; }
+  @media (max-width: 700px) { .d68-form-2 { grid-template-columns: 1fr !important; } }
+
+/* from: Register Business */
+
+* { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body { font-family: 'Be Vietnam Pro', system-ui, sans-serif; color: #0F2A4A; background: #F7FAFC; -webkit-font-smoothing: antialiased; }
+  [data-lang="vi"] .l-en { display: none !important; }
+  [data-lang="en"] .l-vi { display: none !important; }
+  a { text-decoration: none; color: inherit; }
+  select, input, textarea, button { font-family: inherit; }
+  .d68-reg-dd:hover .d68-reg-menu { display: flex !important; }
+  image-slot { width: 100% !important; height: 150px !important; max-width: 100% !important; box-sizing: border-box !important; }
+  @media (max-width: 1080px) { .d68-nav { display: none !important; } }
+  @media (max-width: 860px) { .d68-form-2 { grid-template-columns: 1fr !important; } .d68-steps-label { display:none !important; } .d68-plan-cols { grid-template-columns: 1fr !important; } }
+
+/* from: Register Investor */
+
+* { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body { font-family: 'Be Vietnam Pro', system-ui, sans-serif; color: #0F2A4A; background: #F7FAFC; -webkit-font-smoothing: antialiased; }
+  [data-lang="vi"] .l-en { display: none !important; }
+  [data-lang="en"] .l-vi { display: none !important; }
+  a { text-decoration: none; color: inherit; }
+  select, input, textarea, button { font-family: inherit; }
+  .d68-reg-dd:hover .d68-reg-menu { display: flex !important; }
+  @media (max-width: 860px) { .d68-form-2 { grid-template-columns: 1fr !important; } .d68-steps-label { display:none !important; } }
+
+/* from: Valuation */
+
+* { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body { font-family: 'Be Vietnam Pro', system-ui, sans-serif; color: #0F2A4A; background: #F7FAFC; -webkit-font-smoothing: antialiased; }
+  [data-lang="vi"] .l-en { display: none !important; }
+  [data-lang="en"] .l-vi { display: none !important; }
+  a { text-decoration: none; color: inherit; }
+  select, input { font-family: inherit; }
+  .d68-fade { animation: d68up .5s cubic-bezier(.2,.7,.2,1) both; }
+  @keyframes d68up { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+  .d68-reg-dd:hover .d68-reg-menu { display: flex !important; }
+  @media (max-width: 1080px) { .d68-nav { display: none !important; } }
+  .d68-burger { display:none; }
+  .d68-mdrawer { display:none; }
+  @media (max-width: 760px) {
+    .d68-hdr-actions { display:none !important; }
+    .d68-burger { display:flex !important; }
+    .d68-burger-cb:checked ~ .d68-mdrawer { display:flex !important; }
+  }
+  @media (max-width: 960px) {
+    .d68-val-cols { grid-template-columns: 1fr !important; }
+    .d68-form-2 { grid-template-columns: 1fr !important; }
+  }
+  @media (max-width: 620px) { .d68-hero-h1 { font-size: 30px !important; } }
+
+}

@@ -1,8 +1,9 @@
-# Build test result
+# Build test result — Phase A0 + A1
 
 Command:
 
 ```bash
+npm install --no-audit --no-fund --package-lock=false
 npm run build
 ```
 
@@ -10,12 +11,11 @@ Result:
 
 ```txt
 ✓ 140 modules transformed.
-✓ built in 1.63s
+✓ built in 1.68s
 ```
 
-Scope:
-- Public chrome: Header/Footer
-- Static public pages: About, Terms, Privacy, Contact, Partners
-- Public Security route removed
-- Vietnamese wording pass for public chrome and Register key labels
-- Transparent logo asset added for sticky header
+Notes:
+
+- No `package-lock.json` is included in this patch.
+- `node_modules/` and `dist/` are excluded.
+- CSS entry point is now `src/styles/index.css` imported from `src/main.tsx`.
