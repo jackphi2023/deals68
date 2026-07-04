@@ -62,7 +62,8 @@ export default function App(){
       <Route path="/contact" element={<ModuleScreen/>}/>
       <Route path="/terms" element={<ModuleScreen/>}/>
       <Route path="/privacy" element={<ModuleScreen/>}/>
-      <Route path="/security" element={<ModuleScreen/>}/>
+      <Route path="/partners" element={<ModuleScreen/>}/>
+      <Route path="/market-partner" element={<ModuleScreen/>}/>
       <Route path="/localization" element={<ModuleScreen/>}/>
       <Route path="/market-intelligence" element={<ModuleScreen/>}/>
 
