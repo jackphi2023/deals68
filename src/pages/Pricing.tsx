@@ -53,7 +53,7 @@ export default function Pricing({ lang }: { lang: Lang }) {
         <div>
           <span className="badge-title gold">★ {T(lang, 'Bảng giá Beta', 'Beta Pricing')}</span>
           <h1>{T(lang, 'Bảng giá minh bạch cho từng vai trò', 'Transparent pricing for every role')}</h1>
-          <p>{T(lang, 'Doanh nghiệp, nhà đầu tư, cố vấn và Market Partner có thể chọn gói phù hợp. Thanh toán tự động đang ở Beta; admin vẫn có thể xác nhận thủ công.', 'Businesses, investors, advisors and Market Partners can choose the right plan. Payment automation is in Beta; admins can still confirm manually.')}</p>
+          <p>{T(lang, 'Doanh nghiệp, nhà đầu tư, cố vấn và Đối tác thị trường có thể chọn gói phù hợp. Thanh toán tự động đang ở Beta; admin vẫn có thể xác nhận thủ công.', 'Businesses, investors, advisors and Market Partners can choose the right plan. Payment automation is in Beta; admins can still confirm manually.')}</p>
         </div>
         <div className="list-hero-card">
           <b>{formatMoney(price.total, price.currency)}</b>
@@ -85,7 +85,7 @@ export default function Pricing({ lang }: { lang: Lang }) {
           <div className="grid pricing-cards">
             <PlanCard lang={lang} title="Business" vi="Doanh nghiệp" price={formatMoney(calculatePricing({role:'business',country,termWeeks:1,businessPlan:'standard'}).planWeekly, price.currency)} desc={T(lang,'Đăng hồ sơ gọi vốn/bán/vay, ẩn danh và nhận quan tâm từ nhà đầu tư.','List fundraising, sale or debt opportunities anonymously and receive investor interest.')} cta={T(lang,'Đăng ký DN','Register Business')} onClick={()=>choose('business')} featured />
             <PlanCard lang={lang} title="Investor" vi="Nhà đầu tư" price={formatMoney(calculatePricing({role:'investor',country,termWeeks:1}).planWeekly, price.currency)} desc={T(lang,'Tìm DN phù hợp, lưu thương vụ, gửi đề xuất và yêu cầu dữ liệu.','Find matching businesses, save deals, send proposals and request data.')} cta={T(lang,'Đăng ký NĐT','Register Investor')} onClick={()=>choose('investor')} />
-            <PlanCard lang={lang} title="Market Partner" vi="Đối tác thị trường" price={T(lang,'Chờ duyệt','Approval')} desc={T(lang,'Giới thiệu DN/NĐT, theo dõi conversion và hoa hồng sau khi đơn đã thanh toán.','Refer businesses/investors, track conversions and commissions after paid orders.')} cta={T(lang,'Đăng ký Market Partner','Register Market Partner')} onClick={()=>choose('affiliate')} />
+            <PlanCard lang={lang} title="Market Partner" vi="Đối tác thị trường" price={T(lang,'Chờ duyệt','Approval')} desc={T(lang,'Giới thiệu doanh nghiệp/nhà đầu tư, theo dõi chuyển đổi và hoa hồng sau khi đơn đã thanh toán.','Refer businesses/investors, track conversions and commissions after paid orders.')} cta={T(lang,'Đăng ký Đối tác thị trường','Register Market Partner')} onClick={()=>choose('affiliate')} />
           </div>
         </main>
 
