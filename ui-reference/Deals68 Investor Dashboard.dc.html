@@ -447,6 +447,13 @@
     </sc-if>
   </div>
 
+  <footer style="background:#0B2038; color:#8fa6c0;">
+    <div style="max-width:1240px; margin:0 auto; padding:22px 24px; display:flex; align-items:center; justify-content:center; gap:8px; flex-wrap:wrap; text-align:center; font-size:13px; line-height:1.6;">
+      <span style="color:#c6d5e6; font-weight:600;"><span class="l-vi">Deals68.com: Kết nối thương vụ, khai mở lộc phát</span><span class="l-en">Deals68.com: Connecting Deals, Unlocking Prosperity</span></span>
+      <span><span class="l-vi">© Một nền tảng của Viet Capital Partners &amp; Consulting.</span><span class="l-en">© A platform by Viet Capital Partners &amp; Consulting.</span></span>
+    </div>
+  </footer>
+
 </div>
 </x-dc>
 <script type="text/x-dc" data-dc-script>
@@ -694,7 +701,7 @@ class Component extends DCLogic {
       expired: { icon:'⌛', titleVi:'Hồ sơ đã hết hạn', titleEn:'Profile expired',
         descVi:'Quá 7 ngày chưa xác nhận thanh toán nên hồ sơ đã tự động ẩn. Vui lòng liên hệ hỗ trợ hoặc đăng ký lại.', descEn:'The 7-day payment window passed, so this profile was automatically hidden. Please contact support or register again.' },
       hidden: { icon:'🚫', titleVi:'Tài khoản đang bị tạm ngưng', titleEn:'Account suspended',
-        descVi:'Tài khoản này đang bị Admin tạm ngưng. Vui lòng liên hệ partner@deals68.com.', descEn:'This account has been suspended by Admin. Please contact partner@deals68.com.' }
+        descVi:'Tài khoản này đang bị Admin tạm ngưng. Vui lòng liên hệ partner@vietcapitalpartners.com.', descEn:'This account has been suspended by Admin. Please contact partner@vietcapitalpartners.com.' }
     };
     const lockInfo = lockInfoMap[invState.accountStatus] || lockInfoMap.payment_pending;
     const lockDaysLeftNum = (D68 && invState.pendingExpiresAt) ? D68.daysLeft(invState.pendingExpiresAt) : null;

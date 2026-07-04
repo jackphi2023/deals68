@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body { font-family: 'Be Vietnam Pro', system-ui, sans-serif; color: #0F2A4A; background: #FFFFFF; -webkit-font-smoothing: antialiased; }
+  [data-lang="vi"] .l-en { display: none !important; }
+  [data-lang="en"] .l-vi { display: none !important; }
+  a { text-decoration: none; color: inherit; }
+  select, input, button { font-family: inherit; }
+  .d68-reg-dd:hover .d68-reg-menu { display: flex !important; }
+  .d68-burger { display:none; }
+  .d68-mdrawer { display:none; }
+  @media (max-width: 1080px) { .d68-nav { display: none !important; } }
+  @media (max-width: 760px) {
+    .d68-hdr-actions { display:none !important; }
+    .d68-burger { display:flex !important; }
+    .d68-burger-cb:checked ~ .d68-mdrawer { display:flex !important; }
+  }
+  @media (max-width: 900px) { .d68-toc-grid { grid-template-columns: 1fr 1fr !important; } .d68-grid-2 { grid-template-columns: 1fr !important; } }
+  @media (max-width: 620px) { .d68-hero-h1 { font-size: 30px !important; } .d68-toc-grid { grid-template-columns: 1fr !important; } }
+</style>
+</helmet>
+
+<div data-lang="{{ lang }}" style="width:100%; overflow-x:hidden;">
+
+  <!-- ===== HEADER ===== -->
+  <header style="position:sticky; top:0; z-index:60; background:rgba(255,255,255,.94); backdrop-filter:blur(10px); border-bottom:1px solid #E7EDF3;">
+    <div style="max-width:1240px; margin:0 auto; padding:0 24px; height:70px; display:flex; align-items:center; gap:28px;">
+      <a href="Deals68 Home.dc.html" style="display:flex; align-items:center; flex-shrink:0;"><img src="assets/logo-beta.png" alt="Deals68.com" style="height:34px; display:block;"></a>
+      <nav class="d68-nav" style="display:flex; align-items:center; gap:26px; margin-left:8px; font-size:15px; font-weight:500; color:#14315A;">
+        <a href="Deals68 Businesses.dc.html"><span class="l-vi">Doanh nghiệp</span><span class="l-en">Businesses</span></a>
+        <a href="Deals68 Investors.dc.html"><span class="l-vi">Nhà đầu tư</span><span class="l-en">Investors</span></a>
+        <a href="Deals68 Register Advisor.dc.html"><span class="l-vi">Cố vấn</span><span class="l-en">Advisors</span></a>
+        <a href="Deals68 Valuation.dc.html"><span class="l-vi">Định giá</span><span class="l-en">Valuation</span></a>
+        <a href="Deals68 Pricing.dc.html"><span class="l-vi">Bảng giá</span><span class="l-en">Pricing</span></a>
+      </nav>
+      <input type="checkbox" id="d68burger" class="d68-burger-cb" style="position:absolute; opacity:0; width:1px; height:1px; pointer-events:none;">
+      <label for="d68burger" class="d68-burger" style="margin-left:auto; width:44px; height:44px; align-items:center; justify-content:center; border:1px solid #E2E8F0; border-radius:10px; font-size:22px; color:#14315A; cursor:pointer; flex-shrink:0; background:#fff;">☰</label>
+      <div class="d68-mdrawer" style="position:absolute; top:70px; left:0; right:0; flex-direction:column; gap:2px; background:#fff; border-top:1px solid #E7EDF3; box-shadow:0 18px 34px rgba(15,42,74,.14); padding:12px 20px 18px; max-height:calc(100vh - 70px); overflow-y:auto;">
+        <a href="Deals68 Businesses.dc.html" style="padding:13px 6px; font-size:16px; font-weight:600; color:#14315A; border-bottom:1px solid #F1F5F9;"><span class="l-vi">Doanh nghiệp</span><span class="l-en">Businesses</span></a>
+        <a href="Deals68 Investors.dc.html" style="padding:13px 6px; font-size:16px; font-weight:600; color:#14315A; border-bottom:1px solid #F1F5F9;"><span class="l-vi">Nhà đầu tư</span><span class="l-en">Investors</span></a>
+        <a href="Deals68 Register Advisor.dc.html" style="padding:13px 6px; font-size:16px; font-weight:600; color:#14315A; border-bottom:1px solid #F1F5F9;"><span class="l-vi">Cố vấn</span><span class="l-en">Advisors</span></a>
+        <a href="Deals68 Valuation.dc.html" style="padding:13px 6px; font-size:16px; font-weight:600; color:#14315A; border-bottom:1px solid #F1F5F9;"><span class="l-vi">Định giá</span><span class="l-en">Valuation</span></a>
+        <a href="Deals68 Pricing.dc.html" style="padding:13px 6px; font-size:16px; font-weight:600; color:#14315A; border-bottom:1px solid #F1F5F9;"><span class="l-vi">Bảng giá</span><span class="l-en">Pricing</span></a>
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; padding:14px 6px 8px;">
+          <span style="font-size:14px; font-weight:600; color:#64748B;"><span class="l-vi">Ngôn ngữ</span><span class="l-en">Language</span></span>
+          <div style="display:flex; align-items:center; border:1px solid #E2E8F0; border-radius:999px; overflow:hidden; font-size:13px; font-weight:700;">
+            <button onClick="{{ setVi }}" style="{{ viBtnStyle }}">VI</button>
+            <button onClick="{{ setEn }}" style="{{ enBtnStyle }}">EN</button>
+          </div>
+        </div>
+        <a href="Deals68 Login.dc.html" style="padding:13px 6px; font-size:16px; font-weight:700; color:#14315A;"><span class="l-vi">Đăng nhập</span><span class="l-en">Log in</span></a>
+        <div style="display:flex; flex-direction:column; gap:8px; margin-top:8px;">
+          <a href="Deals68 Register Business.dc.html" style="text-align:center; background:#1BADEA; color:#fff; font-weight:700; font-size:15px; padding:13px; border-radius:10px;"><span class="l-vi">Đăng ký Doanh nghiệp</span><span class="l-en">Register as Business</span></a>
+          <a href="Deals68 Register Investor.dc.html" style="text-align:center; border:1px solid #E2E8F0; color:#14315A; font-weight:700; font-size:15px; padding:13px; border-radius:10px;"><span class="l-vi">Đăng ký Nhà đầu tư</span><span class="l-en">Register as Investor</span></a>
+          <a href="Deals68 Register Advisor.dc.html" style="text-align:center; border:1px solid #E2E8F0; color:#14315A; font-weight:700; font-size:15px; padding:13px; border-radius:10px;"><span class="l-vi">Đăng ký Cố vấn</span><span class="l-en">Register as Advisor</span></a>
+        </div>
+      </div>
+      <div class="d68-hdr-actions" style="margin-left:auto; display:flex; align-items:center; gap:14px; flex-shrink:0;">
+        <div style="display:flex; align-items:center; border:1px solid #E2E8F0; border-radius:999px; overflow:hidden; font-size:13px; font-weight:700;">
+          <button onClick="{{ setVi }}" style="{{ viBtnStyle }}">VI</button>
+          <button onClick="{{ setEn }}" style="{{ enBtnStyle }}">EN</button>
+        </div>
+        <a href="Deals68 Login.dc.html" style="font-size:15px; font-weight:600; color:#14315A; white-space:nowrap;"><span class="l-vi">Đăng nhập</span><span class="l-en">Log in</span></a>
+        <div class="d68-reg-dd" style="position:relative;">
+          <button style="display:inline-flex; align-items:center; gap:6px; background:#1BADEA; color:#fff; font-weight:700; font-size:15px; padding:11px 20px; border-radius:10px; box-shadow:0 6px 16px rgba(27,173,234,.28); white-space:nowrap; border:none; cursor:pointer;">
+            <span class="l-vi">Đăng ký</span><span class="l-en">Register</span> <span style="font-size:11px;">▾</span>
+          </button>
+          <div class="d68-reg-menu" style="display:none; position:absolute; top:100%; right:0; padding-top:8px; min-width:230px; flex-direction:column; z-index:80;">
+            <div style="background:#fff; border:1px solid #E7EDF3; border-radius:12px; box-shadow:0 14px 34px rgba(15,42,74,.16); padding:8px; display:flex; flex-direction:column; gap:2px;">
+              <a href="Deals68 Register Business.dc.html" style="padding:11px 14px; border-radius:8px; font-size:14.5px; font-weight:600; color:#14315A;" style-hover="background:#F5FBFE; color:#1596cc;"><span class="l-vi">Đăng ký Doanh nghiệp</span><span class="l-en">Register as Business</span></a>
+              <a href="Deals68 Register Investor.dc.html" style="padding:11px 14px; border-radius:8px; font-size:14.5px; font-weight:600; color:#14315A;" style-hover="background:#F5FBFE; color:#1596cc;"><span class="l-vi">Đăng ký Nhà đầu tư</span><span class="l-en">Register as Investor</span></a>
+              <a href="Deals68 Register Advisor.dc.html" style="padding:11px 14px; border-radius:8px; font-size:14.5px; font-weight:600; color:#14315A;" style-hover="background:#F5FBFE; color:#1596cc;"><span class="l-vi">Đăng ký Cố vấn</span><span class="l-en">Register as Advisor</span></a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ===== HERO ===== -->
+  <section style="background:#F7FAFC; border-bottom:1px solid #E7EDF3;">
+    <div style="max-width:820px; margin:0 auto; padding:56px 24px 40px;">
+      <h1 class="d68-hero-h1" style="font-size:38px; font-weight:800; letter-spacing:-.8px; margin:0 0 14px;"><span class="l-vi">Điều khoản sử dụng</span><span class="l-en">Terms of Use</span></h1>
+      <p style="font-size:15.5px; color:#64748B; line-height:1.65; margin:0;">
+        <span class="l-vi">Vui lòng đọc kỹ Điều khoản sử dụng này trước khi truy cập, đăng ký tài khoản, đăng cơ hội, tìm kiếm cơ hội hoặc sử dụng bất kỳ tính năng nào trên Deals68.com. Bằng việc sử dụng nền tảng, người dùng xác nhận đã đọc, hiểu và đồng ý tuân thủ các điều khoản dưới đây.</span>
+        <span class="l-en">Please read these Terms of Use carefully before accessing, registering, submitting an opportunity, searching opportunities or using any feature on Deals68.com. By using the platform, you confirm that you have read, understood and agreed to comply with these terms.</span>
+      </p>
+    </div>
+  </section>
+
+  <div style="max-width:820px; margin:0 auto; padding:36px 24px 0;">
+    <!-- NOTICE -->
+    <div style="display:flex; gap:12px; align-items:flex-start; background:#FEF3D3; border:1px solid #F5DFA0; border-radius:14px; padding:18px 20px; margin-bottom:36px;">
+      <span style="font-size:20px;">⚠️</span>
+      <p style="font-size:14px; color:#7a5c12; font-weight:600; line-height:1.55; margin:0;"><span class="l-vi">Thông tin trên Deals68 không phải là lời khuyên đầu tư, pháp lý, thuế hoặc tín dụng. Deals68 không cam kết thương vụ thành công.</span><span class="l-en">Information on Deals68 is not investment, legal, tax or credit advice. Deals68 does not guarantee deal completion.</span></p>
+    </div>
+
+    <!-- TOC -->
+    <div style="background:#F7FAFC; border:1px solid #E7EDF3; border-radius:16px; padding:24px 28px; margin-bottom:48px;">
+      <div style="font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:#94A3B8; margin-bottom:14px;"><span class="l-vi">Mục lục</span><span class="l-en">Table of contents</span></div>
+      <div class="d68-toc-grid" style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px 20px;">
+        <sc-for list="{{ sections }}" as="s" hint-placeholder-count="14">
+          <a href="{{ s.anchor }}" style="font-size:14px; font-weight:600; color:#1596cc; padding:4px 0;" style-hover="color:#0F2A4A;">{{ s.title }}</a>
+        </sc-for>
+      </div>
+    </div>
+
+    <!-- SECTIONS -->
+    <div style="display:flex; flex-direction:column; gap:38px; padding-bottom:20px;">
+      <sc-for list="{{ sections }}" as="s" hint-placeholder-count="14">
+        <div id="{{ s.id }}" style="scroll-margin-top:90px;">
+          <h2 style="font-size:20px; font-weight:800; margin:0 0 14px;">{{ s.title }}</h2>
+          <div style="display:flex; flex-direction:column; gap:10px;">
+            <sc-for list="{{ s.points }}" as="p" hint-placeholder-count="3">
+              <p style="font-size:15px; color:#334155; line-height:1.65; margin:0;">{{ p }}</p>
+            </sc-for>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+
+    <!-- NOTICE (bottom) -->
+    <div style="display:flex; gap:12px; align-items:flex-start; background:#FEF3D3; border:1px solid #F5DFA0; border-radius:14px; padding:18px 20px; margin:12px 0 48px;">
+      <span style="font-size:20px;">⚠️</span>
+      <p style="font-size:14px; color:#7a5c12; font-weight:600; line-height:1.55; margin:0;"><span class="l-vi">Thông tin trên Deals68 không phải là lời khuyên đầu tư, pháp lý, thuế hoặc tín dụng. Deals68 không cam kết thương vụ thành công.</span><span class="l-en">Information on Deals68 is not investment, legal, tax or credit advice. Deals68 does not guarantee deal completion.</span></p>
+    </div>
+
+    <!-- LEGAL PLACEHOLDER -->
+    <div style="border:1px dashed #CBD5E1; border-radius:16px; padding:26px 28px; margin-bottom:60px;">
+      <div style="font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:#94A3B8; margin-bottom:14px;"><span class="l-vi">Thông tin pháp nhân — chờ xác nhận trước khi công bố</span><span class="l-en">Legal entity information — pending confirmation before publication</span></div>
+      <div style="display:flex; flex-direction:column; gap:10px;">
+        <sc-for list="{{ legalRows }}" as="r" hint-placeholder-count="6">
+          <div style="display:flex; justify-content:space-between; gap:16px; font-size:14px; padding:8px 0; border-bottom:1px solid #F1F5F9;">
+            <span style="color:#64748B; font-weight:600;">{{ r.label }}</span>
+            <span style="color:{{ r.color }}; font-weight:600; text-align:right;">{{ r.value }}</span>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== FOOTER ===== -->
+  <footer style="background:#0B2038; color:#c6d5e6;">
+    <div style="max-width:1240px; margin:0 auto; padding:56px 24px 28px;">
+      <div class="d68-grid-2" style="display:grid; grid-template-columns:1.4fr 1fr 1fr 1fr; gap:36px;">
+        <div>
+          <img src="assets/logo-white.png" alt="Deals68.com" style="height:34px; margin-bottom:16px;">
+          <p style="font-size:14px; line-height:1.6; color:#8fa6c0; margin:0 0 14px; max-width:280px;"><span class="l-vi">Sàn mua bán doanh nghiệp, M&amp;A, huy động vốn và kết nối nhà đầu tư cho Việt Nam, Đông Nam Á và toàn cầu.</span><span class="l-en">Marketplace for business sale, M&amp;A, fundraising and investor matching across Vietnam, Southeast Asia and beyond.</span></p>
+        </div>
+        <div>
+          <div style="font-size:13px; font-weight:700; color:#fff; text-transform:uppercase; letter-spacing:.6px; margin-bottom:14px;"><span class="l-vi">Nền tảng</span><span class="l-en">Platform</span></div>
+          <div style="display:flex; flex-direction:column; gap:10px; font-size:14.5px;">
+            <a href="Deals68 Businesses.dc.html" style-hover="color:#fff;"><span class="l-vi">Doanh nghiệp</span><span class="l-en">Businesses</span></a>
+            <a href="Deals68 Investors.dc.html" style-hover="color:#fff;"><span class="l-vi">Nhà đầu tư</span><span class="l-en">Investors</span></a>
+            <a href="Deals68 Valuation.dc.html" style-hover="color:#fff;"><span class="l-vi">Định giá DN</span><span class="l-en">Valuation</span></a>
+            <a href="Deals68 Pricing.dc.html" style-hover="color:#fff;"><span class="l-vi">Bảng giá</span><span class="l-en">Pricing</span></a>
+            <a href="Deals68 Market Partner.dc.html" style-hover="color:#fff;"><span class="l-vi">Đối tác thị trường</span><span class="l-en">Market Partner</span></a>
+          </div>
+        </div>
+        <div>
+          <div style="font-size:13px; font-weight:700; color:#fff; text-transform:uppercase; letter-spacing:.6px; margin-bottom:14px;"><span class="l-vi">Công ty</span><span class="l-en">Company</span></div>
+          <div style="display:flex; flex-direction:column; gap:10px; font-size:14.5px;">
+            <a href="Deals68 About.dc.html" style-hover="color:#fff;"><span class="l-vi">Giới thiệu</span><span class="l-en">About</span></a>
+            <a href="Deals68 Terms.dc.html" style-hover="color:#fff;"><span class="l-vi">Điều khoản</span><span class="l-en">Terms</span></a>
+            <a href="Deals68 Privacy.dc.html" style-hover="color:#fff;"><span class="l-vi">Bảo mật</span><span class="l-en">Privacy</span></a>
+            <a href="Deals68 Contact.dc.html" style-hover="color:#fff;"><span class="l-vi">Liên hệ</span><span class="l-en">Contact</span></a>
+          </div>
+        </div>
+        <div>
+          <div style="font-size:13px; font-weight:700; color:#fff; text-transform:uppercase; letter-spacing:.6px; margin-bottom:14px;"><span class="l-vi">Liên hệ</span><span class="l-en">Contact</span></div>
+          <div style="display:flex; flex-direction:column; gap:10px; font-size:14.5px;">
+            <a href="mailto:partner@vietcapitalpartners.com" style-hover="color:#fff;">partner@vietcapitalpartners.com</a>
+            <span style="color:#8fa6c0;"><span class="l-vi">Thanh toán an toàn qua QR, Senpay, Paypal</span><span class="l-en">Secure payment via QR, Senpay, Paypal</span></span>
+          </div>
+        </div>
+      </div>
+      <div style="border-top:1px solid rgba(255,255,255,.1); margin-top:40px; padding-top:22px; display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; font-size:13.5px; color:#8fa6c0;">
+        <span><span class="l-vi">Deals68.com: Kết nối thương vụ, khai mở lộc phát</span><span class="l-en">Deals68.com: Connecting Deals, Unlocking Prosperity</span></span>
+        <span><span class="l-vi">© Một nền tảng của Viet Capital Partners &amp; Consulting.</span><span class="l-en">© A platform by Viet Capital Partners &amp; Consulting.</span></span>
+      </div>
+    </div>
+  </footer>
+
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { lang: 'vi' };
+
+  setLang(l) { this.setState({ lang: l }); }
+
+  renderVals() {
+    const vi = this.state.lang === 'vi';
+    const T = (a, b) => (vi ? a : b);
+    const pill = (active) => `padding:7px 14px; border:none; cursor:pointer; font-weight:700; font-size:13px; background:${active ? '#0F2A4A' : 'transparent'}; color:${active ? '#fff' : '#64748B'};`;
+
+    const raw = [
+      { title: T('1. Định nghĩa','1. Definitions'), points: [
+        T("'Deals68', 'nền tảng', 'chúng tôi' là trang web Deals68.com và các sản phẩm, tính năng, biểu mẫu, trang quản trị, thư điện tử hoặc kênh liên lạc liên quan.","\u201CDeals68\u201D, \u201Cthe platform\u201D, \u201Cwe\u201D, \u201Cus\u201D or \u201Cour\u201D refer to Deals68.com and related products, features, forms, dashboards, emails or communication channels."),
+        T("'Người dùng' bao gồm doanh nghiệp, chủ cửa hàng, nhà đầu tư, người mua, bên cho vay, cố vấn, môi giới, đối tác và cá nhân hoặc tổ chức truy cập nền tảng.","\u201CUser\u201D includes businesses, store owners, investors, buyers, lenders, advisors, brokers, partners and any individual or organization accessing the platform."),
+        T("'Cơ hội' là thông tin về nhu cầu bán doanh nghiệp, bán cổ phần, sang nhượng cửa hàng, gọi vốn, vay vốn, cho vay, hợp tác chiến lược hoặc các nhu cầu thương mại tương tự.","\u201COpportunity\u201D means information related to business sale, equity sale, store transfer, fundraising, borrowing, lending, strategic partnership or similar commercial needs."),
+        T("'Thông tin bảo mật' là dữ liệu kinh doanh, tài chính, pháp lý, khách hàng, nhân sự, tài sản, hợp đồng, hồ sơ nhà đầu tư hoặc thông tin chưa công khai được chia sẻ trên nền tảng.","\u201CConfidential information\u201D means business, financial, legal, customer, employee, asset, contract, investor profile or non-public information shared on the platform.")
+      ]},
+      { title: T('2. Vai trò của Deals68','2. Role of Deals68'), points: [
+        T('Deals68 là nền tảng hỗ trợ hiển thị, sàng lọc, chuẩn hóa thông tin ban đầu và kết nối các bên có nhu cầu phù hợp.','Deals68 supports opportunity presentation, initial screening, information structuring and connection between parties with relevant needs.'),
+        T('Deals68 không phải là bên mua, bên bán, nhà đầu tư, bên cho vay, bên bảo lãnh hoặc đại diện pháp lý của người dùng, trừ khi có thỏa thuận riêng bằng văn bản.','Deals68 is not the buyer, seller, investor, lender, guarantor or legal representative of any user unless otherwise agreed in writing.'),
+        T('Deals68 không bảo đảm rằng mọi hồ sơ, cơ hội hoặc người dùng đều đã được xác minh đầy đủ. Người dùng cần tự thẩm định trước khi ra quyết định.','Deals68 does not guarantee that every profile, opportunity or user has been fully verified. Users must conduct their own due diligence before making decisions.')
+      ]},
+      { title: T('3. Điều kiện sử dụng','3. Eligibility'), points: [
+        T('Người dùng cần có đủ năng lực pháp lý để sử dụng nền tảng và chịu trách nhiệm về thông tin do mình cung cấp.','Users must have the legal capacity to use the platform and are responsible for the information they provide.'),
+        T('Nếu sử dụng nền tảng thay mặt cho doanh nghiệp hoặc tổ chức, người dùng xác nhận rằng mình có thẩm quyền đại diện phù hợp.','If you use the platform on behalf of a business or organization, you confirm that you have appropriate authority to represent it.'),
+        T('Deals68 có thể từ chối, tạm ngừng hoặc chấm dứt quyền truy cập nếu phát hiện dấu hiệu vi phạm, gian lận, gây hại cho người dùng khác hoặc ảnh hưởng đến uy tín nền tảng.',"Deals68 may refuse, suspend or terminate access if there are signs of violation, fraud, harm to other users or damage to the platform's reputation.")
+      ]},
+      { title: T('4. Tài khoản và bảo mật đăng nhập','4. Account and Login Security'), points: [
+        T('Người dùng chịu trách nhiệm bảo mật thông tin đăng nhập, thiết bị truy cập và hoạt động phát sinh từ tài khoản của mình.','Users are responsible for protecting login information, access devices and activities arising from their accounts.'),
+        T('Người dùng cần thông báo cho Deals68 nếu phát hiện truy cập trái phép, lộ thông tin đăng nhập hoặc rủi ro bảo mật.','Users should notify Deals68 if they identify unauthorized access, exposed login information or security risks.'),
+        T('Deals68 có quyền áp dụng các biện pháp xác minh bổ sung để bảo vệ người dùng và nền tảng.','Deals68 may apply additional verification measures to protect users and the platform.')
+      ]},
+      { title: T('5. Đăng cơ hội và cung cấp thông tin','5. Submitting Opportunities and Information'), points: [
+        T('Người dùng cam kết cung cấp thông tin trung thực, hợp pháp, cập nhật và không gây hiểu lầm.','Users agree to provide truthful, lawful, updated and non-misleading information.'),
+        T('Người dùng không được đăng thông tin giả mạo, vi phạm quyền sở hữu trí tuệ, vi phạm pháp luật, xâm phạm quyền riêng tư hoặc gây thiệt hại cho bên thứ ba.','Users must not submit false information, infringe intellectual property rights, violate laws, breach privacy rights or harm third parties.'),
+        T('Deals68 có quyền biên tập hình thức hiển thị, ẩn, từ chối hoặc gỡ bỏ nội dung nếu nội dung không phù hợp với tiêu chuẩn nền tảng.','Deals68 may edit display format, hide, reject or remove content if it does not meet platform standards.')
+      ]},
+      { title: T('6. Trách nhiệm của nhà đầu tư, người mua và bên cho vay','6. Responsibilities of Investors, Buyers and Lenders'), points: [
+        T('Nhà đầu tư, người mua và bên cho vay cần tự đánh giá khẩu vị rủi ro, năng lực tài chính, mục tiêu đầu tư và mức độ phù hợp của từng cơ hội.','Investors, buyers and lenders must assess their own risk appetite, financial capacity, investment objectives and suitability of each opportunity.'),
+        T('Mọi quyết định đầu tư, mua bán, cho vay hoặc hợp tác là quyết định độc lập của người dùng.',"Any investment, acquisition, lending or partnership decision is the user's independent decision."),
+        T('Người dùng cần sử dụng tư vấn pháp lý, tài chính, thuế, tín dụng hoặc chuyên môn khác trước khi ký kết giao dịch chính thức.','Users should obtain legal, financial, tax, credit or other professional advice before signing any formal transaction.')
+      ]},
+      { title: T('7. Không phải lời khuyên đầu tư, pháp lý, thuế hoặc tín dụng','7. No Investment, Legal, Tax or Credit Advice'), points: [
+        T('Thông tin trên Deals68 chỉ nhằm mục đích giới thiệu, tham khảo, sàng lọc ban đầu và hỗ trợ kết nối.','Information on Deals68 is provided for introduction, reference, initial screening and connection support only.'),
+        T('Deals68 không đưa ra lời khuyên đầu tư, pháp lý, thuế, tín dụng hoặc cam kết lợi nhuận.','Deals68 does not provide investment, legal, tax or credit advice and does not guarantee profits.'),
+        T('Người dùng không nên dựa hoàn toàn vào thông tin trên nền tảng để ra quyết định mà chưa thẩm định độc lập.','Users should not rely solely on platform information without conducting independent due diligence.')
+      ]},
+      { title: T('8. Không cam kết hoàn tất thương vụ','8. No Guarantee of Deal Completion'), points: [
+        T('Deals68 không cam kết người dùng sẽ tìm được đối tác, nhận được vốn, bán được doanh nghiệp, mua được doanh nghiệp hoặc hoàn tất bất kỳ giao dịch nào.','Deals68 does not guarantee that users will find a partner, receive capital, sell a business, acquire a business or complete any transaction.'),
+        T("Kết quả của từng thương vụ phụ thuộc vào chất lượng hồ sơ, nhu cầu thị trường, năng lực tài chính, quá trình thẩm định, đàm phán, hợp đồng và nhiều yếu tố ngoài phạm vi kiểm soát của nền tảng.","The outcome of each opportunity depends on profile quality, market demand, financial capacity, due diligence, negotiation, contracts and many factors outside the platform's control.")
+      ]},
+      { title: T('9. Phí dịch vụ và ưu đãi','9. Fees and Promotions'), points: [
+        T('Một số tính năng hoặc dịch vụ có thể miễn phí trong giai đoạn bản thử nghiệm; một số tính năng nâng cao có thể thu phí trong tương lai.','Some features or services may be free during the beta stage; certain advanced features may become paid in the future.'),
+        T('Nếu có phí, Deals68 sẽ hiển thị hoặc thông báo rõ về mức phí, thời điểm áp dụng, phạm vi dịch vụ và điều kiện thanh toán trước khi người dùng sử dụng dịch vụ trả phí.','If fees apply, Deals68 will display or notify users of fee levels, effective timing, service scope and payment conditions before users access paid services.'),
+        T('Mã giảm giá, chương trình ưu đãi hoặc quyền truy cập đặc biệt có thể có thời hạn, số lượng và điều kiện áp dụng riêng.','Discount codes, promotions or special access may be subject to separate time limits, availability and conditions.')
+      ]},
+      { title: T('10. Bảo mật và chia sẻ thông tin','10. Confidentiality and Information Sharing'), points: [
+        T('Người dùng không được chia sẻ, sao chép, phát tán hoặc sử dụng thông tin bảo mật của người dùng khác ngoài mục đích đã được đồng ý.',"Users must not share, copy, distribute or use other users' confidential information beyond the agreed purpose."),
+        T('Một số thông tin chi tiết có thể chỉ được chia sẻ sau khi các bên đồng ý kết nối, ký thỏa thuận bảo mật hoặc đáp ứng điều kiện xác minh phù hợp.','Certain detailed information may be shared only after the parties agree to connect, sign a confidentiality agreement or meet relevant verification conditions.'),
+        T('Deals68 khuyến khích các bên ký thỏa thuận bảo mật trước khi chia sẻ thông tin tài chính, pháp lý hoặc vận hành quan trọng.','Deals68 encourages parties to sign confidentiality agreements before sharing important financial, legal or operational information.')
+      ]},
+      { title: T('11. Quyền sở hữu nội dung','11. Content Ownership'), points: [
+        T('Người dùng vẫn sở hữu thông tin, tài liệu, hình ảnh và nội dung do mình cung cấp, trừ khi có thỏa thuận khác.','Users retain ownership of information, documents, images and content they provide unless otherwise agreed.'),
+        T('Bằng việc đăng nội dung lên nền tảng, người dùng cho phép Deals68 lưu trữ, xử lý, biên tập định dạng hiển thị và hiển thị nội dung đó trong phạm vi cần thiết để vận hành nền tảng.','By submitting content to the platform, users allow Deals68 to store, process, format and display that content as necessary to operate the platform.'),
+        T('Người dùng bảo đảm mình có quyền sử dụng và chia sẻ các tài liệu, hình ảnh, nhãn hiệu hoặc nội dung đã cung cấp.','Users confirm that they have the right to use and share all documents, images, trademarks or content provided.')
+      ]},
+      { title: T('12. Giới hạn trách nhiệm','12. Limitation of Liability'), points: [
+        T('Trong phạm vi pháp luật cho phép, Deals68 không chịu trách nhiệm đối với thiệt hại gián tiếp, mất lợi nhuận, mất cơ hội, mất dữ liệu hoặc tranh chấp phát sinh từ giao dịch giữa người dùng.','To the extent permitted by law, Deals68 is not liable for indirect damages, lost profits, lost opportunities, data loss or disputes arising from transactions between users.'),
+        T('Deals68 không chịu trách nhiệm cho hành vi, cam kết, tài liệu hoặc thông tin do người dùng khác cung cấp, trừ trường hợp pháp luật có quy định khác.','Deals68 is not responsible for actions, commitments, documents or information provided by other users, unless otherwise required by law.')
+      ]},
+      { title: T('13. Thay đổi điều khoản','13. Changes to These Terms'), points: [
+        T('Deals68 có thể cập nhật Điều khoản sử dụng để phù hợp với thay đổi của sản phẩm, quy trình vận hành, yêu cầu pháp luật hoặc thị trường.','Deals68 may update these Terms of Use to reflect changes in products, operations, legal requirements or market conditions.'),
+        T('Phiên bản cập nhật sẽ được công bố trên nền tảng. Việc tiếp tục sử dụng nền tảng sau khi điều khoản được cập nhật đồng nghĩa với việc người dùng chấp nhận phiên bản mới.','Updated versions will be published on the platform. Continued use of the platform after updates means users accept the new version.')
+      ]},
+      { title: T('14. Liên hệ','14. Contact'), points: [
+        T('Mọi câu hỏi về Điều khoản sử dụng có thể gửi về kênh liên hệ chính thức được công bố trên Deals68.com.','Questions about these Terms of Use may be sent to the official contact channel published on Deals68.com.')
+      ]}
+    ];
+
+    const sections = raw.map((s, i) => ({ ...s, id: 'sec-' + (i + 1), anchor: '#sec-' + (i + 1) }));
+
+    return {
+      lang: this.state.lang,
+      setVi: () => this.setLang('vi'),
+      setEn: () => this.setLang('en'),
+      viBtnStyle: pill(vi),
+      enBtnStyle: pill(!vi),
+      sections,
+      legalRows: [
+        { label: T('Tên pháp nhân vận hành','Operating legal entity'), value: T('Chờ xác nhận','To be confirmed'), color:'#94A3B8' },
+        { label: T('Địa chỉ','Address'), value: T('Chờ xác nhận','To be confirmed'), color:'#94A3B8' },
+        { label: T('Thư điện tử hỗ trợ','Support email'), value: 'partner@vietcapitalpartners.com', color:'#0F2A4A' },
+        { label: T('Số điện thoại hỗ trợ','Support phone'), value: T('Chờ xác nhận','To be confirmed'), color:'#94A3B8' },
+        { label: T('Cơ quan tài phán & luật áp dụng','Jurisdiction & governing law'), value: T('Chờ xác nhận','To be confirmed'), color:'#94A3B8' },
+        { label: T('Thời gian phản hồi dự kiến','Expected response time'), value: T('Chờ xác nhận','To be confirmed'), color:'#94A3B8' }
+      ]
+    };
+  }
+}
+
+</script>
+</body>
+</html>

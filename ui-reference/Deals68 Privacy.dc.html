@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body { font-family: 'Be Vietnam Pro', system-ui, sans-serif; color: #0F2A4A; background: #FFFFFF; -webkit-font-smoothing: antialiased; }
+  [data-lang="vi"] .l-en { display: none !important; }
+  [data-lang="en"] .l-vi { display: none !important; }
+  a { text-decoration: none; color: inherit; }
+  select, input, button { font-family: inherit; }
+  .d68-reg-dd:hover .d68-reg-menu { display: flex !important; }
+  .d68-burger { display:none; }
+  .d68-mdrawer { display:none; }
+  @media (max-width: 1080px) { .d68-nav { display: none !important; } }
+  @media (max-width: 760px) {
+    .d68-hdr-actions { display:none !important; }
+    .d68-burger { display:flex !important; }
+    .d68-burger-cb:checked ~ .d68-mdrawer { display:flex !important; }
+  }
+  @media (max-width: 900px) { .d68-toc-grid { grid-template-columns: 1fr 1fr !important; } .d68-grid-2 { grid-template-columns: 1fr !important; } }
+  @media (max-width: 620px) { .d68-hero-h1 { font-size: 30px !important; } .d68-toc-grid { grid-template-columns: 1fr !important; } }
+</style>
+</helmet>
+
+<div data-lang="{{ lang }}" style="width:100%; overflow-x:hidden;">
+
+  <!-- ===== HEADER ===== -->
+  <header style="position:sticky; top:0; z-index:60; background:rgba(255,255,255,.94); backdrop-filter:blur(10px); border-bottom:1px solid #E7EDF3;">
+    <div style="max-width:1240px; margin:0 auto; padding:0 24px; height:70px; display:flex; align-items:center; gap:28px;">
+      <a href="Deals68 Home.dc.html" style="display:flex; align-items:center; flex-shrink:0;"><img src="assets/logo-beta.png" alt="Deals68.com" style="height:34px; display:block;"></a>
+      <nav class="d68-nav" style="display:flex; align-items:center; gap:26px; margin-left:8px; font-size:15px; font-weight:500; color:#14315A;">
+        <a href="Deals68 Businesses.dc.html"><span class="l-vi">Doanh nghiệp</span><span class="l-en">Businesses</span></a>
+        <a href="Deals68 Investors.dc.html"><span class="l-vi">Nhà đầu tư</span><span class="l-en">Investors</span></a>
+        <a href="Deals68 Register Advisor.dc.html"><span class="l-vi">Cố vấn</span><span class="l-en">Advisors</span></a>
+        <a href="Deals68 Valuation.dc.html"><span class="l-vi">Định giá</span><span class="l-en">Valuation</span></a>
+        <a href="Deals68 Pricing.dc.html"><span class="l-vi">Bảng giá</span><span class="l-en">Pricing</span></a>
+      </nav>
+      <input type="checkbox" id="d68burger" class="d68-burger-cb" style="position:absolute; opacity:0; width:1px; height:1px; pointer-events:none;">
+      <label for="d68burger" class="d68-burger" style="margin-left:auto; width:44px; height:44px; align-items:center; justify-content:center; border:1px solid #E2E8F0; border-radius:10px; font-size:22px; color:#14315A; cursor:pointer; flex-shrink:0; background:#fff;">☰</label>
+      <div class="d68-mdrawer" style="position:absolute; top:70px; left:0; right:0; flex-direction:column; gap:2px; background:#fff; border-top:1px solid #E7EDF3; box-shadow:0 18px 34px rgba(15,42,74,.14); padding:12px 20px 18px; max-height:calc(100vh - 70px); overflow-y:auto;">
+        <a href="Deals68 Businesses.dc.html" style="padding:13px 6px; font-size:16px; font-weight:600; color:#14315A; border-bottom:1px solid #F1F5F9;"><span class="l-vi">Doanh nghiệp</span><span class="l-en">Businesses</span></a>
+        <a href="Deals68 Investors.dc.html" style="padding:13px 6px; font-size:16px; font-weight:600; color:#14315A; border-bottom:1px solid #F1F5F9;"><span class="l-vi">Nhà đầu tư</span><span class="l-en">Investors</span></a>
+        <a href="Deals68 Register Advisor.dc.html" style="padding:13px 6px; font-size:16px; font-weight:600; color:#14315A; border-bottom:1px solid #F1F5F9;"><span class="l-vi">Cố vấn</span><span class="l-en">Advisors</span></a>
+        <a href="Deals68 Valuation.dc.html" style="padding:13px 6px; font-size:16px; font-weight:600; color:#14315A; border-bottom:1px solid #F1F5F9;"><span class="l-vi">Định giá</span><span class="l-en">Valuation</span></a>
+        <a href="Deals68 Pricing.dc.html" style="padding:13px 6px; font-size:16px; font-weight:600; color:#14315A; border-bottom:1px solid #F1F5F9;"><span class="l-vi">Bảng giá</span><span class="l-en">Pricing</span></a>
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; padding:14px 6px 8px;">
+          <span style="font-size:14px; font-weight:600; color:#64748B;"><span class="l-vi">Ngôn ngữ</span><span class="l-en">Language</span></span>
+          <div style="display:flex; align-items:center; border:1px solid #E2E8F0; border-radius:999px; overflow:hidden; font-size:13px; font-weight:700;">
+            <button onClick="{{ setVi }}" style="{{ viBtnStyle }}">VI</button>
+            <button onClick="{{ setEn }}" style="{{ enBtnStyle }}">EN</button>
+          </div>
+        </div>
+        <a href="Deals68 Login.dc.html" style="padding:13px 6px; font-size:16px; font-weight:700; color:#14315A;"><span class="l-vi">Đăng nhập</span><span class="l-en">Log in</span></a>
+        <div style="display:flex; flex-direction:column; gap:8px; margin-top:8px;">
+          <a href="Deals68 Register Business.dc.html" style="text-align:center; background:#1BADEA; color:#fff; font-weight:700; font-size:15px; padding:13px; border-radius:10px;"><span class="l-vi">Đăng ký Doanh nghiệp</span><span class="l-en">Register as Business</span></a>
+          <a href="Deals68 Register Investor.dc.html" style="text-align:center; border:1px solid #E2E8F0; color:#14315A; font-weight:700; font-size:15px; padding:13px; border-radius:10px;"><span class="l-vi">Đăng ký Nhà đầu tư</span><span class="l-en">Register as Investor</span></a>
+          <a href="Deals68 Register Advisor.dc.html" style="text-align:center; border:1px solid #E2E8F0; color:#14315A; font-weight:700; font-size:15px; padding:13px; border-radius:10px;"><span class="l-vi">Đăng ký Cố vấn</span><span class="l-en">Register as Advisor</span></a>
+        </div>
+      </div>
+      <div class="d68-hdr-actions" style="margin-left:auto; display:flex; align-items:center; gap:14px; flex-shrink:0;">
+        <div style="display:flex; align-items:center; border:1px solid #E2E8F0; border-radius:999px; overflow:hidden; font-size:13px; font-weight:700;">
+          <button onClick="{{ setVi }}" style="{{ viBtnStyle }}">VI</button>
+          <button onClick="{{ setEn }}" style="{{ enBtnStyle }}">EN</button>
+        </div>
+        <a href="Deals68 Login.dc.html" style="font-size:15px; font-weight:600; color:#14315A; white-space:nowrap;"><span class="l-vi">Đăng nhập</span><span class="l-en">Log in</span></a>
+        <div class="d68-reg-dd" style="position:relative;">
+          <button style="display:inline-flex; align-items:center; gap:6px; background:#1BADEA; color:#fff; font-weight:700; font-size:15px; padding:11px 20px; border-radius:10px; box-shadow:0 6px 16px rgba(27,173,234,.28); white-space:nowrap; border:none; cursor:pointer;">
+            <span class="l-vi">Đăng ký</span><span class="l-en">Register</span> <span style="font-size:11px;">▾</span>
+          </button>
+          <div class="d68-reg-menu" style="display:none; position:absolute; top:100%; right:0; padding-top:8px; min-width:230px; flex-direction:column; z-index:80;">
+            <div style="background:#fff; border:1px solid #E7EDF3; border-radius:12px; box-shadow:0 14px 34px rgba(15,42,74,.16); padding:8px; display:flex; flex-direction:column; gap:2px;">
+              <a href="Deals68 Register Business.dc.html" style="padding:11px 14px; border-radius:8px; font-size:14.5px; font-weight:600; color:#14315A;" style-hover="background:#F5FBFE; color:#1596cc;"><span class="l-vi">Đăng ký Doanh nghiệp</span><span class="l-en">Register as Business</span></a>
+              <a href="Deals68 Register Investor.dc.html" style="padding:11px 14px; border-radius:8px; font-size:14.5px; font-weight:600; color:#14315A;" style-hover="background:#F5FBFE; color:#1596cc;"><span class="l-vi">Đăng ký Nhà đầu tư</span><span class="l-en">Register as Investor</span></a>
+              <a href="Deals68 Register Advisor.dc.html" style="padding:11px 14px; border-radius:8px; font-size:14.5px; font-weight:600; color:#14315A;" style-hover="background:#F5FBFE; color:#1596cc;"><span class="l-vi">Đăng ký Cố vấn</span><span class="l-en">Register as Advisor</span></a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ===== HERO ===== -->
+  <section style="background:#F7FAFC; border-bottom:1px solid #E7EDF3;">
+    <div style="max-width:820px; margin:0 auto; padding:56px 24px 40px;">
+      <h1 class="d68-hero-h1" style="font-size:38px; font-weight:800; letter-spacing:-.8px; margin:0 0 14px;"><span class="l-vi">Chính sách bảo mật</span><span class="l-en">Privacy Policy</span></h1>
+      <p style="font-size:15.5px; color:#64748B; line-height:1.65; margin:0;">
+        <span class="l-vi">Deals68.com tôn trọng quyền riêng tư và dữ liệu của người dùng. Chính sách này giải thích cách chúng tôi thu thập, sử dụng, lưu trữ, bảo vệ và chia sẻ thông tin khi người dùng truy cập hoặc sử dụng nền tảng.</span>
+        <span class="l-en">Deals68.com respects user privacy and data. This policy explains how we collect, use, store, protect and share information when users access or use the platform.</span>
+      </p>
+    </div>
+  </section>
+
+  <div style="max-width:820px; margin:0 auto; padding:36px 24px 0;">
+    <!-- TOC -->
+    <div style="background:#F7FAFC; border:1px solid #E7EDF3; border-radius:16px; padding:24px 28px; margin-bottom:48px;">
+      <div style="font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:#94A3B8; margin-bottom:14px;"><span class="l-vi">Mục lục</span><span class="l-en">Table of contents</span></div>
+      <div class="d68-toc-grid" style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px 20px;">
+        <sc-for list="{{ sections }}" as="s" hint-placeholder-count="13">
+          <a href="{{ s.anchor }}" style="font-size:14px; font-weight:600; color:#1596cc; padding:4px 0;" style-hover="color:#0F2A4A;">{{ s.title }}</a>
+        </sc-for>
+      </div>
+    </div>
+
+    <!-- SECTIONS -->
+    <div style="display:flex; flex-direction:column; gap:38px; padding-bottom:20px;">
+      <sc-for list="{{ sections }}" as="s" hint-placeholder-count="13">
+        <div id="{{ s.id }}" style="scroll-margin-top:90px;">
+          <h2 style="font-size:20px; font-weight:800; margin:0 0 14px;">{{ s.title }}</h2>
+          <div style="display:flex; flex-direction:column; gap:10px;">
+            <sc-for list="{{ s.points }}" as="p" hint-placeholder-count="3">
+              <p style="font-size:15px; color:#334155; line-height:1.65; margin:0;">{{ p }}</p>
+            </sc-for>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+
+    <!-- USER RIGHTS HIGHLIGHT -->
+    <div style="display:flex; gap:12px; align-items:flex-start; background:#E7F6FD; border:1px solid #BEE3F5; border-radius:14px; padding:22px 24px; margin-bottom:48px;">
+      <span style="font-size:20px;">🔒</span>
+      <div>
+        <div style="font-size:15px; font-weight:700; color:#0F2A4A; margin-bottom:6px;"><span class="l-vi">Quyền của bạn</span><span class="l-en">Your rights</span></div>
+        <p style="font-size:14px; color:#1596cc; font-weight:600; line-height:1.55; margin:0 0 10px;"><span class="l-vi">Bạn có thể yêu cầu xem, chỉnh sửa, cập nhật, ẩn hoặc xóa thông tin cá nhân của mình bất cứ lúc nào.</span><span class="l-en">You may request to view, edit, update, hide or delete your personal information at any time.</span></p>
+        <a href="Deals68 Contact.dc.html" style="display:inline-block; background:#0F2A4A; color:#fff; font-weight:700; font-size:13.5px; padding:9px 18px; border-radius:9px;" style-hover="background:#14315A;"><span class="l-vi">Liên hệ về dữ liệu của bạn</span><span class="l-en">Contact us about your data</span></a>
+      </div>
+    </div>
+
+    <!-- LEGAL PLACEHOLDER -->
+    <div style="border:1px dashed #CBD5E1; border-radius:16px; padding:26px 28px; margin-bottom:60px;">
+      <div style="font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:#94A3B8; margin-bottom:14px;"><span class="l-vi">Thông tin pháp nhân — chờ xác nhận trước khi công bố</span><span class="l-en">Legal entity information — pending confirmation before publication</span></div>
+      <div style="display:flex; flex-direction:column; gap:10px;">
+        <sc-for list="{{ legalRows }}" as="r" hint-placeholder-count="6">
+          <div style="display:flex; justify-content:space-between; gap:16px; font-size:14px; padding:8px 0; border-bottom:1px solid #F1F5F9;">
+            <span style="color:#64748B; font-weight:600;">{{ r.label }}</span>
+            <span style="color:{{ r.color }}; font-weight:600; text-align:right;">{{ r.value }}</span>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== FOOTER ===== -->
+  <footer style="background:#0B2038; color:#c6d5e6;">
+    <div style="max-width:1240px; margin:0 auto; padding:56px 24px 28px;">
+      <div class="d68-grid-2" style="display:grid; grid-template-columns:1.4fr 1fr 1fr 1fr; gap:36px;">
+        <div>
+          <img src="assets/logo-white.png" alt="Deals68.com" style="height:34px; margin-bottom:16px;">
+          <p style="font-size:14px; line-height:1.6; color:#8fa6c0; margin:0 0 14px; max-width:280px;"><span class="l-vi">Sàn mua bán doanh nghiệp, M&amp;A, huy động vốn và kết nối nhà đầu tư cho Việt Nam, Đông Nam Á và toàn cầu.</span><span class="l-en">Marketplace for business sale, M&amp;A, fundraising and investor matching across Vietnam, Southeast Asia and beyond.</span></p>
+        </div>
+        <div>
+          <div style="font-size:13px; font-weight:700; color:#fff; text-transform:uppercase; letter-spacing:.6px; margin-bottom:14px;"><span class="l-vi">Nền tảng</span><span class="l-en">Platform</span></div>
+          <div style="display:flex; flex-direction:column; gap:10px; font-size:14.5px;">
+            <a href="Deals68 Businesses.dc.html" style-hover="color:#fff;"><span class="l-vi">Doanh nghiệp</span><span class="l-en">Businesses</span></a>
+            <a href="Deals68 Investors.dc.html" style-hover="color:#fff;"><span class="l-vi">Nhà đầu tư</span><span class="l-en">Investors</span></a>
+            <a href="Deals68 Valuation.dc.html" style-hover="color:#fff;"><span class="l-vi">Định giá DN</span><span class="l-en">Valuation</span></a>
+            <a href="Deals68 Pricing.dc.html" style-hover="color:#fff;"><span class="l-vi">Bảng giá</span><span class="l-en">Pricing</span></a>
+            <a href="Deals68 Market Partner.dc.html" style-hover="color:#fff;"><span class="l-vi">Đối tác thị trường</span><span class="l-en">Market Partner</span></a>
+          </div>
+        </div>
+        <div>
+          <div style="font-size:13px; font-weight:700; color:#fff; text-transform:uppercase; letter-spacing:.6px; margin-bottom:14px;"><span class="l-vi">Công ty</span><span class="l-en">Company</span></div>
+          <div style="display:flex; flex-direction:column; gap:10px; font-size:14.5px;">
+            <a href="Deals68 About.dc.html" style-hover="color:#fff;"><span class="l-vi">Giới thiệu</span><span class="l-en">About</span></a>
+            <a href="Deals68 Terms.dc.html" style-hover="color:#fff;"><span class="l-vi">Điều khoản</span><span class="l-en">Terms</span></a>
+            <a href="Deals68 Privacy.dc.html" style-hover="color:#fff;"><span class="l-vi">Bảo mật</span><span class="l-en">Privacy</span></a>
+            <a href="Deals68 Contact.dc.html" style-hover="color:#fff;"><span class="l-vi">Liên hệ</span><span class="l-en">Contact</span></a>
+          </div>
+        </div>
+        <div>
+          <div style="font-size:13px; font-weight:700; color:#fff; text-transform:uppercase; letter-spacing:.6px; margin-bottom:14px;"><span class="l-vi">Liên hệ</span><span class="l-en">Contact</span></div>
+          <div style="display:flex; flex-direction:column; gap:10px; font-size:14.5px;">
+            <a href="mailto:partner@vietcapitalpartners.com" style-hover="color:#fff;">partner@vietcapitalpartners.com</a>
+            <span style="color:#8fa6c0;"><span class="l-vi">Thanh toán an toàn qua QR, Senpay, Paypal</span><span class="l-en">Secure payment via QR, Senpay, Paypal</span></span>
+          </div>
+        </div>
+      </div>
+      <div style="border-top:1px solid rgba(255,255,255,.1); margin-top:40px; padding-top:22px; display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; font-size:13.5px; color:#8fa6c0;">
+        <span><span class="l-vi">Deals68.com: Kết nối thương vụ, khai mở lộc phát</span><span class="l-en">Deals68.com: Connecting Deals, Unlocking Prosperity</span></span>
+        <span><span class="l-vi">© Một nền tảng của Viet Capital Partners &amp; Consulting.</span><span class="l-en">© A platform by Viet Capital Partners &amp; Consulting.</span></span>
+      </div>
+    </div>
+  </footer>
+
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { lang: 'vi' };
+
+  setLang(l) { this.setState({ lang: l }); }
+
+  renderVals() {
+    const vi = this.state.lang === 'vi';
+    const T = (a, b) => (vi ? a : b);
+    const pill = (active) => `padding:7px 14px; border:none; cursor:pointer; font-weight:700; font-size:13px; background:${active ? '#0F2A4A' : 'transparent'}; color:${active ? '#fff' : '#64748B'};`;
+
+    const raw = [
+      { title: T('1. Phạm vi áp dụng','1. Scope'), points: [
+        T('Chính sách này áp dụng cho người dùng truy cập Deals68.com, tạo tài khoản, đăng cơ hội, tìm kiếm cơ hội, gửi biểu mẫu, trao đổi với nền tảng hoặc sử dụng các tính năng liên quan.','This policy applies to users who access Deals68.com, create an account, submit an opportunity, search opportunities, send forms, communicate with the platform or use related features.'),
+        T('Chính sách này không áp dụng cho trang hoặc dịch vụ của bên thứ ba được liên kết từ Deals68.com. Người dùng nên đọc chính sách riêng của các bên đó.','This policy does not apply to third-party websites or services linked from Deals68.com. Users should review the policies of those third parties separately.')
+      ]},
+      { title: T('2. Thông tin chúng tôi có thể thu thập','2. Information We May Collect'), points: [
+        T('Thông tin cá nhân: họ tên, chức danh, số điện thoại, thư điện tử, quốc gia, khu vực, tổ chức đang làm việc.','Personal information: name, title, phone number, email address, country, region and organization.'),
+        T('Thông tin doanh nghiệp: tên doanh nghiệp, ngành nghề, địa điểm, quy mô, doanh thu ước tính, nhu cầu vốn, nhu cầu chuyển nhượng, tài sản, đội ngũ, tình trạng pháp lý và thông tin vận hành.','Business information: business name, industry, location, size, estimated revenue, capital needs, transfer needs, assets, team, legal status and operational information.'),
+        T('Thông tin nhà đầu tư hoặc bên cho vay: loại nhà đầu tư, lĩnh vực quan tâm, quy mô vốn, khu vực ưu tiên, tiêu chí đầu tư, khẩu vị rủi ro và thông tin liên hệ.','Investor or lender information: investor type, sectors of interest, capital size, preferred geography, investment criteria, risk appetite and contact information.'),
+        T('Tài liệu tải lên: hình ảnh, hồ sơ giới thiệu, báo cáo tài chính, bảng tính, tài liệu thuyết trình, giấy tờ pháp lý hoặc tài liệu khác do người dùng cung cấp.','Uploaded documents: images, company profiles, financial statements, spreadsheets, presentations, legal documents or other materials provided by users.'),
+        T('Dữ liệu sử dụng: trang đã xem, thao tác tìm kiếm, cơ hội đã lưu, yêu cầu kết nối, thời gian truy cập, thiết bị, trình duyệt và dữ liệu kỹ thuật tương tự.','Usage data: pages viewed, search activities, saved opportunities, connection requests, access time, device, browser and similar technical data.')
+      ]},
+      { title: T('3. Cách chúng tôi thu thập thông tin','3. How We Collect Information'), points: [
+        T('Thông tin do người dùng trực tiếp cung cấp khi đăng ký, điền biểu mẫu, đăng cơ hội, tạo hồ sơ, tải tài liệu hoặc liên hệ với Deals68.','Information provided directly by users when registering, completing forms, submitting opportunities, creating profiles, uploading documents or contacting Deals68.'),
+        T('Thông tin phát sinh khi người dùng sử dụng nền tảng, tương tác với thông báo, tìm kiếm cơ hội hoặc gửi yêu cầu kết nối.','Information generated when users use the platform, interact with notifications, search opportunities or send connection requests.'),
+        T('Thông tin từ nguồn công khai hoặc đối tác trong phạm vi pháp luật cho phép và phù hợp với mục đích vận hành nền tảng.','Information from public sources or partners where permitted by law and relevant to platform operation.')
+      ]},
+      { title: T('4. Mục đích sử dụng thông tin','4. How We Use Information'), points: [
+        T('Tạo và quản lý tài khoản người dùng.','Create and manage user accounts.'),
+        T('Hiển thị, chuẩn hóa và phân loại hồ sơ doanh nghiệp, cơ hội và tiêu chí đầu tư.','Display, structure and categorize business profiles, opportunities and investment criteria.'),
+        T('Gợi ý kết nối phù hợp giữa doanh nghiệp, nhà đầu tư, người mua, bên cho vay và đối tác vốn.','Suggest relevant connections among businesses, investors, buyers, lenders and capital partners.'),
+        T('Hỗ trợ xác minh, sàng lọc, phòng chống gian lận và bảo vệ an toàn nền tảng.','Support verification, screening, fraud prevention and platform safety.'),
+        T('Gửi thông báo liên quan đến tài khoản, cơ hội phù hợp, thay đổi chính sách, hỗ trợ người dùng và cải tiến sản phẩm.','Send notices related to accounts, relevant opportunities, policy updates, user support and product improvements.'),
+        T('Phân tích dữ liệu tổng hợp để cải thiện trải nghiệm, bộ lọc, chất lượng hồ sơ và hiệu quả kết nối.','Analyze aggregated data to improve user experience, filters, profile quality and matching effectiveness.')
+      ]},
+      { title: T('5. Chia sẻ thông tin','5. Information Sharing'), points: [
+        T("Deals68 có thể chia sẻ một phần thông tin hồ sơ theo lựa chọn hiển thị của người dùng và cài đặt bảo mật từng loại cơ hội.","Deals68 may share part of profile information according to users' display choices and privacy settings for each opportunity type."),
+        T('Thông tin chi tiết, tài liệu nhạy cảm hoặc dữ liệu chưa công khai có thể chỉ được chia sẻ sau khi có yêu cầu kết nối, sự đồng ý của người dùng, thỏa thuận bảo mật hoặc điều kiện xác minh phù hợp.','Detailed information, sensitive documents or non-public data may be shared only after a connection request, user consent, confidentiality agreement or relevant verification conditions.'),
+        T('Deals68 có thể chia sẻ thông tin với đơn vị cung cấp hạ tầng kỹ thuật, lưu trữ, thanh toán, phân tích, hỗ trợ khách hàng hoặc tư vấn chuyên môn trong phạm vi cần thiết để vận hành nền tảng.','Deals68 may share information with providers of technical infrastructure, storage, payment, analytics, customer support or professional advisory services as necessary to operate the platform.'),
+        T('Deals68 có thể tiết lộ thông tin khi cần tuân thủ quy định pháp luật, yêu cầu của cơ quan có thẩm quyền hoặc để bảo vệ quyền lợi hợp pháp của nền tảng và người dùng.','Deals68 may disclose information when required to comply with law, respond to competent authorities or protect the legitimate rights of the platform and users.')
+      ]},
+      { title: T('6. Bảo mật thông tin doanh nghiệp và nhà đầu tư','6. Confidentiality of Business and Investor Information'), points: [
+        T('Deals68 hiểu rằng hồ sơ doanh nghiệp, thông tin tài chính, nhu cầu vốn, chiến lược chuyển nhượng và tiêu chí đầu tư có thể là thông tin nhạy cảm.','Deals68 understands that business profiles, financial information, capital needs, transfer strategies and investment criteria may be sensitive.'),
+        T('Nền tảng sẽ từng bước áp dụng các mức hiển thị khác nhau, ví dụ: thông tin công khai, thông tin ẩn danh, thông tin chỉ hiển thị sau khi được duyệt kết nối, và tài liệu chỉ chia sẻ theo quyền truy cập được cấp.','The platform will gradually apply different visibility levels, such as public information, anonymized information, information visible only after approved connection and documents shared by granted access rights.'),
+        T('Người dùng không nên tải lên thông tin cực kỳ nhạy cảm nếu chưa hiểu rõ phạm vi chia sẻ và mức bảo mật áp dụng cho tài khoản của mình.','Users should not upload highly sensitive information unless they understand the sharing scope and security level applied to their account.')
+      ]},
+      { title: T('7. Lưu trữ và bảo vệ dữ liệu','7. Data Storage and Protection'), points: [
+        T('Deals68 áp dụng các biện pháp kỹ thuật và tổ chức hợp lý để bảo vệ dữ liệu khỏi truy cập trái phép, mất mát, thay đổi, tiết lộ hoặc sử dụng sai mục đích.','Deals68 applies reasonable technical and organizational measures to protect data from unauthorized access, loss, alteration, disclosure or misuse.'),
+        T('Không có hệ thống nào an toàn tuyệt đối. Người dùng cũng cần chủ động bảo vệ tài khoản, thiết bị, mật khẩu và tài liệu của mình.','No system is completely secure. Users should also protect their accounts, devices, passwords and documents.'),
+        T('Dữ liệu có thể được lưu trữ tại Việt Nam hoặc tại các hệ thống hạ tầng quốc tế tùy theo nhà cung cấp kỹ thuật và nhu cầu vận hành.','Data may be stored in Vietnam or in international infrastructure systems depending on technical providers and operational needs.')
+      ]},
+      { title: T('8. Quyền của người dùng','8. User Rights'), points: [
+        T('Người dùng có thể yêu cầu xem, chỉnh sửa, cập nhật hoặc xóa một số thông tin cá nhân trong phạm vi pháp luật và khả năng kỹ thuật cho phép.','Users may request to view, edit, update or delete certain personal information to the extent permitted by law and technical feasibility.'),
+        T('Người dùng có thể yêu cầu ẩn hoặc gỡ một số hồ sơ, cơ hội hoặc tài liệu do mình đăng, trừ trường hợp nền tảng cần lưu trữ theo quy định pháp luật, nghĩa vụ tranh chấp hoặc nhu cầu bảo vệ quyền lợi hợp pháp.','Users may request to hide or remove certain profiles, opportunities or documents they submitted, unless the platform needs to retain them for legal requirements, disputes or legitimate rights protection.'),
+        T('Một số dữ liệu tổng hợp, dữ liệu đã ẩn danh hoặc dữ liệu sao lưu có thể không thể xóa ngay lập tức khỏi mọi hệ thống.','Certain aggregated, anonymized or backup data may not be immediately removable from all systems.')
+      ]},
+      { title: T('9. Tệp ghi nhớ và công cụ đo lường','9. Cookies and Analytics'), points: [
+        T('Deals68 có thể sử dụng tệp ghi nhớ, công cụ đo lường và công nghệ tương tự để ghi nhớ tùy chọn người dùng, đo lường hiệu quả truy cập, cải thiện giao diện và bảo vệ an toàn nền tảng.','Deals68 may use cookies, analytics tools and similar technologies to remember user preferences, measure traffic performance, improve the interface and protect platform safety.'),
+        T('Người dùng có thể điều chỉnh trình duyệt để hạn chế một số tệp ghi nhớ, nhưng điều này có thể làm một số tính năng hoạt động không đầy đủ.','Users may adjust browser settings to limit certain cookies, but some features may not work fully as a result.')
+      ]},
+      { title: T('10. Chuyển dữ liệu qua biên giới','10. Cross-Border Data Transfers'), points: [
+        T('Vì Deals68 hướng tới phục vụ doanh nghiệp Việt toàn cầu và nhà đầu tư quốc tế, dữ liệu có thể được xử lý hoặc truy cập bởi hệ thống, nhà cung cấp hoặc nhân sự hỗ trợ ở nhiều quốc gia trong phạm vi cần thiết để vận hành nền tảng.','Because Deals68 aims to serve global Vietnamese businesses and international investors, data may be processed or accessed by systems, providers or support personnel in multiple countries as necessary to operate the platform.'),
+        T('Deals68 sẽ nỗ lực áp dụng biện pháp phù hợp để bảo vệ dữ liệu khi có hoạt động xử lý xuyên biên giới.','Deals68 will seek to apply appropriate measures to protect data when cross-border processing occurs.')
+      ]},
+      { title: T('11. Thời gian lưu trữ','11. Data Retention'), points: [
+        T('Deals68 lưu trữ thông tin trong thời gian cần thiết để cung cấp dịch vụ, duy trì hồ sơ giao dịch, đáp ứng yêu cầu pháp luật, giải quyết tranh chấp, phòng chống gian lận và cải thiện nền tảng.','Deals68 retains information as long as necessary to provide services, maintain transaction records, meet legal requirements, resolve disputes, prevent fraud and improve the platform.'),
+        T('Khi không còn cần thiết, dữ liệu có thể được xóa, ẩn danh hoặc lưu trữ ở dạng hạn chế truy cập.','When no longer necessary, data may be deleted, anonymized or stored with restricted access.')
+      ]},
+      { title: T('12. Cập nhật chính sách','12. Policy Updates'), points: [
+        T('Chính sách bảo mật có thể được cập nhật theo sự thay đổi của sản phẩm, quy trình vận hành, yêu cầu pháp luật hoặc tiêu chuẩn bảo mật.','This Privacy Policy may be updated to reflect changes in products, operations, legal requirements or security standards.'),
+        T('Phiên bản mới sẽ được công bố trên nền tảng. Người dùng nên kiểm tra định kỳ để nắm thông tin cập nhật.','The updated version will be published on the platform. Users should review it periodically.')
+      ]},
+      { title: T('13. Liên hệ','13. Contact'), points: [
+        T('Mọi câu hỏi, yêu cầu hoặc phản hồi liên quan đến quyền riêng tư và dữ liệu có thể gửi về kênh liên hệ chính thức được công bố trên Deals68.com.','Questions, requests or feedback related to privacy and data may be sent to the official contact channel published on Deals68.com.')
+      ]}
+    ];
+
+    const sections = raw.map((s, i) => ({ ...s, id: 'sec-' + (i + 1), anchor: '#sec-' + (i + 1) }));
+
+    return {
+      lang: this.state.lang,
+      setVi: () => this.setLang('vi'),
+      setEn: () => this.setLang('en'),
+      viBtnStyle: pill(vi),
+      enBtnStyle: pill(!vi),
+      sections,
+      legalRows: [
+        { label: T('Tên pháp nhân vận hành','Operating legal entity'), value: T('Chờ xác nhận','To be confirmed'), color:'#94A3B8' },
+        { label: T('Địa chỉ','Address'), value: T('Chờ xác nhận','To be confirmed'), color:'#94A3B8' },
+        { label: T('Thư điện tử hỗ trợ','Support email'), value: 'partner@vietcapitalpartners.com', color:'#0F2A4A' },
+        { label: T('Người / bộ phận phụ trách dữ liệu','Data protection contact'), value: T('Chờ xác nhận','To be confirmed'), color:'#94A3B8' },
+        { label: T('Số điện thoại hỗ trợ','Support phone'), value: T('Chờ xác nhận','To be confirmed'), color:'#94A3B8' },
+        { label: T('Thời gian phản hồi dự kiến','Expected response time'), value: T('Chờ xác nhận','To be confirmed'), color:'#94A3B8' }
+      ]
+    };
+  }
+}
+
+</script>
+</body>
+</html>

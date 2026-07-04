@@ -47,6 +47,15 @@
   select, input, button { font-family: inherit; }
   .d68-reg-dd:hover .d68-reg-menu { display: flex !important; }
   @media (max-width: 1080px) { .d68-nav { display: none !important; } }
+  .d68-burger { display:none; }
+  .d68-mdrawer { display:none; }
+  @media (max-width: 760px) {
+    .d68-hdr-actions { display:none !important; }
+    .d68-burger { display:flex !important; }
+    .d68-burger-cb:checked ~ .d68-mdrawer { display:flex !important; }
+    .d68-foot-grid { grid-template-columns:1fr 1fr !important; }
+  }
+  @media (max-width: 480px) { .d68-foot-grid { grid-template-columns:1fr !important; } }
   @media (max-width: 900px) {
     .d68-list-cols { grid-template-columns: 1fr !important; }
     .d68-sidebar { position:static !important; max-height:none !important; }
@@ -67,7 +76,29 @@
         <a href="Deals68 Valuation.dc.html"><span class="l-vi">Định giá</span><span class="l-en">Valuation</span></a>
         <a href="Deals68 Pricing.dc.html"><span class="l-vi">Bảng giá</span><span class="l-en">Pricing</span></a>
       </nav>
-      <div style="margin-left:auto; display:flex; align-items:center; gap:14px; flex-shrink:0;">
+      <input type="checkbox" id="d68burger" class="d68-burger-cb" style="position:absolute; opacity:0; width:1px; height:1px; pointer-events:none;">
+      <label for="d68burger" class="d68-burger" style="margin-left:auto; width:44px; height:44px; align-items:center; justify-content:center; border:1px solid #E2E8F0; border-radius:10px; font-size:22px; color:#14315A; cursor:pointer; flex-shrink:0; background:#fff;">☰</label>
+      <div class="d68-mdrawer" style="position:absolute; top:70px; left:0; right:0; flex-direction:column; gap:2px; background:#fff; border-top:1px solid #E7EDF3; box-shadow:0 18px 34px rgba(15,42,74,.14); padding:12px 20px 18px; max-height:calc(100vh - 70px); overflow-y:auto;">
+        <a href="Deals68 Businesses.dc.html" style="padding:13px 6px; font-size:16px; font-weight:600; color:#14315A; border-bottom:1px solid #F1F5F9;"><span class="l-vi">Doanh nghiệp</span><span class="l-en">Businesses</span></a>
+        <a href="Deals68 Investors.dc.html" style="padding:13px 6px; font-size:16px; font-weight:600; color:#14315A; border-bottom:1px solid #F1F5F9;"><span class="l-vi">Nhà đầu tư</span><span class="l-en">Investors</span></a>
+        <a href="Deals68 Register Advisor.dc.html" style="padding:13px 6px; font-size:16px; font-weight:600; color:#14315A; border-bottom:1px solid #F1F5F9;"><span class="l-vi">Cố vấn</span><span class="l-en">Advisors</span></a>
+        <a href="Deals68 Valuation.dc.html" style="padding:13px 6px; font-size:16px; font-weight:600; color:#14315A; border-bottom:1px solid #F1F5F9;"><span class="l-vi">Định giá</span><span class="l-en">Valuation</span></a>
+        <a href="Deals68 Pricing.dc.html" style="padding:13px 6px; font-size:16px; font-weight:600; color:#14315A; border-bottom:1px solid #F1F5F9;"><span class="l-vi">Bảng giá</span><span class="l-en">Pricing</span></a>
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; padding:14px 6px 8px;">
+          <span style="font-size:14px; font-weight:600; color:#64748B;"><span class="l-vi">Ngôn ngữ</span><span class="l-en">Language</span></span>
+          <div style="display:flex; align-items:center; border:1px solid #E2E8F0; border-radius:999px; overflow:hidden; font-size:13px; font-weight:700;">
+            <button onClick="{{ setVi }}" style="{{ viBtnStyle }}">VI</button>
+            <button onClick="{{ setEn }}" style="{{ enBtnStyle }}">EN</button>
+          </div>
+        </div>
+        <a href="{{ loginLink }}" style="padding:13px 6px; font-size:16px; font-weight:700; color:#14315A;">{{ loginLabel }}</a>
+        <div style="display:flex; flex-direction:column; gap:8px; margin-top:8px;">
+          <a href="Deals68 Register Business.dc.html" style="text-align:center; background:#1BADEA; color:#fff; font-weight:700; font-size:15px; padding:13px; border-radius:10px;"><span class="l-vi">Đăng ký Doanh nghiệp</span><span class="l-en">Register as Business</span></a>
+          <a href="Deals68 Register Investor.dc.html" style="text-align:center; border:1px solid #E2E8F0; color:#14315A; font-weight:700; font-size:15px; padding:13px; border-radius:10px;"><span class="l-vi">Đăng ký Nhà đầu tư</span><span class="l-en">Register as Investor</span></a>
+          <a href="Deals68 Register Advisor.dc.html" style="text-align:center; border:1px solid #E2E8F0; color:#14315A; font-weight:700; font-size:15px; padding:13px; border-radius:10px;"><span class="l-vi">Đăng ký Cố vấn</span><span class="l-en">Register as Advisor</span></a>
+        </div>
+      </div>
+      <div class="d68-hdr-actions" style="margin-left:auto; display:flex; align-items:center; gap:14px; flex-shrink:0;">
         <div style="display:flex; align-items:center; border:1px solid #E2E8F0; border-radius:999px; overflow:hidden; font-size:13px; font-weight:700;">
           <button onClick="{{ setVi }}" style="{{ viBtnStyle }}">VI</button>
           <button onClick="{{ setEn }}" style="{{ enBtnStyle }}">EN</button>
@@ -172,7 +203,7 @@
 
       <div style="display:flex; flex-direction:column; gap:14px;">
         <sc-for list="{{ pageInvestors }}" as="inv" hint-placeholder-count="10">
-          <div style="background:#fff; border:1px solid #E7EDF3; border-radius:14px; padding:18px 20px; display:flex; gap:16px; align-items:flex-start; flex-wrap:wrap; box-shadow:0 1px 2px rgba(15,42,74,.04);">
+          <div style="background:#fff; border:1px solid #E7EDF3; border-radius:14px; padding:18px 20px; display:flex; gap:16px; align-items:flex-start; flex-wrap:wrap; box-shadow:0 1px 2px rgba(15,42,74,.04); transition:transform .18s, box-shadow .18s, border-color .18s;" style-hover="transform:translateY(-3px); box-shadow:0 16px 34px rgba(15,42,74,.10); border-color:#CFE6F5;">
             <div style="width:44px; height:44px; border-radius:11px; background:{{ inv.iconBg }}; color:{{ inv.iconColor }}; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:13px; flex-shrink:0;">{{ inv.initials }}</div>
             <div style="flex:1; min-width:240px;">
               <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:6px;">
@@ -190,7 +221,7 @@
               </div>
             </div>
             <div style="display:flex; flex-direction:column; gap:8px; flex-shrink:0; min-width:170px;">
-              <a href="{{ inv.detailHref }}" style="text-align:center; border:1px solid #E2E8F0; color:#334155; font-weight:600; font-size:13.5px; padding:10px 14px; border-radius:9px;" style-hover="border-color:#1BADEA; color:#1596cc;"><span class="l-vi">Xem chi tiết</span><span class="l-en">View detail</span></a>
+              <a href="{{ inv.detailHref }}" style="text-align:center; border:1px solid #E2E8F0; color:#334155; font-weight:700; font-size:13.5px; padding:10px 14px; border-radius:9px; transition:background .16s, border-color .16s, color .16s;" style-hover="background:#F2B51D; border-color:#F2B51D; color:#0F2A4A;"><span class="l-vi">Xem chi tiết</span><span class="l-en">View detail</span></a>
               <button onClick="{{ inv.onSend }}" disabled="{{ inv.sendDisabled }}" style="{{ inv.sendBtnStyle }}">{{ inv.sendLabel }}</button>
               <sc-if value="{{ inv.showFeedback }}" hint-placeholder-val="{{ false }}"><div style="font-size:11.5px; text-align:center; color:{{ inv.feedbackColor }}; font-weight:600;">{{ inv.feedback }}</div></sc-if>
             </div>
@@ -202,9 +233,43 @@
 
   <!-- FOOTER -->
   <footer style="background:#0B2038; color:#c6d5e6;">
-    <div style="max-width:1240px; margin:0 auto; padding:44px 24px 26px; display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;">
-      <img src="assets/logo-white.png" alt="Deals68.com" style="height:28px;">
-      <span style="font-size:13.5px; color:#8fa6c0;">© 2026 Deals68.com · <a href="mailto:partner@deals68.com" style="color:#8fa6c0;">partner@deals68.com</a></span>
+    <div style="max-width:1240px; margin:0 auto; padding:56px 24px 28px;">
+      <div class="d68-foot-grid" style="display:grid; grid-template-columns:1.4fr 1fr 1fr 1fr; gap:36px;">
+        <div>
+          <img src="assets/logo-white.png" alt="Deals68.com" style="height:34px; margin-bottom:16px;">
+          <p style="font-size:14px; line-height:1.6; color:#8fa6c0; margin:0 0 14px; max-width:280px;"><span class="l-vi">Sàn mua bán doanh nghiệp, M&amp;A, huy động vốn và kết nối nhà đầu tư cho Việt Nam, Đông Nam Á và toàn cầu.</span><span class="l-en">Marketplace for business sale, M&amp;A, fundraising and investor matching across Vietnam, Southeast Asia and beyond.</span></p>
+        </div>
+        <div>
+          <div style="font-size:13px; font-weight:700; color:#fff; text-transform:uppercase; letter-spacing:.6px; margin-bottom:14px;"><span class="l-vi">Nền tảng</span><span class="l-en">Platform</span></div>
+          <div style="display:flex; flex-direction:column; gap:10px; font-size:14.5px;">
+            <a href="Deals68 Businesses.dc.html" style-hover="color:#fff;"><span class="l-vi">Doanh nghiệp</span><span class="l-en">Businesses</span></a>
+            <a href="Deals68 Investors.dc.html" style-hover="color:#fff;"><span class="l-vi">Nhà đầu tư</span><span class="l-en">Investors</span></a>
+            <a href="Deals68 Valuation.dc.html" style-hover="color:#fff;"><span class="l-vi">Định giá DN</span><span class="l-en">Valuation</span></a>
+            <a href="Deals68 Pricing.dc.html" style-hover="color:#fff;"><span class="l-vi">Bảng giá</span><span class="l-en">Pricing</span></a>
+            <a href="Deals68 Market Partner.dc.html" style-hover="color:#fff;"><span class="l-vi">Đối tác thị trường</span><span class="l-en">Market Partner</span></a>
+          </div>
+        </div>
+        <div>
+          <div style="font-size:13px; font-weight:700; color:#fff; text-transform:uppercase; letter-spacing:.6px; margin-bottom:14px;"><span class="l-vi">Công ty</span><span class="l-en">Company</span></div>
+          <div style="display:flex; flex-direction:column; gap:10px; font-size:14.5px;">
+            <a href="Deals68 About.dc.html" style-hover="color:#fff;"><span class="l-vi">Giới thiệu</span><span class="l-en">About</span></a>
+            <a href="Deals68 Terms.dc.html" style-hover="color:#fff;"><span class="l-vi">Điều khoản</span><span class="l-en">Terms</span></a>
+            <a href="Deals68 Privacy.dc.html" style-hover="color:#fff;"><span class="l-vi">Bảo mật</span><span class="l-en">Privacy</span></a>
+            <a href="Deals68 Contact.dc.html" style-hover="color:#fff;"><span class="l-vi">Liên hệ</span><span class="l-en">Contact</span></a>
+          </div>
+        </div>
+        <div>
+          <div style="font-size:13px; font-weight:700; color:#fff; text-transform:uppercase; letter-spacing:.6px; margin-bottom:14px;"><span class="l-vi">Liên hệ</span><span class="l-en">Contact</span></div>
+          <div style="display:flex; flex-direction:column; gap:10px; font-size:14.5px;">
+            <a href="mailto:partner@vietcapitalpartners.com" style-hover="color:#fff;">partner@vietcapitalpartners.com</a>
+            <span style="color:#8fa6c0;"><span class="l-vi">Thanh toán an toàn qua QR, Senpay, Paypal</span><span class="l-en">Secure payment via QR, Senpay, Paypal</span></span>
+          </div>
+        </div>
+      </div>
+      <div style="border-top:1px solid rgba(255,255,255,.1); margin-top:40px; padding-top:22px; display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; font-size:13.5px; color:#8fa6c0;">
+        <span><span class="l-vi">Deals68.com: Kết nối thương vụ, khai mở lộc phát</span><span class="l-en">Deals68.com: Connecting Deals, Unlocking Prosperity</span></span>
+        <span><span class="l-vi">© Một nền tảng của Viet Capital Partners &amp; Consulting.</span><span class="l-en">© A platform by Viet Capital Partners &amp; Consulting.</span></span>
+      </div>
     </div>
   </footer>
 

@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<title>Đối tác thị trường | Deals68</title>
+<meta name="description" content="Trở thành Đối tác thị trường của Deals68 tại Việt Nam và toàn cầu — kết nối doanh nghiệp Việt, nhà đầu tư và đối tác chiến lược, nhận hoa hồng minh bạch.">
+<meta name="robots" content="index,follow">
+<link rel="canonical" href="https://deals68.com/partners">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="assets/deals68-investors-import.js"></script>
+<script src="assets/deals68-mock.js"></script>
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body { font-family: 'Be Vietnam Pro', system-ui, sans-serif; color: #0F2A4A; background: #FFFFFF; -webkit-font-smoothing: antialiased; }
+  [data-lang="vi"] .l-en { display: none !important; }
+  [data-lang="en"] .l-vi { display: none !important; }
+  a { text-decoration: none; color: inherit; }
+  select, input, textarea, button { font-family: inherit; }
+  input:focus, textarea:focus, select:focus { outline: none; border-color: #1BADEA !important; }
+  .d68-reg-dd:hover .d68-reg-menu { display: flex !important; }
+  .d68-burger { display:none; }
+  .d68-mdrawer { display:none; }
+  @media (max-width: 1080px) { .d68-nav { display: none !important; } }
+  @media (max-width: 760px) {
+    .d68-hdr-actions { display:none !important; }
+    .d68-burger { display:flex !important; }
+    .d68-burger-cb:checked ~ .d68-mdrawer { display:flex !important; }
+  }
+  @media (max-width: 900px) { .d68-grid-2 { grid-template-columns: 1fr !important; } .d68-grid-3 { grid-template-columns: 1fr !important; } .d68-form-2 { grid-template-columns: 1fr !important; } }
+  @media (max-width: 620px) { .d68-hero-h1 { font-size: 32px !important; } .d68-flags { font-size:26px !important; letter-spacing:4px !important; } }
+</style>
+</helmet>
+
+<div data-lang="{{ lang }}" style="width:100%; overflow-x:hidden;">
+
+  <!-- ===== HEADER ===== -->
+  <header style="position:sticky; top:0; z-index:60; background:rgba(255,255,255,.94); backdrop-filter:blur(10px); border-bottom:1px solid #E7EDF3;">
+    <div style="max-width:1240px; margin:0 auto; padding:0 24px; height:70px; display:flex; align-items:center; gap:28px;">
+      <a href="Deals68 Home.dc.html" style="display:flex; align-items:center; flex-shrink:0;"><img src="assets/logo-beta.png" alt="Deals68.com" style="height:34px; display:block;"></a>
+      <nav class="d68-nav" style="display:flex; align-items:center; gap:26px; margin-left:8px; font-size:15px; font-weight:500; color:#14315A;">
+        <a href="Deals68 Businesses.dc.html"><span class="l-vi">Doanh nghiệp</span><span class="l-en">Businesses</span></a>
+        <a href="Deals68 Investors.dc.html"><span class="l-vi">Nhà đầu tư</span><span class="l-en">Investors</span></a>
+        <a href="Deals68 Register Advisor.dc.html"><span class="l-vi">Cố vấn</span><span class="l-en">Advisors</span></a>
+        <a href="Deals68 Valuation.dc.html"><span class="l-vi">Định giá</span><span class="l-en">Valuation</span></a>
+        <a href="Deals68 Pricing.dc.html"><span class="l-vi">Bảng giá</span><span class="l-en">Pricing</span></a>
+      </nav>
+      <input type="checkbox" id="d68burger" class="d68-burger-cb" style="position:absolute; opacity:0; width:1px; height:1px; pointer-events:none;">
+      <label for="d68burger" class="d68-burger" style="margin-left:auto; width:44px; height:44px; align-items:center; justify-content:center; border:1px solid #E2E8F0; border-radius:10px; font-size:22px; color:#14315A; cursor:pointer; flex-shrink:0; background:#fff;">☰</label>
+      <div class="d68-mdrawer" style="position:absolute; top:70px; left:0; right:0; flex-direction:column; gap:2px; background:#fff; border-top:1px solid #E7EDF3; box-shadow:0 18px 34px rgba(15,42,74,.14); padding:12px 20px 18px; max-height:calc(100vh - 70px); overflow-y:auto;">
+        <a href="Deals68 Businesses.dc.html" style="padding:13px 6px; font-size:16px; font-weight:600; color:#14315A; border-bottom:1px solid #F1F5F9;"><span class="l-vi">Doanh nghiệp</span><span class="l-en">Businesses</span></a>
+        <a href="Deals68 Investors.dc.html" style="padding:13px 6px; font-size:16px; font-weight:600; color:#14315A; border-bottom:1px solid #F1F5F9;"><span class="l-vi">Nhà đầu tư</span><span class="l-en">Investors</span></a>
+        <a href="Deals68 Register Advisor.dc.html" style="padding:13px 6px; font-size:16px; font-weight:600; color:#14315A; border-bottom:1px solid #F1F5F9;"><span class="l-vi">Cố vấn</span><span class="l-en">Advisors</span></a>
+        <a href="Deals68 Valuation.dc.html" style="padding:13px 6px; font-size:16px; font-weight:600; color:#14315A; border-bottom:1px solid #F1F5F9;"><span class="l-vi">Định giá</span><span class="l-en">Valuation</span></a>
+        <a href="Deals68 Pricing.dc.html" style="padding:13px 6px; font-size:16px; font-weight:600; color:#14315A; border-bottom:1px solid #F1F5F9;"><span class="l-vi">Bảng giá</span><span class="l-en">Pricing</span></a>
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; padding:14px 6px 8px;">
+          <span style="font-size:14px; font-weight:600; color:#64748B;"><span class="l-vi">Ngôn ngữ</span><span class="l-en">Language</span></span>
+          <div style="display:flex; align-items:center; border:1px solid #E2E8F0; border-radius:999px; overflow:hidden; font-size:13px; font-weight:700;">
+            <button onClick="{{ setVi }}" style="{{ viBtnStyle }}">VI</button>
+            <button onClick="{{ setEn }}" style="{{ enBtnStyle }}">EN</button>
+          </div>
+        </div>
+        <a href="Deals68 Login.dc.html?role=affiliate" style="padding:13px 6px; font-size:16px; font-weight:700; color:#14315A;"><span class="l-vi">Đăng nhập</span><span class="l-en">Log in</span></a>
+      </div>
+      <div class="d68-hdr-actions" style="margin-left:auto; display:flex; align-items:center; gap:14px; flex-shrink:0;">
+        <div style="display:flex; align-items:center; border:1px solid #E2E8F0; border-radius:999px; overflow:hidden; font-size:13px; font-weight:700;">
+          <button onClick="{{ setVi }}" style="{{ viBtnStyle }}">VI</button>
+          <button onClick="{{ setEn }}" style="{{ enBtnStyle }}">EN</button>
+        </div>
+        <a href="Deals68 Login.dc.html?role=affiliate" style="font-size:15px; font-weight:600; color:#14315A; white-space:nowrap;"><span class="l-vi">Đăng nhập</span><span class="l-en">Log in</span></a>
+        <a href="#dk-form" style="background:#1BADEA; color:#fff; font-weight:700; font-size:15px; padding:11px 20px; border-radius:10px; box-shadow:0 6px 16px rgba(27,173,234,.28); white-space:nowrap;"><span class="l-vi">Đăng ký</span><span class="l-en">Register</span></a>
+      </div>
+    </div>
+  </header>
+
+  <!-- ===== HERO ===== -->
+  <section style="position:relative; background:radial-gradient(1100px 500px at 78% -10%, rgba(27,173,234,.22), transparent 60%), linear-gradient(180deg, #0F2A4A 0%, #14315A 100%); color:#fff; overflow:hidden;">
+    <div style="position:absolute; right:-80px; top:40px; width:380px; height:380px; border-radius:50%; background:radial-gradient(circle, rgba(242,181,29,.20), transparent 70%); pointer-events:none;"></div>
+    <div style="max-width:860px; margin:0 auto; padding:74px 24px 60px; position:relative; text-align:center;">
+      <div style="display:inline-flex; align-items:center; gap:9px; background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.16); padding:7px 15px; border-radius:999px; font-size:13px; font-weight:600; color:#cfe8f6; margin-bottom:22px;">
+        🌐 <span class="l-vi">Chương trình Đối tác thị trường</span><span class="l-en">Market Partner Program</span>
+      </div>
+      <h1 class="d68-hero-h1" style="font-size:44px; line-height:1.14; font-weight:800; letter-spacing:-1px; margin:0 0 18px;">
+        <span class="l-vi">Trở thành Đối tác thị trường của Deals68 tại Việt Nam và toàn cầu</span>
+        <span class="l-en">Become a Deals68 Market Partner in Vietnam and worldwide</span>
+      </h1>
+      <p style="font-size:17px; line-height:1.6; color:#c6d5e6; margin:0 0 32px; font-weight:400;">
+        <span class="l-vi">Cùng Deals68 kết nối doanh nghiệp Việt, nhà đầu tư, người mua doanh nghiệp và đối tác chiến lược tại các thị trường như Việt Nam, Mỹ, Canada, Úc, Đức, Singapore, Nhật Bản và Hàn Quốc.</span>
+        <span class="l-en">Join Deals68 in connecting Vietnamese businesses, investors, business buyers and strategic partners across markets like Vietnam, the US, Canada, Australia, Germany, Singapore, Japan and Korea.</span>
+      </p>
+      <div class="d68-flags" style="font-size:30px; letter-spacing:6px; margin-bottom:34px;">🇻🇳 🇺🇸 🇨🇦 🇦🇺 🇩🇪 🇸🇬 🇯🇵 🇰🇷</div>
+      <div style="display:flex; align-items:center; justify-content:center; gap:14px; flex-wrap:wrap;">
+        <a href="#dk-form" style="background:#F2B51D; color:#0F2A4A; font-weight:800; font-size:15.5px; padding:14px 26px; border-radius:11px; box-shadow:0 8px 18px rgba(242,181,29,.3);" style-hover="background:#e0a70f;"><span class="l-vi">Đăng ký làm Đối tác thị trường</span><span class="l-en">Become a Market Partner</span> →</a>
+        <a href="mailto:partner@vietcapitalpartners.com" style="border:1px solid rgba(255,255,255,.28); color:#fff; font-weight:700; font-size:15.5px; padding:14px 26px; border-radius:11px;" style-hover="background:rgba(255,255,255,.1);"><span class="l-vi">Liên hệ qua email</span><span class="l-en">Contact by email</span></a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== WHO FITS ===== -->
+  <section style="max-width:1080px; margin:0 auto; padding:64px 24px 8px;">
+    <div style="text-align:center; max-width:700px; margin:0 auto 36px;">
+      <h2 style="font-size:28px; font-weight:800; letter-spacing:-.6px; margin:0 0 12px;"><span class="l-vi">Bạn phù hợp nếu là</span><span class="l-en">This is for you if you are</span></h2>
+      <p style="font-size:15.5px; color:#64748B; margin:0; line-height:1.55;"><span class="l-vi">Người có quan hệ trong cộng đồng doanh nhân Việt, hội doanh nghiệp, cộng đồng kiều bào hoặc mạng lưới đầu tư tại thị trường của bạn.</span><span class="l-en">Someone connected to the Vietnamese business community, business associations, overseas communities or investor networks in your market.</span></p>
+    </div>
+    <div class="d68-grid-3" style="display:grid; grid-template-columns:repeat(4,1fr); gap:14px;">
+      <sc-for list="{{ whoFits }}" as="w" hint-placeholder-count="8">
+        <div style="background:#F7FAFC; border:1px solid #E7EDF3; border-radius:12px; padding:16px; font-size:13.5px; font-weight:600; color:#14315A; text-align:center; line-height:1.4;">{{ w }}</div>
+      </sc-for>
+    </div>
+  </section>
+
+  <!-- ===== BENEFITS ===== -->
+  <section style="max-width:1080px; margin:0 auto; padding:64px 24px;">
+    <div style="text-align:center; max-width:700px; margin:0 auto 40px;">
+      <h2 style="font-size:28px; font-weight:800; letter-spacing:-.6px; margin:0 0 12px;"><span class="l-vi">Quyền lợi Đối tác thị trường</span><span class="l-en">Market Partner benefits</span></h2>
+      <p style="font-size:15.5px; color:#64748B; margin:0; line-height:1.55;"><span class="l-vi">Hoa hồng minh bạch, cấp bậc rõ ràng, cùng đồng hành sứ mệnh phục vụ doanh nghiệp Việt toàn cầu và nhà đầu tư quốc tế.</span><span class="l-en">Transparent commission, clear tiers, and a shared mission serving global Vietnamese businesses and international investors.</span></p>
+    </div>
+    <div class="d68-grid-3" style="display:grid; grid-template-columns:repeat(3,1fr); gap:22px; margin-bottom:26px;">
+      <sc-for list="{{ benefits }}" as="b" hint-placeholder-count="3">
+        <div style="background:#fff; border:1px solid #E7EDF3; border-radius:16px; padding:26px;">
+          <div style="width:44px; height:44px; border-radius:12px; background:{{ b.bg }}; display:flex; align-items:center; justify-content:center; font-size:20px; margin-bottom:16px;">{{ b.emoji }}</div>
+          <h3 style="font-size:17px; font-weight:700; margin:0 0 8px;">{{ b.title }}</h3>
+          <p style="font-size:14px; color:#64748B; line-height:1.6; margin:0;">{{ b.desc }}</p>
+        </div>
+      </sc-for>
+    </div>
+    <!-- TIER TABLE -->
+    <div style="background:#0F2A4A; border-radius:18px; padding:30px 32px; color:#fff;">
+      <div style="font-size:13px; font-weight:700; color:#F2B51D; text-transform:uppercase; letter-spacing:.5px; margin-bottom:18px;"><span class="l-vi">Cấp đối tác & hoa hồng gợi ý</span><span class="l-en">Partner tiers & suggested commission</span></div>
+      <div style="display:flex; flex-direction:column; gap:2px;">
+        <sc-for list="{{ tierTable }}" as="t" hint-placeholder-count="4">
+          <div style="display:grid; grid-template-columns:1.3fr 1.7fr 0.9fr; gap:14px; align-items:center; padding:14px 16px; border-radius:10px; background:{{ t.bg }};">
+            <div style="font-weight:800; font-size:14.5px;">{{ t.name }}</div>
+            <div style="font-size:13px; color:#c6d5e6;">{{ t.cond }}</div>
+            <div style="font-weight:800; font-size:15px; color:#F2B51D; text-align:right;">{{ t.rate }}</div>
+          </div>
+        </sc-for>
+      </div>
+      <p style="font-size:12.5px; color:#9db4cc; line-height:1.6; margin:16px 0 0;"><span class="l-vi">Hoa hồng tính trên doanh thu thực thu sau giảm giá/hoàn tiền, không tính trên tổng giá trị giao dịch. Success fee M&amp;A/gọi vốn có tỷ lệ riêng và cần Admin duyệt.</span><span class="l-en">Commission is calculated on actual net revenue after discounts/refunds, not on total deal value. M&amp;A/fundraising success fees use a separate rate and require Admin approval.</span></p>
+    </div>
+  </section>
+
+  <!-- ===== HOW TO JOIN ===== -->
+  <section style="background:#F7FAFC; border-top:1px solid #E7EDF3; border-bottom:1px solid #E7EDF3;">
+    <div style="max-width:1080px; margin:0 auto; padding:64px 24px;">
+      <div style="text-align:center; max-width:640px; margin:0 auto 40px;">
+        <h2 style="font-size:28px; font-weight:800; letter-spacing:-.6px; margin:0 0 12px;"><span class="l-vi">Cách thức tham gia</span><span class="l-en">How to join</span></h2>
+        <p style="font-size:15.5px; color:#64748B; margin:0; line-height:1.5;"><span class="l-vi">3 bước đơn giản, miễn phí đăng ký trong giai đoạn Beta.</span><span class="l-en">3 simple steps, free to register during Beta.</span></p>
+      </div>
+      <div class="d68-grid-3" style="display:grid; grid-template-columns:repeat(3,1fr); gap:22px;">
+        <sc-for list="{{ joinSteps }}" as="j" hint-placeholder-count="3">
+          <div style="background:#fff; border:1px solid #E7EDF3; border-radius:16px; padding:28px;">
+            <div style="width:38px; height:38px; border-radius:10px; background:rgba(242,181,29,.15); color:#B8860B; font-weight:800; font-size:16px; display:flex; align-items:center; justify-content:center; margin-bottom:16px;">{{ j.n }}</div>
+            <h3 style="font-size:17px; font-weight:700; margin:0 0 8px;">{{ j.title }}</h3>
+            <p style="font-size:14px; color:#64748B; line-height:1.6; margin:0;">{{ j.desc }}</p>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </section>
+
+
+  <section id="dk-form" style="max-width:640px; margin:0 auto; padding:16px 24px 80px; scroll-margin-top:90px;">
+    <div style="text-align:center; margin-bottom:28px;">
+      <div style="display:inline-flex; align-items:center; gap:8px; background:#F3E8FF; color:#7c3aed; font-weight:700; font-size:12px; padding:6px 12px; border-radius:999px; margin-bottom:14px; text-transform:uppercase; letter-spacing:.5px;">🔗 <span class="l-vi">Đăng ký Đối tác thị trường</span><span class="l-en">Register as Market Partner</span></div>
+      <h2 style="font-size:26px; font-weight:800; letter-spacing:-.5px; margin:0 0 8px;"><span class="l-vi">Điền thông tin để bắt đầu</span><span class="l-en">Fill in your details to get started</span></h2>
+      <p style="font-size:14.5px; color:#64748B; margin:0;"><span class="l-vi">Hoặc gửi email trực tiếp đến</span><span class="l-en">Or email us directly at</span> <a href="mailto:partner@vietcapitalpartners.com" style="color:#1596cc; font-weight:700;">partner@vietcapitalpartners.com</a></p>
+    </div>
+
+    <sc-if value="{{ !submitted }}" hint-placeholder-val="{{ true }}">
+      <div style="background:#EEF2F6; border:1px solid #D5E0ED; border-radius:20px; padding:32px; box-shadow:0 1px 2px rgba(15,42,74,.04);">
+        <div style="display:flex; flex-direction:column; gap:16px;">
+          <label style="display:flex; flex-direction:column; gap:6px;">
+            <span style="font-size:12.5px; font-weight:700; color:#334155;"><span class="l-vi">Họ tên</span><span class="l-en">Full name</span></span>
+            <input value="{{ fullName }}" onInput="{{ onFullName }}" style="{{ inputStyle }}">
+          </label>
+          <div class="d68-form-2" style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+            <label style="display:flex; flex-direction:column; gap:6px;">
+              <span style="font-size:12.5px; font-weight:700; color:#334155;">Email</span>
+              <input value="{{ email }}" onInput="{{ onEmail }}" style="{{ inputStyle }}">
+            </label>
+            <label style="display:flex; flex-direction:column; gap:6px;">
+              <span style="font-size:12.5px; font-weight:700; color:#334155;"><span class="l-vi">Số điện thoại</span><span class="l-en">Phone</span></span>
+              <input value="{{ phone }}" onInput="{{ onPhone }}" placeholder="+84 / +1 / +82…" style="{{ inputStyle }}">
+            </label>
+          </div>
+          <label style="display:flex; flex-direction:column; gap:6px;">
+            <span style="font-size:12.5px; font-weight:700; color:#334155;"><span class="l-vi">Quốc gia muốn phát triển</span><span class="l-en">Market you want to develop</span></span>
+            <select value="{{ country }}" onChange="{{ onCountry }}" style="{{ inputStyle }}">
+              <sc-for list="{{ countryOptions }}" as="c" hint-placeholder-count="9">
+                <option value="{{ c.value }}">{{ c.label }}</option>
+              </sc-for>
+            </select>
+          </label>
+          <label style="display:flex; flex-direction:column; gap:6px;">
+            <span style="font-size:12.5px; font-weight:700; color:#334155;"><span class="l-vi">Mật khẩu</span><span class="l-en">Password</span></span>
+            <input type="password" value="{{ password }}" onInput="{{ onPassword }}" style="{{ inputStyle }}">
+          </label>
+          <label style="display:flex; flex-direction:column; gap:6px;">
+            <span style="font-size:12.5px; font-weight:700; color:#334155;"><span class="l-vi">Giới thiệu bản thân</span><span class="l-en">About you</span></span>
+            <textarea value="{{ intro }}" onInput="{{ onIntro }}" rows="4" placeholder="{{ introPlaceholder }}" style="{{ inputStyle }} resize:vertical;"></textarea>
+          </label>
+
+          <div style="background:#F7FAFC; border:1px solid #EEF2F6; border-radius:12px; padding:14px 16px; font-size:13px; color:#64748B; line-height:1.55;"><span class="l-vi">Miễn phí đăng ký. Admin sẽ duyệt hồ sơ trước khi Dashboard Đối tác thị trường mở — thường trong 1–2 ngày làm việc.</span><span class="l-en">Registration is free. Admin reviews your profile before the Market Partner Dashboard opens — usually within 1–2 business days.</span></div>
+
+          <sc-if value="{{ hasError }}" hint-placeholder-val="{{ false }}">
+            <div style="background:#FDECEC; border:1px solid #F8B4B4; color:#B91C1C; font-size:13px; font-weight:600; padding:11px 14px; border-radius:10px;">⚠ {{ errorMsg }}</div>
+          </sc-if>
+
+          <button onClick="{{ submit }}" style="background:#F2B51D; color:#0F2A4A; font-weight:800; font-size:15px; padding:14px; border-radius:12px; border:none; cursor:pointer; box-shadow:0 8px 20px rgba(242,181,29,.32);"><span class="l-vi">Đăng ký Đối tác thị trường</span><span class="l-en">Register as Market Partner</span> →</button>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ submitted }}" hint-placeholder-val="{{ false }}">
+      <div style="background:#fff; border:1px solid #E7EDF3; border-radius:20px; padding:32px; box-shadow:0 1px 2px rgba(15,42,74,.04); text-align:center;">
+        <div style="font-size:44px; margin-bottom:14px;">⏳</div>
+        <h2 style="font-size:20px; font-weight:800; margin:0 0 8px;"><span class="l-vi">Hồ sơ đã ghi nhận — Chờ Admin duyệt</span><span class="l-en">Profile received — Awaiting admin review</span></h2>
+        <p style="font-size:14px; color:#64748B; margin:0 0 6px; max-width:420px; margin-left:auto; margin-right:auto; line-height:1.6;"><span class="l-vi">Đăng ký Đối tác thị trường miễn phí. Dashboard sẽ mở ngay khi Admin duyệt xong hồ sơ.</span><span class="l-en">Market Partner registration is free. Your Dashboard opens as soon as Admin approves your profile.</span></p>
+        <p style="font-size:13px; color:#94A3B8; margin:0 0 22px;"><span class="l-vi">Mã Đối tác:</span><span class="l-en">Partner code:</span> <b style="color:#7c3aed;">{{ code }}</b></p>
+        <a href="Deals68 Login.dc.html?role=affiliate" style="display:inline-block; background:#0F2A4A; color:#fff; font-weight:700; font-size:15px; padding:13px 28px; border-radius:11px;"><span class="l-vi">Đến trang Đăng nhập</span><span class="l-en">Go to Login</span> →</a>
+      </div>
+    </sc-if>
+
+    <p style="text-align:center; font-size:13px; color:#94A3B8; margin-top:20px;"><span class="l-vi">Bằng việc đăng ký, bạn đồng ý với Điều khoản &amp; Chính sách bảo mật của Deals68 và không tư vấn đầu tư, cam kết lợi nhuận hoặc nhận tiền thay Deals68.</span><span class="l-en">By registering, you agree to Deals68's Terms &amp; Privacy Policy and will not provide investment advice, guarantee returns, or collect payments on Deals68's behalf.</span></p>
+  </section>
+
+  <!-- ===== FOOTER ===== -->
+  <footer style="background:#0B2038; color:#c6d5e6;">
+    <div style="max-width:1240px; margin:0 auto; padding:56px 24px 28px;">
+      <div class="d68-grid-2" style="display:grid; grid-template-columns:1.4fr 1fr 1fr 1fr; gap:36px;">
+        <div>
+          <img src="assets/logo-white.png" alt="Deals68.com" style="height:34px; margin-bottom:16px;">
+          <p style="font-size:14px; line-height:1.6; color:#8fa6c0; margin:0 0 14px; max-width:280px;"><span class="l-vi">Sàn mua bán doanh nghiệp, M&amp;A, huy động vốn và kết nối nhà đầu tư cho Việt Nam, Đông Nam Á và toàn cầu.</span><span class="l-en">Marketplace for business sale, M&amp;A, fundraising and investor matching across Vietnam, Southeast Asia and beyond.</span></p>
+        </div>
+        <div>
+          <div style="font-size:13px; font-weight:700; color:#fff; text-transform:uppercase; letter-spacing:.6px; margin-bottom:14px;"><span class="l-vi">Nền tảng</span><span class="l-en">Platform</span></div>
+          <div style="display:flex; flex-direction:column; gap:10px; font-size:14.5px;">
+            <a href="Deals68 Businesses.dc.html" style-hover="color:#fff;"><span class="l-vi">Doanh nghiệp</span><span class="l-en">Businesses</span></a>
+            <a href="Deals68 Investors.dc.html" style-hover="color:#fff;"><span class="l-vi">Nhà đầu tư</span><span class="l-en">Investors</span></a>
+            <a href="Deals68 Valuation.dc.html" style-hover="color:#fff;"><span class="l-vi">Định giá DN</span><span class="l-en">Valuation</span></a>
+            <a href="Deals68 Pricing.dc.html" style-hover="color:#fff;"><span class="l-vi">Bảng giá</span><span class="l-en">Pricing</span></a>
+            <a href="Deals68 Market Partner.dc.html" style-hover="color:#fff;"><span class="l-vi">Đối tác thị trường</span><span class="l-en">Market Partner</span></a>
+          </div>
+        </div>
+        <div>
+          <div style="font-size:13px; font-weight:700; color:#fff; text-transform:uppercase; letter-spacing:.6px; margin-bottom:14px;"><span class="l-vi">Công ty</span><span class="l-en">Company</span></div>
+          <div style="display:flex; flex-direction:column; gap:10px; font-size:14.5px;">
+            <a href="Deals68 About.dc.html" style-hover="color:#fff;"><span class="l-vi">Giới thiệu</span><span class="l-en">About</span></a>
+            <a href="Deals68 Terms.dc.html" style-hover="color:#fff;"><span class="l-vi">Điều khoản</span><span class="l-en">Terms</span></a>
+            <a href="Deals68 Privacy.dc.html" style-hover="color:#fff;"><span class="l-vi">Bảo mật</span><span class="l-en">Privacy</span></a>
+            <a href="Deals68 Contact.dc.html" style-hover="color:#fff;"><span class="l-vi">Liên hệ</span><span class="l-en">Contact</span></a>
+          </div>
+        </div>
+        <div>
+          <div style="font-size:13px; font-weight:700; color:#fff; text-transform:uppercase; letter-spacing:.6px; margin-bottom:14px;"><span class="l-vi">Liên hệ</span><span class="l-en">Contact</span></div>
+          <div style="display:flex; flex-direction:column; gap:10px; font-size:14.5px;">
+            <a href="mailto:partner@vietcapitalpartners.com" style-hover="color:#fff;">partner@vietcapitalpartners.com</a>
+            <span style="color:#8fa6c0;"><span class="l-vi">Thanh toán an toàn qua QR, Senpay, Paypal</span><span class="l-en">Secure payment via QR, Senpay, Paypal</span></span>
+          </div>
+        </div>
+      </div>
+      <div style="border-top:1px solid rgba(255,255,255,.1); margin-top:40px; padding-top:22px; display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; font-size:13.5px; color:#8fa6c0;">
+        <span><span class="l-vi">Deals68.com: Kết nối thương vụ, khai mở lộc phát</span><span class="l-en">Deals68.com: Connecting Deals, Unlocking Prosperity</span></span>
+        <span><span class="l-vi">© Một nền tảng của Viet Capital Partners &amp; Consulting.</span><span class="l-en">© A platform by Viet Capital Partners &amp; Consulting.</span></span>
+      </div>
+    </div>
+  </footer>
+
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { lang:'vi', fullName:'', email:'', phone:'', country:'VN', password:'', intro:'', submitted:false, error:'', code:'' };
+
+  setLang(l){ this.setState({ lang:l }); }
+
+  submit() {
+    const st = this.state;
+    const T = (a,b) => st.lang==='vi' ? a : b;
+    if (!st.fullName.trim() || !st.email.trim() || !st.password) {
+      this.setState({ error: T('Vui lòng điền Họ tên, Email và Mật khẩu.','Please fill in Full name, Email and Password.') });
+      return;
+    }
+    const dup = window.D68 && window.D68.findCredentialByUsername ? window.D68.findCredentialByUsername('affiliate', st.email.trim()) : null;
+    if (dup) {
+      this.setState({ error: T('Email này đã có tài khoản Đối tác thị trường. Vui lòng đăng nhập.','This email already has a Market Partner account. Please log in.') });
+      return;
+    }
+    const rec = window.D68.registerAffiliate({
+      name: st.fullName.trim(), email: st.email.trim(), password: st.password,
+      phone: st.phone.trim(), country: st.country, intro: st.intro.trim()
+    });
+    this.setState({ submitted:true, error:'', code: rec.code });
+  }
+
+  renderVals() {
+    const st = this.state;
+    const vi = st.lang === 'vi';
+    const T = (a,b) => vi ? a : b;
+    const inputStyle = 'border:1px solid #E2E8F0; border-radius:10px; padding:12px 13px; font-size:15px; color:#0F2A4A; background:#F7FAFC; font-weight:500; outline:none; width:100%;';
+    const bind = (key) => (e) => this.setState({ [key]: e.target.value, error:'' });
+
+    return {
+      lang: st.lang, setVi: ()=>this.setLang('vi'), setEn: ()=>this.setLang('en'),
+      viBtnStyle: `padding:7px 14px; border:none; cursor:pointer; font-weight:700; font-size:13px; background:${vi?'#0F2A4A':'transparent'}; color:${vi?'#fff':'#64748B'};`,
+      enBtnStyle: `padding:7px 14px; border:none; cursor:pointer; font-weight:700; font-size:13px; background:${!vi?'#0F2A4A':'transparent'}; color:${!vi?'#fff':'#64748B'};`,
+
+      whoFits: [
+        T('Chủ doanh nghiệp, cửa hàng','Business or store owners'),
+        T('Hội doanh nhân, cộng đồng kiều bào','Business associations, overseas communities'),
+        T('Luật sư, kế toán, cố vấn tài chính','Lawyers, accountants, financial advisors'),
+        T('Business broker','Business brokers'),
+        T('Media cộng đồng','Community media'),
+        T('Nhà tổ chức sự kiện','Event organizers'),
+        T('Người có network nhà đầu tư','People with investor networks'),
+        T('Người có quan hệ trong ngành','People with industry connections')
+      ],
+
+      benefits: [
+        { emoji:'💰', bg:'#FEF3D3', title:T('Hoa hồng minh bạch','Transparent commission'), desc:T('Hoa hồng dựa trên lead hợp lệ và doanh thu thực thu, đối soát hàng tháng, theo dõi rõ trong dashboard.','Commission based on valid leads and actual net revenue, reconciled monthly and tracked clearly in your dashboard.') },
+        { emoji:'📈', bg:'#E7F6FD', title:T('Cấp bậc rõ ràng','Clear partner tiers'), desc:T('Từ Đối tác giới thiệu đến Đối tác thị trường cấp cao — hoa hồng tăng theo KPI lead và doanh thu.','From Referral Partner to Senior Market Partner — commission grows with your lead and revenue KPIs.') },
+        { emoji:'🤝', bg:'#F3E8FF', title:T('Đồng hành sứ mệnh','Shared mission'), desc:T('Cùng Deals68 phục vụ doanh nghiệp Việt trên phạm vi toàn cầu và kết nối với nhà đầu tư quốc tế.','Join Deals68 in serving Vietnamese businesses globally and connecting them with international investors.') }
+      ],
+
+      tierTable: [
+        { name:T('Đối tác giới thiệu','Referral Partner'), cond:T('0–5 lead hợp lệ/tháng','0–5 valid leads/month'), rate:'10–12%', bg:'#14315A' },
+        { name:T('Đối tác thị trường','Market Partner'), cond:T('≥10 lead hợp lệ/tháng hoặc ≥3 khách trả phí/tháng','≥10 valid leads/month or ≥3 paying customers/month'), rate:'15–20%', bg:'rgba(255,255,255,.04)' },
+        { name:T('Đối tác thị trường cấp cao','Senior Market Partner'), cond:T('≥25 lead hợp lệ/tháng trong 2 tháng liên tiếp','≥25 valid leads/month for 2 consecutive months'), rate:'20–25%', bg:'#14315A' },
+        { name:T('Đối tác phát triển khu vực','Regional/Country BD Partner'), cond:T('KPI riêng theo hợp đồng','Custom KPI per contract'), rate:'25–30%', bg:'rgba(255,255,255,.04)' }
+      ],
+
+      joinSteps: [
+        { n:'1', title:T('Đăng ký hồ sơ','Register your profile'), desc:T('Điền thông tin cơ bản, thị trường muốn phát triển và năng lực network của bạn.','Fill in your basic details, target market and network capacity.') },
+        { n:'2', title:T('Admin duyệt hồ sơ','Admin reviews your profile'), desc:T('Deals68 xác minh thông tin và cấp mã Đối tác (D68MP) trong 1–2 ngày làm việc.','Deals68 verifies your information and issues a Partner code (D68MP) within 1–2 business days.') },
+        { n:'3', title:T('Bắt đầu giới thiệu','Start referring'), desc:T('Dùng link, mã giới thiệu để gửi lead doanh nghiệp, nhà đầu tư và theo dõi hoa hồng trong dashboard.','Use your referral link and code to submit business/investor leads and track commission in your dashboard.') }
+      ],
+
+      countryOptions: [
+        { value:'VN', label:T('Việt Nam','Vietnam') },
+        { value:'US', label:T('Mỹ','United States') },
+        { value:'SG', label:'Singapore' },
+        { value:'CA', label:'Canada' },
+        { value:'AU', label:T('Úc','Australia') },
+        { value:'DE', label:T('Đức','Germany') },
+        { value:'JP', label:T('Nhật Bản','Japan') },
+        { value:'KR', label:T('Hàn Quốc','Korea') },
+        { value:'OTHER', label:T('Khác','Other') }
+      ],
+
+      inputStyle,
+      fullName: st.fullName, onFullName: bind('fullName'),
+      email: st.email, onEmail: bind('email'),
+      phone: st.phone, onPhone: bind('phone'),
+      country: st.country, onCountry: bind('country'),
+      password: st.password, onPassword: bind('password'),
+      intro: st.intro, onIntro: bind('intro'),
+      introPlaceholder: T('Bạn có network ở đâu? Từng làm việc với DN/NĐT nào? Muốn phát triển thị trường nào?','Where is your network? Have you worked with businesses/investors before? Which market do you want to develop?'),
+      hasError: !!st.error, errorMsg: st.error,
+      submitted: st.submitted, code: st.code,
+      submit: ()=>this.submit()
+    };
+  }
+}
+
+</script>
+</body>
+</html>

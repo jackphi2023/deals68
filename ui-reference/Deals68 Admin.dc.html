@@ -293,8 +293,8 @@
 
         <!-- ===== AFFILIATE ===== -->
         <sc-if value="{{ isAffiliate }}" hint-placeholder-val="{{ false }}">
-          <h1 style="font-size:23px; font-weight:800; margin:0 0 6px;">Affiliate</h1>
-          <p style="font-size:13.5px; color:#64748B; margin:0 0 18px;">Duyệt affiliate, theo dõi referral, hoa hồng theo bậc (10/15/20%) và chi trả Thứ Ba. Khách được giảm 15% khi dùng link.</p>
+          <h1 style="font-size:23px; font-weight:800; margin:0 0 6px;">Đối tác thị trường</h1>
+          <p style="font-size:13.5px; color:#64748B; margin:0 0 18px;">Duyệt đối tác, theo dõi lead & chuyển đổi, hoa hồng theo bậc (12/18/22%) và chi trả Thứ Ba. Khách được giảm 15% khi dùng link.</p>
           <div style="background:#fff; border:1px solid #E2E8F0; border-radius:14px; padding:22px 24px;">
             <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:18px;">
               <div>
@@ -1070,6 +1070,13 @@
     </div>
   </div>
 
+  <footer style="background:#0B2038; color:#8fa6c0;">
+    <div style="max-width:1240px; margin:0 auto; padding:22px 24px; display:flex; align-items:center; justify-content:center; gap:8px; flex-wrap:wrap; text-align:center; font-size:13px; line-height:1.6;">
+      <span style="color:#c6d5e6; font-weight:600;">Deals68.com: Kết nối thương vụ, khai mở lộc phát</span>
+      <span>© Một nền tảng của Viet Capital Partners &amp; Consulting.</span>
+    </div>
+  </footer>
+
 </div>
 </x-dc>
 <script type="text/x-dc" data-dc-script>
@@ -1633,12 +1640,12 @@ class Component extends DCLogic {
       ['/register/business', 'Deals68 Register Business.dc.html', 'noindex,follow'],
       ['/register/investor', 'Deals68 Register Investor.dc.html', 'noindex,follow'],
       ['/register/advisor', 'Deals68 Register Advisor.dc.html', 'noindex,follow'],
-      ['/register/affiliate', 'Deals68 Register Affiliate.dc.html', 'noindex,follow'],
+      ['/register/affiliate', 'Deals68 Market Partner.dc.html', 'noindex,follow'],
       ['/forgot-password', 'Deals68 Forgot Password.dc.html', 'noindex,nofollow'],
       ['/reset-password', 'Deals68 Reset Password.dc.html', 'noindex,nofollow'],
       ['/dashboard/business', 'Deals68 Business Dashboard.dc.html', 'noindex,nofollow'],
       ['/dashboard/investor', 'Deals68 Investor Dashboard.dc.html', 'noindex,nofollow'],
-      ['/dashboard/affiliate', 'Deals68 Affiliate Dashboard.dc.html', 'noindex,nofollow'],
+      ['/dashboard/affiliate', 'Deals68 Market Partner Dashboard.dc.html', 'noindex,nofollow'],
       ['/dashboard/advisor', 'Deals68 Advisor Dashboard.dc.html', 'noindex,nofollow'],
       ['/admin', 'Deals68 Admin.dc.html', 'noindex,noarchive,nofollow'],
       ['/admin/login', 'Deals68 Admin Login.dc.html', 'noindex,noarchive,nofollow']
@@ -1758,7 +1765,7 @@ class Component extends DCLogic {
       { key:'approvals', icon:'🕒', label:'Chờ duyệt' },
       { key:'payments', icon:'💳', label:'Thanh toán' },
       { key:'promos', icon:'🏷️', label:'Mã khuyến mãi' },
-      { key:'affiliate', icon:'🔗', label:'Affiliate' },
+      { key:'affiliate', icon:'🔗', label:'Đối tác thị trường' },
       { key:'businesses', icon:'🏢', label:'Doanh nghiệp' },
       { key:'investors', icon:'📈', label:'Nhà đầu tư' },
       { key:'advisors', icon:'🎓', label:'Cố vấn' },
@@ -1825,7 +1832,7 @@ class Component extends DCLogic {
 
     // ---------- PENDING APPROVALS TAB (payment gate) ----------
     const registry = D68 && D68.getRegistry ? D68.getRegistry() : [];
-    const roleLabelMap = { business:'Doanh nghiệp', investor:'Nhà đầu tư', advisor:'Cố vấn', affiliate:'Affiliate' };
+    const roleLabelMap = { business:'Doanh nghiệp', investor:'Nhà đầu tư', advisor:'Cố vấn', affiliate:'Đối tác thị trường' };
     const roleBadgeColor = { business:['#1596cc','#E7F6FD'], investor:['#B8860B','#FEF3D3'], advisor:['#7c3aed','#F3E8FF'], affiliate:['#7c3aed','#F3E8FF'] };
     const pendingStatusMap = { payment_pending: ['Chờ thanh toán','#B8860B','#FEF3D3'], pending_admin_review: ['Chờ duyệt hồ sơ','#1596cc','#E7F6FD'] };
     const pendingRows = registry
