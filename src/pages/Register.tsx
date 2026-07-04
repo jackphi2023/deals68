@@ -1,154 +1,145 @@
-import { FormEvent, useMemo, useState } from 'react';
+import { FormEvent, useMemo, useState, type ReactNode } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { createBusinessFromProfile, createInvestorForOwner } from '../lib/data';
 import { slugify } from '../lib/format';
 import { autoEnglishFromVietnamese } from '../lib/i18n';
-import type { Role } from '../lib/supabase';
 import { calculatePricing, normaliseRole, roleLabel, type BusinessPlan } from '../lib/pricing';
+import type { Role } from '../lib/supabase';
+
+const T = (lang: 'vi' | 'en', vi: string, en: string) => lang === 'en' ? en : vi;
+const inputStyle = { border: '1px solid #E2E8F0', borderRadius: 10, padding: '12px 13px', fontSize: 15, color: '#0F2A4A', background: '#F7FAFC', fontWeight: 500, outline: 'none', width: '100%' };
+const countries = ['Việt Nam', 'Singapore', 'United States', 'Japan', 'South Korea', 'Hong Kong', 'Thailand', 'Australia'];
+const countryIso: Record<string, string> = { 'Việt Nam': 'VN', Singapore: 'SG', 'United States': 'US', Japan: 'JP', 'South Korea': 'KR', 'Hong Kong': 'HK', Thailand: 'TH', Australia: 'AU' };
+const industries = ['F&B', 'Y tế & Sức khỏe', 'Bán lẻ', 'Sản xuất', 'Công nghệ', 'Bất động sản', 'Logistics', 'Giáo dục', 'Làm đẹp', 'Năng lượng', 'E-commerce', 'Thủy sản & Xuất khẩu'];
+const investorTypes = ['VC', 'PE', 'Institutional', 'Corporate/Strategic', 'Individual/Angel', 'Family Office', 'Lender/Debt'];
+const stages = ['Seed', 'Series A', 'Growth', 'Mature', 'Buyout'];
+const dealTypes = ['Gọi vốn', 'Bán cổ phần', 'M&A', 'Vay vốn', 'JV / Đối tác'];
 
 function safeUsername(email: string, name: string) {
   return (email.split('@')[0] || slugify(name)).toLowerCase().replace(/[^a-z0-9._-]/g, '').slice(0, 42);
 }
+function money(v: number, cur: string) { return cur === 'VND' ? Math.round(v).toLocaleString('vi-VN') + ' ₫' : '$' + Math.round(v).toLocaleString('en-US'); }
+function stepStyle(active: boolean, done: boolean) {
+  return { circleStyle: { width: 32, height: 32, borderRadius: '50%', background: active || done ? '#1BADEA' : '#E2E8F0', color: active || done ? '#fff' : '#64748B', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 13 }, labelStyle: { fontSize: 12.5, fontWeight: active ? 800 : 600, color: active ? '#1596cc' : '#64748B' }, lineColor: done ? '#1BADEA' : '#E2E8F0' };
+}
 
 export default function Register() {
   const { role = 'business' } = useParams();
-  const r = normaliseRole(role) as Role;
-  const displayRole = r === 'affiliate' ? 'market-partner' : r;
+  const normalized = normaliseRole(role);
+  const r = (normalized === 'affiliate' ? 'affiliate' : normalized) as Role;
+  const displayRole = normalized === 'affiliate' ? 'market-partner' : normalized;
   const { signUp } = useAuth();
   const navigate = useNavigate();
   const intent = useMemo(() => { try { return JSON.parse(localStorage.getItem('d68_checkout_intent') || '{}'); } catch { return {}; } }, []);
+  const [lang, setLang] = useState<'vi' | 'en'>('vi');
   const [step, setStep] = useState(1);
-  const [plan, setPlan] = useState<BusinessPlan>(intent.businessPlan || 'standard');
+  const [plan, setPlan] = useState<BusinessPlan>(intent.businessPlan === 'featured' ? 'featured' : 'standard');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('deals68User68!');
   const [name, setName] = useState('');
-  const [titleVi, setTitleVi] = useState('');
-  const [industry, setIndustry] = useState('');
-  const [country, setCountry] = useState(intent.country || 'VN');
-  const [city, setCity] = useState('');
-  const [dealType, setDealType] = useState('Fundraise');
+  const [country, setCountry] = useState(intent.country === 'VN' ? 'Việt Nam' : 'Việt Nam');
+  const [industry, setIndustry] = useState('F&B');
+  const [city, setCity] = useState('TP.HCM');
+  const [companyName, setCompanyName] = useState('');
+  const [highlights, setHighlights] = useState('');
+  const [fileRows, setFileRows] = useState([{ title: '', fileName: '' }, { title: '', fileName: '' }, { title: '', fileName: '' }]);
+  const [imageRows, setImageRows] = useState([{ title: '', fileName: '' }]);
+  const [dealType, setDealType] = useState('Gọi vốn');
   const [revenue, setRevenue] = useState('');
   const [ebitda, setEbitda] = useState('');
   const [ask, setAsk] = useState('');
   const [stake, setStake] = useState('');
-  const [ticketMin, setTicketMin] = useState('0');
+  const [reason, setReason] = useState('');
+  const [invType, setInvType] = useState('Individual/Angel');
+  const [selectedIndustries, setSelectedIndustries] = useState<string[]>(['F&B', 'Công nghệ']);
+  const [stage, setStage] = useState('Growth');
+  const [investorDealType, setInvestorDealType] = useState('Gọi vốn');
+  const [ticketMin, setTicketMin] = useState('100000');
   const [ticketMax, setTicketMax] = useState('5000000');
+  const [desc, setDesc] = useState('');
+  const [phone, setPhone] = useState('');
+  const [website, setWebsite] = useState('');
+  const [agree, setAgree] = useState(false);
   const [msg, setMsg] = useState('');
   const [loading, setLoading] = useState(false);
-  const price = calculatePricing({ role: r as any, country, termWeeks: Number(intent.termWeeks || 4), businessPlan: plan, promoCode: intent.promoCode }, Number(intent.price?.promoDiscountPct || 0));
+
+  const isBusiness = normalized === 'business';
+  const isInvestor = normalized === 'investor';
+  const countryCode = countryIso[country] || 'VN';
+  const price = calculatePricing({ role: normalized as any, country: countryCode, termWeeks: Number(intent.termWeeks || (isBusiness ? 4 : 12)), businessPlan: plan, promoCode: intent.promoCode }, Number(intent.price?.promoDiscountPct || 0));
+  const maxStep = isBusiness ? 4 : isInvestor ? 3 : 3;
+  const steps = isBusiness ? [T(lang, 'Cơ bản', 'Basics'), T(lang, 'Tài chính', 'Financials'), T(lang, 'Tài khoản', 'Account'), T(lang, 'Xem lại', 'Review')] : isInvestor ? [T(lang, 'Hồ sơ', 'Profile'), T(lang, 'Ticket', 'Ticket'), T(lang, 'Tài khoản', 'Account')] : [T(lang, 'Thông tin', 'Info'), T(lang, 'Tài khoản', 'Account'), T(lang, 'Xem lại', 'Review')];
+  const cameFromPricing = !!intent.createdAt;
+  const pricingSummary = intent.price ? `${money(Number(intent.price.total || price.total), intent.price.currency || price.currency)} · ${intent.units || intent.termWeeks || price.termWeeks} ${intent.unitLabel || T(lang, 'tuần', 'weeks')}` : `${money(price.total, price.currency)} · ${price.termWeeks} ${T(lang, 'tuần', 'weeks')}`;
+
+  function toggleIndustry(x: string) { setSelectedIndustries((cur) => cur.includes(x) ? cur.filter((v) => v !== x) : [...cur, x]); }
+  function updateRow(kind: 'file' | 'image', index: number, patch: any) {
+    const setter = kind === 'file' ? setFileRows : setImageRows;
+    setter((rows: any[]) => rows.map((r, i) => i === index ? { ...r, ...patch } : r));
+  }
+  function addFileRow() { if (fileRows.length < 5) setFileRows([...fileRows, { title: '', fileName: '' }]); }
 
   async function submit(e: FormEvent) {
     e.preventDefault();
+    if (!agree) { setMsg(T(lang, 'Vui lòng xác nhận Điều khoản & Chính sách bảo mật.', 'Please confirm Terms & Privacy Policy.')); return; }
     setLoading(true); setMsg('');
-    const username = safeUsername(email, name);
-    const sr = await signUp(r, email.trim(), password, { username, display_name: name, country_iso2: country });
-    if (sr.error || !sr.user) { setMsg(sr.error || 'Không thể tạo tài khoản'); setLoading(false); return; }
+    const realName = name || companyName || email;
+    const username = safeUsername(email, realName);
+    const sr = await signUp(r, email.trim(), password, { username, display_name: realName, country_iso2: countryCode });
+    if (sr.error || !sr.user) { setMsg(sr.error || T(lang, 'Không thể tạo tài khoản', 'Could not create account')); setLoading(false); return; }
     try {
-      if (r === 'business') {
+      if (isBusiness) {
+        const titleVi = `${dealType} · ${industry} · ${city}`;
         await createBusinessFromProfile(sr.user.id, {
-          username,
-          slug: slugify(titleVi || name) + '-' + Date.now().toString(36),
-          public_code: 'D68-NEW',
-          company_name_private: name,
-          title_vi: titleVi || `Cơ hội đầu tư ${industry || 'doanh nghiệp'}`,
-          title_en: autoEnglishFromVietnamese(titleVi || `Investment opportunity in ${industry || 'business'}`),
-          country_iso2: country,
-          city,
-          industry,
-          deal_type: dealType,
-          plan,
-          revenue_2025: Number(revenue || 0),
-          revenue_currency: country === 'VN' ? 'VND' : 'USD',
-          ebitda_margin: Number(ebitda || 0),
-          ask_amount: Number(ask || 0),
-          ask_currency: country === 'VN' ? 'VND' : 'USD',
-          stake_pct: Number(stake || 0),
-          quota_total: plan === 'featured' ? 200 : 100,
-          highlights_vi: '', highlights_en: '', investment_reason_vi: '', investment_reason_en: ''
+          username, slug: slugify(titleVi || realName) + '-' + Date.now().toString(36), public_code: 'D68-NEW', company_name_private: companyName || realName,
+          title_vi: titleVi, title_en: autoEnglishFromVietnamese(titleVi), country_iso2: countryCode, city, industry, deal_type: dealType, plan,
+          revenue_2025: Number(revenue || 0), revenue_currency: countryCode === 'VN' ? 'VND' : 'USD', ebitda_margin: Number(ebitda || 0), ask_amount: Number(ask || 0), ask_currency: countryCode === 'VN' ? 'VND' : 'USD', stake_pct: Number(stake || 0), quota_total: plan === 'featured' ? 200 : 100,
+          highlights_vi: highlights, highlights_en: autoEnglishFromVietnamese(highlights), investment_reason_vi: reason, investment_reason_en: autoEnglishFromVietnamese(reason)
         });
+      } else if (isInvestor) {
+        await createInvestorForOwner(sr.user.id, { code: 'INV-NEW-' + Date.now().toString(36), username, title_vi: `${invType} quan tâm ${selectedIndustries.join(', ')}`, title_en: `${invType} interested in ${selectedIndustries.join(', ')}`, desc_vi: desc, desc_en: autoEnglishFromVietnamese(desc), country_iso2: countryCode, country, region: countryCode === 'VN' ? 'asia' : 'global', industries: selectedIndustries, deal_types: [investorDealType], ticket_min: Number(ticketMin || 0), ticket_max: Number(ticketMax || 0), type: invType, stage, criteria: { sectors: selectedIndustries, stage, dealType: investorDealType }, privacy: { shareEmail: false, email, sharePhone: false, phone, website } });
       }
-      if (r === 'investor') {
-        await createInvestorForOwner(sr.user.id, {
-          code: 'INV-NEW-' + Date.now().toString(36),
-          username,
-          title_vi: `Nhà đầu tư quan tâm ${industry || 'doanh nghiệp Việt Nam'}`,
-          title_en: `Investor interested in ${industry || 'Vietnam businesses'}`,
-          country_iso2: country,
-          country,
-          region: country === 'VN' ? 'Vietnam' : 'Global',
-          industries: industry ? industry.split(',').map(x=>x.trim()).filter(Boolean) : [],
-          deal_types: ['equity', 'M&A'],
-          ticket_min: Number(ticketMin || 0),
-          ticket_max: Number(ticketMax || 0),
-          type: 'Individual/Angel',
-          criteria: { revenueRange: '', ebitdaRange: '', sectors: industry ? [industry] : [] },
-          privacy: { shareEmail: false, email, sharePhone: false, phone: '', phoneCountry: country }
-        });
-      }
-      setMsg(r === 'affiliate' ? 'Tài khoản Đối tác thị trường đã được tạo. Admin cần duyệt trước khi kích hoạt.' : 'Tài khoản đã được tạo. Vui lòng hoàn tất thanh toán hoặc chờ admin duyệt.');
+      setMsg(T(lang, 'Tài khoản đã được tạo. Vui lòng hoàn tất thanh toán hoặc chờ Admin duyệt.', 'Account created. Please complete payment or wait for Admin review.'));
       setTimeout(() => navigate('/login'), 1400);
-    } catch (err: any) {
-      setMsg(err?.message || 'Tài khoản đã được tạo, nhưng hồ sơ cần admin hỗ trợ kiểm tra lại.');
-    } finally { setLoading(false); }
+    } catch (err: any) { setMsg(err?.message || T(lang, 'Tài khoản đã tạo, nhưng hồ sơ cần Admin kiểm tra lại.', 'Account created, but Admin needs to review the profile.')); }
+    finally { setLoading(false); }
   }
 
-  return <section className="register-page section alt">
-    <div className="container register-layout">
-      <main className="card register-card">
-        <div className="card-body">
-          <span className="badge-title blue">{roleLabel(r as any, 'vi')}</span>
-          <h1>{r === 'business' ? 'Đăng ký Doanh nghiệp' : r === 'investor' ? 'Đăng ký Nhà đầu tư' : displayRole === 'market-partner' ? 'Đăng ký Đối tác thị trường' : 'Đăng ký Cố vấn'}</h1>
-          <p className="muted">Tài khoản Beta cần xác nhận thanh toán hoặc được admin duyệt trước khi mở toàn bộ quyền cập nhật dữ liệu.</p>
-          <div className="stepper"><span className={step===1?'active':''}>1. Tài khoản</span><span className={step===2?'active':''}>2. Hồ sơ</span><span className={step===3?'active':''}>3. Xem lại</span></div>
-
-          <form onSubmit={submit}>
-            {step === 1 && <div className="formgrid">
-              <label>Email<input className="input" required type="email" value={email} onChange={e=>setEmail(e.target.value)} /></label>
-              <label>Mật khẩu<input className="input" required type="password" value={password} onChange={e=>setPassword(e.target.value)} /></label>
-              <label>Họ tên / Tên doanh nghiệp<input className="input" required value={name} onChange={e=>setName(e.target.value)} /></label>
-              <label>Quốc gia<select className="select" value={country} onChange={e=>setCountry(e.target.value)}><option value="VN">Việt Nam</option><option value="SG">Singapore</option><option value="US">Hoa Kỳ</option><option value="JP">Nhật Bản</option><option value="KR">Hàn Quốc</option><option value="HK">Hồng Kông</option></select></label>
-            </div>}
-
-            {step === 2 && <div className="formgrid">
-              {r === 'business' && <>
-                <label>Gói dịch vụ<select className="select" value={plan} onChange={e=>setPlan(e.target.value as BusinessPlan)}><option value="standard">Gói thường - 100 lượt đề xuất</option><option value="featured">Gói ưu tiên - 200 lượt đề xuất</option></select></label>
-                <label>Hình thức giao dịch<select className="select" value={dealType} onChange={e=>setDealType(e.target.value)}><option>Gọi vốn</option><option>Bán cổ phần thiểu số</option><option>Bán toàn bộ doanh nghiệp</option><option>Vay vốn</option><option>Hợp tác chiến lược</option></select></label>
-                <label style={{gridColumn:'1/-1'}}>Tiêu đề hồ sơ DN<input className="input" required value={titleVi} onChange={e=>setTitleVi(e.target.value)} /></label>
-                <label>Lĩnh vực<input className="input" value={industry} onChange={e=>setIndustry(e.target.value)} placeholder="Y tế, nhà hàng, công nghệ..." /></label>
-                <label>Thành phố<input className="input" value={city} onChange={e=>setCity(e.target.value)} placeholder="Hồ Chí Minh" /></label>
-                <label>Doanh thu 2025<input className="input" type="number" value={revenue} onChange={e=>setRevenue(e.target.value)} /></label>
-                <label>EBITDA %<input className="input" type="number" value={ebitda} onChange={e=>setEbitda(e.target.value)} /></label>
-                <label>Số tiền gọi vốn/giá chào<input className="input" type="number" value={ask} onChange={e=>setAsk(e.target.value)} /></label>
-                <label>% cổ phần<input className="input" type="number" value={stake} onChange={e=>setStake(e.target.value)} /></label>
-              </>}
-              {r === 'investor' && <>
-                <label style={{gridColumn:'1/-1'}}>Lĩnh vực đầu tư<input className="input" value={industry} onChange={e=>setIndustry(e.target.value)} placeholder="Nhà hàng, y tế, công nghệ" /></label>
-                <label>Quy mô đầu tư tối thiểu (USD)<input className="input" type="number" value={ticketMin} onChange={e=>setTicketMin(e.target.value)} /></label>
-                <label>Quy mô đầu tư tối đa (USD)<input className="input" type="number" value={ticketMax} onChange={e=>setTicketMax(e.target.value)} /></label>
-              </>}
-              {(r === 'advisor' || r === 'affiliate') && <div className="notice" style={{gridColumn:'1/-1'}}>Thông tin chi tiết của {displayRole === 'market-partner' ? 'Đối tác thị trường' : 'Cố vấn'} sẽ được admin xác minh sau khi tạo tài khoản. Bảng điều khiển sẽ hiển thị trạng thái chờ duyệt.</div>}
-            </div>}
-
-            {step === 3 && <div className="review-box">
-              <h3>Xem lại trước khi gửi</h3>
-              <div className="summary-row"><span>Vai trò</span><b>{displayRole === 'market-partner' ? 'Đối tác thị trường' : roleLabel(r as any, 'vi')}</b></div>
-              <div className="summary-row"><span>Email</span><b>{email || '-'}</b></div>
-              <div className="summary-row"><span>Quốc gia</span><b>{country}</b></div>
-              <div className="summary-row"><span>Gói / chi phí</span><b>{price.planLabel === 'Featured' ? 'Gói ưu tiên' : 'Gói thường'} · {price.total.toLocaleString()} {price.currency}</b></div>
-              {intent.promoCode && <div className="summary-row"><span>Mã khuyến mãi</span><b>{intent.promoCode}</b></div>}
-              <p className="notice warn small-note">Sau khi tạo, tài khoản sẽ ở trạng thái chờ thanh toán hoặc chờ admin duyệt. Admin sẽ kích hoạt quyền cập nhật dữ liệu sau khi xác nhận.</p>
-            </div>}
-
-            <div className="register-actions">
-              {step > 1 && <button type="button" className="btn secondary" onClick={()=>setStep(step-1)}>← Quay lại</button>}
-              {step < 3 ? <button type="button" className="btn blue" onClick={()=>setStep(step+1)}>Tiếp tục →</button> : <button className="btn gold" disabled={loading} type="submit">{loading ? 'Đang tạo...' : 'Tạo tài khoản'}</button>}
-            </div>
-            {msg && <p className={`notice ${msg.includes('Tài khoản') ? 'ok' : 'warn'}`}>{msg}</p>}
-          </form>
-        </div>
-      </main>
-      <aside className="card register-side"><div className="card-body"><h3>Kích hoạt Beta</h3><p className="muted">Các tính năng thanh toán tự động, tải hồ sơ nâng cao và duyệt admin sẽ được hoàn thiện sâu hơn ở các giai đoạn sau.</p><div className="summary-row"><span>Tạm tính</span><b>{price.total.toLocaleString()} {price.currency}</b></div><Link className="btn secondary block" to="/pricing">Quay lại bảng giá</Link></div></aside>
+  return <section style={{ maxWidth: 820, margin: '0 auto', padding: '40px 24px 72px' }}>
+    <div style={{ textAlign: 'center', marginBottom: 30 }}>
+      <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: isBusiness ? '#E7F6FD' : '#FEF3D3', color: isBusiness ? '#1596cc' : '#B8860B', fontWeight: 700, fontSize: 12, padding: '6px 12px', borderRadius: 999, marginBottom: 14, textTransform: 'uppercase', letterSpacing: .5 }}>{isBusiness ? '🏢' : isInvestor ? '📈' : '🤝'} {isBusiness ? T(lang, 'Đăng ký Doanh nghiệp', 'Register as Business') : isInvestor ? T(lang, 'Đăng ký Nhà đầu tư', 'Register as Investor') : roleLabel(normalized as any, lang)}</div>
+      <h1 style={{ fontSize: 30, fontWeight: 800, letterSpacing: -.7, margin: '0 0 8px' }}>{isBusiness ? T(lang, 'Đăng hồ sơ gọi vốn / bán doanh nghiệp', 'List your fundraise / business sale') : isInvestor ? T(lang, 'Tạo hồ sơ Nhà đầu tư', 'Create your Investor profile') : T(lang, 'Tạo tài khoản Deals68', 'Create your Deals68 account')}</h1>
+      <p style={{ fontSize: 15.5, color: '#64748B', margin: 0 }}>{isBusiness ? T(lang, 'Hồ sơ hiển thị ẩn danh; đầy đủ thông tin mở sau khi Nhà đầu tư gửi kết nối được duyệt.', 'Profiles are anonymous; full details unlock once an accepted investor connection is approved.') : isInvestor ? T(lang, 'Hồ sơ hiển thị ẩn danh trên Deals68; tên thật, website, email luôn được bảo mật.', 'Profiles are anonymous on Deals68; your real name, website and email always stay private.') : T(lang, 'Tài khoản Beta cần Admin duyệt trước khi mở đầy đủ quyền.', 'Beta accounts require Admin approval before full access.')}</p>
     </div>
+
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 28 }}>{steps.map((s, i) => { const st = stepStyle(step === i + 1, step > i + 1); return <div key={s} style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1 }}><div style={st.circleStyle}>{i + 1}</div><span className="d68-steps-label" style={st.labelStyle}>{s}</span>{i < steps.length - 1 ? <div style={{ flex: 1, height: 2, background: st.lineColor }} /> : null}</div>; })}</div>
+
+    <div style={{ background: '#fff', border: '1px solid #E7EDF3', borderRadius: 20, padding: 32, boxShadow: '0 1px 2px rgba(15,42,74,.04)' }}>
+      {cameFromPricing ? <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', background: '#E9F9EF', border: '1px solid #BBF0CE', color: '#16A34A', fontSize: 13.5, fontWeight: 600, padding: '12px 16px', borderRadius: 12, marginBottom: 22 }}><span>✓ <span className="l-vi">Đã lấy gói & kỳ hạn từ trang Bảng giá:</span><span className="l-en">Plan & term carried over from Pricing:</span> {pricingSummary}</span><Link to="/pricing" style={{ color: '#16A34A', fontWeight: 700, textDecoration: 'underline', fontSize: 13, flexShrink: 0 }}><span className="l-vi">Đổi lựa chọn</span><span className="l-en">Change</span></Link></div> : null}
+      <form onSubmit={submit}>
+        {isBusiness ? <BusinessSteps lang={lang} step={step} plan={plan} setPlan={setPlan} companyName={companyName} setCompanyName={setCompanyName} country={country} setCountry={setCountry} industry={industry} setIndustry={setIndustry} city={city} setCity={setCity} highlights={highlights} setHighlights={setHighlights} fileRows={fileRows} imageRows={imageRows} updateRow={updateRow} addFileRow={addFileRow} dealType={dealType} setDealType={setDealType} revenue={revenue} setRevenue={setRevenue} ebitda={ebitda} setEbitda={setEbitda} ask={ask} setAsk={setAsk} stake={stake} setStake={setStake} reason={reason} setReason={setReason} email={email} setEmail={setEmail} password={password} setPassword={setPassword} name={name} setName={setName} phone={phone} setPhone={setPhone} price={price} /> : isInvestor ? <InvestorSteps lang={lang} step={step} invType={invType} setInvType={setInvType} country={country} setCountry={setCountry} selectedIndustries={selectedIndustries} toggleIndustry={toggleIndustry} stage={stage} setStage={setStage} investorDealType={investorDealType} setInvestorDealType={setInvestorDealType} ticketMin={ticketMin} setTicketMin={setTicketMin} ticketMax={ticketMax} setTicketMax={setTicketMax} desc={desc} setDesc={setDesc} email={email} setEmail={setEmail} password={password} setPassword={setPassword} name={name} setName={setName} phone={phone} setPhone={setPhone} website={website} setWebsite={setWebsite} price={price} /> : <GenericSteps lang={lang} step={step} email={email} setEmail={setEmail} password={password} setPassword={setPassword} name={name} setName={setName} price={price} displayRole={displayRole} />}
+        {step === maxStep ? <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginTop: 20, fontSize: 13.5, color: '#475569', lineHeight: 1.5 }}><input type="checkbox" checked={agree} onChange={(e) => setAgree(e.target.checked)} style={{ marginTop: 3, accentColor: '#1BADEA' }} /><span><span className="l-vi">Tôi đồng ý với Điều khoản, Chính sách bảo mật và xác nhận thông tin cung cấp là đúng.</span><span className="l-en">I agree to the Terms, Privacy Policy and confirm the information is accurate.</span></span></label> : null}
+        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, marginTop: 24 }}>{step > 1 ? <button type="button" onClick={() => setStep(step - 1)} style={{ background: '#fff', border: '1px solid #E2E8F0', color: '#334155', fontWeight: 700, fontSize: 15, padding: '12px 18px', borderRadius: 10, cursor: 'pointer' }}>← {T(lang, 'Quay lại', 'Back')}</button> : <span />} {step < maxStep ? <button type="button" onClick={() => setStep(step + 1)} style={{ background: '#0F2A4A', border: 'none', color: '#fff', fontWeight: 800, fontSize: 15, padding: '12px 20px', borderRadius: 10, cursor: 'pointer' }}>{T(lang, 'Tiếp tục', 'Continue')} →</button> : <button type="submit" disabled={loading} style={{ background: '#F2B51D', border: 'none', color: '#0F2A4A', fontWeight: 800, fontSize: 15, padding: '12px 20px', borderRadius: 10, cursor: loading ? 'not-allowed' : 'pointer' }}>{loading ? T(lang, 'Đang tạo...', 'Creating...') : T(lang, 'Tạo tài khoản', 'Create account')}</button>}</div>
+        {msg ? <p style={{ marginTop: 16, padding: 12, borderRadius: 10, background: msg.includes('Tài khoản') || msg.includes('Account') ? '#E9F9EF' : '#FEF3D3', color: msg.includes('Tài khoản') || msg.includes('Account') ? '#16A34A' : '#8a6413', fontSize: 13.5, fontWeight: 600 }}>{msg}</p> : null}
+      </form>
+    </div>
+    <div style={{ marginTop: 18, textAlign: 'center' }}><button onClick={() => setLang(lang === 'vi' ? 'en' : 'vi')} style={{ border: '1px solid #E2E8F0', borderRadius: 999, background: '#fff', padding: '8px 14px', cursor: 'pointer', fontWeight: 700, color: '#334155' }}>{lang === 'vi' ? 'English' : 'Tiếng Việt'}</button></div>
   </section>;
 }
+
+function Field({ label, children }: { label: ReactNode; children: ReactNode }) { return <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}><span style={{ fontSize: 12.5, fontWeight: 700, color: '#334155' }}>{label}</span>{children}</label>; }
+function twoCol(children: ReactNode) { return <div className="d68-form-2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>{children}</div>; }
+
+function BusinessSteps(p: any) {
+  const lang = p.lang as 'vi' | 'en';
+  if (p.step === 1) return <><h2 style={{ fontSize: 19, fontWeight: 800, margin: '0 0 20px' }}><span className="l-vi">1. Thông tin cơ bản</span><span className="l-en">1. Basic information</span></h2><div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}><Field label={T(lang, 'Tên doanh nghiệp', 'Business name')}><input value={p.companyName} onChange={(e) => p.setCompanyName(e.target.value)} placeholder="VD: Công ty TNHH ABC" style={inputStyle} /><span style={{ fontSize: 11.5, color: '#94A3B8', lineHeight: 1.5 }}><span className="l-vi">Tên thật chỉ Admin thấy. Tiêu đề public do Admin biên soạn để đảm bảo ẩn danh & SEO.</span><span className="l-en">Real name is visible only to Admin. Public title is crafted by Admin for anonymity & SEO.</span></span></Field>{twoCol(<><Field label={T(lang, 'Quốc gia', 'Country')}><select value={p.country} onChange={(e) => p.setCountry(e.target.value)} style={inputStyle}>{countries.map((c) => <option key={c}>{c}</option>)}</select></Field><Field label={T(lang, 'Ngành', 'Industry')}><select value={p.industry} onChange={(e) => p.setIndustry(e.target.value)} style={inputStyle}>{industries.map((i) => <option key={i}>{i}</option>)}</select></Field></>)}<Field label={T(lang, 'Thành phố / khu vực', 'City / area')}><input value={p.city} onChange={(e) => p.setCity(e.target.value)} style={inputStyle} /></Field><Field label={T(lang, 'Tổng quan doanh nghiệp (mỗi dòng 1 ý)', 'Business overview (one point per line)')}><textarea value={p.highlights} onChange={(e) => p.setHighlights(e.target.value)} rows={4} placeholder="Chuỗi 5 chi nhánh vận hành ổn định\nĐội ngũ nhân sự lành nghề\nDoanh thu tăng trưởng đều" style={{ ...inputStyle, resize: 'vertical' }} /></Field><div><div style={{ fontSize: 12.5, fontWeight: 700, color: '#334155', marginBottom: 4 }}><span className="l-vi">Tài liệu đính kèm</span><span className="l-en">Attached documents</span></div><p style={{ fontSize: 12, color: '#94A3B8', margin: '0 0 10px', lineHeight: 1.5 }}><span className="l-vi">PDF, Excel, PowerPoint, Word — nhập từ 3 đến 5 file.</span><span className="l-en">PDF, Excel, PowerPoint, Word — add 3 to 5 files.</span></p><div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>{p.fileRows.map((fr: any, i: number) => <div key={i} style={{ display: 'flex', gap: 10, alignItems: 'center', border: '1px solid #E2E8F0', borderRadius: 10, padding: '10px 12px', background: '#F7FAFC' }}><input value={fr.title} onChange={(e) => p.updateRow('file', i, { title: e.target.value })} placeholder={T(lang, 'Tên file', 'File title')} style={{ flex: 1.2, minWidth: 0, border: '1px solid #E2E8F0', borderRadius: 8, padding: '9px 11px', fontSize: 13.5, background: '#fff' }} /><input type="file" onChange={(e) => p.updateRow('file', i, { fileName: e.target.files?.[0]?.name || '' })} style={{ flex: 1, minWidth: 0, fontSize: 12 }} /></div>)}</div>{p.fileRows.length < 5 ? <button type="button" onClick={p.addFileRow} style={{ marginTop: 10, background: '#E7F6FD', color: '#1596cc', fontWeight: 700, fontSize: 13, padding: '9px 14px', borderRadius: 8, border: 'none', cursor: 'pointer' }}>+ <span className="l-vi">Thêm file</span><span className="l-en">Add file</span></button> : null}</div></div></>;
+  if (p.step === 2) return <><h2 style={{ fontSize: 19, fontWeight: 800, margin: '0 0 20px' }}><span className="l-vi">2. Giao dịch & tài chính</span><span className="l-en">2. Transaction & financials</span></h2><div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>{twoCol(<><Field label={T(lang, 'Gói dịch vụ', 'Service plan')}><select value={p.plan} onChange={(e) => p.setPlan(e.target.value)} style={inputStyle}><option value="standard">{T(lang, 'Gói thường', 'Standard')}</option><option value="featured">{T(lang, 'Gói ưu tiên', 'Priority')}</option></select></Field><Field label={T(lang, 'Hình thức giao dịch', 'Transaction type')}><select value={p.dealType} onChange={(e) => p.setDealType(e.target.value)} style={inputStyle}>{dealTypes.map((d) => <option key={d}>{d}</option>)}</select></Field></>)}{twoCol(<><Field label={T(lang, 'Doanh thu 2025E', '2025E revenue')}><input type="number" value={p.revenue} onChange={(e) => p.setRevenue(e.target.value)} style={inputStyle} /></Field><Field label="EBITDA %"><input type="number" value={p.ebitda} onChange={(e) => p.setEbitda(e.target.value)} style={inputStyle} /></Field></>)}{twoCol(<><Field label={T(lang, 'Số tiền gọi vốn / giá chào', 'Capital sought / asking price')}><input type="number" value={p.ask} onChange={(e) => p.setAsk(e.target.value)} style={inputStyle} /></Field><Field label={T(lang, '% cổ phần', 'Stake %')}><input type="number" value={p.stake} onChange={(e) => p.setStake(e.target.value)} style={inputStyle} /></Field></>)}<Field label={T(lang, 'Lý do giao dịch / mục đích sử dụng vốn', 'Transaction reason / use of funds')}><textarea value={p.reason} onChange={(e) => p.setReason(e.target.value)} rows={4} style={{ ...inputStyle, resize: 'vertical' }} /></Field><Field label={T(lang, 'Ảnh minh họa / cơ sở / sản phẩm', 'Images / facilities / products')}><div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>{p.imageRows.map((fr: any, i: number) => <div key={i} style={{ display: 'flex', gap: 10, alignItems: 'center', border: '1px solid #E2E8F0', borderRadius: 10, padding: '10px 12px', background: '#F7FAFC' }}><input value={fr.title} onChange={(e) => p.updateRow('image', i, { title: e.target.value })} placeholder={T(lang, 'Mô tả ảnh', 'Image title')} style={{ flex: 1.2, minWidth: 0, border: '1px solid #E2E8F0', borderRadius: 8, padding: '9px 11px', fontSize: 13.5, background: '#fff' }} /><input type="file" accept="image/*" onChange={(e) => p.updateRow('image', i, { fileName: e.target.files?.[0]?.name || '' })} style={{ flex: 1, minWidth: 0, fontSize: 12 }} /></div>)}</div></Field></div></>;
+  if (p.step === 3) return <AccountFields lang={lang} email={p.email} setEmail={p.setEmail} password={p.password} setPassword={p.setPassword} name={p.name} setName={p.setName} phone={p.phone} setPhone={p.setPhone} />;
+  return <Review lang={lang} role={T(lang, 'Doanh nghiệp', 'Business')} email={p.email} country={p.country} price={p.price} extra={[['Gói', p.plan === 'featured' ? T(lang, 'Gói ưu tiên', 'Priority') : T(lang, 'Gói thường', 'Standard')], [T(lang, 'Giao dịch', 'Transaction'), p.dealType], [T(lang, 'Doanh thu', 'Revenue'), p.revenue || '-']]} />;
+}
+function InvestorSteps(p: any) { const lang = p.lang as 'vi' | 'en'; if (p.step === 1) return <><h2 style={{ fontSize: 19, fontWeight: 800, margin: '0 0 20px' }}><span className="l-vi">1. Hồ sơ đầu tư</span><span className="l-en">1. Investor profile</span></h2><div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>{twoCol(<><Field label={T(lang, 'Loại nhà đầu tư', 'Investor type')}><select value={p.invType} onChange={(e) => p.setInvType(e.target.value)} style={inputStyle}>{investorTypes.map((t) => <option key={t}>{t}</option>)}</select></Field><Field label={T(lang, 'Quốc gia', 'Country')}><select value={p.country} onChange={(e) => p.setCountry(e.target.value)} style={inputStyle}>{countries.map((c) => <option key={c}>{c}</option>)}</select></Field></>)}<Field label={T(lang, 'Ngành quan tâm (chọn nhiều)', 'Preferred industries (multi-select)')}><div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>{industries.map((ic) => <button type="button" key={ic} onClick={() => p.toggleIndustry(ic)} style={{ padding: '8px 12px', borderRadius: 999, border: `1px solid ${p.selectedIndustries.includes(ic) ? '#1BADEA' : '#E2E8F0'}`, background: p.selectedIndustries.includes(ic) ? '#E7F6FD' : '#fff', color: p.selectedIndustries.includes(ic) ? '#1596cc' : '#334155', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>{ic}</button>)}</div></Field>{twoCol(<><Field label={T(lang, 'Giai đoạn đầu tư', 'Investment stage')}><select value={p.stage} onChange={(e) => p.setStage(e.target.value)} style={inputStyle}>{stages.map((s) => <option key={s}>{s}</option>)}</select></Field><Field label={T(lang, 'Loại giao dịch quan tâm', 'Deal types of interest')}><select value={p.investorDealType} onChange={(e) => p.setInvestorDealType(e.target.value)} style={inputStyle}>{dealTypes.map((d) => <option key={d}>{d}</option>)}</select></Field></>)}</div></>; if (p.step === 2) return <><h2 style={{ fontSize: 19, fontWeight: 800, margin: '0 0 20px' }}><span className="l-vi">2. Quy mô đầu tư</span><span className="l-en">2. Ticket size</span></h2><div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>{twoCol(<><Field label={T(lang, 'Ticket tối thiểu (USD)', 'Min ticket (USD)')}><input type="number" value={p.ticketMin} onChange={(e) => p.setTicketMin(e.target.value)} style={inputStyle} /></Field><Field label={T(lang, 'Ticket tối đa (USD)', 'Max ticket (USD)')}><input type="number" value={p.ticketMax} onChange={(e) => p.setTicketMax(e.target.value)} style={inputStyle} /></Field></>)}<Field label={T(lang, 'Mô tả ẩn danh hiển thị công khai', 'Public anonymous description')}><textarea value={p.desc} onChange={(e) => p.setDesc(e.target.value)} rows={4} placeholder={T(lang, 'VD: Quỹ VC giai đoạn sớm quan tâm Fintech & SaaS Đông Nam Á.', 'e.g. Early-stage VC interested in SEA Fintech & SaaS.')} style={{ ...inputStyle, resize: 'vertical' }} /></Field><div style={{ background: '#F7FAFC', border: '1px solid #EEF2F6', borderRadius: 12, padding: '14px 16px', fontSize: 13, color: '#64748B', lineHeight: 1.55 }}>🔒 <span className="l-vi">Tên thật, website và email không hiển thị public. Chỉ mở với Business khi proposal được bạn duyệt; email luôn ẩn.</span><span className="l-en">Your real name, website and email are never public. They unlock only after you approve a proposal; email remains hidden.</span></div></div></>; return <AccountFields lang={lang} email={p.email} setEmail={p.setEmail} password={p.password} setPassword={p.setPassword} name={p.name} setName={p.setName} phone={p.phone} setPhone={p.setPhone} website={p.website} setWebsite={p.setWebsite} />; }
+function GenericSteps(p: any) { const lang = p.lang as 'vi' | 'en'; if (p.step < 3) return <AccountFields lang={lang} email={p.email} setEmail={p.setEmail} password={p.password} setPassword={p.setPassword} name={p.name} setName={p.setName} />; return <Review lang={lang} role={p.displayRole} email={p.email} country="-" price={p.price} extra={[]} />; }
+function AccountFields(p: any) { const lang = p.lang as 'vi' | 'en'; return <><h2 style={{ fontSize: 19, fontWeight: 800, margin: '0 0 20px' }}><span className="l-vi">Tạo tài khoản</span><span className="l-en">Create account</span></h2><div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>{twoCol(<><Field label="Email"><input type="email" required value={p.email} onChange={(e) => p.setEmail(e.target.value)} style={inputStyle} /></Field><Field label={T(lang, 'Mật khẩu', 'Password')}><input type="password" required value={p.password} onChange={(e) => p.setPassword(e.target.value)} style={inputStyle} /></Field></>)}{twoCol(<><Field label={T(lang, 'Họ tên / Tên hiển thị', 'Name / display name')}><input required value={p.name} onChange={(e) => p.setName(e.target.value)} style={inputStyle} /></Field><Field label={T(lang, 'Số điện thoại', 'Phone')}><input value={p.phone || ''} onChange={(e) => p.setPhone?.(e.target.value)} style={inputStyle} /></Field></>)}{p.setWebsite ? <Field label="Website"><input value={p.website || ''} onChange={(e) => p.setWebsite(e.target.value)} style={inputStyle} /></Field> : null}</div></>; }
+function Review({ lang, role, email, country, price, extra }: any) { return <><h2 style={{ fontSize: 19, fontWeight: 800, margin: '0 0 20px' }}><span className="l-vi">Xem lại trước khi gửi</span><span className="l-en">Review before submit</span></h2><div style={{ background: '#F7FAFC', border: '1px solid #EEF2F6', borderRadius: 14, padding: 18, display: 'flex', flexDirection: 'column', gap: 10 }}><Row label={T(lang, 'Vai trò', 'Role')} value={role} /><Row label="Email" value={email || '-'} /><Row label={T(lang, 'Quốc gia', 'Country')} value={country} />{extra.map((x: string[]) => <Row key={x[0]} label={x[0]} value={x[1]} />)}<Row label={T(lang, 'Gói / chi phí', 'Plan / cost')} value={`${price.planLabel} · ${money(price.total, price.currency)}`} /></div><p style={{ marginTop: 14, background: '#FEF3D3', color: '#8a6413', border: '1px solid #F5D98A', borderRadius: 10, padding: 12, fontSize: 13.5, lineHeight: 1.55 }}><span className="l-vi">Sau khi tạo, tài khoản ở trạng thái chờ thanh toán hoặc chờ Admin duyệt. Admin sẽ kích hoạt quyền cập nhật dữ liệu sau khi xác nhận.</span><span className="l-en">After creation, the account is pending payment or Admin approval. Admin activates data update rights after confirmation.</span></p></>; }
+function Row({ label, value }: { label: string; value: string }) { return <div style={{ display: 'flex', justifyContent: 'space-between', gap: 14, fontSize: 14 }}><span style={{ color: '#64748B' }}>{label}</span><b style={{ color: '#0F2A4A', textAlign: 'right' }}>{value}</b></div>; }
