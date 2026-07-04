@@ -1,128 +1,72 @@
-# Deals68 UI reference patch — Login + Business/Investor Dashboards
+# Deals68 Admin + Static Pages UI Reference Patch
 
-Target repo: `jackphi2023/deals68`
+Generated: 2026-07-04
 
-## Reference files read directly
+## Scope
 
-- `ui-reference/Deals68 Login.dc.html` — SHA `99bfbd2733ed8298c2fc8991ba169162acb42ad6`
-- `ui-reference/Deals68 Business Dashboard.dc.html` — SHA `ae60741a7aacdc7cd1c69521e2c64b21fe5688fa`
-- `ui-reference/Deals68 Investor Dashboard.dc.html` — SHA `f9fec3e409eafab3583a0eef1670a8ac84dedd85`
+This patch ports the following React pages toward their approved `ui-reference/*.dc.html` sources:
 
-## Files included
+- `src/pages/Admin.tsx`
+  - Source of truth: `ui-reference/Deals68 Admin.dc.html`
+  - Keeps production Supabase admin operations from the existing React page.
+  - Ports the dark Admin header, left-side admin nav, overview cards, approvals/payment gate, business review, promo, payments, quality, requests, market partner, audit/settings style.
 
-- `src/pages/Login.tsx`
-- `src/pages/BusinessDashboard.tsx`
-- `src/pages/InvestorDashboard.tsx`
+- `src/pages/StaticPages.tsx`
+  - Source of truth:
+    - `ui-reference/Deals68 About.dc.html`
+    - `ui-reference/Deals68 Terms.dc.html`
+    - `ui-reference/Deals68 Privacy.dc.html`
+    - `ui-reference/Deals68 Contact.dc.html`
+    - `ui-reference/Deals68 Market Partner.dc.html`
+  - Ports body sections only because `App.tsx` already wraps pages with shared React Header/Footer.
+  - Keeps React Router links instead of `.dc.html` links.
 
-## What changed
+## Validation performed
 
-### Login
+Syntax/transpile check only:
 
-Ported the reference login body structure:
-
-1. Centered login page
-2. VI/EN switch
-3. Role tabs: Business, Investor, Advisor, Market Partner
-4. Login form
-5. Gated/account pending state
-6. Demo account hint
-7. Register link per role
-
-Kept production logic:
-
-- `useAuth().signIn`
-- role-based dashboard redirects
-- `next` query param redirect
-- `/forgot-password` route
-
-### Business Dashboard
-
-Ported the reference dashboard structure:
-
-1. Dashboard title/top status bar
-2. Side nav
-3. Overview
-4. Business Quality Score card
-5. KPI cards
-6. Proposal quota card
-7. Profile/Data Center editable fields
-8. Documents upload/list
-9. Images upload grid
-10. Investor interests
-11. Data requests
-12. Services & Billing
-
-Kept production logic:
-
-- `getMyBusiness`
-- `business_files`, `business_images`, `request_data`, `investor_interests`
-- `uploadBusinessFile`
-- `uploadBusinessImage`
-- `pending_changes_json` + `pending_admin_review` for sensitive profile edits
-- accept/reject investor interests
-- fulfill data requests
-
-### Investor Dashboard
-
-Ported the reference dashboard structure:
-
-1. Dashboard title
-2. Side nav
-3. Investor profile edit
-4. Investment criteria + recommended matches
-5. Watchlist/saved businesses
-6. Alerts
-7. Contact & privacy
-8. Security/proposals summary
-
-Kept production logic:
-
-- `getInvestorByOwner`
-- `listBusinesses`
-- `computeFitScore`
-- `saved_businesses`, `proposals`, `request_data`, `investor_interests`
-- investor privacy update
-- save business / request data / proposal status update
-
-## Local checks
-
-TSX syntax transpile check:
-
-```text
-PASS Login.tsx
-PASS BusinessDashboard.tsx
-PASS InvestorDashboard.tsx
+```txt
+PASS src/pages/Admin.tsx
+PASS src/pages/StaticPages.tsx
 ```
 
-Full `npm run build` was not executed in this sandbox because the environment does not have the full repo/node_modules available.
+Full `npm run build` and visual diff were not run in this sandbox because the full repo and node_modules are not available here.
 
 ## Apply
 
 From repo root:
 
 ```bash
-unzip deals68_login_dashboard_patch.zip -d /tmp/deals68-login-dashboard
+unzip deals68_admin_static_patch.zip -d /tmp/deals68-admin-static
 
-cp -f /tmp/deals68-login-dashboard/src/pages/Login.tsx src/pages/Login.tsx
-cp -f /tmp/deals68-login-dashboard/src/pages/BusinessDashboard.tsx src/pages/BusinessDashboard.tsx
-cp -f /tmp/deals68-login-dashboard/src/pages/InvestorDashboard.tsx src/pages/InvestorDashboard.tsx
+cp -f /tmp/deals68-admin-static/src/pages/Admin.tsx src/pages/Admin.tsx
+cp -f /tmp/deals68-admin-static/src/pages/StaticPages.tsx src/pages/StaticPages.tsx
 
 npm run build
 ```
 
-Recommended smoke test:
+## Suggested routes to test
 
-```text
-/login
-/login?role=business
-/login?role=investor
-/dashboard/business
-/dashboard/business/profile
-/dashboard/business/files
-/dashboard/business/images
-/dashboard/business/financials
-/dashboard/investor
-/dashboard/investor/profile
-/dashboard/investor/recommended
-/dashboard/investor/saved
+```txt
+/admin
+/admin/approvals
+/admin/businesses
+/admin/investors
+/admin/payments
+/admin/promo
+/admin/quality-criteria
+/admin/data-requests
+/admin/market-partners
+/about
+/terms
+/privacy
+/contact
+/partners
+/market-partner
 ```
+
+## Notes
+
+- Shared Header/Footer are intentionally not duplicated inside static pages.
+- Admin page includes its own dark admin header, matching reference admin layout.
+- Some Admin submodules remain simplified UI wrappers over current Supabase tables; deeper features like full SEO/import/email queue/feature flags can be wired in the next iteration.
