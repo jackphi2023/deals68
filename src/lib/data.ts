@@ -2,6 +2,9 @@ import { supabase } from './supabase';
 import { seedBusinesses } from '../data/seedBusinesses';
 import { computeBusinessQuality } from './scoring';
 
+type BusinessAssetRow = Record<string, any>;
+type BusinessDetailAssets = { files: BusinessAssetRow[]; images: BusinessAssetRow[] };
+
 const businessPublicSelect = [
   'id','public_code','slug','title_vi','title_en','description_vi','description_en','country_iso2','city','industry','deal_type','plan','revenue_2025','revenue_currency','ebitda_margin','ask_amount','ask_currency','stake_pct','highlights_vi','highlights_en','investment_reason_vi','investment_reason_en','data_confidence','quality_score','valuation_reasonableness','visible','status','quota_total','quota_used','image_url','created_at','updated_at','public_snapshot_json','public_version','last_approved_at','moderation_status','hero_image_url'
 ].join(',');
@@ -16,13 +19,16 @@ function applyPagination(q: any, filters: any) {
   if (limit > 0) return q.range(offset, offset + limit - 1);
   return q;
 }
+
 function clean(value: any) {
   if (value === null || value === undefined) return '';
   return String(value).trim();
 }
+
 function firstValue(...values: any[]) {
   return values.find((v) => clean(v)) ?? '';
 }
+
 function snapshotOf(row: any) {
   const raw = row?.public_snapshot_json;
   return raw && typeof raw === 'object' && !Array.isArray(raw) ? raw : {};
@@ -79,9 +85,9 @@ function applyBusinessPublicFilters(q: any, filters: any) {
   return q;
 }
 
-export async function listBusinesses(filters: any = {}) {
+export async function listBusinesses(filters: any = {}): Promise<any[]> {
   const select = filters.includeHidden ? '*, business_files(count), business_images(count)' : `${businessPublicSelect}, business_files(count), business_images(count)`;
-  let q = supabase.from('businesses').select(select);
+  let q: any = supabase.from('businesses').select(select as string);
   q = applyBusinessPublicFilters(q, filters);
   const sort = filters.sort || 'featured';
   if (sort === 'revenue') q = q.order('revenue_2025', { ascending: false, nullsFirst: false });
@@ -91,55 +97,55 @@ export async function listBusinesses(filters: any = {}) {
   q = applyPagination(q, filters);
   const { data, error } = await q;
   if (error) throw error;
-  return (data || []).map(getPublicBusinessView);
+  return ((data || []) as any[]).map(getPublicBusinessView);
 }
 
-export async function countBusinesses(filters: any = {}) {
-  let q = supabase.from('businesses').select('id', { count: 'exact', head: true });
+export async function countBusinesses(filters: any = {}): Promise<number> {
+  let q: any = supabase.from('businesses').select('id', { count: 'exact', head: true });
   q = applyBusinessPublicFilters(q, filters);
   const { count, error } = await q;
   if (error) throw error;
   return count || 0;
 }
 
-export async function getBusinessBySlug(slug: string, options: { includeHidden?: boolean } = {}) {
+export async function getBusinessBySlug(slug: string, options: { includeHidden?: boolean } = {}): Promise<any | null> {
   const select = options.includeHidden ? '*' : businessPublicSelect;
-  let q = supabase.from('businesses').select(select).eq('slug', slug);
+  let q: any = supabase.from('businesses').select(select as string).eq('slug', slug);
   if (!options.includeHidden) q = q.eq('visible', true).eq('status', 'active').not('public_snapshot_json', 'is', null);
   const { data, error } = await q.maybeSingle();
   if (error) throw error;
   return data ? getPublicBusinessView(data) : null;
 }
 
-export async function getBusinessFiles(businessId: string, options: { publicOnly?: boolean } = {}) {
+export async function getBusinessFiles(businessId: string, options: { publicOnly?: boolean } = {}): Promise<BusinessAssetRow[]> {
   const select = options.publicOnly
     ? 'id,business_id,file_name,display_name,file_type,size_bytes,category,privacy_level,public_visible,created_at,updated_at'
     : 'id,business_id,owner_id,file_name,display_name,file_path,file_type,size_bytes,category,privacy_level,public_visible,admin_note,created_at,updated_at';
-  let q = supabase
+  let q: any = supabase
     .from('business_files')
-    .select(select)
+    .select(select as string)
     .eq('business_id', businessId);
   if (options.publicOnly) q = q.eq('public_visible', true);
   const { data, error } = await q.order('created_at', { ascending: false });
   if (error) throw error;
-  return data || [];
+  return (data || []) as BusinessAssetRow[];
 }
 
-export async function getBusinessImages(businessId: string, options: { publicOnly?: boolean } = {}) {
+export async function getBusinessImages(businessId: string, options: { publicOnly?: boolean } = {}): Promise<BusinessAssetRow[]> {
   const select = options.publicOnly
     ? 'id,business_id,title,display_title,public_url,sort_order,public_visible,is_sanitized,is_hero,created_at,updated_at'
     : 'id,business_id,owner_id,title,display_title,image_path,public_url,sort_order,public_visible,is_sanitized,is_hero,admin_note,created_at,updated_at';
-  let q = supabase
+  let q: any = supabase
     .from('business_images')
-    .select(select)
+    .select(select as string)
     .eq('business_id', businessId);
   if (options.publicOnly) q = q.eq('public_visible', true).eq('is_sanitized', true);
   const { data, error } = await q.order('is_hero', { ascending: false }).order('sort_order', { ascending: true, nullsFirst: false }).order('created_at', { ascending: true });
   if (error) throw error;
-  return data || [];
+  return (data || []) as BusinessAssetRow[];
 }
 
-export async function getBusinessDetailAssets(businessId: string, options: { publicOnly?: boolean } = {}) {
+export async function getBusinessDetailAssets(businessId: string, options: { publicOnly?: boolean } = {}): Promise<BusinessDetailAssets> {
   const [files, images] = await Promise.all([getBusinessFiles(businessId, options), getBusinessImages(businessId, options)]);
   return { files, images };
 }
@@ -150,8 +156,8 @@ export async function getMyBusiness(ownerId: string) {
   return data;
 }
 
-export async function listInvestors(filters: any = {}) {
-  let q = supabase.from('investors').select(investorPublicSelect);
+export async function listInvestors(filters: any = {}): Promise<any[]> {
+  let q: any = supabase.from('investors').select(investorPublicSelect as string);
   if (!filters.includeHidden) q = q.eq('visible', true).eq('status', 'active');
   if (filters.type) q = q.eq('type', filters.type);
   if (filters.country) q = q.eq('country_iso2', filters.country);
@@ -173,11 +179,11 @@ export async function listInvestors(filters: any = {}) {
   q = applyPagination(q, { ...filters, limit: filters.limit || 24 });
   const { data, error } = await q;
   if (error) throw error;
-  return data || [];
+  return (data || []) as any[];
 }
 
-export async function countInvestors(filters: any = {}) {
-  let q = supabase.from('investors').select('id', { count: 'exact', head: true });
+export async function countInvestors(filters: any = {}): Promise<number> {
+  let q: any = supabase.from('investors').select('id', { count: 'exact', head: true });
   if (!filters.includeHidden) q = q.eq('visible', true).eq('status', 'active');
   if (filters.type) q = q.eq('type', filters.type);
   if (filters.country) q = q.eq('country_iso2', filters.country);
@@ -194,8 +200,8 @@ export async function getInvestorByOwner(ownerId: string) {
   return data;
 }
 
-export async function getInvestorByCode(code: string) {
-  const { data, error } = await supabase.from('investors').select(investorPublicSelect).eq('code', code).eq('visible', true).eq('status', 'active').maybeSingle();
+export async function getInvestorByCode(code: string): Promise<any | null> {
+  const { data, error } = await supabase.from('investors').select(investorPublicSelect as string).eq('code', code).eq('visible', true).eq('status', 'active').maybeSingle();
   if (error) throw error;
   return data;
 }
