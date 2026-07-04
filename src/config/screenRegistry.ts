@@ -741,11 +741,11 @@ export const screenRegistry = [
     ]
   },
   {
-    "path": "/dashboard/affiliate/register",
-    "title_vi": "Đăng ký Affiliate",
-    "title_en": "Affiliate register",
-    "group": "Affiliate",
-    "intent": "Affiliate registration workflow",
+    "path": "/dashboard/market-partner/register",
+    "title_vi": "Đăng ký Market Partner",
+    "title_en": "Market Partner register",
+    "group": "Market Partner",
+    "intent": "Market Partner registration workflow",
     "roles": [
       "guest",
       "affiliate"
@@ -757,10 +757,10 @@ export const screenRegistry = [
     ]
   },
   {
-    "path": "/dashboard/affiliate/links",
-    "title_vi": "Link Affiliate",
-    "title_en": "Affiliate links",
-    "group": "Affiliate",
+    "path": "/dashboard/market-partner/links",
+    "title_vi": "Link Market Partner",
+    "title_en": "Market Partner links",
+    "group": "Market Partner",
     "intent": "Manage referral links",
     "roles": [
       "affiliate"
@@ -772,10 +772,10 @@ export const screenRegistry = [
     ]
   },
   {
-    "path": "/dashboard/affiliate/conversions",
-    "title_vi": "Chuyển đổi Affiliate",
-    "title_en": "Affiliate conversions",
-    "group": "Affiliate",
+    "path": "/dashboard/market-partner/conversions",
+    "title_vi": "Chuyển đổi Market Partner",
+    "title_en": "Market Partner conversions",
+    "group": "Market Partner",
     "intent": "Referral performance",
     "roles": [
       "affiliate"
@@ -787,10 +787,10 @@ export const screenRegistry = [
     ]
   },
   {
-    "path": "/dashboard/affiliate/payouts",
-    "title_vi": "Thanh toán Affiliate",
-    "title_en": "Affiliate payouts",
-    "group": "Affiliate",
+    "path": "/dashboard/market-partner/payouts",
+    "title_vi": "Thanh toán Market Partner",
+    "title_en": "Market Partner payouts",
+    "group": "Market Partner",
     "intent": "Payout tracking",
     "roles": [
       "affiliate",
@@ -803,11 +803,11 @@ export const screenRegistry = [
     ]
   },
   {
-    "path": "/dashboard/affiliate/settings",
-    "title_vi": "Cài đặt Affiliate",
-    "title_en": "Affiliate settings",
-    "group": "Affiliate",
-    "intent": "Affiliate account settings",
+    "path": "/dashboard/market-partner/settings",
+    "title_vi": "Cài đặt Market Partner",
+    "title_en": "Market Partner settings",
+    "group": "Market Partner",
+    "intent": "Market Partner account settings",
     "roles": [
       "affiliate"
     ],
@@ -908,9 +908,9 @@ export const screenRegistry = [
     ]
   },
   {
-    "path": "/admin/affiliates",
-    "title_vi": "Quản trị Affiliate",
-    "title_en": "Manage affiliates",
+    "path": "/admin/market-partners",
+    "title_vi": "Quản trị Market Partner",
+    "title_en": "Manage market partners",
     "group": "Admin",
     "intent": "Approval/commission/payout",
     "roles": [
