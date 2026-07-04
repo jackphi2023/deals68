@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { countInvestors, listInvestors } from '../lib/data';
+import { countInvestors, getMyBusiness, listInvestors, submitBusinessProposal } from '../lib/data';
 import { formatCompactMoney } from '../lib/format';
 import { useAuth } from '../contexts/AuthContext';
 import type { Lang } from '../lib/i18n';
@@ -61,7 +61,7 @@ function ticket(i: Investor) {
   return `${formatCompactMoney(i.ticketMin, 'USD')} – ${formatCompactMoney(i.ticketMax, 'USD')}`;
 }
 function Skeleton() { return <div style={{ background: '#fff', border: '1px solid #E7EDF3', borderRadius: 14, padding: 20 }}><div style={{ height: 18, width: '55%', background: '#EEF2F6', borderRadius: 8 }} /><div style={{ height: 12, width: '86%', background: '#EEF2F6', borderRadius: 8, marginTop: 14 }} /><div style={{ height: 38, width: '100%', background: '#EEF2F6', borderRadius: 10, marginTop: 18 }} /></div>; }
-function InvestorCard({ inv, lang, onProposal }: { inv: Investor; lang: Lang; onProposal: () => void }) {
+function InvestorCard({ inv, lang, onProposal, sending }: { inv: Investor; lang: Lang; onProposal: () => void; sending?: boolean }) {
   return <article style={{ background: '#fff', border: '1px solid #E7EDF3', borderRadius: 14, padding: 20, display: 'flex', gap: 16, alignItems: 'flex-start', flexWrap: 'wrap' }}>
     <div style={{ width: 46, height: 46, borderRadius: 12, background: '#E7F6FD', color: '#1596cc', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800 }}>{inv.type.slice(0,2).toUpperCase()}</div>
     <div style={{ flex: 1, minWidth: 240 }}>
@@ -70,7 +70,7 @@ function InvestorCard({ inv, lang, onProposal }: { inv: Investor; lang: Lang; on
       <p style={{ margin: '0 0 12px', color: '#64748B', fontSize: 13.5, lineHeight: 1.55 }}>{T(lang, inv.descVi || 'Hồ sơ ẩn danh đang được cập nhật tiêu chí đầu tư.', inv.descEn || 'Anonymous profile updating investment criteria.')}</p>
       <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', color: '#475569', fontSize: 12.5 }}><span><b>Ticket:</b> {ticket(inv)}</span><span><b>{T(lang,'Ngành','Industries')}:</b> {inv.industries.join(', ') || 'TBD'}</span><span><b>{T(lang,'Giai đoạn','Stage')}:</b> {inv.stage}</span></div>
     </div>
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, minWidth: 160 }}><Link to={`/investors/${inv.code}`} style={{ textAlign: 'center', border: '1px solid #E2E8F0', color: '#334155', fontWeight: 700, fontSize: 13.5, padding: '10px 14px', borderRadius: 9 }}>{T(lang, 'Xem chi tiết', 'View detail')}</Link><button onClick={onProposal} style={{ border: 'none', background: '#0F2A4A', color: '#fff', fontWeight: 700, fontSize: 13.5, padding: '10px 14px', borderRadius: 9 }}>{T(lang, 'Gửi hồ sơ DN', 'Send business proposal')}</button></div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, minWidth: 160 }}><Link to={`/investors/${inv.code}`} style={{ textAlign: 'center', border: '1px solid #E2E8F0', color: '#334155', fontWeight: 700, fontSize: 13.5, padding: '10px 14px', borderRadius: 9 }}>{T(lang, 'Xem chi tiết', 'View detail')}</Link><button disabled={sending} onClick={onProposal} style={{ border: 'none', background: sending ? '#94A3B8' : '#0F2A4A', color: '#fff', fontWeight: 700, fontSize: 13.5, padding: '10px 14px', borderRadius: 9, cursor: sending ? 'not-allowed' : 'pointer' }}>{sending ? T(lang, 'Đang gửi...', 'Sending...') : T(lang, 'Gửi hồ sơ DN', 'Send business proposal')}</button></div>
   </article>;
 }
 
@@ -87,6 +87,7 @@ export default function Investors({ lang }: { lang: Lang }) {
   const [country, setCountry] = useState('');
   const [industry, setIndustry] = useState('');
   const [feedback, setFeedback] = useState('');
+  const [sendingId, setSendingId] = useState('');
 
   useEffect(() => {
     let live = true;
@@ -107,7 +108,20 @@ export default function Investors({ lang }: { lang: Lang }) {
   }, [page, type, region, country, industry, lang]);
 
   const pages = useMemo(() => total === null ? null : Math.max(1, Math.ceil(total / PAGE_SIZE)), [total]);
-  function proposal() { if (!profile) navigate('/register/business'); else if (profile.role !== 'business') setFeedback(T(lang, 'Chỉ tài khoản Doanh nghiệp được gửi proposal.', 'Only Business accounts can send proposals.')); else setFeedback(T(lang, 'Proposal sẽ được gửi từ dashboard doanh nghiệp ở bước tiếp theo.', 'Proposal will be sent from the Business dashboard in the next step.')); }
+  async function proposal(inv: Investor) {
+    setFeedback('');
+    if (!profile) { navigate('/login?next=/investors'); return; }
+    if (profile.role !== 'business') { setFeedback(T(lang, 'Chỉ tài khoản Doanh nghiệp được gửi proposal.', 'Only Business accounts can send proposals.')); return; }
+    setSendingId(inv.id);
+    try {
+      const business = await getMyBusiness(profile.id);
+      if (!business?.id) { setFeedback(T(lang, 'Tài khoản này chưa có hồ sơ doanh nghiệp để gửi proposal.', 'This account does not have a business profile to send proposal.')); return; }
+      await submitBusinessProposal(business.id, inv.id, 'Sent from Investors listing');
+      setFeedback(T(lang, `Đã gửi proposal tới ${inv.code}. Hạn mức proposal đã được cập nhật.`, `Proposal sent to ${inv.code}. Proposal quota updated.`));
+    } catch (e: any) {
+      setFeedback(e?.message || T(lang, 'Không gửi được proposal. Vui lòng thử lại hoặc liên hệ Admin.', 'Could not send proposal. Please try again or contact Admin.'));
+    } finally { setSendingId(''); }
+  }
 
   return <main style={{ background: '#F7FAFC', minHeight: '70vh' }}>
     <section style={{ maxWidth: 1240, margin: '0 auto', padding: '34px 24px 18px' }}>
@@ -125,9 +139,9 @@ export default function Investors({ lang }: { lang: Lang }) {
       </aside>
       <div>
         <div style={{ display: 'flex', justifyContent: 'space-between', color: '#64748B', fontSize: 14, marginBottom: 14 }}><span>{loading ? T(lang, 'Đang tải dữ liệu thật...', 'Loading live data...') : `${items.length}${total !== null ? ` / ${total}` : ''} ${T(lang, 'hồ sơ', 'profiles')}`}</span><span>{T(lang, 'Nguồn: Supabase active + visible', 'Source: Supabase active + visible')}</span></div>
-        {feedback ? <div style={{ background: '#FEF3D3', border: '1px solid #F5D98A', color: '#8a6413', padding: 12, borderRadius: 12, marginBottom: 12 }}>{feedback}</div> : null}
+        {feedback ? <div style={{ background: feedback.includes('Đã gửi') || feedback.includes('sent') ? '#E9F9EF' : '#FEF3D3', border: '1px solid #F5D98A', color: feedback.includes('Đã gửi') || feedback.includes('sent') ? '#16A34A' : '#8a6413', padding: 12, borderRadius: 12, marginBottom: 12 }}>{feedback}</div> : null}
         {error ? <div style={{ background: '#FDECEC', border: '1px solid #FCA5A5', color: '#991B1B', padding: 14, borderRadius: 12, marginBottom: 12 }}>{error}</div> : null}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>{loading ? Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} />) : items.map((inv) => <InvestorCard key={inv.id} inv={inv} lang={lang} onProposal={proposal} />)}</div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>{loading ? Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} />) : items.map((inv) => <InvestorCard key={inv.id} inv={inv} lang={lang} sending={sendingId === inv.id} onProposal={() => proposal(inv)} />)}</div>
         {!loading && !error && !items.length ? <div style={{ background: '#fff', border: '1px dashed #CBD5E1', borderRadius: 16, padding: 44, textAlign: 'center', color: '#64748B', marginTop: 18 }}><b>{T(lang, 'Chưa có nhà đầu tư phù hợp.', 'No matching investor profiles.')}</b></div> : null}
         <div style={{ display: 'flex', justifyContent: 'center', gap: 10, marginTop: 24 }}><button disabled={page <= 1 || loading} onClick={() => setPage((p) => Math.max(1, p - 1))} style={{ padding: '10px 14px', borderRadius: 9, border: '1px solid #E2E8F0', background: '#fff' }}>←</button><span style={{ padding: '10px 4px', fontWeight: 700 }}>{page}{pages ? ` / ${pages}` : ''}</span><button disabled={loading || (pages !== null && page >= pages)} onClick={() => setPage((p) => p + 1)} style={{ padding: '10px 14px', borderRadius: 9, border: '1px solid #E2E8F0', background: '#fff' }}>→</button></div>
       </div>
