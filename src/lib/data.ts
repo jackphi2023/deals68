@@ -3,31 +3,15 @@ import { seedBusinesses } from '../data/seedBusinesses';
 import { computeBusinessQuality } from './scoring';
 
 const investorPublicSelect = [
-  'id',
-  'code',
-  'username',
-  'type',
-  'title_vi',
-  'title_en',
-  'desc_vi',
-  'desc_en',
-  'country_iso2',
-  'country',
-  'region',
-  'industries',
-  'deal_types',
-  'stage',
-  'ticket_min',
-  'ticket_max',
-  'criteria',
-  'visible',
-  'verified',
-  'admin_priority',
-  'activity_level',
-  'status',
-  'created_at',
-  'updated_at'
+  'id','code','username','type','title_vi','title_en','desc_vi','desc_en','country_iso2','country','region','industries','deal_types','stage','ticket_min','ticket_max','criteria','visible','verified','admin_priority','activity_level','status','created_at','updated_at'
 ].join(',');
+
+function applyPagination(q: any, filters: any) {
+  const limit = Number(filters.limit || 0);
+  const offset = Math.max(0, Number(filters.offset || 0));
+  if (limit > 0) return q.range(offset, offset + limit - 1);
+  return q;
+}
 
 export async function listBusinesses(filters: any = {}) {
   let q = supabase.from('businesses').select('*, business_files(count), business_images(count)');
@@ -44,10 +28,21 @@ export async function listBusinesses(filters: any = {}) {
   else if (sort === 'ask') q = q.order('ask_amount', { ascending: false, nullsFirst: false });
   else if (sort === 'quality' || sort === 'featured') q = q.order('quality_score', { ascending: false, nullsFirst: false }).order('created_at', { ascending: false });
   else q = q.order('created_at', { ascending: false });
-  if (filters.limit) q = q.limit(filters.limit);
+  q = applyPagination(q, filters);
   const { data, error } = await q;
   if (error) throw error;
   return data || [];
+}
+
+export async function countBusinesses(filters: any = {}) {
+  let q = supabase.from('businesses').select('id', { count: 'exact', head: true });
+  if (!filters.includeHidden) q = q.eq('visible', true).eq('status', 'active');
+  if (filters.industry) q = q.ilike('industry', `%${filters.industry}%`);
+  if (filters.country) q = q.eq('country_iso2', filters.country);
+  if (filters.dealType) q = q.ilike('deal_type', `%${filters.dealType}%`);
+  const { count, error } = await q;
+  if (error) throw error;
+  return count || 0;
 }
 
 export async function getBusinessBySlug(slug: string) {
@@ -82,9 +77,22 @@ export async function listInvestors(filters: any = {}) {
   else if (sort === 'newest') q = q.order('created_at', { ascending: false });
   else if (sort === 'verified') q = q.order('verified', { ascending: false }).order('admin_priority', { ascending: false }).order('created_at', { ascending: false });
   else q = q.order('admin_priority', { ascending: false }).order('verified', { ascending: false }).order('created_at', { ascending: false });
-  const { data, error } = await q.limit(filters.limit || 1000);
+  q = applyPagination(q, { ...filters, limit: filters.limit || 24 });
+  const { data, error } = await q;
   if (error) throw error;
   return data || [];
+}
+
+export async function countInvestors(filters: any = {}) {
+  let q = supabase.from('investors').select('id', { count: 'exact', head: true });
+  if (!filters.includeHidden) q = q.eq('visible', true).eq('status', 'active');
+  if (filters.type) q = q.eq('type', filters.type);
+  if (filters.country) q = q.eq('country_iso2', filters.country);
+  if (filters.region) q = q.ilike('region', `%${filters.region}%`);
+  if (filters.industry) q = q.contains('industries', [filters.industry]);
+  const { count, error } = await q;
+  if (error) throw error;
+  return count || 0;
 }
 
 export async function getInvestorByOwner(ownerId: string) {
@@ -105,10 +113,24 @@ export async function getQualityCriteria() {
   return data || [];
 }
 
+export function makePublicCode(prefix = 'D68') {
+  const dt = new Date();
+  const ymd = `${dt.getFullYear()}${String(dt.getMonth() + 1).padStart(2, '0')}${String(dt.getDate()).padStart(2, '0')}`;
+  const tail = Math.random().toString(36).slice(2, 6).toUpperCase();
+  return `${prefix}-${ymd}-${tail}`;
+}
+
 export async function createBusinessFromProfile(ownerId: string, payload: any) {
   const criteria = await getQualityCriteria().catch(() => []);
   const quality = computeBusinessQuality(payload, criteria);
-  const { data, error } = await supabase.from('businesses').insert({ ...payload, owner_id: ownerId, quality_score: quality, status: 'pending_admin_review', visible: false }).select().single();
+  const { data, error } = await supabase.from('businesses').insert({
+    ...payload,
+    public_code: payload.public_code || makePublicCode('D68'),
+    owner_id: ownerId,
+    quality_score: quality,
+    status: 'pending_admin_review',
+    visible: false
+  }).select().single();
   if (error) throw error;
   return data;
 }
@@ -140,6 +162,7 @@ export async function createInvestorForOwner(ownerId: string, payload: any) {
   return data;
 }
 
+// Legacy helper retained only for local seed/admin scripts. Public pages must not call this.
 export async function fallbackSeedBusinesses() {
   return seedBusinesses.map((b) => ({ ...b, id: b.username, status: 'active', visible: true }));
 }
