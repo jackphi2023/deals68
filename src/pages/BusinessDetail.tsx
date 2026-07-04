@@ -81,7 +81,26 @@ export default function BusinessDetail({ lang }: { lang: Lang }) {
     if (profile.role !== 'investor') { setMsg(T(lang, 'Chỉ tài khoản Nhà đầu tư được bày tỏ quan tâm.', 'Only Investor accounts can express interest.')); return; }
     const inv = await getInvestorByOwner(profile.id).catch(() => null);
     if (!inv?.id || !business?.id) { setMsg(T(lang, 'Không tìm thấy hồ sơ nhà đầu tư.', 'Investor profile not found.')); return; }
-    const { error: upErr } = await supabase.rpc('express_investor_interest', { investor_uuid: inv.id, business_uuid: business.id, interest_note: 'Expressed from public business detail page.' }).catch(async () => supabase.from('investor_interests').upsert({ investor_id: inv.id, business_id: business.id, status: 'pending' }, { onConflict: 'investor_id,business_id' }));
+
+    let upErr: any = null;
+    try {
+      const rpcRes = await supabase.rpc('express_investor_interest', {
+        investor_uuid: inv.id,
+        business_uuid: business.id,
+        interest_note: 'Expressed from public business detail page.'
+      });
+      upErr = rpcRes.error;
+    } catch (err: any) {
+      upErr = err;
+    }
+
+    if (upErr) {
+      const fallback = await supabase
+        .from('investor_interests')
+        .upsert({ investor_id: inv.id, business_id: business.id, status: 'pending' }, { onConflict: 'investor_id,business_id' });
+      upErr = fallback.error;
+    }
+
     setMsg(upErr ? upErr.message : T(lang, 'Đã ghi nhận quan tâm. Admin/Doanh nghiệp sẽ duyệt kết nối trước khi mở thêm dữ liệu.', 'Interest recorded. Admin/Business approval is required before additional data unlocks.'));
   }
   async function requestData() {

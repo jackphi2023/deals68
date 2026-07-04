@@ -41,6 +41,7 @@ export default function BusinessDashboard() {
   const [msg, setMsg] = useState('');
   const [busy, setBusy] = useState(false);
   const [loadError, setLoadError] = useState('');
+  const [newDocName, setNewDocName] = useState('');
   const [newDocCategory, setNewDocCategory] = useState('financials');
   const [newDocVisibility, setNewDocVisibility] = useState('locked');
   useEffect(() => setTab(resolveTab(location.pathname)), [location.pathname]);
