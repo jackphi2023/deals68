@@ -11,7 +11,9 @@
     "seed:businesses": "node scripts/seed-businesses.mjs",
     "seed:investors": "node scripts/seed-investors.mjs",
     "check:routes": "node scripts/check-routes.mjs",
-    "extract:reference": "node scripts/extract-reference-css.mjs"
+    "extract:reference": "node scripts/extract-reference-css.mjs",
+    "visual:businesses": "node scripts/visual-diff-businesses.mjs",
+    "visual:businesses:local": "npm run build && (npm run preview -- --host 127.0.0.1 > /tmp/deals68-preview.log 2>&1 & echo $! > /tmp/deals68-preview.pid) && sleep 3 && npm run visual:businesses; kill $(cat /tmp/deals68-preview.pid)"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.45.4",
@@ -26,6 +28,9 @@
   "devDependencies": {
     "@types/react": "18.3.12",
     "@types/react-dom": "18.3.1",
-    "node-html-parser": "^6.1.13"
+    "node-html-parser": "^6.1.13",
+    "@playwright/test": "^1.49.0",
+    "pixelmatch": "^6.0.0",
+    "pngjs": "^7.0.0"
   }
 }
