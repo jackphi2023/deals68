@@ -1,4 +1,6 @@
-# Build test result — Pilot /businesses port
+# Build Test Result — Phase A2 Home Visual Pilot
+
+Date: 2026-07-04
 
 Command:
 
@@ -10,17 +12,11 @@ Result:
 
 ```txt
 ✓ 140 modules transformed.
-✓ built in 1.68s
+✓ built in 1.84s
 ```
 
 Notes:
-
-- Build passed after porting `/businesses` to reference-led markup and adding the visual diff pilot script.
-- Visual diff script/config is included but was not executed in this container because Playwright browser binaries are not preinstalled here.
-- To run visual diff locally or in GitHub Actions:
-
-```bash
-npm install --no-audit --no-fund --package-lock=false
-npx playwright install chromium
-npm run visual:businesses:local
-```
+- Home was ported closer to `ui-reference/Deals68 Home.dc.html`.
+- `/businesses` pilot remains unchanged.
+- New visual diff script supports multiple routes: `/` and `/businesses`.
+- GitHub Action file is included under `.github/workflows/visual-ui-pilots.yml`. When uploading through GitHub UI, make sure the hidden `.github` directory is uploaded.

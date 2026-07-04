@@ -31,3 +31,4 @@
 @import './overrides.css';                    /* tự bọc @layer d68-overrides  */
 @import './pages/businesses.css' layer(d68-overrides);   /* pilot port: /businesses */
 
+@import './pages/home.css' layer(d68-overrides);          /* pilot port: / */
