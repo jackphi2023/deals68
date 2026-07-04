@@ -6,7 +6,7 @@ import { t } from '../lib/i18n';
 export default function Header({ lang, setLang }: { lang: Lang; setLang: (l: Lang) => void }) {
   const { profile, signOut } = useAuth();
   const navigate = useNavigate();
-  const dashboardPath = profile?.role === 'admin' ? '/admin' : profile?.role ? `/dashboard/${profile.role}` : '/login';
+  const dashboardPath = profile?.role === 'admin' ? '/admin' : profile?.role === 'affiliate' ? '/dashboard/market-partner' : profile?.role ? `/dashboard/${profile.role}` : '/login';
   return <header className="topbar">
     <div className="container nav">
       <Link to="/"><img className="logo" src="/assets/logo-beta.png" alt="Deals68.com" /></Link>
@@ -33,6 +33,7 @@ export default function Header({ lang, setLang }: { lang: Lang; setLang: (l: Lan
               <Link to="/register/business">{lang === 'en' ? 'Register as Business' : 'Đăng ký Doanh nghiệp'}</Link>
               <Link to="/register/investor">{lang === 'en' ? 'Register as Investor' : 'Đăng ký Nhà đầu tư'}</Link>
               <Link to="/register/advisor">{lang === 'en' ? 'Register as Advisor' : 'Đăng ký Cố vấn'}</Link>
+              <Link to="/register/market-partner">{lang === 'en' ? 'Register as Market Partner' : 'Đăng ký Đối tác thị trường'}</Link>
             </div></div>
           </div>
         </>}
