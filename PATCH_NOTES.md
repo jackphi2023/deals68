@@ -1,72 +1,78 @@
-# Deals68 Admin + Static Pages UI Reference Patch
+# Deals68 Truth-first + Visual Flow Patch
 
-Generated: 2026-07-04
+## Mục tiêu
+Sửa nhóm P0/P1 quan trọng trước khi test nghiệp vụ sâu: public pages không được hiển thị deal/investor/mock/claim giả khi fetch lỗi hoặc khi database thiếu dữ liệu.
 
-## Scope
-
-This patch ports the following React pages toward their approved `ui-reference/*.dc.html` sources:
-
-- `src/pages/Admin.tsx`
-  - Source of truth: `ui-reference/Deals68 Admin.dc.html`
-  - Keeps production Supabase admin operations from the existing React page.
-  - Ports the dark Admin header, left-side admin nav, overview cards, approvals/payment gate, business review, promo, payments, quality, requests, market partner, audit/settings style.
-
+## Files thay thế
+- `src/lib/data.ts`
+- `src/pages/Home.tsx`
+- `src/pages/Businesses.tsx`
+- `src/pages/BusinessDetail.tsx`
+- `src/pages/Investors.tsx`
+- `src/pages/InvestorDetail.tsx`
 - `src/pages/StaticPages.tsx`
-  - Source of truth:
-    - `ui-reference/Deals68 About.dc.html`
-    - `ui-reference/Deals68 Terms.dc.html`
-    - `ui-reference/Deals68 Privacy.dc.html`
-    - `ui-reference/Deals68 Contact.dc.html`
-    - `ui-reference/Deals68 Market Partner.dc.html`
-  - Ports body sections only because `App.tsx` already wraps pages with shared React Header/Footer.
-  - Keeps React Router links instead of `.dc.html` links.
+- `src/App.tsx`
 
-## Validation performed
+## Files bổ sung
+- `supabase/migrations/20260704_contact_partner_leads.sql`
+- `scripts/visual-diff-full-flow.mjs`
+- `scripts/apply-p1-safety-fixes.mjs`
 
-Syntax/transpile check only:
+## Đã sửa
+1. Bỏ initial state/fallback fake listings ở Businesses/Investors.
+2. Loading hiện skeleton hoặc trạng thái đang tải, không hiển thị mock data.
+3. Fetch lỗi hiện empty/error state, không thay bằng seed/reference deals.
+4. BusinessDetail không dùng `detailData` hardcoded. Chỉ hiển thị dữ liệu từ `businesses` và `business_files`.
+5. InvestorDetail không dùng `FALLBACK_INVESTORS`. Không tự tạo proposal history/charts/criteria khi DB chưa có.
+6. Home stats lấy từ `countBusinesses()` và `countInvestors()`, không hardcode 6/624/tổng ask tự tính tay.
+7. `listBusinesses` và `listInvestors` hỗ trợ `limit/offset`; thêm `countBusinesses/countInvestors`.
+8. `createBusinessFromProfile` tự tạo `public_code` nếu payload không có.
+9. Contact form và Market Partner form chỉ báo thành công khi insert Supabase thành công; nếu thiếu bảng sẽ báo lỗi thật.
+10. App lazy-load Admin, Dashboards và StaticPages để giảm main bundle public.
+11. Thêm visual diff script cho full public flow.
 
-```txt
-PASS src/pages/Admin.tsx
-PASS src/pages/StaticPages.tsx
-```
-
-Full `npm run build` and visual diff were not run in this sandbox because the full repo and node_modules are not available here.
+## Chưa làm trong patch này
+- Chưa chuyển toàn bộ inline style sang CSS modules/layers. Đây là P2, nên làm sau khi khóa dữ liệu đúng.
+- Chưa hoàn tất route SEO `/vi/...` và `/en/...`.
+- Chưa tự động trừ quota promo/proposal; cần RPC/migration riêng.
+- Chưa chạy được `npm run build` hay visual diff trong sandbox này vì không có full repo runtime/dependencies/app server. Đã kiểm tra TSX transpile cho các file thay thế.
 
 ## Apply
-
-From repo root:
-
 ```bash
-unzip deals68_admin_static_patch.zip -d /tmp/deals68-admin-static
+unzip deals68_truth_first_visual_patch.zip -d /tmp/deals68-truth
+cp -f /tmp/deals68-truth/src/lib/data.ts src/lib/data.ts
+cp -f /tmp/deals68-truth/src/pages/Home.tsx src/pages/Home.tsx
+cp -f /tmp/deals68-truth/src/pages/Businesses.tsx src/pages/Businesses.tsx
+cp -f /tmp/deals68-truth/src/pages/BusinessDetail.tsx src/pages/BusinessDetail.tsx
+cp -f /tmp/deals68-truth/src/pages/Investors.tsx src/pages/Investors.tsx
+cp -f /tmp/deals68-truth/src/pages/InvestorDetail.tsx src/pages/InvestorDetail.tsx
+cp -f /tmp/deals68-truth/src/pages/StaticPages.tsx src/pages/StaticPages.tsx
+cp -f /tmp/deals68-truth/src/App.tsx src/App.tsx
+mkdir -p scripts supabase/migrations
+cp -f /tmp/deals68-truth/scripts/visual-diff-full-flow.mjs scripts/visual-diff-full-flow.mjs
+cp -f /tmp/deals68-truth/scripts/apply-p1-safety-fixes.mjs scripts/apply-p1-safety-fixes.mjs
+cp -f /tmp/deals68-truth/supabase/migrations/20260704_contact_partner_leads.sql supabase/migrations/20260704_contact_partner_leads.sql
 
-cp -f /tmp/deals68-admin-static/src/pages/Admin.tsx src/pages/Admin.tsx
-cp -f /tmp/deals68-admin-static/src/pages/StaticPages.tsx src/pages/StaticPages.tsx
+# optional but recommended: removes autoEnglishFromVietnamese write-paths in Register/BusinessDashboard/Admin
+node scripts/apply-p1-safety-fixes.mjs
+
+# remove dead CSS traps if present and unimported
+rm -f src/styles.css src/reference-overrides.css
 
 npm run build
 ```
 
-## Suggested routes to test
+## Supabase migration
+Apply `supabase/migrations/20260704_contact_partner_leads.sql` before testing `/contact` and `/partners`, or those forms will correctly show insert errors instead of fake success.
 
-```txt
-/admin
-/admin/approvals
-/admin/businesses
-/admin/investors
-/admin/payments
-/admin/promo
-/admin/quality-criteria
-/admin/data-requests
-/admin/market-partners
-/about
-/terms
-/privacy
-/contact
-/partners
-/market-partner
+## Visual diff sau khi build
+```bash
+npm run build
+(npm run preview -- --host 127.0.0.1 > /tmp/deals68-preview.log 2>&1 & echo $! > /tmp/deals68-preview.pid)
+sleep 3
+node scripts/visual-diff-full-flow.mjs
+kill $(cat /tmp/deals68-preview.pid)
 ```
 
-## Notes
-
-- Shared Header/Footer are intentionally not duplicated inside static pages.
-- Admin page includes its own dark admin header, matching reference admin layout.
-- Some Admin submodules remain simplified UI wrappers over current Supabase tables; deeper features like full SEO/import/email queue/feature flags can be wired in the next iteration.
+Default routes covered:
+`/`, `/businesses`, `/investors`, `/pricing`, `/valuation`, `/about`, `/terms`, `/privacy`, `/contact`, `/partners`, `/login?role=business`, `/login?role=investor`, `/register/business`, `/register/investor` on desktop and mobile.
