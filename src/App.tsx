@@ -22,7 +22,7 @@ import type { Lang } from './lib/i18n';
 
 export default function App(){
   const [lang,setLang]=useState<Lang>('vi');
-  return <>
+  return <div data-lang={lang}>
     <Header lang={lang} setLang={setLang}/>
     <Routes>
       <Route path="/" element={<Home lang={lang}/>}/>
@@ -92,5 +92,5 @@ export default function App(){
       <Route path="*" element={<NotFound/>}/>
     </Routes>
     <Footer/>
-  </>;
+  </div>;
 }
