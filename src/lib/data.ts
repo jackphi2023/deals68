@@ -162,6 +162,34 @@ export async function createInvestorForOwner(ownerId: string, payload: any) {
   return data;
 }
 
+export async function submitBusinessProposal(businessId: string, investorId: string, note = '') {
+  const { data, error } = await supabase.rpc('submit_business_proposal', {
+    p_business_id: businessId,
+    p_investor_id: investorId,
+    p_note: note || null
+  });
+  if (error) throw error;
+  return data;
+}
+
+export async function expressInvestorInterest(businessId: string, note = '') {
+  const { data, error } = await supabase.rpc('express_investor_interest', {
+    p_business_id: businessId,
+    p_note: note || null
+  });
+  if (error) throw error;
+  return data;
+}
+
+export async function redeemPromoCode(code: string, role: string) {
+  const { data, error } = await supabase.rpc('redeem_promo_code', {
+    p_code: code,
+    p_role: role
+  });
+  if (error) throw error;
+  return data;
+}
+
 // Legacy helper retained only for local seed/admin scripts. Public pages must not call this.
 export async function fallbackSeedBusinesses() {
   return seedBusinesses.map((b) => ({ ...b, id: b.username, status: 'active', visible: true }));
