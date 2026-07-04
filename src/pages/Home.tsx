@@ -28,23 +28,24 @@ const featuredInvestors = (lang: Lang) => [
 const roleCards = (lang: Lang) => [
   { icon:'🏢', bg:'#EAF0F6', title:T(lang,'Doanh nghiệp','Business'), desc:T(lang,'Gọi vốn, vay, bán một phần hoặc toàn bộ. Đăng hồ sơ ẩn danh và nhận định giá AI.','Raise capital, borrow, sell part or all. Post an anonymous profile and get an AI valuation.'), cta:T(lang,'Đăng ký doanh nghiệp','List a business'), link:'/register/business' },
   { icon:'📈', bg:'#FEF3D3', title:T(lang,'Nhà đầu tư','Investor'), desc:T(lang,'Angel, VC, PE, family office, người mua chiến lược hay bên cho vay tìm thương vụ đúng khẩu vị.','Angels, VC, PE, family offices, strategic buyers or lenders finding the right deals.'), cta:T(lang,'Tôi là Nhà đầu tư','I am an Investor'), link:'/register/investor' },
-  { icon:'🤝', bg:'#E7F6FD', title:T(lang,'Cố vấn & Môi giới','Advisor & Broker'), desc:T(lang,'Cố vấn M&A, môi giới và tư vấn tài chính đại diện nhiều thương vụ và kết nối các bên.','M&A advisors, brokers and financial consultants representing deals and connecting parties.'), cta:T(lang,'Tham gia cố vấn','Join as advisor'), link:'/register/advisor' }
+  { icon:'🤝', bg:'#E7F6FD', title:T(lang,'Cố vấn & Môi giới','Advisor & Broker'), desc:T(lang,'Cố vấn M&A, môi giới và tư vấn tài chính đại diện nhiều thương vụ và kết nối các bên.','M&A advisors, brokers and financial consultants representing deals and connecting parties.'), cta:T(lang,'Tham gia cố vấn','Join as advisor'), link:'/register/advisor' },
+  { icon:'🌍', bg:'#FDF2D0', title:T(lang,'Đối tác thị trường','Market Partner'), desc:T(lang,'Đối tác phát triển thị trường, cộng đồng doanh nghiệp và kênh giới thiệu khách hàng/nhà đầu tư cho Deals68.','Market development partners who bring business communities, referrals and investor relationships to Deals68.'), cta:T(lang,'Trở thành Market Partner','Become a Market Partner'), link:'/register/market-partner' }
 ];
 
 export default function Home({ lang }: { lang: Lang }) {
-  const [tab, setTab] = useState<'business'|'investor'>('business');
+  const [tab, setTab] = useState<'business'|'investor'|'marketPartner'>('business');
   const [region, setRegion] = useState('all'); const [country,setCountry]=useState(''); const [industry,setIndustry]=useState('');
   const [businesses,setBusinesses]=useState<any[]>([]); const [investors,setInvestors]=useState<any[]>([]);
   const navigate = useNavigate();
   useEffect(()=>{ listBusinesses().then(d=>setBusinesses(d.slice(0,6))).catch(async()=>setBusinesses(await fallbackSeedBusinesses())); listInvestors({limit:6}).then(d=>setInvestors(d.slice(0,6))).catch(()=>setInvestors([])); },[]);
-  const go = () => { const params = new URLSearchParams(); if(region && region !== 'all') params.set('region',region); if(country) params.set('country',country); if(industry) params.set('industry',industry); navigate(`/${tab === 'business' ? 'businesses' : 'investors'}?${params.toString()}`); };
+  const go = () => { const params = new URLSearchParams(); if(region && region !== 'all') params.set('region',region); if(country) params.set('country',country); if(industry) params.set('industry',industry); navigate(`/${tab === 'business' ? 'businesses' : tab === 'investor' ? 'investors' : 'dashboard/market-partner/register'}?${params.toString()}`); };
   return <>
     <section className="hero"><div className="container">
       <div className="eyebrow"><span className="dot" />{T(lang,'Kết nối thương vụ, khai mở lộc phát','Connecting Deals, Unlocking Prosperity')}</div>
       <h1>{T(lang,'Nơi Doanh nghiệp gặp gỡ ','Where Businesses Meet ')}<strong>{T(lang,'Nhà đầu tư','Investors')}</strong></h1>
       <p>{T(lang,'Mua bán Doanh nghiệp, Sang nhượng cửa hàng, huy động vốn, cho vay và đầu tư xuyên biên giới — bảo mật, chọn lọc, dễ kết nối.','M&A, fundraising, lending and cross-border investment — confidential, curated, easy to connect.')}</p>
       <div className="searchbox d68-fade">
-        <div className="tabs"><button className={`tab ${tab==='business'?'active':''}`} onClick={()=>setTab('business')}>{T(lang,'Tìm Doanh nghiệp','Find Businesses')}</button><button className={`tab ${tab==='investor'?'active':''}`} onClick={()=>setTab('investor')}>{T(lang,'Tìm Nhà đầu tư','Find Investors')}</button></div>
+        <div className="tabs"><button className={`tab ${tab==='business'?'active':''}`} onClick={()=>setTab('business')}>{T(lang,'Tìm Doanh nghiệp','Find Businesses')}</button><button className={`tab ${tab==='investor'?'active':''}`} onClick={()=>setTab('investor')}>{T(lang,'Tìm Nhà đầu tư','Find Investors')}</button><button className={`tab ${tab==='marketPartner'?'active':''}`} onClick={()=>setTab('marketPartner')}>{T(lang,'Tìm Market Partner','Find Market Partners')}</button></div>
         <div className="searchgrid">
           <label className="search-label"><span>{T(lang,'Khu vực','Region')}</span><select className="select" value={region} onChange={e=>setRegion(e.target.value)}><option value="all">{T(lang,'Tất cả khu vực','All regions')}</option><option value="sea">{T(lang,'Đông Nam Á','Southeast Asia')}</option><option value="eastasia">{T(lang,'Đông Bắc Á','East Asia')}</option><option value="global">Global</option></select></label>
           <label className="search-label"><span>{T(lang,'Quốc gia','Country')}</span><select className="select" value={country} onChange={e=>setCountry(e.target.value)}><option value="">{T(lang,'Tất cả quốc gia','All countries')}</option><option value="VN">Vietnam</option><option value="SG">Singapore</option><option value="US">United States</option><option value="JP">Japan</option><option value="KR">Korea</option></select></label>
