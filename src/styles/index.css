@@ -1,42 +1,18 @@
 /* ============================================================
    Deals68 — CSS ENTRY DUY NHẤT (import 1 lần trong main.tsx)
-   Master UI Standard v1.0 + Spec v1.3
-
-   Layer priority tăng dần:
-   d68-legacy      : CSS cũ còn tồn tại, sẽ xóa dần
-   d68-base        : design tokens + base + shared app components
-   d68-components  : CSS trích xuất từ ui-reference
-   d68-utilities   : utilities trích xuất từ ui-reference
-   d68-overrides   : page CSS đã port/đang hardening
-
-   QUY TẮC:
-   1. UI Reference là chuẩn. Không tự redesign.
-   2. Không inline style cho layout mới; dùng class + token.
-   3. Không dùng !important, trừ rule VI/EN visibility có chủ đích.
-   4. Page CSS chỉ nằm trong src/styles/pages/*.css và import ở đây.
-   5. Mobile 375px không được tràn ngang.
    ============================================================ */
 @layer d68-legacy, d68-base, d68-components, d68-utilities, d68-overrides;
 
 @import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap');
 
-/* Global design source of truth */
 @import './design-tokens.css';
-
-/* Existing + master base */
+@import './base.css';
 @import './legacy.css';
-@import './base.css' layer(d68-base);
 @import './app.css' layer(d68-base);
-
-/* Extracted UI Reference CSS: do not edit manually */
 @import './reference/d68-page-styles.css';
 @import './reference/d68-components.css';
 @import './reference/d68-utilities.css';
-
-/* Temporary overrides: must shrink over time */
 @import './overrides.css';
-
-/* Ported page CSS */
 @import './pages/businesses.css' layer(d68-overrides);
 @import './pages/home.css' layer(d68-overrides);
 @import './pages/business-detail.css' layer(d68-overrides);
@@ -48,3 +24,4 @@
 @import './pages/dashboard.css' layer(d68-overrides);
 @import './pages/admin.css' layer(d68-overrides);
 @import './pages/static.css' layer(d68-overrides);
+@import './pages/ui-fixes.css' layer(d68-overrides);

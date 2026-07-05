@@ -76,30 +76,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   async function signUp(role: Role, email: string, password: string, meta: Partial<Profile> = {}) {
-    const { data, error } = await supabase.auth.signUp({ email, password });
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          role,
+          username: meta.username,
+          display_name: meta.display_name || email,
+          country_iso2: meta.country_iso2 || 'VN',
+          language_code: meta.language_code || (role === 'investor' ? 'en' : 'vi'),
+          timezone: meta.timezone || 'Asia/Ho_Chi_Minh'
+        }
+      }
+    });
     if (error) return { error: error.message };
-    if (data.user) {
-      const payload = {
-        id: data.user.id,
-        role,
-        email,
-        username: meta.username,
-        display_name: meta.display_name || email,
-        country_iso2: meta.country_iso2 || 'VN',
-        language_code: role === 'investor' ? 'en' : 'vi',
-        timezone: meta.timezone || 'Asia/Ho_Chi_Minh',
-        status: role === 'affiliate' ? 'pending_admin_review' : 'payment_pending',
-        dashboard_login_enabled: false,
-      };
-      const { error: pErr } = await supabase.from('profiles').insert(payload);
-      if (pErr) return { error: pErr.message };
+
+    // Profile/listing/payment are created by Register via create_signup_bundle RPC.
+    // This avoids the RLS failure that can occur immediately after signUp when
+    // Supabase has not yet attached an authenticated session.
+    if (data.session?.user) {
+      setUser(data.session.user);
+      await loadProfile(data.session.user.id).catch(() => undefined);
     }
+
     return { user: data.user };
   }
 
   async function signOut() {
     await supabase.auth.signOut();
-    setUser(null); setProfile(null);
+    setUser(null);
+    setProfile(null);
   }
 
   const value = useMemo(() => ({ user, profile, loading, signIn, signUp, signOut, refreshProfile }), [user, profile, loading]);

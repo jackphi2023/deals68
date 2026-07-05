@@ -1,4 +1,4 @@
-import { Route, Routes, Navigate, useLocation } from 'react-router-dom';
+import { Route, Routes, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { lazy, Suspense, useEffect, type ReactNode } from 'react';
 import Header from './components/Header';
 import Footer from './components/Footer';
@@ -16,7 +16,7 @@ import Valuation from './pages/Valuation';
 import ModuleScreen from './pages/ModuleScreen';
 import NotFound from './pages/NotFound';
 import { useAuth } from './contexts/AuthContext';
-import { langFromPath, stripLangPrefix } from './lib/i18nRoutes';
+import { langFromPath, stripLangPrefix, toLocalizedPath } from './lib/i18nRoutes';
 
 const BusinessDashboard = lazy(() => import('./pages/BusinessDashboard'));
 const InvestorDashboard = lazy(() => import('./pages/InvestorDashboard'));
@@ -36,6 +36,36 @@ function ScrollToTop() {
   useEffect(() => {
     if (typeof window !== 'undefined') window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
   }, [location.pathname, location.search]);
+  return null;
+}
+
+function LanguageMemory() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const lang = langFromPath(location.pathname);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const path = location.pathname;
+    const privatePrefix = ['/dashboard', '/admin', '/checkout', '/payment', '/data-room', '/messages', '/notifications', '/support'];
+    const isPrivate = privatePrefix.some((p) => path === p || path.startsWith(`${p}/`));
+    if (path === '/vi' || path.startsWith('/vi/')) return;
+    if (isPrivate) return;
+
+    if (path === '/en' || path.startsWith('/en/')) {
+      window.localStorage.setItem('d68_lang', 'en');
+      return;
+    }
+
+    const preferred = window.localStorage.getItem('d68_lang');
+    if (preferred === 'en') {
+      navigate(`${toLocalizedPath(stripLangPrefix(path), 'en')}${location.search || ''}`, { replace: true });
+      return;
+    }
+
+    window.localStorage.setItem('d68_lang', lang);
+  }, [location.pathname, location.search, lang, navigate]);
+
   return null;
 }
 
@@ -64,10 +94,10 @@ export default function App(){
 
   return <div data-lang={lang}>
     <ScrollToTop />
+    <LanguageMemory />
     <Header lang={lang}/>
     <Suspense fallback={<RouteFallback/>}>
       <Routes>
-        {/* Vietnamese canonical routes: no prefix */}
         <Route path="/" element={<Home lang="vi"/>}/>
         <Route path="/businesses" element={<Businesses lang="vi"/>}/>
         <Route path="/businesses/:slug" element={<BusinessDetail lang="vi"/>}/>
@@ -87,7 +117,6 @@ export default function App(){
         <Route path="/partners" element={<MarketPartner lang="vi"/>}/>
         <Route path="/market-partner" element={<MarketPartner lang="vi"/>}/>
 
-        {/* English routes: /en prefix */}
         <Route path="/en" element={<Home lang="en"/>}/>
         <Route path="/en/businesses" element={<Businesses lang="en"/>}/>
         <Route path="/en/businesses/:slug" element={<BusinessDetail lang="en"/>}/>
@@ -107,11 +136,9 @@ export default function App(){
         <Route path="/en/partners" element={<MarketPartner lang="en"/>}/>
         <Route path="/en/market-partner" element={<MarketPartner lang="en"/>}/>
 
-        {/* Deprecated /vi routes redirect to Vietnamese canonical URLs */}
         <Route path="/vi" element={<Navigate to="/" replace/>}/>
         <Route path="/vi/*" element={<LegacyViRedirect/>}/>
 
-        {/* App/private routes stay unprefixed */}
         <Route path="/admin/login" element={<Login lang={lang}/>}/>
         <Route path="/dashboard/business" element={<DashboardGate role="business"><BusinessDashboard/></DashboardGate>}/>
         <Route path="/dashboard/business/*" element={<DashboardGate role="business"><BusinessDashboard/></DashboardGate>}/>

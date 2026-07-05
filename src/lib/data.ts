@@ -80,9 +80,9 @@ function safeLikeTerm(value: any) {
 function dealTypeSearchTerms(raw: any) {
   const v = String(raw || '').toLowerCase();
   if (!v) return [];
-  if (v.includes('loan') || v.includes('debt') || v.includes('vay')) return ['loan', 'debt', 'vay'];
-  if (v.includes('jv') || v.includes('joint') || v.includes('partner') || v.includes('đối')) return ['jv', 'joint', 'partner', 'đối'];
-  if (v.includes('sale') || v.includes('transfer') || v.includes('asset') || v.includes('bán') || v.includes('chuyển')) return ['sale', 'transfer', 'asset', 'acquisition', 'bán', 'chuyển'];
+  if (v.includes('loan') || v.includes('debt') || v.includes('vay') || v.includes('lending')) return ['loan', 'debt', 'vay', 'lending'];
+  if (v.includes('jv') || v.includes('joint') || v.includes('partner') || v.includes('đối')) return ['jv', 'joint', 'partner', 'đối', 'partnership'];
+  if (v.includes('sale') || v.includes('transfer') || v.includes('asset') || v.includes('m&a') || v.includes('bán') || v.includes('chuyển')) return ['sale', 'transfer', 'asset', 'acquisition', 'm&a', 'bán', 'chuyển'];
   if (v.includes('fund') || v.includes('raise') || v.includes('invest') || v.includes('gọi') || v.includes('vốn')) return ['fund', 'raise', 'fundrais', 'invest', 'equity', 'gọi', 'vốn'];
   const single = safeLikeTerm(v);
   return single ? [single] : [];
@@ -98,8 +98,6 @@ function applyBusinessPublicFilters(q: any, filters: any) {
     else if (terms[0]) q = q.ilike('deal_type', `%${terms[0]}%`);
   }
   if (filters.city) q = q.ilike('city', `%${safeLikeTerm(filters.city)}%`);
-  // Lọc theo dải doanh thu, đúng theo từng loại tiền tệ (VND / USD quy đổi ~26.000)
-  // để không so sánh chéo số thô giữa hai currency.
   if (filters.revenueBand === 'small') {
     q = q.or('and(revenue_currency.eq.VND,revenue_2025.lt.10000000000),and(revenue_currency.eq.USD,revenue_2025.lt.400000)');
   } else if (filters.revenueBand === 'mid') {
@@ -116,11 +114,6 @@ function applyBusinessPublicFilters(q: any, filters: any) {
   return q;
 }
 
-/**
- * Facet counts cho sidebar/tab của trang /businesses.
- * Dùng CHUNG applyBusinessPublicFilters (trừ chính facet đang đếm) để
- * số đếm luôn khớp với list — theo SPEC v1.3 mục B8/15.6.
- */
 export async function listBusinessFacets(filters: any = {}): Promise<{ city: string; industry: string; deal_type: string; plan: string; quality_score: number | null }[]> {
   let q: any = supabase.from('businesses').select('city, industry, deal_type, plan, quality_score');
   q = applyBusinessPublicFilters(q, { search: filters.search, country: filters.country });
@@ -165,10 +158,7 @@ export async function getBusinessFiles(businessId: string, options: { publicOnly
   const select = options.publicOnly
     ? 'id,business_id,file_name,display_name,file_type,size_bytes,category,privacy_level,public_visible,created_at,updated_at'
     : 'id,business_id,owner_id,file_name,display_name,file_path,file_type,size_bytes,category,privacy_level,public_visible,admin_note,created_at,updated_at';
-  let q: any = supabase
-    .from('business_files')
-    .select(select as string)
-    .eq('business_id', businessId);
+  let q: any = supabase.from('business_files').select(select as string).eq('business_id', businessId);
   if (options.publicOnly) q = q.eq('public_visible', true);
   const { data, error } = await q.order('created_at', { ascending: false });
   if (error) throw error;
@@ -179,10 +169,7 @@ export async function getBusinessImages(businessId: string, options: { publicOnl
   const select = options.publicOnly
     ? 'id,business_id,title,display_title,public_url,sort_order,public_visible,is_sanitized,is_hero,created_at,updated_at'
     : 'id,business_id,owner_id,title,display_title,image_path,public_url,sort_order,public_visible,is_sanitized,is_hero,admin_note,created_at,updated_at';
-  let q: any = supabase
-    .from('business_images')
-    .select(select as string)
-    .eq('business_id', businessId);
+  let q: any = supabase.from('business_images').select(select as string).eq('business_id', businessId);
   if (options.publicOnly) q = q.eq('public_visible', true).eq('is_sanitized', true);
   const { data, error } = await q.order('is_hero', { ascending: false }).order('sort_order', { ascending: true, nullsFirst: false }).order('created_at', { ascending: true });
   if (error) throw error;
@@ -205,14 +192,17 @@ export async function listInvestors(filters: any = {}): Promise<any[]> {
   if (!filters.includeHidden) q = q.eq('visible', true).eq('status', 'active');
   if (filters.type) q = q.eq('type', filters.type);
   if (filters.country) q = q.eq('country_iso2', filters.country);
-  if (filters.region) q = q.ilike('region', `%${filters.region}%`);
+  if (filters.region) q = q.ilike('region', `%${safeLikeTerm(filters.region)}%`);
   if (filters.industry) q = q.contains('industries', [filters.industry]);
-  if (filters.dealType) q = q.contains('deal_types', [filters.dealType]);
-  if (filters.stage) q = q.ilike('stage', `%${filters.stage}%`);
+  if (filters.dealType) {
+    const value = String(filters.dealType);
+    q = q.or(`deal_types.cs.{${value}},deal_types.cs.{"${value}"}`);
+  }
+  if (filters.stage) q = q.ilike('stage', `%${safeLikeTerm(filters.stage)}%`);
   if (filters.minTicket) q = q.gte('ticket_max', Number(filters.minTicket));
   if (filters.maxTicket) q = q.lte('ticket_min', Number(filters.maxTicket));
   if (filters.search || filters.q) {
-    const keyword = String(filters.search || filters.q).trim();
+    const keyword = safeLikeTerm(filters.search || filters.q);
     if (keyword) q = q.or(`code.ilike.%${keyword}%,title_vi.ilike.%${keyword}%,title_en.ilike.%${keyword}%,desc_vi.ilike.%${keyword}%,desc_en.ilike.%${keyword}%,type.ilike.%${keyword}%,country.ilike.%${keyword}%`);
   }
   const sort = filters.sort || 'ranking';
@@ -231,8 +221,18 @@ export async function countInvestors(filters: any = {}): Promise<number> {
   if (!filters.includeHidden) q = q.eq('visible', true).eq('status', 'active');
   if (filters.type) q = q.eq('type', filters.type);
   if (filters.country) q = q.eq('country_iso2', filters.country);
-  if (filters.region) q = q.ilike('region', `%${filters.region}%`);
+  if (filters.region) q = q.ilike('region', `%${safeLikeTerm(filters.region)}%`);
   if (filters.industry) q = q.contains('industries', [filters.industry]);
+  if (filters.dealType) {
+    const value = String(filters.dealType);
+    q = q.or(`deal_types.cs.{${value}},deal_types.cs.{"${value}"}`);
+  }
+  if (filters.stage) q = q.ilike('stage', `%${safeLikeTerm(filters.stage)}%`);
+  if (filters.minTicket) q = q.gte('ticket_max', Number(filters.minTicket));
+  if (filters.search || filters.q) {
+    const keyword = safeLikeTerm(filters.search || filters.q);
+    if (keyword) q = q.or(`code.ilike.%${keyword}%,title_vi.ilike.%${keyword}%,title_en.ilike.%${keyword}%,desc_vi.ilike.%${keyword}%,desc_en.ilike.%${keyword}%,type.ilike.%${keyword}%,country.ilike.%${keyword}%`);
+  }
   const { count, error } = await q;
   if (error) throw error;
   return count || 0;
@@ -261,6 +261,28 @@ export function makePublicCode(prefix = 'D68') {
   const ymd = `${dt.getFullYear()}${String(dt.getMonth() + 1).padStart(2, '0')}${String(dt.getDate()).padStart(2, '0')}`;
   const tail = Math.random().toString(36).slice(2, 6).toUpperCase();
   return `${prefix}-${ymd}-${tail}`;
+}
+
+export async function createSignupBundle(payload: {
+  userId: string;
+  email: string;
+  role: 'business' | 'investor' | 'affiliate';
+  profile: any;
+  business?: any | null;
+  investor?: any | null;
+  payment: any;
+}) {
+  const { data, error } = await supabase.rpc('create_signup_bundle', {
+    user_uuid: payload.userId,
+    user_email: payload.email,
+    role_text: payload.role,
+    profile_payload: payload.profile || {},
+    business_payload: payload.business || null,
+    investor_payload: payload.investor || null,
+    payment_payload: payload.payment || {}
+  });
+  if (error) throw error;
+  return data;
 }
 
 export async function createBusinessFromProfile(ownerId: string, payload: any) {
@@ -372,10 +394,10 @@ export async function createInvestorForOwner(ownerId: string, payload: any) {
   return data;
 }
 
-export async function submitBusinessProposal(businessId: string, investorId: string, note = '') {
-  const rpc = await supabase.rpc('submit_business_proposal', { business_uuid: businessId, investor_uuid: investorId, proposal_note: note });
+export async function submitBusinessProposal(businessId: string, investorId: string, message = '') {
+  const rpc = await supabase.rpc('submit_business_proposal', { business_uuid: businessId, investor_uuid: investorId, proposal_note: message });
   if (!rpc.error) return rpc.data;
-  const { data, error } = await supabase.from('proposals').insert({ business_id: businessId, investor_id: investorId, note, status: 'sent' }).select().single();
+  const { data, error } = await supabase.from('proposals').insert({ business_id: businessId, investor_id: investorId, message, status: 'sent' }).select().single();
   if (error) throw error;
   return data;
 }

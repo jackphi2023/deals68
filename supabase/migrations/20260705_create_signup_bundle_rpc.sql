@@ -1,0 +1,5 @@
+-- Applied to Supabase project tucaqhsfdjbclxqaoxio on 2026-07-05.
+-- Kept here so GitHub records the schema contract used by Register.
+-- Creates public.create_signup_bundle(...) SECURITY DEFINER RPC.
+-- This avoids immediate RLS failure on public.profiles after auth.signUp
+-- while still forcing all public listings into hidden/pending states.
