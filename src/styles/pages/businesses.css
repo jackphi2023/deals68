@@ -91,4 +91,38 @@
     .d68-grid-view { grid-template-columns:1fr; }
     .d68-business-card__metrics { grid-template-columns:1fr 1fr; }
   }
+
+  /* --- Port bổ sung: SEO band, browse links, FAQ, empty/error (additive) --- */
+  .d68-list-error { background:#FDECEC; border:1px solid #FCA5A5; border-radius:12px; color:#991B1B; font-weight:600; margin-bottom:14px; padding:14px 16px; }
+  .d68-list-empty { background:#fff; border:1px dashed var(--d68-border); border-radius:16px; color:var(--d68-text-muted); margin-top:18px; padding:44px 24px; text-align:center; }
+  .d68-list-empty b { color:var(--d68-navy); display:block; font-size:16px; margin-bottom:6px; }
+  .d68-list-empty p { font-size:14px; line-height:1.6; margin:0 auto 16px; max-width:460px; }
+  .d68-list-empty button { background:var(--d68-navy); border:0; border-radius:10px; color:#fff; cursor:pointer; font-weight:700; padding:11px 18px; }
+
+  .d68-seo-band { background:#fff; border-top:1px solid var(--d68-border-soft); }
+  .d68-seo-inner { margin:0 auto; max-width:1240px; padding:52px 24px 40px; }
+  .d68-seo-inner h2 { color:var(--d68-navy); font-size:26px; font-weight:800; letter-spacing:-.5px; margin:0 0 22px; }
+  .d68-seo-grid { display:grid; gap:22px; grid-template-columns:repeat(3, minmax(0,1fr)); margin-bottom:34px; }
+  .d68-seo-grid article { background:var(--d68-bg); border:1px solid var(--d68-border-card); border-radius:16px; padding:22px; }
+  .d68-seo-grid h3 { color:var(--d68-navy); font-size:16.5px; font-weight:800; margin:0 0 10px; }
+  .d68-seo-grid p { color:var(--d68-text-muted); font-size:14px; line-height:1.65; margin:0; }
+  .d68-browse-grid { display:grid; gap:26px; grid-template-columns:1fr 1fr; }
+  .d68-browse-grid h3 { color:var(--d68-navy); font-size:16.5px; font-weight:800; margin:0 0 12px; }
+  .d68-browse-links { display:flex; flex-wrap:wrap; gap:8px; }
+  .d68-browse-links button { background:var(--d68-bg); border:1px solid var(--d68-border); border-radius:999px; color:var(--d68-navy-2); cursor:pointer; font-size:13px; font-weight:600; padding:8px 14px; }
+  .d68-browse-links button:hover { border-color:var(--d68-blue); color:var(--d68-blue-ink); }
+
+  .d68-faq-band { background:var(--d68-bg); }
+  .d68-faq-inner { margin:0 auto; max-width:860px; padding:46px 24px 64px; }
+  .d68-faq-inner h2 { color:var(--d68-navy); font-size:26px; font-weight:800; letter-spacing:-.5px; margin:0 0 20px; text-align:center; }
+  .d68-faq-item { background:#fff; border:1px solid var(--d68-border-card); border-radius:14px; margin-bottom:12px; overflow:hidden; }
+  .d68-faq-item > button { align-items:center; background:none; border:0; color:var(--d68-navy); cursor:pointer; display:flex; font-size:15.5px; font-weight:700; gap:14px; justify-content:space-between; padding:18px 20px; text-align:left; width:100%; }
+  .d68-faq-item > button span { color:var(--d68-blue); flex:0 0 auto; font-size:20px; font-weight:800; }
+  .d68-faq-item p { border-top:1px solid var(--d68-border-soft); color:var(--d68-text-muted); font-size:14.5px; line-height:1.7; margin:0; padding:16px 20px 18px; }
+
+  @media (max-width:960px) {
+    .d68-seo-grid { grid-template-columns:1fr; }
+    .d68-browse-grid { grid-template-columns:1fr; }
+  }
+
 }

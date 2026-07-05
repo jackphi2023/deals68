@@ -78,11 +78,36 @@ function applyBusinessPublicFilters(q: any, filters: any) {
   if (filters.industry) q = q.ilike('industry', `%${filters.industry}%`);
   if (filters.country) q = q.eq('country_iso2', filters.country);
   if (filters.dealType) q = q.ilike('deal_type', `%${filters.dealType}%`);
+  if (filters.city) q = q.ilike('city', `%${filters.city}%`);
+  // Lọc theo dải doanh thu, đúng theo từng loại tiền tệ (VND / USD quy đổi ~26.000)
+  // để không so sánh chéo số thô giữa hai currency.
+  if (filters.revenueBand === 'small') {
+    q = q.or('and(revenue_currency.eq.VND,revenue_2025.lt.10000000000),and(revenue_currency.eq.USD,revenue_2025.lt.400000)');
+  } else if (filters.revenueBand === 'mid') {
+    q = q.or('and(revenue_currency.eq.VND,revenue_2025.gte.10000000000,revenue_2025.lte.100000000000),and(revenue_currency.eq.USD,revenue_2025.gte.400000,revenue_2025.lte.4000000)');
+  } else if (filters.revenueBand === 'large') {
+    q = q.or('and(revenue_currency.eq.VND,revenue_2025.gt.100000000000),and(revenue_currency.eq.USD,revenue_2025.gt.4000000)');
+  }
+  if (filters.minQuality) q = q.gte('quality_score', Number(filters.minQuality));
+  if (filters.featuredOnly) q = q.eq('plan', 'featured');
   if (filters.search || filters.q) {
-    const keyword = String(filters.search || filters.q).trim();
+    const keyword = String(filters.search || filters.q).trim().replace(/[,()]/g, ' ');
     if (keyword) q = q.or(`title_vi.ilike.%${keyword}%,title_en.ilike.%${keyword}%,description_vi.ilike.%${keyword}%,description_en.ilike.%${keyword}%,industry.ilike.%${keyword}%,public_code.ilike.%${keyword}%`);
   }
   return q;
+}
+
+/**
+ * Facet counts cho sidebar/tab của trang /businesses.
+ * Dùng CHUNG applyBusinessPublicFilters (trừ chính facet đang đếm) để
+ * số đếm luôn khớp với list — theo SPEC v1.3 mục B8/15.6.
+ */
+export async function listBusinessFacets(filters: any = {}): Promise<{ city: string; industry: string; deal_type: string; plan: string; quality_score: number | null }[]> {
+  let q: any = supabase.from('businesses').select('city, industry, deal_type, plan, quality_score');
+  q = applyBusinessPublicFilters(q, { search: filters.search, country: filters.country });
+  const { data, error } = await q.limit(1000);
+  if (error) throw error;
+  return (data || []) as any[];
 }
 
 export async function listBusinesses(filters: any = {}): Promise<any[]> {
