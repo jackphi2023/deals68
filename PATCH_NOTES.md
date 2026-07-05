@@ -1,46 +1,59 @@
-# Deals68 beta-reference patch — Pricing / Valuation / Auth + Home/Nav fixes
+# Deals68 beta-reference patch: Dashboard + Admin workflows
 
-Scope following Spec v1.3:
+Scope per Spec v1.3:
+- Business Dashboard
+- Investor Dashboard
+- Admin
+- Register payment-order workflow
+- CSS imports for dashboard/admin
 
-- Fix i18n public route standard:
-  - VI canonical: `/`, `/businesses`, `/investors`, `/pricing`, `/valuation`, `/login`, `/register/...`
-  - EN canonical: `/en`, `/en/businesses`, `/en/investors`, `/en/pricing`, `/en/valuation`, `/en/login`, `/en/register/...`
-  - Deprecated `/vi/...` redirects to VI canonical.
-- Header language switch uses React Router navigation, not full browser reload.
-- Header nav links keep EN prefix when user is in EN.
-- Navigation logo uses transparent SVG: `public/assets/logo-nav.svg`.
-- Home stats third box now displays live public total deal value from Supabase active/visible businesses, not “Ẩn danh”.
-- Home featured industries styling aligned closer to UI Reference: white background, tile grid, gradient image area, note text.
-- Port/baseline pages:
-  - Pricing
-  - Valuation
-  - Register business/investor/advisor
-  - Login
-  - Forgot password
-  - Reset password
-  - Investors / Investor Detail included to ensure i18n route patch is complete if previous commit did not include it.
+No changes to public Home/Businesses/Business Detail/Investors/Investor Detail/Pricing/Valuation/Auth UI except Register payment-order creation and CSS import entry.
 
-Files included:
-- public/assets/logo-nav.svg
-- src/lib/i18nRoutes.ts
-- src/lib/publicMetrics.ts
-- src/App.tsx
-- src/components/Header.tsx
-- src/pages/Home.tsx
-- src/pages/Investors.tsx
-- src/pages/InvestorDetail.tsx
-- src/pages/Pricing.tsx
-- src/pages/Valuation.tsx
+## Workflow covered
+1. User registers Business/Investor.
+   - Creates Supabase Auth user + profile.
+   - Creates business/investor row hidden/pending.
+   - Creates payment_orders row with status=pending.
+2. Admin confirms payment.
+   - payment_orders.status=confirmed.
+   - profiles.status=active, dashboard_login_enabled=true.
+   - listing remains pending Admin public review.
+3. Business user edits dashboard.
+   - Changes saved to businesses.pending_changes_json.
+   - Existing public_snapshot_json remains unchanged.
+   - Existing visible/status active is preserved when a public snapshot already exists.
+4. Admin approves Business public snapshot.
+   - public_snapshot_json updated.
+   - visible=true, status=active.
+   - pending_changes_json cleared.
+   - moderation_status=approved.
+5. Investor user edits dashboard.
+   - Changes saved in investors.privacy.pending_profile_changes.
+   - Public investor fields remain unchanged.
+6. Admin approves Investor profile.
+   - Pending changes applied to public investor fields.
+   - visible=true, status=active.
+   - pending_profile_changes cleared.
+
+## Files
+- src/pages/BusinessDashboard.tsx
+- src/pages/InvestorDashboard.tsx
+- src/pages/Admin.tsx
 - src/pages/Register.tsx
-- src/pages/Login.tsx
-- src/pages/ForgotPassword.tsx
-- src/pages/ResetPassword.tsx
 - src/styles/index.css
-- src/styles/pages/home.css
-- src/styles/pages/investors.css
-- src/styles/pages/investor-detail.css
-- src/styles/pages/pricing.css
-- src/styles/pages/valuation.css
-- src/styles/pages/auth.css
+- src/styles/pages/dashboard.css
+- src/styles/pages/admin.css
 
-No Dashboard/Admin/Supabase schema changes.
+## Test routes
+- /register/business
+- /register/investor
+- /login
+- /dashboard/business
+- /dashboard/investor
+- /admin/payments
+- /admin/business-review
+- /admin/investors
+- /admin/assets
+
+## Netlify
+Run Clear cache and deploy site after upload.
