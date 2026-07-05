@@ -42,7 +42,7 @@ export function getPublicBusinessView(row: any) {
     ...row,
     ...s,
     id: row.id,
-    slug: row.slug || row.username || row.id,
+    slug: row.slug || '',
     public_code: row.public_code,
     visible: row.visible,
     status: row.status,
@@ -73,12 +73,31 @@ export function getPublicBusinessView(row: any) {
   };
 }
 
+function safeLikeTerm(value: any) {
+  return String(value || '').trim().replace(/[,()%]/g, ' ');
+}
+
+function dealTypeSearchTerms(raw: any) {
+  const v = String(raw || '').toLowerCase();
+  if (!v) return [];
+  if (v.includes('loan') || v.includes('debt') || v.includes('vay')) return ['loan', 'debt', 'vay'];
+  if (v.includes('jv') || v.includes('joint') || v.includes('partner') || v.includes('đối')) return ['jv', 'joint', 'partner', 'đối'];
+  if (v.includes('sale') || v.includes('transfer') || v.includes('asset') || v.includes('bán') || v.includes('chuyển')) return ['sale', 'transfer', 'asset', 'acquisition', 'bán', 'chuyển'];
+  if (v.includes('fund') || v.includes('raise') || v.includes('invest') || v.includes('gọi') || v.includes('vốn')) return ['fund', 'raise', 'fundrais', 'invest', 'equity', 'gọi', 'vốn'];
+  const single = safeLikeTerm(v);
+  return single ? [single] : [];
+}
+
 function applyBusinessPublicFilters(q: any, filters: any) {
   if (!filters.includeHidden) q = q.eq('visible', true).eq('status', 'active').not('public_snapshot_json', 'is', null);
-  if (filters.industry) q = q.ilike('industry', `%${filters.industry}%`);
+  if (filters.industry) q = q.ilike('industry', `%${safeLikeTerm(filters.industry)}%`);
   if (filters.country) q = q.eq('country_iso2', filters.country);
-  if (filters.dealType) q = q.ilike('deal_type', `%${filters.dealType}%`);
-  if (filters.city) q = q.ilike('city', `%${filters.city}%`);
+  if (filters.dealType) {
+    const terms = dealTypeSearchTerms(filters.dealType);
+    if (terms.length > 1) q = q.or(terms.map((term) => `deal_type.ilike.%${term}%`).join(','));
+    else if (terms[0]) q = q.ilike('deal_type', `%${terms[0]}%`);
+  }
+  if (filters.city) q = q.ilike('city', `%${safeLikeTerm(filters.city)}%`);
   // Lọc theo dải doanh thu, đúng theo từng loại tiền tệ (VND / USD quy đổi ~26.000)
   // để không so sánh chéo số thô giữa hai currency.
   if (filters.revenueBand === 'small') {
@@ -91,7 +110,7 @@ function applyBusinessPublicFilters(q: any, filters: any) {
   if (filters.minQuality) q = q.gte('quality_score', Number(filters.minQuality));
   if (filters.featuredOnly) q = q.eq('plan', 'featured');
   if (filters.search || filters.q) {
-    const keyword = String(filters.search || filters.q).trim().replace(/[,()]/g, ' ');
+    const keyword = safeLikeTerm(filters.search || filters.q);
     if (keyword) q = q.or(`title_vi.ilike.%${keyword}%,title_en.ilike.%${keyword}%,description_vi.ilike.%${keyword}%,description_en.ilike.%${keyword}%,industry.ilike.%${keyword}%,public_code.ilike.%${keyword}%`);
   }
   return q;
