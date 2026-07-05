@@ -1,9 +1,11 @@
 import type { Lang } from './i18n';
 import { T } from './labelsBase';
 import { industryOptions, labelIndustryTaxonomy } from './industryTaxonomy';
+import { labelLocation, locationOptions, getLocationOptionsForCountry, locationKeyFromLabel } from './locationTaxonomy';
 
 export { T } from './labelsBase';
 export { industryOptions, industryKeyFromLabel, industrySeoText, normalizeIndustryForDb } from './industryTaxonomy';
+export { locationOptions, getLocationOptionsForCountry, locationKeyFromLabel, labelLocation } from './locationTaxonomy';
 
 export const FX_VND_PER_USD = 26000;
 
@@ -107,7 +109,9 @@ export function labelCountry(raw: any, lang: Lang) {
   const r = String(raw || '').trim();
   const n = norm(r);
   const item = countryOptions.find((c) => norm(c.iso2) === n || norm(c.vi) === n || norm(c.en) === n);
-  return item ? T(lang, item.vi, item.en) : (r || T(lang, 'Toàn cầu', 'Global'));
+  if (item) return T(lang, item.vi, item.en);
+  const loc = labelLocation(r, lang);
+  return loc || T(lang, 'Toàn cầu', 'Global');
 }
 
 export function labelRegion(raw: any, lang: Lang) {

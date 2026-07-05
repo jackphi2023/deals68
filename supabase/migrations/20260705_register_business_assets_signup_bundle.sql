@@ -60,7 +60,7 @@ begin
   if safe_role = 'business' and business_payload is not null then
     insert into public.businesses (
       owner_id, username, public_code, slug, company_name_private, title_vi, title_en, description_vi, description_en,
-      country_iso2, city, industry, deal_type, plan, revenue_2025, revenue_currency, ebitda_margin, ask_amount,
+      country_iso2, city, city_key, industry, deal_type, plan, revenue_2025, revenue_currency, ebitda_margin, ask_amount,
       ask_currency, stake_pct, highlights_vi, highlights_en, investment_reason_vi, investment_reason_en,
       financial_input, valuation_reasonableness, data_confidence, quality_score, visible, status, quota_total, quota_used,
       pending_changes_json, public_snapshot_json, moderation_status
@@ -76,6 +76,7 @@ begin
       business_payload->>'description_en',
       coalesce(nullif(business_payload->>'country_iso2',''), 'VN'),
       business_payload->>'city',
+      nullif(business_payload->>'city_key',''),
       business_payload->>'industry',
       business_payload->>'deal_type',
       coalesce(nullif(business_payload->>'plan',''), 'standard'),
@@ -175,6 +176,7 @@ begin
       industry = coalesce(snapshot->>'industry', industry),
       deal_type = coalesce(snapshot->>'deal_type', deal_type),
       city = coalesce(snapshot->>'city', city),
+      city_key = coalesce(snapshot->>'city_key', city_key),
       country_iso2 = coalesce(snapshot->>'country_iso2', country_iso2),
       revenue_2025 = coalesce(nullif(snapshot->>'revenue_2025','')::numeric, revenue_2025),
       revenue_currency = coalesce(snapshot->>'revenue_currency', revenue_currency),

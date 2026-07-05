@@ -48,6 +48,11 @@ export function roleRoute(role: PricingRole) {
   return role === 'affiliate' ? 'market-partner' : role;
 }
 
+export function termDiscountForBusiness(termWeeks: number) {
+  const weeks = Number(termWeeks || 0);
+  return weeks >= 16 ? 20 : weeks >= 8 ? 15 : 0;
+}
+
 export function calculatePricing(input: PricingInput, promoDiscountPct = 0): PricingResult {
   const role = normaliseRole(input.role);
   const country = input.country || 'VN';
@@ -58,7 +63,9 @@ export function calculatePricing(input: PricingInput, promoDiscountPct = 0): Pri
   const featuredWeekly = Math.round(baseWeekly * 1.3);
   const planWeekly = role === 'business' && businessPlan === 'featured' ? featuredWeekly : baseWeekly;
   const subtotal = planWeekly * termWeeks;
-  const termDiscountPct = termWeeks >= 24 ? 15 : termWeeks >= 12 ? 10 : termWeeks >= 4 ? 5 : 0;
+  const termDiscountPct = role === 'business'
+    ? termDiscountForBusiness(termWeeks)
+    : termWeeks >= 48 ? 20 : termWeeks >= 24 ? 15 : 0;
   const termDiscount = Math.round(subtotal * termDiscountPct / 100);
   const afterTerm = subtotal - termDiscount;
   const safePromoPct = Math.max(0, Math.min(100, Number(promoDiscountPct || 0)));
@@ -84,6 +91,7 @@ export function calculatePricing(input: PricingInput, promoDiscountPct = 0): Pri
     planLabel: role === 'business' && businessPlan === 'featured' ? 'Featured' : 'Standard',
     notes: [
       role === 'business' && businessPlan === 'featured' ? 'Featured visibility, 200 proposal quota, higher ranking.' : role === 'business' ? 'Standard visibility, 100 proposal quota.' : 'Membership access is activated after payment/admin approval.',
+      'Country pricing matches Pricing page: Vietnam in VND, other countries in USD.',
       'Payment automation is in Beta; manual admin confirmation remains available.'
     ]
   };

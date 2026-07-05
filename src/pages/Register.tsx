@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { createSignupBundle, uploadBusinessFile, uploadBusinessImage } from '../lib/data';
 import { slugify } from '../lib/format';
-import { calculatePricing, normaliseRole, roleLabel, type BusinessPlan } from '../lib/pricing';
+import { calculatePricing, lookupPromo, normaliseRole, roleLabel, type BusinessPlan } from '../lib/pricing';
 import { toLocalizedPath } from '../lib/i18nRoutes';
 import type { Role } from '../lib/supabase';
 import type { Lang } from '../lib/i18n';
@@ -17,13 +17,15 @@ import {
   stageOptions,
   phoneDialFromIso,
   normalizeInvestorDealForDb,
-  industryKeyFromLabel
+  industryKeyFromLabel,
+  getLocationOptionsForCountry,
+  locationKeyFromLabel
 } from '../lib/labels';
 import { DEFAULT_VALUATION_CONFIG, getActiveValuationConfig, valuate, formatValuationMoney, valuationVerdictMessage, VALUATION_DISCLAIMER_VI, VALUATION_DISCLAIMER_EN } from '../lib/valuationEngine';
 
 const countryIso: Record<string, string> = Object.fromEntries(countryOptions.map((c) => [c.vi, c.iso2]).concat(countryOptions.map((c) => [c.en, c.iso2])));
-const MAX_BUSINESS_IMAGES = 3;
-const MAX_BUSINESS_DOCS = 3;
+const MAX_BUSINESS_IMAGES = 5;
+const MAX_BUSINESS_DOCS = 5;
 const DOC_EXTENSIONS = ['.pdf', '.doc', '.docx', '.ppt', '.pptx', '.xls', '.xlsx'];
 
 type PendingAsset = { id: string; file: File; displayName: string };
@@ -78,8 +80,8 @@ function formatBytes(size: number) {
   if (size >= 1024) return `${Math.round(size / 1024)} KB`;
   return `${size} B`;
 }
-function Field({ label, children, wide=false, hint }: { label: string; children: any; wide?: boolean; hint?: string }) {
-  return <label className={`d68-auth-field${wide ? ' d68-auth-field--wide' : ''}`}><span>{label}</span>{children}{hint ? <small>{hint}</small> : null}</label>;
+function Field({ label, children, wide=false, hint, spaced=false }: { label: string; children: any; wide?: boolean; hint?: string; spaced?: boolean }) {
+  return <label className={`d68-auth-field${wide ? ' d68-auth-field--wide' : ''}${spaced ? ' d68-auth-field--spaced' : ''}`}><span>{label}</span>{children}{hint ? <small>{hint}</small> : null}</label>;
 }
 function toggleValue(list: string[], value: string) {
   return list.includes(value) ? list.filter((x) => x !== value) : [...list, value];
@@ -94,21 +96,31 @@ function isBusinessDoc(file: File) {
 function planText(plan: BusinessPlan, lang: Lang) {
   return plan === 'featured' ? T(lang, 'Ưu tiên', 'Priority') : T(lang, 'Thường', 'Standard');
 }
+function RowMini({ a, b, good = false }: { a: string; b: string; good?: boolean }) {
+  return <div className={good ? 'good' : ''}><span>{a}</span><b>{b}</b></div>;
+}
 
 export default function Register({ lang = 'vi' }: { lang?: Lang }) {
   const { role = 'business' } = useParams();
   const normalized = normaliseRole(role);
   const r = (normalized === 'affiliate' ? 'affiliate' : normalized) as Role;
-  const { signUp } = useAuth();
+  const { signUp, signOut } = useAuth();
   const navigate = useNavigate();
   const intent = useMemo(() => { try { return JSON.parse(localStorage.getItem('d68_checkout_intent') || '{}'); } catch { return {}; } }, []);
   const [plan, setPlan] = useState<BusinessPlan>(intent.businessPlan === 'featured' ? 'featured' : 'standard');
+  const [serviceWeeks, setServiceWeeks] = useState<number>(Number(intent.termWeeks || intent.units || 16));
+  const [promoCode, setPromoCode] = useState(String(intent.promoCode || ''));
+  const [promoPct, setPromoPct] = useState<number>(Number(intent.price?.promoDiscountPct || 0));
+  const [promoMsg, setPromoMsg] = useState('');
+  const [promoLoading, setPromoLoading] = useState(false);
+  const [paymentAck, setPaymentAck] = useState(false);
+  const [msgType, setMsgType] = useState<'ok' | 'err' | ''>('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [country, setCountry] = useState(intent.country === 'GLOBAL' ? 'Singapore' : 'Việt Nam');
   const [industry, setIndustry] = useState('Thực phẩm & Đồ uống (F&B)');
-  const [city, setCity] = useState('TP.HCM');
+  const [city, setCity] = useState('TP. Hồ Chí Minh');
   const [companyName, setCompanyName] = useState('');
   const [highlights, setHighlights] = useState('');
   const [dealType, setDealType] = useState('Gọi vốn');
@@ -141,15 +153,25 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
   const [valuationConfig, setValuationConfig] = useState(DEFAULT_VALUATION_CONFIG);
 
   useEffect(() => { getActiveValuationConfig().then(setValuationConfig).catch(() => setValuationConfig(DEFAULT_VALUATION_CONFIG)); }, []);
-
   const isBusiness = normalized === 'business';
   const isInvestor = normalized === 'investor';
   const countryCode = countryIso[country] || 'VN';
-  const serviceWeeks = Number(intent.termWeeks || (isBusiness ? 4 : 12));
-  const price = calculatePricing({ role: normalized as any, country: countryCode, termWeeks: serviceWeeks, businessPlan: plan, promoCode: intent.promoCode }, Number(intent.price?.promoDiscountPct || 0));
-  const standardPrice = calculatePricing({ role: 'business', country: countryCode, termWeeks: serviceWeeks, businessPlan: 'standard', promoCode: intent.promoCode }, Number(intent.price?.promoDiscountPct || 0));
-  const featuredPrice = calculatePricing({ role: 'business', country: countryCode, termWeeks: serviceWeeks, businessPlan: 'featured', promoCode: intent.promoCode }, Number(intent.price?.promoDiscountPct || 0));
-  const pricingSummary = intent.price ? `${money(Number(intent.price.total || price.total), intent.price.currency || price.currency)} · ${intent.units || intent.termWeeks || price.termWeeks} ${intent.unitLabel || T(lang, 'tuần', 'weeks')}` : `${money(price.total, price.currency)} · ${price.termWeeks} ${T(lang, 'tuần', 'weeks')}`;
+  const locationChoices = getLocationOptionsForCountry(countryCode);
+  const effectiveWeeks = isBusiness ? serviceWeeks : Number(intent.termWeeks || 12);
+  useEffect(() => {
+    const opts = getLocationOptionsForCountry(countryCode);
+    if (isBusiness && opts.length && !opts.some((x) => x.vi === city || x.en === city || x.key === city)) {
+      setCity(lang === 'en' ? opts[0].en : opts[0].vi);
+    }
+  }, [countryCode, isBusiness, lang, city]);
+  const price = calculatePricing({ role: normalized as any, country: countryCode, termWeeks: effectiveWeeks, businessPlan: plan, promoCode }, promoPct);
+  const standardPrice = calculatePricing({ role: 'business', country: countryCode, termWeeks: effectiveWeeks, businessPlan: 'standard', promoCode }, promoPct);
+  const featuredPrice = calculatePricing({ role: 'business', country: countryCode, termWeeks: effectiveWeeks, businessPlan: 'featured', promoCode }, promoPct);
+  const pricingSummary = `${money(price.total, price.currency)} · ${price.termWeeks} ${T(lang, 'tuần', 'weeks')}`;
+  const termOptions = [4, 8, 12, 16, 24];
+  const bankContent = `DEALS68-${safeUsername(email || 'business', companyName || name || 'business')}`.toUpperCase();
+  const qrAmountParam = price.currency === 'VND' ? `amount=${Math.round(price.total)}&` : '';
+  const qrUrl = `https://img.vietqr.io/image/VCB-0011004000713-compact2.png?${qrAmountParam}addInfo=${encodeURIComponent(bankContent)}&accountName=${encodeURIComponent('Tieu Vo Dinh Phi')}`;
 
   const benchmarkResult = useMemo(() => valuate({
     revenueYear: parseFormattedNumber(revenue),
@@ -218,13 +240,32 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
 
   async function submit(e: FormEvent) {
     e.preventDefault();
-    if (!agree) { setMsg(T(lang, 'Vui lòng xác nhận Điều khoản & Chính sách bảo mật.', 'Please confirm Terms & Privacy Policy.')); return; }
-    if (password.length < 8) { setMsg(T(lang, 'Mật khẩu cần tối thiểu 8 ký tự.', 'Password must be at least 8 characters.')); return; }
+    setMsgType('');
+    const missing: string[] = [];
+    if (!email.trim()) missing.push(T(lang, 'Email đăng nhập', 'Login email'));
+    if (password.length < 8) missing.push(T(lang, 'Mật khẩu tối thiểu 8 ký tự', 'Password min. 8 characters'));
+    if (!name.trim()) missing.push(T(lang, 'Tên người phụ trách', 'Contact name'));
+    if (isBusiness) {
+      if (!companyName.trim()) missing.push(T(lang, 'Tên doanh nghiệp', 'Business name'));
+      if (!city.trim()) missing.push(T(lang, 'Tỉnh/Thành phố', 'Province/City'));
+      if (!industry.trim()) missing.push(T(lang, 'Ngành', 'Industry'));
+      if (!revenue.trim() && !revenueMonth.trim()) missing.push(T(lang, 'Doanh thu năm gần nhất hoặc doanh thu tháng', 'Latest annual revenue or monthly revenue'));
+      if (!ebitda.trim()) missing.push(T(lang, 'Tỷ suất lợi nhuận/EBITDA (%)', 'EBITDA margin (%)'));
+      if (!ask.trim()) missing.push(T(lang, 'Số tiền gọi vốn / giá trị giao dịch mong muốn', 'Capital sought / desired transaction value'));
+      if (!stake.trim()) missing.push(T(lang, 'Tỷ lệ cổ phần', 'Stake percentage'));
+      if (!paymentAck) missing.push(T(lang, 'Xác nhận đã chuyển khoản đúng nội dung', 'Payment transfer confirmation'));
+    }
+    if (!agree) missing.push(T(lang, 'Đồng ý Điều khoản & Chính sách bảo mật', 'Agree to Terms & Privacy Policy'));
+    if (missing.length) {
+      setMsgType('err');
+      setMsg(T(lang, `Anh/Chị chưa điền/nhập thông tin: ${missing.join(', ')}. Vui lòng kiểm tra.`, `Missing/invalid fields: ${missing.join(', ')}. Please check again.`));
+      return;
+    }
     setLoading(true); setMsg('');
     const realName = name || companyName || email;
     const username = safeUsername(email, realName);
     const sr = await signUp(r, email.trim(), password, { username, display_name: realName, country_iso2: countryCode, language_code: lang });
-    if (sr.error || !sr.user) { setMsg(sr.error || T(lang, 'Không thể tạo tài khoản', 'Could not create account')); setLoading(false); return; }
+    if (sr.error || !sr.user) { setMsgType('err'); setMsg(sr.error || T(lang, 'Không thể tạo tài khoản', 'Could not create account')); setLoading(false); return; }
 
     try {
       const profilePayload = {
@@ -254,6 +295,7 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
           description_en: '',
           country_iso2: countryCode,
           city,
+          city_key: locationKeyFromLabel(city, countryCode),
           industry,
           industry_key: industryKeyFromLabel(industry),
           deal_type: dealType,
@@ -281,6 +323,7 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
           investment_reason_vi: reason,
           investment_reason_en: '',
           financial_input: {
+            city_key: locationKeyFromLabel(city, countryCode),
             assets_owned: assetsOwned,
             excluded_physical_asset_value: parseFormattedNumber(excludedAssetValue),
             financial_source: financialSource,
@@ -335,9 +378,12 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
           : T(lang, ` Đã upload ${upload.imageCount} ảnh và ${upload.fileCount} file hồ sơ.`, ` Uploaded ${upload.imageCount} images and ${upload.fileCount} profile files.`);
       }
 
-      setMsg(T(lang, 'Tài khoản, hồ sơ và đơn thanh toán pending đã được tạo. Admin xác nhận thanh toán để mở dashboard, sau đó duyệt public.', 'Account, profile and pending payment order created. Admin confirms payment to open dashboard, then approves public listing.') + uploadNote);
-      setTimeout(() => navigate(toLocalizedPath('/login', lang)), 2100);
+      setMsgType('ok');
+      setMsg(T(lang, 'Anh/Chị đã tạo tài khoản thành công. Vui lòng đợi chúng tôi xác nhận, khởi tạo tài khoản và thông báo cho Anh/Chị.', 'Your business account has been created successfully. Please wait while we confirm, initialize the account and notify you.') + uploadNote);
+      await signOut().catch(() => undefined);
+      setTimeout(() => navigate(toLocalizedPath('/', lang)), 12000);
     } catch (err: any) {
+      setMsgType('err');
       setMsg(err?.message || T(lang, 'Tài khoản đã tạo, nhưng hồ sơ/đơn thanh toán cần Admin kiểm tra lại.', 'Account created, but profile/payment order needs Admin review.'));
     } finally {
       setLoading(false);
@@ -369,31 +415,31 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
         <section className="d68-register-section">
           <h2>{T(lang, 'Thông tin doanh nghiệp', 'Business information')}</h2>
           <div className="d68-form-grid">
-            <Field label={T(lang, 'Tên DN thật (chỉ Admin thấy)', 'Real company name (Admin only)')}><input value={companyName} onChange={(e) => setCompanyName(e.target.value)} /></Field>
+            <Field label={T(lang, 'Tên doanh nghiệp', 'Business name')}><input value={companyName} onChange={(e) => setCompanyName(e.target.value)} /><small>{T(lang, 'Giống tên DN trên Giấy phép ĐKKD.', 'Use the legal name on the business registration certificate.')}</small></Field>
             <Field label={T(lang, 'Ngành', 'Industry')}><select value={industry} onChange={(e) => setIndustry(e.target.value)}>{industryOptions.map((x) => <option key={x.key} value={x.vi}>{T(lang, x.vi, x.en)}</option>)}</select></Field>
-            <Field label={T(lang, 'Thành phố', 'City')}><input value={city} onChange={(e) => setCity(e.target.value)} /></Field>
+            <Field label={T(lang, 'Tỉnh/Thành phố', 'Province/City')}><select value={city} onChange={(e) => setCity(e.target.value)}>{locationChoices.length ? locationChoices.map((x) => <option key={x.key} value={T(lang, x.vi, x.en)}>{T(lang, x.vi, x.en)}</option>) : <option value={city}>{city || T(lang, 'Khác / nhập tự do', 'Other / free text')}</option>}</select><small>{countryCode === 'VN' ? T(lang, 'Chọn 1 trong 34 đơn vị Tỉnh/Thành phố sau sáp nhập.', 'Choose one of Vietnam’s 34 province/city units.') : T(lang, 'Quốc gia khác: dùng danh mục vùng/bang có sẵn; có thể mở rộng sau.', 'Other countries: uses available state/region list; can be expanded later.')}</small></Field>
             <Field label={T(lang, 'Loại giao dịch', 'Deal type')}><select value={dealType} onChange={(e) => setDealType(e.target.value)}>{businessDealOptions.map((x) => <option key={x.vi}>{T(lang, x.vi, x.en)}</option>)}</select></Field>
             <Field label={T(lang, 'Doanh thu tháng', 'Monthly revenue')} hint={T(lang, 'Nếu không nhập doanh thu năm, hệ thống sẽ nhân 12.', 'If annual revenue is blank, the system annualizes monthly revenue × 12.')}><input inputMode="numeric" value={revenueMonth} onChange={(e) => setRevenueMonth(formatNumberTyping(e.target.value))} /></Field>
-            <Field label={T(lang, 'Doanh thu năm', 'Annual revenue')} hint={T(lang, `Nhập số tuyệt đối theo ${currentCurrency}`, `Enter absolute amount in ${currentCurrency}`)}><input inputMode="numeric" value={revenue} onChange={(e) => setRevenue(formatNumberTyping(e.target.value))} /></Field>
-            <Field label="EBITDA margin (%)"><input inputMode="decimal" value={ebitda} onChange={(e) => setEbitda(formatNumberTyping(e.target.value, true))} /></Field>
+            <Field label={T(lang, 'Doanh thu năm gần nhất', 'Latest annual revenue')} hint={T(lang, `Nhập số tuyệt đối theo ${currentCurrency}`, `Enter absolute amount in ${currentCurrency}`)}><input inputMode="numeric" value={revenue} onChange={(e) => setRevenue(formatNumberTyping(e.target.value))} /></Field>
+            <Field label={T(lang, 'Tỷ suất lợi nhuận/EBITDA (%)', 'EBITDA margin (%)')}><input inputMode="decimal" value={ebitda} onChange={(e) => setEbitda(formatNumberTyping(e.target.value, true))} /></Field>
             <Field label={T(lang, 'Tăng trưởng năm (%)', 'Annual growth (%)')}><input inputMode="decimal" value={growthPct} onChange={(e) => setGrowthPct(formatNumberTyping(e.target.value, true))} /></Field>
-            <Field label={T(lang, 'Nhu cầu vốn/Giá chào', 'Capital sought / Ask')} hint={T(lang, `Cùng đơn vị với doanh thu: ${currentCurrency}`, `Same currency as revenue: ${currentCurrency}`)}><input inputMode="numeric" value={ask} onChange={(e) => setAsk(formatNumberTyping(e.target.value))} /></Field>
+            <Field label={T(lang, 'Số tiền gọi vốn / giá trị giao dịch mong muốn', 'Capital sought / desired transaction value')} hint={T(lang, `Cùng đơn vị với doanh thu: ${currentCurrency}`, `Same currency as revenue: ${currentCurrency}`)}><input inputMode="numeric" value={ask} onChange={(e) => setAsk(formatNumberTyping(e.target.value))} /></Field>
             <Field label={T(lang, 'Tỷ lệ cổ phần (%)', 'Stake (%)')}><input inputMode="decimal" value={stake} onChange={(e) => setStake(formatNumberTyping(e.target.value, true))} /></Field>
           </div>
-          <Field label={T(lang, 'Điểm nổi bật của doanh nghiệp', 'Business highlights')} wide hint={T(lang, 'Mỗi ý một dòng hoặc phân cách bằng dấu chấm phẩy.', 'One point per line or separated by semicolons.')}><textarea rows={4} value={highlights} onChange={(e) => setHighlights(e.target.value)} /></Field>
-          <Field label={T(lang, 'Lý do gọi vốn/chuyển nhượng', 'Reason for fundraising/sale')} wide><textarea rows={3} value={reason} onChange={(e) => setReason(e.target.value)} /></Field>
+          <Field label={T(lang, 'Điểm nổi bật của doanh nghiệp', 'Business highlights')} wide spaced hint={T(lang, 'Mỗi ý một dòng hoặc phân cách bằng dấu chấm phẩy.', 'One point per line or separated by semicolons.')}><textarea rows={4} value={highlights} onChange={(e) => setHighlights(e.target.value)} /></Field>
+          <Field label={T(lang, 'Lý do gọi vốn/chuyển nhượng', 'Reason for fundraising/sale')} wide spaced><input value={reason} onChange={(e) => setReason(e.target.value)} /></Field>
         </section>
 
         <section className="d68-register-section">
           <h2>{T(lang, 'Ảnh & hồ sơ doanh nghiệp', 'Business images & profile files')}</h2>
           <div className="d68-upload-grid">
             <div className="d68-upload-box">
-              <div><b>{T(lang, 'Ảnh doanh nghiệp', 'Business images')}</b><p>{T(lang, 'Upload tối đa 3 ảnh. Admin sẽ làm sạch/ẩn thương hiệu nếu cần trước khi public.', 'Upload up to 3 images. Admin will sanitize/anonymize branding if needed before public display.')}</p></div>
+              <div><b>{T(lang, 'Ảnh doanh nghiệp', 'Business images')}</b><p>{T(lang, 'Upload tối đa 5 ảnh. Admin sẽ làm sạch/ẩn thương hiệu nếu cần trước khi public.', 'Upload up to 5 images. Admin will sanitize/anonymize branding if needed before public display.')}</p></div>
               <input type="file" accept="image/png,image/jpeg,image/webp,image/*" multiple onChange={(e) => { addImages(e.target.files); e.currentTarget.value = ''; }} />
               <div className="d68-upload-list">{businessImages.map((item) => <div key={item.id} className="d68-upload-item"><span>{item.file.name}<small>{formatBytes(item.file.size)}</small></span><input value={item.displayName} onChange={(e) => updateAssetName('image', item.id, e.target.value)} placeholder={T(lang, 'Tên hiển thị của ảnh', 'Image display name')} /><button type="button" onClick={() => removeAsset('image', item.id)}>{T(lang, 'Xóa', 'Remove')}</button></div>)}{!businessImages.length ? <em>{T(lang, 'Chưa chọn ảnh.', 'No images selected.')}</em> : null}</div>
             </div>
             <div className="d68-upload-box">
-              <div><b>{T(lang, 'File Hồ sơ doanh nghiệp', 'Business profile files')}</b><p>{T(lang, 'Upload tối đa 3 file PDF/Word/PowerPoint/Excel. File mặc định bị khóa, chỉ mở theo duyệt kết nối.', 'Upload up to 3 PDF/Word/PowerPoint/Excel files. Files are locked by default and only unlock through approved connection workflow.')}</p></div>
+              <div><b>{T(lang, 'File Hồ sơ doanh nghiệp', 'Business profile files')}</b><p>{T(lang, 'Upload tối đa 5 file PDF/Word/PowerPoint/Excel. File mặc định bị khóa, chỉ mở theo duyệt kết nối.', 'Upload up to 5 PDF/Word/PowerPoint/Excel files. Files are locked by default and only unlock through approved connection workflow.')}</p></div>
               <input type="file" accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx" multiple onChange={(e) => { addDocs(e.target.files); e.currentTarget.value = ''; }} />
               <div className="d68-upload-list">{businessDocs.map((item) => <div key={item.id} className="d68-upload-item"><span>{item.file.name}<small>{formatBytes(item.file.size)}</small></span><input value={item.displayName} onChange={(e) => updateAssetName('doc', item.id, e.target.value)} placeholder={T(lang, 'Tên hiển thị của file', 'File display name')} /><button type="button" onClick={() => removeAsset('doc', item.id)}>{T(lang, 'Xóa', 'Remove')}</button></div>)}{!businessDocs.length ? <em>{T(lang, 'Chưa chọn file hồ sơ.', 'No profile files selected.')}</em> : null}</div>
             </div>
@@ -404,36 +450,46 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
           <h2>{T(lang, 'Thông tin tài sản & nguồn số liệu', 'Assets & financial source')}</h2>
           <Field label={T(lang, 'Tài sản hữu hình & vô hình DN sở hữu', 'Tangible & intangible assets owned')} wide hint={T(lang, 'VD: thiết bị, thương hiệu, IP, phần mềm, hợp đồng thuê, giấy phép, dữ liệu khách hàng...', 'Examples: equipment, brand, IP, software, leases, licenses, customer data...')}><textarea rows={3} value={assetsOwned} onChange={(e) => setAssetsOwned(e.target.value)} /></Field>
           <div className="d68-form-grid">
-            <Field label={T(lang, 'Giá trị tài sản vật chất KHÔNG nằm trong giao dịch', 'Physical asset value excluded from transaction')} hint={T(lang, `Nhập số tuyệt đối theo ${currentCurrency}`, `Enter absolute amount in ${currentCurrency}`)}><input inputMode="numeric" value={excludedAssetValue} onChange={(e) => setExcludedAssetValue(formatNumberTyping(e.target.value))} /></Field>
+            <Field label={T(lang, 'Giá trị tài sản vật chất KHÔNG nằm trong giao dịch', 'Physical asset value excluded from transaction')} spaced hint={T(lang, `Nhập số tuyệt đối theo ${currentCurrency}`, `Enter absolute amount in ${currentCurrency}`)}><input inputMode="numeric" value={excludedAssetValue} onChange={(e) => setExcludedAssetValue(formatNumberTyping(e.target.value))} /></Field>
             <Field label={T(lang, 'Nguồn số liệu tài chính', 'Financial data source')}><select value={financialSource} onChange={(e) => setFinancialSource(e.target.value)}><option value="management_accounts">{T(lang, 'Số liệu quản trị nội bộ', 'Management accounts')}</option><option value="tax_report">{T(lang, 'Báo cáo thuế', 'Tax filings')}</option><option value="audited_financials">{T(lang, 'Báo cáo kiểm toán', 'Audited financials')}</option><option value="bank_statement">{T(lang, 'Sao kê ngân hàng / POS', 'Bank / POS statements')}</option><option value="estimate">{T(lang, 'Ước tính của chủ DN', 'Founder estimate')}</option></select></Field>
           </div>
           <div className={`d68-valuation-check d68-valuation-check--${valuationCheck.level}`}>
             <div><span>{T(lang, 'Gợi ý kiểm tra định giá', 'Valuation sanity check')}</span><b>{valuationCheck.label}</b><p>{valuationCheck.message}</p></div>
             <dl>
-              <div><dt>{T(lang, 'Định giá suy ra', 'Implied valuation')}</dt><dd>{valuationCheck.impliedValue ? formatValuationMoney(valuationCheck.impliedValue, currentCurrency, lang) : '—'}</dd></div>
-              <div><dt>{T(lang, 'Tham chiếu thấp', 'Benchmark low')}</dt><dd>{valuationCheck.benchLow ? formatValuationMoney(valuationCheck.benchLow, currentCurrency, lang) : '—'}</dd></div>
-              <div><dt>{T(lang, 'Tham chiếu trung bình', 'Benchmark mid')}</dt><dd>{valuationCheck.benchMid ? formatValuationMoney(valuationCheck.benchMid, currentCurrency, lang) : '—'}</dd></div>
-              <div><dt>{T(lang, 'Tham chiếu cao', 'Benchmark high')}</dt><dd>{valuationCheck.benchHigh ? formatValuationMoney(valuationCheck.benchHigh, currentCurrency, lang) : '—'}</dd></div>
+              <div><dt>{T(lang, 'Định giá quy đổi', 'Converted valuation')}</dt><dd>{valuationCheck.impliedValue ? formatValuationMoney(valuationCheck.impliedValue, currentCurrency, lang) : '—'}</dd></div>
+              <div><dt>{T(lang, 'Định giá tham chiếu', 'Benchmark valuation')}</dt><dd>{valuationCheck.benchLow && valuationCheck.benchHigh ? `${formatValuationMoney(valuationCheck.benchLow, currentCurrency, lang)} – ${formatValuationMoney(valuationCheck.benchHigh, currentCurrency, lang)}` : '—'}</dd></div>
               <div><dt>EV/Revenue</dt><dd>{valuationCheck.adjR ? `${valuationCheck.adjR.toFixed(2)}×` : '—'}</dd></div>
               <div><dt>EV/EBITDA</dt><dd>{valuationCheck.adjE ? `${valuationCheck.adjE.toFixed(2)}×` : '—'}</dd></div>
-            </dl><small>{T(lang, VALUATION_DISCLAIMER_VI, VALUATION_DISCLAIMER_EN)}</small>
+            </dl><small>{T(lang, 'Khoản giá trị quy đổi được so sánh với vùng tham khảo sơ bộ. Admin vẫn cần kiểm tra hồ sơ, ngành và tài liệu.', 'The converted valuation is compared with an indicative benchmark range. Admin still needs to review the profile, industry and documents.')}</small><small>{T(lang, VALUATION_DISCLAIMER_VI, VALUATION_DISCLAIMER_EN)}</small>
           </div>
         </section>
 
         <section className="d68-register-section d68-register-section--pricing">
-          <h2>{T(lang, 'Gói dịch vụ & thanh toán', 'Service package & payment')}</h2>
-          <div className="d68-pricing-cards">
-            {[{ key: 'standard' as BusinessPlan, price: standardPrice }, { key: 'featured' as BusinessPlan, price: featuredPrice }].map((item) => <button key={item.key} type="button" className={plan === item.key ? 'active' : ''} onClick={() => setPlan(item.key)}>
-              <span>{planText(item.key, lang)}</span>
-              <b>{money(item.price.total, item.price.currency)}</b>
-              <small>{item.price.termWeeks} {T(lang, 'tuần hiển thị', 'weeks listing')} · {item.price.proposalQuota} {T(lang, 'lượt đề xuất', 'proposal quota')}</small>
-              <em>{item.key === 'featured' ? T(lang, 'Ưu tiên thứ hạng & quota cao hơn', 'Higher ranking & quota') : T(lang, 'Hiển thị tiêu chuẩn sau khi duyệt', 'Standard listing after approval')}</em>
+          <h2>{T(lang, 'Gói dịch vụ và Thanh toán', 'Service package and Payment')}</h2>
+          <div className="d68-bizreg-options">
+            {[{ key: 'standard' as BusinessPlan, price: standardPrice, title: T(lang, 'Gói Thường', 'Standard plan'), desc: T(lang, 'Hiển thị listing + gửi tối đa 100 proposal tới Nhà đầu tư.', 'Listing visibility + up to 100 proposals to investors.'), badge: '100 proposals included' }, { key: 'featured' as BusinessPlan, price: featuredPrice, title: T(lang, 'Gói Ưu tiên ★', 'Priority plan ★'), desc: T(lang, 'Nổi bật listing/trang chủ + gửi tối đa 200 proposal tới Nhà đầu tư.', 'Featured listing/homepage + up to 200 proposals to investors.'), badge: '200 proposals included' }].map((item) => <button key={item.key} type="button" className={plan === item.key ? 'active' : ''} onClick={() => setPlan(item.key)}>
+              <h3>{item.title}</h3><p>{item.desc}</p><span>{item.badge}</span>{item.key === 'featured' ? <em>+30% {T(lang, 'so với gói Thường', 'vs Standard')}</em> : null}
             </button>)}
           </div>
-          <div className="d68-payment-note">
-            <div><b>{T(lang, 'Thời gian dịch vụ', 'Service duration')}</b><span>{price.termWeeks} {T(lang, 'tuần kể từ khi Admin xác nhận thanh toán/kích hoạt.', 'weeks from Admin payment confirmation/activation.')}</span></div>
-            <div><b>{T(lang, 'Phương thức thanh toán', 'Payment methods')}</b><span>{T(lang, 'Chuyển khoản ngân hàng/VietQR/Sepay Beta; Admin xác nhận thủ công trước khi mở dashboard.', 'Bank transfer/VietQR/Sepay Beta; Admin manually confirms before dashboard access opens.')}</span></div>
-            <div><b>{T(lang, 'Gói đang chọn', 'Selected package')}</b><span>{planLabel} · {pricingSummary}</span></div>
+          <div className="d68-bizreg-paygrid">
+            <div className="d68-bizreg-payleft">
+              <label className="d68-bizreg-label">{T(lang, 'Kỳ hạn', 'Term')} <small>({T(lang, 'tuần', 'weeks')})</small></label>
+              <div className="d68-bizreg-terms">{termOptions.map((w) => { const tmp = calculatePricing({ role: 'business', country: countryCode, termWeeks: w, businessPlan: plan, promoCode }, promoPct); return <button type="button" key={w} className={serviceWeeks === w ? 'active' : ''} onClick={() => setServiceWeeks(w)}><b>{w}</b>{tmp.termDiscountPct ? <span>-{tmp.termDiscountPct}%</span> : null}</button>; })}</div>
+              <label className="d68-bizreg-label">{T(lang, 'Mã khuyến mãi/giới thiệu', 'Promo/referral code')}</label>
+              <div className="d68-bizreg-promo"><input value={promoCode} onChange={(e) => setPromoCode(e.target.value.toUpperCase())} placeholder="DEALS68"/><button type="button" disabled={promoLoading} onClick={async () => { setPromoLoading(true); const res = await lookupPromo(promoCode, 'business').catch((err: any) => ({ discountPct: 0, message: err?.message || 'Could not check promo.' })); setPromoLoading(false); setPromoPct(Number(res.discountPct || 0)); setPromoMsg(res.message || (res.discountPct ? 'Promo applied.' : T(lang, 'Mã không hợp lệ.', 'Invalid code.'))); }}>{promoLoading ? '...' : T(lang, 'Áp dụng', 'Apply')}</button></div>
+              {promoMsg ? <p className={promoPct ? 'd68-bizreg-promo-ok' : 'd68-bizreg-promo-warn'}>{promoMsg}</p> : null}
+            </div>
+            <aside className="d68-bizreg-summary"><span>{T(lang, 'Tạm tính', 'Estimate')}</span><RowMini a={T(lang, `Subtotal (${price.termWeeks} tuần)`, `Subtotal (${price.termWeeks} weeks)`)} b={money(price.subtotal, price.currency)} /><RowMini a={T(lang, 'Chiết khấu kỳ hạn', 'Term discount')} b={price.termDiscountPct ? `-${money(price.termDiscount, price.currency)} (${price.termDiscountPct}%)` : T(lang, 'Không', 'None')} good={!!price.termDiscountPct}/><RowMini a={T(lang, 'Giảm giá', 'Promo discount')} b={price.promoDiscountPct ? `-${money(price.promoDiscount, price.currency)} (${price.promoDiscountPct}%)` : T(lang, 'Không', 'None')} good={!!price.promoDiscountPct}/><strong>{T(lang, 'Tổng thanh toán', 'Total due')}<b>{money(price.total, price.currency)}</b></strong></aside>
+          </div>
+          <div className="d68-bizreg-payment-methods">
+            <button type="button" className="active"><span>💵</span>{T(lang, 'Chuyển khoản QR', 'QR bank transfer')}</button>
+            <button type="button" disabled><span>💳</span>Sepay ({T(lang, 'Thẻ nội địa / tín dụng', 'Debit / credit card')}) · {T(lang, 'Sắp ra mắt', 'Coming soon')}</button>
+            <button type="button" disabled><span>💳</span>Stripe / Paypal · {T(lang, 'Sắp ra mắt', 'Coming soon')}</button>
+          </div>
+          <div className="d68-bizreg-qrbox">
+            <a href={qrUrl} target="_blank" rel="noreferrer"><img src={qrUrl} alt="QR Vietcombank" /></a>
+            <div><p>{T(lang, 'Người nhận:', 'Recipient:')} <b>Tieu Vo Dinh Phi</b></p><p>{T(lang, 'Số TK:', 'Account no.:')} <b>0011004000713</b></p><p>{T(lang, 'Nội dung:', 'Transfer note:')} <b>{bankContent}</b></p><p>{T(lang, 'Số tiền:', 'Amount:')} <b>{money(price.total, price.currency)}</b></p></div>
+            <label><input type="checkbox" checked={paymentAck} onChange={(e) => setPaymentAck(e.target.checked)} /> {T(lang, 'Tôi đã chuyển khoản đúng số tiền và nội dung ở trên', 'I have transferred the exact amount with the transfer note above')}</label>
           </div>
         </section>
       </> : null}
@@ -455,8 +511,8 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
       </section> : null}
 
       <label className="d68-agree"><input type="checkbox" checked={agree} onChange={(e) => setAgree(e.target.checked)} /> {T(lang, 'Tôi đồng ý Điều khoản & Chính sách bảo mật.', 'I agree to Terms & Privacy Policy.')}</label>
-      {msg ? <div className="d68-auth-msg">{msg}</div> : null}
-      <button disabled={loading} className="d68-auth-submit">{loading ? T(lang, 'Đang tạo...', 'Creating...') : T(lang, 'Tạo tài khoản & đơn thanh toán', 'Create account & payment order')}</button>
+      {msg ? <div className={`d68-auth-msg ${msgType === 'ok' ? 'ok' : msgType === 'err' ? 'err' : ''}`}>{msg}</div> : null}
+      <button disabled={loading} className="d68-auth-submit">{loading ? T(lang, 'Đang tạo...', 'Creating...') : isBusiness ? T(lang, 'Tạo tài khoản doanh nghiệp', 'Create business account') : isInvestor ? T(lang, 'Tạo tài khoản nhà đầu tư', 'Create investor account') : T(lang, 'Tạo tài khoản', 'Create account')}</button>
     </form>
   </section></main>;
 }
