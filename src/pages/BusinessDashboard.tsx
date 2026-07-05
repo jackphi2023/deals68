@@ -12,6 +12,7 @@ import {
   uploadBusinessImage
 } from '../lib/data';
 import { supabase } from '../lib/supabase';
+import { DEFAULT_VALUATION_CONFIG, getActiveValuationConfig, valuate, valuationInputFromBusiness, formatValuationMoney, valuationVerdictMessage, VALUATION_DISCLAIMER_VI, VALUATION_DISCLAIMER_EN } from '../lib/valuationEngine';
 
 type Lang = 'vi' | 'en';
 type Tab = 'overview' | 'profile' | 'documents' | 'images' | 'interests' | 'requests' | 'services';
@@ -43,7 +44,7 @@ const tabMap: Record<string, Tab> = {
   plan: 'services'
 };
 
-const INDUSTRY_VI = ['F&B','Y tế & Sức khỏe','Làm đẹp & Chăm sóc cá nhân','Bán lẻ','Sản xuất','Công nghệ','Bất động sản','Logistics','Giáo dục','Năng lượng','Thủy sản & Xuất khẩu'];
+const INDUSTRY_VI = ['Nông nghiệp','Ô tô & Phụ tùng','Làm đẹp & Chăm sóc cá nhân','Xây dựng & Vật liệu','Hóa chất','Giáo dục & Đào tạo','Năng lượng & Tiện ích','Giải trí & Nghỉ dưỡng','Tài chính','Thực phẩm & Đồ uống (F&B)','Y tế & Chăm sóc sức khỏe','Khách sạn & Resort','CNTT & Phần mềm','Sản xuất','Truyền thông & Quảng cáo','Bất động sản','Bán lẻ','Dịch vụ (B2B/B2C)','Logistics & Vận tải','Du lịch','Thương mại điện tử','Dệt may & Thời trang','Thủy sản & Xuất khẩu'];
 const DEAL_TYPE_VI = ['Gọi vốn','Bán cổ phần','M&A / Chuyển nhượng','Vay vốn','JV / Đối tác','Chuyển nhượng tài sản'];
 const DOC_ACCEPT = '.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 
@@ -70,17 +71,30 @@ function ext(name = '', type = '') {
 
 function viIndustry(raw: any) {
   const v = String(raw || '').toLowerCase();
-  if (v.includes('health')) return 'Y tế & Sức khỏe';
-  if (v.includes('beauty') || v.includes('personal')) return 'Làm đẹp & Chăm sóc cá nhân';
-  if (v.includes('retail')) return 'Bán lẻ';
-  if (v.includes('manufact')) return 'Sản xuất';
-  if (v.includes('tech')) return 'Công nghệ';
-  if (v.includes('real')) return 'Bất động sản';
-  if (v.includes('logistics')) return 'Logistics';
-  if (v.includes('education')) return 'Giáo dục';
-  if (v.includes('energy')) return 'Năng lượng';
-  if (v.includes('seafood')) return 'Thủy sản & Xuất khẩu';
-  return raw || 'F&B';
+  if (v.includes('agri') || v.includes('nông') || v.includes('nong')) return 'Nông nghiệp';
+  if (v.includes('auto') || v.includes('ô tô') || v.includes('o to') || v.includes('car')) return 'Ô tô & Phụ tùng';
+  if (v.includes('beauty') || v.includes('personal') || v.includes('spa') || v.includes('làm đẹp') || v.includes('lam dep')) return 'Làm đẹp & Chăm sóc cá nhân';
+  if (v.includes('construction') || v.includes('building') || v.includes('xây dựng') || v.includes('xay dung')) return 'Xây dựng & Vật liệu';
+  if (v.includes('chemical') || v.includes('hóa chất') || v.includes('hoa chat')) return 'Hóa chất';
+  if (v.includes('education') || v.includes('training') || v.includes('giáo dục') || v.includes('giao duc')) return 'Giáo dục & Đào tạo';
+  if (v.includes('energy') || v.includes('utility') || v.includes('năng lượng') || v.includes('nang luong')) return 'Năng lượng & Tiện ích';
+  if (v.includes('entertainment') || v.includes('leisure') || v.includes('giải trí') || v.includes('giai tri')) return 'Giải trí & Nghỉ dưỡng';
+  if (v.includes('finance') || v.includes('tài chính') || v.includes('tai chinh')) return 'Tài chính';
+  if (v.includes('food') || v.includes('beverage') || v.includes('f&b') || v.includes('fnb') || v.includes('nhà hàng') || v.includes('nha hang')) return 'Thực phẩm & Đồ uống (F&B)';
+  if (v.includes('health') || v.includes('clinic') || v.includes('medical') || v.includes('y tế') || v.includes('y te')) return 'Y tế & Chăm sóc sức khỏe';
+  if (v.includes('hotel') || v.includes('resort') || v.includes('khách sạn') || v.includes('khach san')) return 'Khách sạn & Resort';
+  if (v.includes('software') || v.includes('technology') || v.includes('tech') || v.includes('cntt') || v.includes('công nghệ') || v.includes('cong nghe')) return 'CNTT & Phần mềm';
+  if (v.includes('manufact') || v.includes('factory') || v.includes('sản xuất') || v.includes('san xuat')) return 'Sản xuất';
+  if (v.includes('media') || v.includes('advert') || v.includes('truyền thông') || v.includes('truyen thong')) return 'Truyền thông & Quảng cáo';
+  if (v.includes('real') || v.includes('property') || v.includes('bất động sản') || v.includes('bat dong san')) return 'Bất động sản';
+  if (v.includes('retail') || v.includes('bán lẻ') || v.includes('ban le')) return 'Bán lẻ';
+  if (v.includes('service') || v.includes('dịch vụ') || v.includes('dich vu')) return 'Dịch vụ (B2B/B2C)';
+  if (v.includes('logistics') || v.includes('transport') || v.includes('vận tải') || v.includes('van tai')) return 'Logistics & Vận tải';
+  if (v.includes('travel') || v.includes('du lịch') || v.includes('du lich')) return 'Du lịch';
+  if (v.includes('commerce') || v.includes('ecommerce') || v.includes('thương mại điện tử') || v.includes('thuong mai dien tu')) return 'Thương mại điện tử';
+  if (v.includes('textile') || v.includes('apparel') || v.includes('fashion') || v.includes('dệt may') || v.includes('det may') || v.includes('thời trang') || v.includes('thoi trang')) return 'Dệt may & Thời trang';
+  if (v.includes('seafood') || v.includes('export') || v.includes('thủy sản') || v.includes('thuy san')) return 'Thủy sản & Xuất khẩu';
+  return INDUSTRY_VI.includes(String(raw || '')) ? String(raw) : 'Thực phẩm & Đồ uống (F&B)';
 }
 
 function viDealType(raw: any) {
@@ -281,17 +295,25 @@ function FormattedNumberInput({ name, defaultValue, allowDecimal = false }: { na
   </>;
 }
 
-function ValuationOverviewBox({ lang, valuation, benchmark }: any) {
-  return <div className="d68-dashboard-valuation-box">
+function ValuationOverviewBox({ lang, result }: any) {
+  const currency = result?.currency || 'VND';
+  return <div className="d68-dashboard-valuation-box d68-dashboard-valuation-box--engine">
     <div>
-      <span>{T(lang, 'Giá trị doanh nghiệp', 'Business value')}</span>
-      <strong>{formatValuation(lang, valuation)}</strong>
+      <span>{T(lang, 'Giá trị doanh nghiệp tự định giá', 'Implied self valuation')}</span>
+      <strong>{result?.self ? formatValuationMoney(result.self, currency, lang) : T(lang, 'Chưa đủ dữ liệu', 'Not enough data')}</strong>
+      <small>{T(lang, 'Suy từ số tiền chào và tỷ lệ cổ phần.', 'Derived from offer amount and offered stake.')}</small>
     </div>
     <div>
       <span>{T(lang, 'Tham chiếu ngành', 'Industry benchmark')}</span>
-      <strong>{benchmark ? formatValuation(lang, benchmark) : T(lang, 'Chưa đủ dữ liệu tham chiếu', 'Not enough benchmark data')}</strong>
-      {benchmark ? <small>{T(lang, `Mẫu tham chiếu: ${benchmark.sampleSize} hồ sơ cùng ngành/quốc gia`, `Reference sample: ${benchmark.sampleSize} same-industry/country profile(s)`)}</small> : <small>{T(lang, 'Cần thêm hồ sơ cùng ngành, cùng quốc gia và có đủ số liệu định giá.', 'More same-industry, same-country listings with valuation data are needed.')}</small>}
+      <strong>{result ? `${formatValuationMoney(result.low, currency, lang)} – ${formatValuationMoney(result.high, currency, lang)}` : T(lang, 'Đang cập nhật', 'Pending')}</strong>
+      <small>{result ? `${valuationVerdictMessage(lang, result)} · config v${result.configVersion}` : T(lang, 'Cần doanh thu, ngành và biên EBITDA/tăng trưởng để tính tham chiếu.', 'Revenue, industry and EBITDA/growth inputs are needed for a benchmark.')}</small>
     </div>
+    <div>
+      <span>{T(lang, 'Cách tính', 'Calculation')}</span>
+      <strong>{result ? (result.method === 'blend' ? 'EBITDA + Revenue' : 'Revenue only') : '—'}</strong>
+      <small>{result ? `EV/EBITDA ${result.adjE.toFixed(2)}× · EV/Revenue ${result.adjR.toFixed(2)}×` : T(lang, 'Không trả số giả nếu thiếu dữ liệu.', 'No fake numbers when inputs are missing.')}</small>
+    </div>
+    <p>{T(lang, VALUATION_DISCLAIMER_VI, VALUATION_DISCLAIMER_EN)}</p>
   </div>;
 }
 
@@ -315,8 +337,10 @@ export default function BusinessDashboard() {
   const [busy, setBusy] = useState(false);
   const [newDocName, setNewDocName] = useState('');
   const [newDocCategory, setNewDocCategory] = useState('financials');
+  const [valuationConfig, setValuationConfig] = useState(DEFAULT_VALUATION_CONFIG);
 
   useEffect(() => setTab(resolveTab(location.pathname)), [location.pathname]);
+  useEffect(() => { getActiveValuationConfig().then(setValuationConfig).catch(() => setValuationConfig(DEFAULT_VALUATION_CONFIG)); }, []);
 
   async function load() {
     if (!profile) return;
@@ -375,8 +399,9 @@ export default function BusinessDashboard() {
   const approvedProposalCount = proposals.filter((p) => isApprovedStatus(p.status)).length;
   const investorAttentionCount = savedBusinesses.length + interests.length + requests.length + approvedProposalCount;
   const qualityItems = buildQualityItems(lang, b, files, images);
-  const businessValuation = estimateEnterpriseValue(b);
-  const industryBenchmark = estimateIndustryBenchmark(b, benchmarkBusinesses);
+  const dashboardBenchmark = valuate(valuationInputFromBusiness(b), valuationConfig);
+  const businessValuation = dashboardBenchmark?.self ? { value: dashboardBenchmark.self, currency: dashboardBenchmark.currency } : estimateEnterpriseValue(b);
+  const industryBenchmark = dashboardBenchmark;
 
   async function saveProfile(e: FormEvent) {
     e.preventDefault();
@@ -390,12 +415,16 @@ export default function BusinessDashboard() {
       city: fieldValue(fd, 'city'),
       highlights_vi: fieldValue(fd, 'highlights_vi'),
       investment_reason_vi: fieldValue(fd, 'investment_reason_vi'),
+      revenue_month: Number(fd.get('revenue_month') || 0),
       revenue_2025: Number(fd.get('revenue_2025') || 0),
       revenue_currency: fieldValue(fd, 'revenue_currency') || b.revenue_currency || 'VND',
       ebitda_margin: Number(fd.get('ebitda_margin') || 0),
+      growth_pct: Number(fd.get('growth_pct') || 0),
       ask_amount: Number(fd.get('ask_amount') || 0),
       ask_currency: fieldValue(fd, 'ask_currency') || b.ask_currency || b.revenue_currency || 'VND',
       stake_pct: Number(fd.get('stake_pct') || 0),
+      offer_amount: Number(fd.get('ask_amount') || 0),
+      offer_stake_pct: Number(fd.get('stake_pct') || 0),
       data_confidence: Number(fd.get('data_confidence') || 0),
       financial_input: financialInputOf(b)
     };
@@ -474,7 +503,7 @@ export default function BusinessDashboard() {
     <header className="d68-dashboard-head"><div><div className="d68-dashboard-kicker">Business Dashboard</div><h1>{title}</h1></div><div className="d68-dashboard-actions"><button className="d68-dashboard-btn light" onClick={() => setLang(lang === 'vi' ? 'en' : 'vi')}>{lang.toUpperCase()}</button><span className="d68-dashboard-badge blue">{planLabel}</span><span className={`d68-dashboard-badge ${status.cls}`}>{status.label}</span><button className="d68-dashboard-btn light" onClick={() => signOut().then(() => navigate('/'))}>{T(lang,'Thoát','Exit')}</button></div></header>
     {msg ? <div className="d68-dashboard-notice ok">{msg}</div> : null}{err ? <div className="d68-dashboard-notice err">{err}</div> : null}{busy ? <div className="d68-dashboard-notice warn">{T(lang,'Đang tải dữ liệu...','Loading data...')}</div> : null}{hasPending ? <div className="d68-dashboard-notice warn">{T(lang,'Có thay đổi đang chờ Admin duyệt. Public profile vẫn dùng bản snapshot đã duyệt gần nhất.', 'Changes are pending Admin review. Public profile still uses the latest approved snapshot.')}</div> : null}
     <div className="d68-dashboard-cols"><nav className="d68-dashboard-side">{tabs.map((t) => <Link key={t.id} to={t.href} onClick={() => setTab(t.id)} className={tab === t.id ? 'active' : ''}><span className="d68-dashboard-nav-icon"><t.Icon size={17} strokeWidth={2.2} /></span><span>{T(lang,t.vi,t.en)}</span></Link>)}<div className="d68-dashboard-side__note">{T(lang,'Cần hỗ trợ hoàn thiện hồ sơ, định giá và tài liệu làm việc với Nhà đầu tư? Hãy tham khảo:', 'Need help preparing your profile, valuation and investor materials? Please refer to:')}<br/><a href="https://vietcapitalpartners.com" target="_blank" rel="noreferrer">vietcapitalpartners.com ↗</a><br/>Hotline: 0909.584.075</div></nav><section>
-      {tab === 'overview' ? <><ValuationOverviewBox lang={lang} valuation={businessValuation} benchmark={industryBenchmark} /><div className="d68-dashboard-scorecard"><div className="d68-dashboard-scorecard__ring" style={{ background: `conic-gradient(${score === null ? '#CBD5E1' : band.cls === 'green' ? '#16A34A' : band.cls === 'blue' ? '#1596cc' : '#B8860B'} ${Math.max(0, Math.min(100, score ?? 0)) * 3.6}deg, #EEF2F6 0deg)` }}><div><b>{score === null ? '—' : score}</b><span>/100</span></div></div><section><div><h2>Business Quality Score</h2><span className={`d68-dashboard-badge ${band.cls}`}>{score === null ? T(lang,'Đang cập nhật','Pending') : T(lang, band.labelVi, band.labelEn)}</span></div><p>{T(lang,'Điểm do hệ thống tính toán dựa trên chất lượng và số lượng tài liệu đăng lên cũng như định giá doanh nghiệp.', 'Score is calculated by the system based on the quality and quantity of uploaded materials as well as business valuation inputs.')}</p><div className="d68-dashboard-scorecard__chips"><span>{hasPublicSnapshot ? '✓ Public snapshot' : '⏳ No public snapshot'}</span><span>{hasPending ? '⏳ Pending review' : '✓ No pending changes'}</span><span>{images.length} images</span><span>{files.length} files</span></div></section></div><div className="d68-quality-list d68-dashboard-card"><div className="d68-quality-list__head"><BarChart3 size={18}/><h2>{T(lang,'Hồ sơ/tài liệu đạt yêu cầu','Required profile materials')}</h2></div>{qualityItems.map((item) => <div key={item.label} className={`d68-quality-item ${item.ok ? 'ok' : 'missing'}`}><b>{item.ok ? '✓' : '×'} {item.label}</b><span>{item.detail}</span></div>)}</div><div className="d68-dashboard-grid4" style={{ marginBottom: 18 }}>{metric(T(lang,'Trạng thái','Status'), status.label, status.cls)}{metric(T(lang,'Gói hiển thị','Listing plan'), planLabel)}{metric(T(lang,'Đã gửi Hồ sơ / Được duyệt','Proposals sent / approved'), `${sentProposalCount} / ${approvedProposalCount}`, approvedProposalCount ? 'green' : 'blue', T(lang,'Số proposal gửi đi và số nhà đầu tư đã được duyệt/kết nối.', 'Number of proposals sent and investors approved/connected.'))}{metric(T(lang,'Nhà đầu tư quan tâm','Investor attention'), String(investorAttentionCount), investorAttentionCount ? 'green' : 'gold', T(lang,`Lưu hồ sơ: ${savedBusinesses.length} · Quan tâm: ${interests.length} · Yêu cầu data: ${requests.length}`, `Saved: ${savedBusinesses.length} · Interest: ${interests.length} · Data requests: ${requests.length}`))}</div><div className="d68-dashboard-card"><h2>{T(lang,'Hạn mức proposal','Proposal quota')}</h2><div className="d68-dashboard-progress"><span style={{ width: `${Math.min(100, Math.round((sentProposalCount / Math.max(1, quotaTotal)) * 100))}%` }} /></div><p><b>{sentProposalCount} / {quotaTotal}</b> · {T(lang,'hồ sơ/proposal đã gửi','proposals sent')}</p><Link to="/investors" className="d68-dashboard-btn gold">{T(lang,'Tìm Nhà đầu tư','Find investors')} →</Link></div></> : null}
+      {tab === 'overview' ? <><ValuationOverviewBox lang={lang} result={industryBenchmark} /><div className="d68-dashboard-scorecard"><div className="d68-dashboard-scorecard__ring" style={{ background: `conic-gradient(${score === null ? '#CBD5E1' : band.cls === 'green' ? '#16A34A' : band.cls === 'blue' ? '#1596cc' : '#B8860B'} ${Math.max(0, Math.min(100, score ?? 0)) * 3.6}deg, #EEF2F6 0deg)` }}><div><b>{score === null ? '—' : score}</b><span>/100</span></div></div><section><div><h2>Business Quality Score</h2><span className={`d68-dashboard-badge ${band.cls}`}>{score === null ? T(lang,'Đang cập nhật','Pending') : T(lang, band.labelVi, band.labelEn)}</span></div><p>{T(lang,'Điểm do hệ thống tính toán dựa trên chất lượng và số lượng tài liệu đăng lên cũng như định giá doanh nghiệp.', 'Score is calculated by the system based on the quality and quantity of uploaded materials as well as business valuation inputs.')}</p><div className="d68-dashboard-scorecard__chips"><span>{hasPublicSnapshot ? '✓ Public snapshot' : '⏳ No public snapshot'}</span><span>{hasPending ? '⏳ Pending review' : '✓ No pending changes'}</span><span>{images.length} images</span><span>{files.length} files</span></div></section></div><div className="d68-quality-list d68-dashboard-card"><div className="d68-quality-list__head"><BarChart3 size={18}/><h2>{T(lang,'Hồ sơ/tài liệu đạt yêu cầu','Required profile materials')}</h2></div>{qualityItems.map((item) => <div key={item.label} className={`d68-quality-item ${item.ok ? 'ok' : 'missing'}`}><b>{item.ok ? '✓' : '×'} {item.label}</b><span>{item.detail}</span></div>)}</div><div className="d68-dashboard-grid4" style={{ marginBottom: 18 }}>{metric(T(lang,'Trạng thái','Status'), status.label, status.cls)}{metric(T(lang,'Gói hiển thị','Listing plan'), planLabel)}{metric(T(lang,'Đã gửi Hồ sơ / Được duyệt','Proposals sent / approved'), `${sentProposalCount} / ${approvedProposalCount}`, approvedProposalCount ? 'green' : 'blue', T(lang,'Số proposal gửi đi và số nhà đầu tư đã được duyệt/kết nối.', 'Number of proposals sent and investors approved/connected.'))}{metric(T(lang,'Nhà đầu tư quan tâm','Investor attention'), String(investorAttentionCount), investorAttentionCount ? 'green' : 'gold', T(lang,`Lưu hồ sơ: ${savedBusinesses.length} · Quan tâm: ${interests.length} · Yêu cầu data: ${requests.length}`, `Saved: ${savedBusinesses.length} · Interest: ${interests.length} · Data requests: ${requests.length}`))}</div><div className="d68-dashboard-card"><h2>{T(lang,'Hạn mức proposal','Proposal quota')}</h2><div className="d68-dashboard-progress"><span style={{ width: `${Math.min(100, Math.round((sentProposalCount / Math.max(1, quotaTotal)) * 100))}%` }} /></div><p><b>{sentProposalCount} / {quotaTotal}</b> · {T(lang,'hồ sơ/proposal đã gửi','proposals sent')}</p><Link to="/investors" className="d68-dashboard-btn gold">{T(lang,'Tìm Nhà đầu tư','Find investors')} →</Link></div></> : null}
       {tab === 'profile' ? <ProfileForm lang={lang} b={b} saveProfile={saveProfile} /> : null}
       {tab === 'documents' ? <Documents lang={lang} files={files} deleteFile={deleteFile} renameFile={renameFile} fileChange={fileChange} newDocName={newDocName} setNewDocName={setNewDocName} newDocCategory={newDocCategory} setNewDocCategory={setNewDocCategory} /> : null}
       {tab === 'images' ? <Images lang={lang} images={images} imageChange={imageChange} deleteImage={deleteImage} renameImage={renameImage} suggestHero={suggestHero} /> : null}
@@ -494,7 +523,7 @@ function ProfileForm({ lang, b, saveProfile }: any) {
     <div className="d68-dashboard-form2"><label className="d68-dashboard-field"><span>{T(lang,'Ngành','Industry')}</span><select className="d68-dashboard-input" name="industry" defaultValue={viIndustry(b.industry)}>{INDUSTRY_VI.map((x) => <option key={x}>{x}</option>)}</select></label><label className="d68-dashboard-field"><span>{T(lang,'Thành phố','City')}</span><input className="d68-dashboard-input" name="city" defaultValue={b.city || ''}/></label></div>
     <label className="d68-dashboard-field"><span>{T(lang,'Tổng quan doanh nghiệp','Business overview')}</span><textarea className="d68-dashboard-input d68-dashboard-textarea" name="description_vi" defaultValue={b.description_vi || ''}/></label>
     <label className="d68-dashboard-field"><span>{T(lang,'Điểm nổi bật','Highlights')}</span><textarea className="d68-dashboard-input d68-dashboard-textarea" name="highlights_vi" defaultValue={b.highlights_vi || ''}/></label>
-    <div className="d68-dashboard-form2"><label className="d68-dashboard-field"><span>{T(lang,'Loại giao dịch','Deal type')}</span><select className="d68-dashboard-input" name="deal_type" defaultValue={viDealType(b.deal_type)}>{DEAL_TYPE_VI.map((x) => <option key={x}>{x}</option>)}</select></label><label className="d68-dashboard-field"><span>{T(lang,'Doanh thu 2025','Revenue 2025')}</span><FormattedNumberInput name="revenue_2025" defaultValue={b.revenue_2025 || 0} /></label><label className="d68-dashboard-field"><span>Revenue currency</span><select className="d68-dashboard-input" name="revenue_currency" defaultValue={b.revenue_currency || 'VND'}><option>VND</option><option>USD</option></select></label><label className="d68-dashboard-field"><span>EBITDA margin (%)</span><FormattedNumberInput name="ebitda_margin" defaultValue={b.ebitda_margin || 0} allowDecimal /></label><label className="d68-dashboard-field"><span>{T(lang,'Nhu cầu vốn/Giá chào','Ask amount')}</span><FormattedNumberInput name="ask_amount" defaultValue={b.ask_amount || 0} /></label><label className="d68-dashboard-field"><span>Ask currency</span><select className="d68-dashboard-input" name="ask_currency" defaultValue={b.ask_currency || b.revenue_currency || 'VND'}><option>VND</option><option>USD</option></select></label><label className="d68-dashboard-field"><span>{T(lang,'Tỷ lệ cổ phần (%)','Stake (%)')}</span><FormattedNumberInput name="stake_pct" defaultValue={b.stake_pct || 0} allowDecimal /></label><label className="d68-dashboard-field"><span>{T(lang,'Độ tin cậy dữ liệu','Data confidence')}</span><FormattedNumberInput name="data_confidence" defaultValue={b.data_confidence || 0} /></label></div>
+    <div className="d68-dashboard-form2"><label className="d68-dashboard-field"><span>{T(lang,'Loại giao dịch','Deal type')}</span><select className="d68-dashboard-input" name="deal_type" defaultValue={viDealType(b.deal_type)}>{DEAL_TYPE_VI.map((x) => <option key={x}>{x}</option>)}</select></label><label className="d68-dashboard-field"><span>{T(lang,'Doanh thu tháng','Monthly revenue')}</span><FormattedNumberInput name="revenue_month" defaultValue={b.revenue_month || b.financial_input?.revenue_month || 0} /></label><label className="d68-dashboard-field"><span>{T(lang,'Doanh thu năm','Annual revenue')}</span><FormattedNumberInput name="revenue_2025" defaultValue={b.revenue_2025 || 0} /></label><label className="d68-dashboard-field"><span>Revenue currency</span><select className="d68-dashboard-input" name="revenue_currency" defaultValue={b.revenue_currency || 'VND'}><option>VND</option><option>USD</option></select></label><label className="d68-dashboard-field"><span>EBITDA margin (%)</span><FormattedNumberInput name="ebitda_margin" defaultValue={b.ebitda_margin || 0} allowDecimal /></label><label className="d68-dashboard-field"><span>{T(lang,'Tăng trưởng năm (%)','Annual growth (%)')}</span><FormattedNumberInput name="growth_pct" defaultValue={b.growth_pct || b.financial_input?.growth_pct || 0} allowDecimal /></label><label className="d68-dashboard-field"><span>{T(lang,'Nhu cầu vốn/Giá chào','Ask amount')}</span><FormattedNumberInput name="ask_amount" defaultValue={b.ask_amount || 0} /></label><label className="d68-dashboard-field"><span>Ask currency</span><select className="d68-dashboard-input" name="ask_currency" defaultValue={b.ask_currency || b.revenue_currency || 'VND'}><option>VND</option><option>USD</option></select></label><label className="d68-dashboard-field"><span>{T(lang,'Tỷ lệ cổ phần (%)','Stake (%)')}</span><FormattedNumberInput name="stake_pct" defaultValue={b.stake_pct || 0} allowDecimal /></label><label className="d68-dashboard-field"><span>{T(lang,'Độ tin cậy dữ liệu','Data confidence')}</span><FormattedNumberInput name="data_confidence" defaultValue={b.data_confidence || 0} /></label></div>
     <label className="d68-dashboard-field"><span>{T(lang,'Lý do giao dịch / dùng vốn','Reason / use of funds')}</span><textarea className="d68-dashboard-input d68-dashboard-textarea" name="investment_reason_vi" defaultValue={b.investment_reason_vi || ''}/></label>
     <div style={{ display: 'flex', justifyContent: 'flex-end' }}><button className="d68-dashboard-btn">{T(lang,'Lưu & gửi Admin duyệt','Save & submit to Admin')}</button></div>
   </form>;

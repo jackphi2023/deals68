@@ -161,3 +161,34 @@
 .d68-payment-note div{display:grid;grid-template-columns:180px minmax(0,1fr);gap:12px;font-size:13.5px;line-height:1.5;color:#64748B}
 .d68-payment-note b{color:#0F2A4A}
 @media(max-width:780px){.d68-register-card{padding:22px;border-radius:18px}.d68-register-page{padding:24px 14px}.d68-register-section{padding:18px}.d68-upload-grid,.d68-pricing-cards,.d68-valuation-check{grid-template-columns:1fr}.d68-upload-item{grid-template-columns:1fr}.d68-upload-item button{width:100%}.d68-payment-note div{grid-template-columns:1fr;gap:4px}}
+
+/* Valuation engine v1.0 — benchmark panel/admin config */
+.d68-val-result--benchmark .d68-val-band{display:grid;grid-template-columns:1fr 1fr 1fr;height:10px;border-radius:999px;overflow:hidden;margin:14px 0;background:#EEF2F6}
+.d68-val-result--benchmark .d68-val-band i{background:#E9F9EF}.d68-val-result--benchmark .d68-val-band b{background:#0F2A4A}.d68-val-result--benchmark .d68-val-band em{background:#FDECEC}
+.d68-val-result--benchmark .d68-val-row b{max-width:62%;text-align:right;overflow-wrap:anywhere}
+.d68-dashboard-valuation-box--engine{grid-template-columns:1fr 1.4fr 1fr!important;align-items:stretch}
+.d68-dashboard-valuation-box--engine>div{display:flex;flex-direction:column;justify-content:center}
+.d68-dashboard-valuation-box--engine p{grid-column:1/-1;margin:0;color:#5F6F83;font-size:12.5px;line-height:1.55;background:rgba(255,255,255,.52);border:1px solid rgba(255,255,255,.62);border-radius:12px;padding:10px 12px}
+.d68-admin-valuation-form label{display:flex;flex-direction:column;gap:6px;font-size:12.5px;font-weight:800;color:#334155}.d68-admin-valuation-form textarea{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-size:12px;line-height:1.5}.d68-admin-valuation-textarea{min-height:260px!important}
+@media(max-width:900px){.d68-dashboard-valuation-box--engine{grid-template-columns:1fr!important}.d68-val-result--benchmark .d68-val-row{align-items:flex-start;gap:4px}.d68-val-result--benchmark .d68-val-row b{max-width:100%;text-align:left}}
+
+/* Businesses mobile filter hardening — screenshot 2026-07-05.
+   Keep the filter card full-width on phones, prevent the apply button and clear link from breaking into vertical text. */
+@media(max-width:720px){
+  .d68-businesses-page{overflow-x:hidden!important}
+  .d68-businesses-page .d68-list-cols{display:block!important;width:100%!important;max-width:100%!important;margin:0!important;padding:12px 16px 34px!important;box-sizing:border-box!important}
+  .d68-businesses-page .d68-sidebar{display:block!important;width:100%!important;max-width:100%!important;min-width:0!important;margin:0 0 18px!important;position:static!important;top:auto!important;box-sizing:border-box!important;overflow:hidden!important;border-radius:16px!important}
+  .d68-businesses-page .d68-filter-head{display:flex!important;align-items:center!important;justify-content:space-between!important;gap:12px!important;padding:14px 16px!important;box-sizing:border-box!important}
+  .d68-businesses-page .d68-filter-head span{font-size:16px!important;line-height:1.2!important;white-space:nowrap!important;color:#0F2A4A!important}
+  .d68-businesses-page .d68-filter-head button{flex:0 0 auto!important;white-space:nowrap!important;line-height:1.2!important;color:#1596cc!important}
+  .d68-businesses-page .d68-filter-scroll{display:block!important;max-height:none!important;overflow:visible!important;padding:6px 16px 16px!important;box-sizing:border-box!important}
+  .d68-businesses-page .d68-filter-title{display:block!important;width:100%!important;padding:16px 0 8px!important;line-height:1.2!important;letter-spacing:.6px!important;white-space:nowrap!important}
+  .d68-businesses-page .d68-filter-select{display:block!important;width:100%!important;max-width:100%!important;min-width:0!important;box-sizing:border-box!important}
+  .d68-businesses-page .d68-filter-check{display:grid!important;grid-template-columns:22px minmax(0,1fr) min-content!important;gap:10px!important;align-items:center!important;width:100%!important;max-width:100%!important;min-width:0!important;box-sizing:border-box!important;padding:9px 0!important;color:#334155!important}
+  .d68-businesses-page .d68-filter-check input{width:18px!important;height:18px!important;margin:0!important;justify-self:start!important}
+  .d68-businesses-page .d68-filter-check span{display:block!important;min-width:0!important;max-width:100%!important;line-height:1.35!important;word-break:normal!important;overflow-wrap:break-word!important;white-space:normal!important}
+  .d68-businesses-page .d68-filter-check em{justify-self:end!important;min-width:18px!important;text-align:right!important;white-space:nowrap!important;line-height:1.2!important}
+  .d68-businesses-page .d68-filter-switches{width:100%!important;box-sizing:border-box!important}
+  .d68-businesses-page .d68-filter-submit{width:100%!important;padding:14px 16px!important;box-sizing:border-box!important;border-top:1px solid #EEF2F6!important;background:#fff!important}
+  .d68-businesses-page .d68-filter-submit button{display:flex!important;align-items:center!important;justify-content:center!important;width:100%!important;min-height:46px!important;max-width:100%!important;box-sizing:border-box!important;white-space:normal!important;line-height:1.25!important;text-align:center!important;padding:12px 14px!important;border-radius:12px!important}
+}

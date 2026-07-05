@@ -1,152 +1,110 @@
-# Deals68 combined patch — public UI + Register + Business Dashboard
+# Deals68 final patch — corrected valuation engine + taxonomy + businesses mobile filter
 
 Target branch: `beta-reference`
+Date: 2026-07-05
 
-This combined patch merges every patch prepared in this chat session and adds the latest Business Dashboard valuation/numeric-input update.
+## Scope
+This zip supersedes the previous valuation patch and includes the latest mobile `/businesses` filter hotfix.
 
-## Files included
+## Included fixes
 
-1. `src/components/Header.tsx`
-   - Logged-in public header shows Logout only, no Dashboard link.
-   - Mobile hamburger uses React state and closes after navigation/language switch/logout.
+1. Corrected Valuation Engine
+- `/valuation` only asks for: country, industry, latest annual revenue, EBITDA margin, revenue growth.
+- No net debt, offer amount, or stake percentage on the public valuation page.
+- Business Register/Dashboard do not ask for net debt.
+- Register/Dashboard may still use ask amount + stake percentage already present in the deal workflow to infer self valuation.
+- Missing/invalid data returns pending/updating, not fake benchmark values.
+- Admin can edit valuation coefficients in `/admin/valuation` via `valuation_config`.
 
-2. `src/styles/pages/ui-fixes.css`
-   - Header mobile hotfix.
-   - `/businesses` mobile guard.
-   - Home Featured Industries + Featured Investors card alignment.
-   - Register Business richer intake styles.
+2. 23-industry taxonomy
+- Adds shared 23-industry taxonomy from Deals68 Valuation Spec v1.0.
+- Used for labels, filters, valuation, business register, business dashboard, investor industry selection, and SEO content.
 
-3. `src/pages/StaticPages.tsx`
-   - Static pages copy tightened for About/Terms/Privacy/Market Partner in VN/EN.
+3. Businesses mobile filter fix
+- Adds aggressive mobile hardening to `src/styles/pages/ui-fixes.css`.
+- Fixes the screenshot issue where the filter sidebar, clear link, labels, and apply button become a narrow broken column on phone screens.
+- Keeps filter full width on mobile, prevents vertical button text, and keeps checkbox/count rows inside the 375px viewport.
 
-4. `src/pages/Valuation.tsx`
-   - Cleaner VN labels, privacy/admin-approval note, valuation disclaimer.
-   - Numeric inputs use readable thousand separators while keeping calculation-safe numeric values.
+## Files changed
+- src/components/Header.tsx
+- src/App.tsx
+- src/lib/industryTaxonomy.ts
+- src/lib/labels.ts
+- src/lib/labelsBase.ts
+- src/lib/numberFormat.ts
+- src/lib/valuationEngine.ts
+- src/pages/AdminValuation.tsx
+- src/pages/BusinessDashboard.tsx
+- src/pages/Register.tsx
+- src/pages/StaticPages.tsx
+- src/pages/Valuation.tsx
+- src/styles/pages/dashboard.css
+- src/styles/pages/ui-fixes.css
+- src/styles/pages/valuation.css
+- supabase/migrations/20260705_register_business_assets_signup_bundle.sql
+- supabase/migrations/20260705_valuation_engine_and_taxonomy.sql
 
-5. `src/styles/pages/valuation.css`
-   - Mobile-safe valuation form and notes.
+## Commit message
+fix: add corrected valuation engine and mobile business filters
 
-6. `src/pages/Register.tsx`
-   - Business register adds images/docs intake, assets/data-source fields, valuation reasonableness guidance, detailed pricing/payment section.
-   - All numeric inputs in Register use readable thousand separators while saving clean numeric values.
-
-7. `supabase/migrations/20260705_register_business_assets_signup_bundle.sql`
-   - Updates `create_signup_bundle` so `financial_input` from Register Business is saved to `businesses.financial_input` and retained in `pending_changes_json`.
-   - Does not change public data guard.
-
-8. `src/pages/BusinessDashboard.tsx`
-   - Menu icons aligned closer to UI Reference using `lucide-react`.
-   - Overview valuation box added above Business Quality Score:
-     - Business value = ask amount / stake percent.
-     - Industry benchmark = median valuation from public active listings with same country, same industry, and similar revenue band when enough peer data exists.
-   - Business Quality Score copy changed per request.
-   - Quality checklist shows required submitted/missing files/data; missing items are orange.
-   - Status displays `Hiển thị/Đang ẩn` instead of raw DB status.
-   - Plan displays `Thường/Ưu tiên` instead of raw plan.
-   - Metrics changed to proposals sent/approved and investor attention count.
-   - Documents tab supports editing and saving display file names.
-   - Upload document UI requires a display name before/alongside file upload.
-   - VCPC support copy updated.
-   - Numeric inputs in Business Dashboard profile use readable thousand separators while posting clean numeric hidden values.
-
-9. `src/styles/pages/dashboard.css`
-   - Dashboard menu/icon styles.
-   - Quality checklist styles.
-   - Document rename/upload styles.
-   - Overview valuation box styles with light logo-blue background and yellow valuation numbers.
-   - Mobile guards for 375/768 widths.
-
-## Guardrails
-
-- No Admin page logic changed.
-- No Public Business guard changed.
-- No Dashboard approval/public snapshot guard changed.
-- No RLS policies changed.
-- No mock runtime introduced.
-- Public listing filter remains: `visible=true`, `status=active`, `public_snapshot_json is not null`.
-- Benchmark uses only public active business records; no private business data is exposed.
-
-## Apply commands
-
+## Apply
 ```bash
 git checkout beta-reference
-unzip deals68_combined_patch_20260705.zip -d /tmp/deals68_combined_patch
-cp -R /tmp/deals68_combined_patch/src ./
-cp -R /tmp/deals68_combined_patch/supabase ./
+unzip deals68_final_valuation_taxonomy_mobile_patch_20260705.zip -d /tmp/deals68_final_patch
+cp -R /tmp/deals68_final_patch/src ./
+cp -R /tmp/deals68_final_patch/supabase ./
 npm run build
 git status
-git add \
-  src/components/Header.tsx \
-  src/pages/BusinessDashboard.tsx \
-  src/pages/Register.tsx \
-  src/pages/StaticPages.tsx \
-  src/pages/Valuation.tsx \
-  src/styles/pages/dashboard.css \
-  src/styles/pages/ui-fixes.css \
-  src/styles/pages/valuation.css \
-  supabase/migrations/20260705_register_business_assets_signup_bundle.sql
-git commit -m "fix: align register home and business dashboard workflows"
+git add src supabase/migrations
+git commit -m "fix: add corrected valuation engine and mobile business filters"
 git push origin beta-reference
 ```
 
-Then apply the Supabase migration through the normal Supabase CLI/migration process for the `deals68` project.
+Apply Supabase migrations after code review:
+1. `20260705_register_business_assets_signup_bundle.sql`
+2. `20260705_valuation_engine_and_taxonomy.sql`
 
-## Route tests
-
-Public VI:
-- `/`
+## Routes to test
+Public:
 - `/businesses`
-- `/valuation`
-- `/about`
-- `/terms`
-- `/privacy`
-- `/market-partner`
-- `/register/business`
-- `/register/investor`
-
-Public EN:
-- `/en`
 - `/en/businesses`
+- `/valuation`
 - `/en/valuation`
-- `/en/about`
-- `/en/terms`
-- `/en/privacy`
-- `/en/market-partner`
+- `/register/business`
 - `/en/register/business`
-- `/en/register/investor`
 
 Dashboard:
 - `/dashboard/business`
 - `/dashboard/business/profile`
 - `/dashboard/business/files`
-- `/dashboard/business/images`
-- `/dashboard/business/investor-interest`
-- `/dashboard/business/data-requests`
-- `/dashboard/business/payments`
+
+Admin:
+- `/admin/valuation`
+- `/admin/valuation-config`
+- `/admin/business-review`
 
 ## Mobile checklist
-
 375px:
-- Home featured industries = 1 column, no horizontal overflow.
-- Home investor cards = 1 column, CTA not broken.
-- Register Business upload/file rows stack cleanly.
-- Dashboard sidebar becomes 2-column menu; icons do not break.
-- Dashboard valuation box stacks into 1 column.
-- Dashboard document rename/upload rows do not overflow.
+- `/businesses` filter is full width, not a narrow side column.
+- `Bộ lọc` + `Xóa lọc` remain in one header row.
+- Keyword input fits viewport.
+- Checkbox rows show checkbox + label + count without horizontal overflow.
+- `Áp dụng bộ lọc` is a full-width button, not vertical text.
+- Valuation form/result stack in one column.
+- Register valuation panel and upload sections do not overflow.
 
 768px:
-- Home cards = 2 columns where applicable.
-- Register Business sections remain readable.
-- Dashboard sidebar appears above content.
-- Dashboard metrics use 2 columns.
+- `/businesses` filter appears above list, full width.
+- Listing toolbar stacks cleanly.
+- Valuation/admin panels remain readable.
 
 1440px:
-- Home industry cards = 3 columns.
-- Home investor cards = 4 columns.
-- Register max width stays centered.
-- Dashboard sidebar sticky left; overview valuation + quality score + metrics align cleanly.
+- Desktop `/businesses` sidebar remains sticky left.
+- Valuation/admin/dashboard desktop layouts preserved.
 
-## Notes
-
-- I did not commit or push this patch.
-- I did not run a real `npm run build` in the target repo runtime, so do not treat this as a build-pass claim until you run it locally/CI.
+## Guardrails
+- No public data guard loosened.
+- Public businesses still require `visible=true`, `status=active`, `public_snapshot_json not null`.
+- No private data exposed.
+- No Supabase changes applied automatically.
+- Build was not run in this chat runtime; run `npm run build` before commit.

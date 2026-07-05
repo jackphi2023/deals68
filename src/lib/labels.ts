@@ -1,10 +1,11 @@
 import type { Lang } from './i18n';
+import { T } from './labelsBase';
+import { industryOptions, labelIndustryTaxonomy } from './industryTaxonomy';
+
+export { T } from './labelsBase';
+export { industryOptions, industryKeyFromLabel, industrySeoText, normalizeIndustryForDb } from './industryTaxonomy';
 
 export const FX_VND_PER_USD = 26000;
-
-export function T(lang: Lang, vi: string, en: string) {
-  return lang === 'en' ? en : vi;
-}
 
 function norm(raw: any) {
   return String(raw || '')
@@ -20,24 +21,6 @@ function norm(raw: any) {
 function first(raw: any) {
   return String(raw || '').split(/[;,/|]+/).map((x) => x.trim()).filter(Boolean)[0] || '';
 }
-
-const industryMap: { keys: string[]; vi: string; en: string }[] = [
-  { keys: ['finance', 'financial', 'fintech', 'banking', 'insurance', 'tai chinh', 'ngan hang', 'bao hiem'], vi: 'Tài chính', en: 'Finance' },
-  { keys: ['health', 'healthcare', 'clinic', 'medical', 'dental', 'y te', 'suc khoe', 'nha khoa'], vi: 'Y tế & Sức khỏe', en: 'Healthcare' },
-  { keys: ['beauty', 'personal care', 'spa', 'derma', 'tham my', 'lam dep', 'cham soc ca nhan'], vi: 'Làm đẹp & Chăm sóc cá nhân', en: 'Beauty & Personal Care' },
-  { keys: ['technology', 'tech', 'software', 'saas', 'ai', 'cong nghe'], vi: 'Công nghệ', en: 'Technology' },
-  { keys: ['f b', 'food', 'beverage', 'restaurant', 'cafe', 'fnb', 'nha hang', 'thuc pham'], vi: 'F&B', en: 'F&B' },
-  { keys: ['retail', 'ban le'], vi: 'Bán lẻ', en: 'Retail' },
-  { keys: ['manufacturing', 'factory', 'industrial', 'san xuat'], vi: 'Sản xuất', en: 'Manufacturing' },
-  { keys: ['real estate', 'property', 'bat dong san'], vi: 'Bất động sản', en: 'Real Estate' },
-  { keys: ['logistics', 'warehouse', 'cold storage', 'supply chain', 'kho van', 'kho lanh'], vi: 'Logistics & Kho vận', en: 'Logistics & Warehousing' },
-  { keys: ['education', 'edtech', 'giao duc'], vi: 'Giáo dục', en: 'Education' },
-  { keys: ['energy', 'renewable', 'nang luong'], vi: 'Năng lượng', en: 'Energy' },
-  { keys: ['ecommerce', 'e commerce', 'thuong mai dien tu'], vi: 'Thương mại điện tử', en: 'E-commerce' },
-  { keys: ['seafood', 'aquaculture', 'thuy san', 'xuat khau'], vi: 'Thủy sản & Xuất khẩu', en: 'Seafood & Export' },
-  { keys: ['fashion', 'apparel', 'textile', 'thoi trang', 'may mac'], vi: 'Thời trang', en: 'Fashion' },
-  { keys: ['business services', 'consulting', 'dich vu doanh nghiep'], vi: 'Dịch vụ doanh nghiệp', en: 'Business Services' },
-];
 
 const investorTypeMap: { keys: string[]; vi: string; en: string }[] = [
   { keys: ['vc', 'venture'], vi: 'Quỹ đầu tư mạo hiểm', en: 'VC' },
@@ -76,10 +59,12 @@ export const countryOptions = [
   { iso2: 'DE', vi: 'Đức', en: 'Germany', dial: '+49' },
   { iso2: 'CA', vi: 'Canada', en: 'Canada', dial: '+1' },
   { iso2: 'TH', vi: 'Thái Lan', en: 'Thailand', dial: '+66' },
+  { iso2: 'CN', vi: 'Trung Quốc', en: 'China', dial: '+86' },
+  { iso2: 'CZ', vi: 'Séc', en: 'Czech Republic', dial: '+420' },
   { iso2: 'AE', vi: 'UAE', en: 'UAE', dial: '+971' },
+  { iso2: 'OTHER', vi: 'Khác', en: 'Other', dial: '+' },
 ];
 
-export const industryOptions = industryMap.map(({ vi, en }) => ({ vi, en }));
 export const investorDealOptions = dealMap.map(({ investorVi, investorEn }) => ({ vi: investorVi, en: investorEn }));
 export const businessDealOptions = dealMap.map(({ vi, en }) => ({ vi, en }));
 export const investorTypeOptions = investorTypeMap.map(({ vi, en }) => ({ vi, en }));
@@ -91,10 +76,7 @@ function matchMap(raw: any, map: { keys: string[]; vi: string; en: string }[]) {
 }
 
 export function labelIndustry(raw: any, lang: Lang) {
-  const rawText = first(raw);
-  const item = matchMap(rawText, industryMap);
-  if (item) return T(lang, item.vi, item.en);
-  return rawText || T(lang, 'Đang cập nhật', 'Updating');
+  return labelIndustryTaxonomy(first(raw), lang);
 }
 
 export function labelInvestorType(raw: any, lang: Lang) {

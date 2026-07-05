@@ -1,4 +1,4 @@
-import { FormEvent, useMemo, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { createSignupBundle, uploadBusinessFile, uploadBusinessImage } from '../lib/data';
@@ -16,8 +16,10 @@ import {
   investorTypeOptions,
   stageOptions,
   phoneDialFromIso,
-  normalizeInvestorDealForDb
+  normalizeInvestorDealForDb,
+  industryKeyFromLabel
 } from '../lib/labels';
+import { DEFAULT_VALUATION_CONFIG, getActiveValuationConfig, valuate, formatValuationMoney, valuationVerdictMessage, VALUATION_DISCLAIMER_VI, VALUATION_DISCLAIMER_EN } from '../lib/valuationEngine';
 
 const countryIso: Record<string, string> = Object.fromEntries(countryOptions.map((c) => [c.vi, c.iso2]).concat(countryOptions.map((c) => [c.en, c.iso2])));
 const MAX_BUSINESS_IMAGES = 3;
@@ -25,7 +27,7 @@ const MAX_BUSINESS_DOCS = 3;
 const DOC_EXTENSIONS = ['.pdf', '.doc', '.docx', '.ppt', '.pptx', '.xls', '.xlsx'];
 
 type PendingAsset = { id: string; file: File; displayName: string };
-type ValuationCheck = { level: string; label: string; message: string; impliedValue: number | null; revenueMultiple: number | null; ebitdaMultiple: number | null };
+type ValuationCheck = { level: string; label: string; message: string; impliedValue: number | null; revenueMultiple: number | null; ebitdaMultiple: number | null; benchLow?: number | null; benchMid?: number | null; benchHigh?: number | null; method?: string; adjE?: number; adjR?: number; configVersion?: number; };
 
 function safeUsername(email: string, name: string) {
   return (email.split('@')[0] || slugify(name)).toLowerCase().replace(/[^a-z0-9._-]/g, '').slice(0, 42);
@@ -105,13 +107,15 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [country, setCountry] = useState(intent.country === 'GLOBAL' ? 'Singapore' : 'Việt Nam');
-  const [industry, setIndustry] = useState('F&B');
+  const [industry, setIndustry] = useState('Thực phẩm & Đồ uống (F&B)');
   const [city, setCity] = useState('TP.HCM');
   const [companyName, setCompanyName] = useState('');
   const [highlights, setHighlights] = useState('');
   const [dealType, setDealType] = useState('Gọi vốn');
+  const [revenueMonth, setRevenueMonth] = useState('');
   const [revenue, setRevenue] = useState('');
   const [ebitda, setEbitda] = useState('');
+  const [growthPct, setGrowthPct] = useState('');
   const [ask, setAsk] = useState('');
   const [stake, setStake] = useState('');
   const [reason, setReason] = useState('');
@@ -121,7 +125,7 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
   const [businessImages, setBusinessImages] = useState<PendingAsset[]>([]);
   const [businessDocs, setBusinessDocs] = useState<PendingAsset[]>([]);
   const [invType, setInvType] = useState('Individual/Angel');
-  const [selectedIndustries, setSelectedIndustries] = useState<string[]>(['F&B', 'Công nghệ']);
+  const [selectedIndustries, setSelectedIndustries] = useState<string[]>(['Thực phẩm & Đồ uống (F&B)', 'CNTT & Phần mềm']);
   const [stage, setStage] = useState('Growth');
   const [investorDealTypes, setInvestorDealTypes] = useState<string[]>(['Investment']);
   const [preferredCountries, setPreferredCountries] = useState<string[]>(['VN']);
@@ -134,6 +138,9 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
   const [agree, setAgree] = useState(false);
   const [msg, setMsg] = useState('');
   const [loading, setLoading] = useState(false);
+  const [valuationConfig, setValuationConfig] = useState(DEFAULT_VALUATION_CONFIG);
+
+  useEffect(() => { getActiveValuationConfig().then(setValuationConfig).catch(() => setValuationConfig(DEFAULT_VALUATION_CONFIG)); }, []);
 
   const isBusiness = normalized === 'business';
   const isInvestor = normalized === 'investor';
@@ -144,34 +151,32 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
   const featuredPrice = calculatePricing({ role: 'business', country: countryCode, termWeeks: serviceWeeks, businessPlan: 'featured', promoCode: intent.promoCode }, Number(intent.price?.promoDiscountPct || 0));
   const pricingSummary = intent.price ? `${money(Number(intent.price.total || price.total), intent.price.currency || price.currency)} · ${intent.units || intent.termWeeks || price.termWeeks} ${intent.unitLabel || T(lang, 'tuần', 'weeks')}` : `${money(price.total, price.currency)} · ${price.termWeeks} ${T(lang, 'tuần', 'weeks')}`;
 
+  const benchmarkResult = useMemo(() => valuate({
+    revenueYear: parseFormattedNumber(revenue),
+    revenueMonth: parseFormattedNumber(revenueMonth),
+    ebitdaMargin: parseFormattedNumber(ebitda, true),
+    growthPct: parseFormattedNumber(growthPct, true),
+    industryKey: industryKeyFromLabel(industry),
+    industry,
+    countryKey: countryCode,
+    currency: countryCode === 'VN' ? 'VND' : 'USD',
+    offerAmount: parseFormattedNumber(ask),
+    offerStakePct: parseFormattedNumber(stake, true)
+  }, valuationConfig), [ask, countryCode, ebitda, growthPct, industry, revenue, revenueMonth, stake, valuationConfig]);
+
   const valuationCheck: ValuationCheck = useMemo(() => {
     const currency = countryCode === 'VN' ? 'VND' : 'USD';
-    const rev = parseFormattedNumber(revenue);
-    const askAmount = parseFormattedNumber(ask);
-    const stakePct = parseFormattedNumber(stake, true);
-    const ebitdaPct = parseFormattedNumber(ebitda, true);
-    const excluded = parseFormattedNumber(excludedAssetValue);
-    if (!askAmount || !stakePct) return { level: 'pending', label: T(lang, 'Chưa đủ dữ liệu', 'Need more inputs'), message: T(lang, 'Nhập Nhu cầu vốn/Giá chào và Tỷ lệ cổ phần để hệ thống gợi ý mức định giá.', 'Enter Ask and Stake to estimate valuation reasonableness.'), impliedValue: null, revenueMultiple: null, ebitdaMultiple: null };
-    const impliedValue = askAmount / Math.max(stakePct / 100, 0.0001);
-    const revenueMultiple = rev > 0 ? impliedValue / rev : null;
-    const ebitdaAmount = rev > 0 && ebitdaPct > 0 ? rev * ebitdaPct / 100 : 0;
-    const ebitdaMultiple = ebitdaAmount > 0 ? impliedValue / ebitdaAmount : null;
-    let level = 'balanced';
-    let label = T(lang, 'Tương đối hợp lý', 'Broadly reasonable');
-    let message = T(lang, 'Khoản giá trị suy ra nằm trong vùng tham khảo sơ bộ. Admin vẫn cần kiểm tra hồ sơ, ngành và tài liệu.', 'The implied valuation is in an indicative range. Admin still needs to review sector, documents and context.');
-    if (revenueMultiple !== null && revenueMultiple < 0.3) {
-      level = 'low'; label = T(lang, 'Có thể đang thấp', 'May be low');
-      message = T(lang, 'Định giá suy ra thấp so với doanh thu. Cần kiểm tra đây là bán tài sản, chuyển nhượng một phần hay có khoản nợ/tài sản loại trừ.', 'Implied valuation is low versus revenue. Check whether this is an asset sale, partial transfer, or excludes debt/assets.');
-    } else if ((revenueMultiple !== null && revenueMultiple > 5) || (ebitdaMultiple !== null && ebitdaMultiple > 20)) {
-      level = 'high'; label = T(lang, 'Có thể đang cao', 'May be high');
-      message = T(lang, 'Định giá suy ra khá cao. Nên bổ sung tăng trưởng, biên lợi nhuận, tài sản/IP, hợp đồng hoặc lợi thế cạnh tranh để Admin/nhà đầu tư thẩm định.', 'Implied valuation is high. Add growth, margin, assets/IP, contracts or competitive advantages for Admin/investor review.');
-    }
-    if (excluded > 0 && impliedValue > 0 && excluded / impliedValue > 0.25) {
-      level = 'watch'; label = T(lang, 'Cần làm rõ tài sản loại trừ', 'Clarify excluded assets');
-      message = T(lang, 'Giá trị tài sản vật chất không nằm trong giao dịch khá lớn so với định giá suy ra. Cần ghi rõ để tránh hiểu nhầm khi Admin duyệt public snapshot.', 'Excluded physical assets are material versus implied valuation. Clarify this to avoid confusion when Admin approves the public snapshot.');
-    }
-    return { level, label, message, impliedValue, revenueMultiple, ebitdaMultiple };
-  }, [ask, countryCode, ebitda, excludedAssetValue, lang, revenue, stake]);
+    if (!benchmarkResult) return { level: 'pending', label: T(lang, 'Chưa đủ dữ liệu', 'Need more inputs'), message: T(lang, 'Cần nhập doanh thu tháng/năm và ngành để hệ thống tính định giá tham chiếu.', 'Annual/monthly revenue and industry are required for the benchmark.'), impliedValue: null, revenueMultiple: null, ebitdaMultiple: null };
+    const rev = benchmarkResult.revenueYear;
+    const ebitdaAmount = benchmarkResult.ebitda;
+    const impliedValue = benchmarkResult.self || null;
+    const revenueMultiple = impliedValue && rev > 0 ? impliedValue / rev : null;
+    const ebitdaMultiple = impliedValue && ebitdaAmount > 0 ? impliedValue / ebitdaAmount : null;
+    const level = benchmarkResult.verdict === 'above' ? 'high' : benchmarkResult.verdict === 'low_of' ? 'low' : benchmarkResult.verdict === 'in_range' ? 'balanced' : 'pending';
+    const label = benchmarkResult.verdict === 'above' ? T(lang, 'Cao hơn tham chiếu', 'Above benchmark') : benchmarkResult.verdict === 'low_of' ? T(lang, 'Thấp hơn tham chiếu', 'Below benchmark') : benchmarkResult.verdict === 'in_range' ? T(lang, 'Trong khoảng tham chiếu', 'Within benchmark') : T(lang, 'Định giá tham chiếu', 'Benchmark valuation');
+    const message = valuationVerdictMessage(lang, benchmarkResult);
+    return { level, label, message, impliedValue, revenueMultiple, ebitdaMultiple, benchLow: benchmarkResult.low, benchMid: benchmarkResult.mid, benchHigh: benchmarkResult.high, method: benchmarkResult.method, adjE: benchmarkResult.adjE, adjR: benchmarkResult.adjR, configVersion: benchmarkResult.configVersion };
+  }, [benchmarkResult, countryCode, lang]);
 
   function toggleIndustry(x: string) { setSelectedIndustries((cur) => toggleValue(cur, x)); }
   function toggleInvestorDeal(x: string) { setInvestorDealTypes((cur) => toggleValue(cur, normalizeInvestorDealForDb(x))); }
@@ -250,14 +255,26 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
           country_iso2: countryCode,
           city,
           industry,
+          industry_key: industryKeyFromLabel(industry),
           deal_type: dealType,
           plan,
-          revenue_2025: parseFormattedNumber(revenue),
+          revenue_month: parseFormattedNumber(revenueMonth),
+          revenue_2025: parseFormattedNumber(revenue) || parseFormattedNumber(revenueMonth) * 12,
           revenue_currency: revenueCurrency,
           ebitda_margin: parseFormattedNumber(ebitda, true),
+          growth_pct: parseFormattedNumber(growthPct, true),
           ask_amount: parseFormattedNumber(ask),
           ask_currency: revenueCurrency,
           stake_pct: parseFormattedNumber(stake, true),
+          offer_amount: parseFormattedNumber(ask),
+          offer_stake_pct: parseFormattedNumber(stake, true),
+          self_valuation: benchmarkResult?.self || null,
+          bench_low: benchmarkResult?.low || null,
+          bench_mid: benchmarkResult?.mid || null,
+          bench_high: benchmarkResult?.high || null,
+          bench_verdict: benchmarkResult?.verdict || null,
+          bench_config_version: benchmarkResult?.configVersion || null,
+          bench_calculated_at: benchmarkResult ? new Date().toISOString() : null,
           quota_total: plan === 'featured' ? 200 : 100,
           highlights_vi: highlights,
           highlights_en: '',
@@ -268,7 +285,10 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
             excluded_physical_asset_value: parseFormattedNumber(excludedAssetValue),
             financial_source: financialSource,
             valuation_check: valuationCheck,
-            upload_plan: uploadPlan
+            benchmark: benchmarkResult,
+            revenue_month: parseFormattedNumber(revenueMonth),
+            growth_pct: parseFormattedNumber(growthPct, true),
+              upload_plan: uploadPlan
           },
           valuation_reasonableness: valuationCheck.level,
           data_confidence: [revenue, ebitda, ask, stake, highlights, reason, financialSource, assetsOwned].filter((x) => String(x || '').trim()).length * 8,
@@ -350,11 +370,13 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
           <h2>{T(lang, 'Thông tin doanh nghiệp', 'Business information')}</h2>
           <div className="d68-form-grid">
             <Field label={T(lang, 'Tên DN thật (chỉ Admin thấy)', 'Real company name (Admin only)')}><input value={companyName} onChange={(e) => setCompanyName(e.target.value)} /></Field>
-            <Field label={T(lang, 'Ngành', 'Industry')}><select value={industry} onChange={(e) => setIndustry(e.target.value)}>{industryOptions.map((x) => <option key={x.vi}>{T(lang, x.vi, x.en)}</option>)}</select></Field>
+            <Field label={T(lang, 'Ngành', 'Industry')}><select value={industry} onChange={(e) => setIndustry(e.target.value)}>{industryOptions.map((x) => <option key={x.key} value={x.vi}>{T(lang, x.vi, x.en)}</option>)}</select></Field>
             <Field label={T(lang, 'Thành phố', 'City')}><input value={city} onChange={(e) => setCity(e.target.value)} /></Field>
             <Field label={T(lang, 'Loại giao dịch', 'Deal type')}><select value={dealType} onChange={(e) => setDealType(e.target.value)}>{businessDealOptions.map((x) => <option key={x.vi}>{T(lang, x.vi, x.en)}</option>)}</select></Field>
-            <Field label={T(lang, 'Doanh thu 2025', '2025 revenue')} hint={T(lang, `Nhập số tuyệt đối theo ${currentCurrency}`, `Enter absolute amount in ${currentCurrency}`)}><input inputMode="numeric" value={revenue} onChange={(e) => setRevenue(formatNumberTyping(e.target.value))} /></Field>
+            <Field label={T(lang, 'Doanh thu tháng', 'Monthly revenue')} hint={T(lang, 'Nếu không nhập doanh thu năm, hệ thống sẽ nhân 12.', 'If annual revenue is blank, the system annualizes monthly revenue × 12.')}><input inputMode="numeric" value={revenueMonth} onChange={(e) => setRevenueMonth(formatNumberTyping(e.target.value))} /></Field>
+            <Field label={T(lang, 'Doanh thu năm', 'Annual revenue')} hint={T(lang, `Nhập số tuyệt đối theo ${currentCurrency}`, `Enter absolute amount in ${currentCurrency}`)}><input inputMode="numeric" value={revenue} onChange={(e) => setRevenue(formatNumberTyping(e.target.value))} /></Field>
             <Field label="EBITDA margin (%)"><input inputMode="decimal" value={ebitda} onChange={(e) => setEbitda(formatNumberTyping(e.target.value, true))} /></Field>
+            <Field label={T(lang, 'Tăng trưởng năm (%)', 'Annual growth (%)')}><input inputMode="decimal" value={growthPct} onChange={(e) => setGrowthPct(formatNumberTyping(e.target.value, true))} /></Field>
             <Field label={T(lang, 'Nhu cầu vốn/Giá chào', 'Capital sought / Ask')} hint={T(lang, `Cùng đơn vị với doanh thu: ${currentCurrency}`, `Same currency as revenue: ${currentCurrency}`)}><input inputMode="numeric" value={ask} onChange={(e) => setAsk(formatNumberTyping(e.target.value))} /></Field>
             <Field label={T(lang, 'Tỷ lệ cổ phần (%)', 'Stake (%)')}><input inputMode="decimal" value={stake} onChange={(e) => setStake(formatNumberTyping(e.target.value, true))} /></Field>
           </div>
@@ -388,10 +410,13 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
           <div className={`d68-valuation-check d68-valuation-check--${valuationCheck.level}`}>
             <div><span>{T(lang, 'Gợi ý kiểm tra định giá', 'Valuation sanity check')}</span><b>{valuationCheck.label}</b><p>{valuationCheck.message}</p></div>
             <dl>
-              <div><dt>{T(lang, 'Định giá suy ra', 'Implied valuation')}</dt><dd>{valuationCheck.impliedValue ? moneyShort(valuationCheck.impliedValue, currentCurrency) : '—'}</dd></div>
-              <div><dt>Revenue multiple</dt><dd>{valuationCheck.revenueMultiple ? `${valuationCheck.revenueMultiple.toFixed(1)}×` : '—'}</dd></div>
-              <div><dt>EBITDA multiple</dt><dd>{valuationCheck.ebitdaMultiple ? `${valuationCheck.ebitdaMultiple.toFixed(1)}×` : '—'}</dd></div>
-            </dl>
+              <div><dt>{T(lang, 'Định giá suy ra', 'Implied valuation')}</dt><dd>{valuationCheck.impliedValue ? formatValuationMoney(valuationCheck.impliedValue, currentCurrency, lang) : '—'}</dd></div>
+              <div><dt>{T(lang, 'Tham chiếu thấp', 'Benchmark low')}</dt><dd>{valuationCheck.benchLow ? formatValuationMoney(valuationCheck.benchLow, currentCurrency, lang) : '—'}</dd></div>
+              <div><dt>{T(lang, 'Tham chiếu trung bình', 'Benchmark mid')}</dt><dd>{valuationCheck.benchMid ? formatValuationMoney(valuationCheck.benchMid, currentCurrency, lang) : '—'}</dd></div>
+              <div><dt>{T(lang, 'Tham chiếu cao', 'Benchmark high')}</dt><dd>{valuationCheck.benchHigh ? formatValuationMoney(valuationCheck.benchHigh, currentCurrency, lang) : '—'}</dd></div>
+              <div><dt>EV/Revenue</dt><dd>{valuationCheck.adjR ? `${valuationCheck.adjR.toFixed(2)}×` : '—'}</dd></div>
+              <div><dt>EV/EBITDA</dt><dd>{valuationCheck.adjE ? `${valuationCheck.adjE.toFixed(2)}×` : '—'}</dd></div>
+            </dl><small>{T(lang, VALUATION_DISCLAIMER_VI, VALUATION_DISCLAIMER_EN)}</small>
           </div>
         </section>
 

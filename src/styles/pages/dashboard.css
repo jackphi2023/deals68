@@ -13,3 +13,6 @@
 .d68-dashboard-valuation-box small{display:block;margin-top:8px;color:#64748B;font-size:12.5px;font-weight:700;line-height:1.45}
 .d68-dashboard-input[inputmode="numeric"],.d68-dashboard-input[inputmode="decimal"]{font-variant-numeric:tabular-nums}
 @media(max-width:700px){.d68-dashboard-valuation-box{grid-template-columns:1fr;padding:18px}.d68-dashboard-valuation-box strong{font-size:26px}}
+
+/* Valuation engine v1.0 dashboard box */
+.d68-dashboard-valuation-box--engine{grid-template-columns:1fr 1.4fr 1fr}.d68-dashboard-valuation-box--engine>div strong{color:#F2B51D}.d68-dashboard-valuation-box--engine p{grid-column:1/-1;margin:0;color:#5F6F83;font-size:12.5px;line-height:1.55;background:rgba(255,255,255,.52);border:1px solid rgba(255,255,255,.62);border-radius:12px;padding:10px 12px}@media(max-width:900px){.d68-dashboard-valuation-box--engine{grid-template-columns:1fr}}
