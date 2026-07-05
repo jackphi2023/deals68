@@ -29,6 +29,6 @@
 @import './reference/d68-components.css';     /* tự bọc @layer d68-components */
 @import './reference/d68-utilities.css';      /* tự bọc @layer d68-utilities  */
 @import './overrides.css';                    /* tự bọc @layer d68-overrides  */
-@import './pages/businesses.css' layer(d68-overrides);   /* pilot port: /businesses */
-
-@import './pages/home.css' layer(d68-overrides);          /* pilot port: / */
+@import './pages/businesses.css' layer(d68-overrides);        /* pilot port: /businesses */
+@import './pages/home.css' layer(d68-overrides);              /* pilot port: / */
+@import './pages/business-detail.css' layer(d68-overrides);   /* pilot port: /businesses/:slug */
