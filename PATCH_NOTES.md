@@ -1,36 +1,45 @@
-# Deals68 beta-reference static/admin hardening patch
+# Deals68 Master UI Reconcile Patch
 
-## Scope
-- Port remaining static pages: About, Terms, Privacy, Contact, Market Partner.
-- Add mobile-safe CSS for static pages.
-- Add Admin leads tab for Contact and Market Partner submissions.
-- Add dashboard payment gate in App routes so Business/Investor dashboards require `dashboard_login_enabled=true` unless admin.
-- Keep existing public Home/Businesses/Business Detail/Investors/Pricing/Valuation/Auth routes unchanged except route gate.
+This consolidated patch includes:
 
-## Supabase migrations already applied
-- `create_static_page_leads`: creates `contact_messages` and `partner_leads` with public insert and admin read/update RLS.
-- `add_public_workflow_rpcs`: creates RPCs `submit_business_proposal` and `approve_business_public_snapshot` to match existing frontend helpers and the real schema (`proposals.message`, not `note`).
+1. Master UI Standard files.
+2. Business list/static page CSS hardening from the master standard patch.
+3. Route-specific UI fixes for Home, Register, Login, Investors and Business Dashboard/Profile.
+4. Transparent nav logo asset.
+5. Per-route audit report: `UI_AUDIT_ROUTES.md`.
 
-## Files
-- `src/App.tsx`
-- `src/pages/Admin.tsx`
-- `src/pages/StaticPages.tsx`
-- `src/styles/index.css`
-- `src/styles/pages/admin.css`
-- `src/styles/pages/static.css`
+Target branch: `beta-reference`.
 
-## Test routes
-- `/about`, `/en/about`
-- `/terms`, `/en/terms`
-- `/privacy`, `/en/privacy`
-- `/contact`, `/en/contact`
-- `/partners`, `/en/partners`
-- `/market-partner`, `/en/market-partner`
-- `/admin/leads`
-- `/dashboard/business` before and after admin payment confirmation
-- `/dashboard/investor` before and after admin payment confirmation
+Commit message:
 
-## Mobile checks
-- 375px: no horizontal overflow on static forms, Admin tables scroll horizontally, Admin side nav stacks.
-- 768px: static cards and contact form collapse cleanly.
-- 1440px: static grid/card spacing matches Deals68 design language.
+```text
+fix(beta-reference): reconcile key routes with master ui standard
+```
+
+Netlify:
+
+```text
+Clear cache and deploy site
+```
+
+Routes to test:
+
+```text
+/
+/en
+/register/business
+/register/investor
+/login
+/admin/login
+/investors
+/en/investors
+/dashboard/business
+/dashboard/business/profile
+/businesses
+/en/businesses
+/about
+/contact
+/market-partner
+```
+
+Do not merge main until full visual + workflow checklist passes.

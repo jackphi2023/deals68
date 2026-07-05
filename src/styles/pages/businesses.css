@@ -126,3 +126,165 @@
   }
 
 }
+
+/* ============================================================
+   Master UI Standard hardening — /businesses filter/list
+   Mục tiêu: giữ UI Reference, chống vỡ form filter trên web/mobile.
+   Không đổi React logic, chỉ ổn định layout/token/responsive.
+   ============================================================ */
+@layer d68-overrides {
+  .d68-businesses-page,
+  .d68-businesses-page * {
+    min-width: 0;
+  }
+
+  .d68-list-cols > section,
+  .d68-list-cols > aside {
+    min-width: 0;
+  }
+
+  .d68-sidebar {
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .d68-filter-scroll {
+    overscroll-behavior: contain;
+  }
+
+  .d68-filter-select,
+  .d68-businesses-toolbar select,
+  .d68-filter-scroll input,
+  .d68-filter-scroll select {
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .d68-filter-check {
+    align-items: center;
+    display: grid;
+    grid-template-columns: 18px minmax(0, 1fr) auto;
+    gap: 10px;
+  }
+
+  .d68-filter-check span,
+  .d68-business-card h3,
+  .d68-business-card p,
+  .d68-business-card__foot span,
+  .d68-business-card__metrics b {
+    overflow-wrap: anywhere;
+    word-break: normal;
+  }
+
+  .d68-filter-check em {
+    justify-self: end;
+  }
+
+  .d68-business-card__tags span,
+  .d68-business-card__foot b {
+    max-width: 100%;
+  }
+
+  .d68-business-card__foot b:hover {
+    background: var(--d68-gold);
+    color: var(--d68-navy);
+  }
+
+  .d68-txtabs {
+    scroll-snap-type: x proximity;
+  }
+
+  .d68-txtabs button {
+    scroll-snap-align: start;
+  }
+
+  @media (max-width: 960px) {
+    .d68-list-cols {
+      grid-template-columns: 1fr;
+      gap: 18px;
+    }
+
+    .d68-sidebar {
+      position: static;
+      top: auto;
+    }
+
+    .d68-filter-scroll {
+      max-height: none;
+    }
+  }
+
+  @media (max-width: 720px) {
+    .d68-businesses-title {
+      padding: 22px 16px 8px;
+    }
+
+    .d68-txtabs {
+      padding: 0 16px;
+    }
+
+    .d68-txtabs button {
+      font-size: 13px;
+      padding: 12px 10px;
+    }
+
+    .d68-list-cols {
+      padding: 12px 16px 34px;
+    }
+
+    .d68-filter-head {
+      padding: 14px 16px;
+    }
+
+    .d68-filter-scroll {
+      padding: 6px 16px 16px;
+    }
+
+    .d68-filter-submit {
+      padding: 14px 16px;
+    }
+
+    .d68-businesses-toolbar {
+      align-items: stretch;
+      gap: 10px;
+    }
+
+    .d68-businesses-toolbar > div:first-child,
+    .d68-businesses-toolbar__actions,
+    .d68-businesses-toolbar label,
+    .d68-businesses-toolbar select,
+    .d68-view-toggle {
+      width: 100%;
+    }
+
+    .d68-businesses-toolbar__actions {
+      align-items: stretch;
+      flex-direction: column;
+    }
+
+    .d68-businesses-toolbar label {
+      align-items: stretch;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .d68-view-toggle button {
+      flex: 1;
+    }
+
+    .d68-business-card__metrics {
+      grid-template-columns: 1fr;
+      gap: 10px;
+    }
+
+    .d68-business-card__foot {
+      align-items: stretch;
+      flex-direction: column;
+    }
+
+    .d68-business-card__foot b {
+      text-align: center;
+      white-space: normal;
+    }
+  }
+}

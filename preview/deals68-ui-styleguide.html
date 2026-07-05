@@ -1,0 +1,638 @@
+<!doctype html>
+<html lang="vi" data-lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="robots" content="noindex" />
+<title>Deals68 · Quy chuẩn UI &amp; Kiểm thử tràn viền</title>
+<style>
+/* ============================================================
+   Deals68.com — Design Tokens
+   Single source of truth for color, type, spacing, radius, shadow.
+   Import once at app root:  @import "design-tokens.css";
+   Values are extracted verbatim from the approved HTML screens.
+   Dev rule: NEVER hard-code a hex/px that has a token below.
+   ============================================================ */
+
+:root {
+  /* ---- Brand color ---- */
+  --d68-navy:            #0F2A4A;  /* primary / text-dark / dark surfaces */
+  --d68-navy-2:          #14315A;  /* nav links, slightly lifted navy       */
+  --d68-blue:            #1BADEA;  /* primary accent — CTAs, links          */
+  --d68-blue-ink:        #1596CC;  /* blue on hover / active text           */
+  --d68-blue-wash:       #E7F6FD;  /* blue tint surface (investor icon bg)  */
+  --d68-gold:            #F2B51D;  /* gold accent — checkout, featured      */
+
+  /* ---- Neutrals / surfaces ---- */
+  --d68-bg:              #F7FAFC;  /* page background                       */
+  --d68-surface:         #FFFFFF;  /* cards, panels, modals                 */
+  --d68-surface-2:       #F5FBFE;  /* hover wash on light rows              */
+  --d68-surface-alt:     #EAF0F6;  /* neutral icon bg / muted fill          */
+
+  /* ---- Text ---- */
+  --d68-text:            #0F2A4A;  /* default text                          */
+  --d68-text-muted:      #64748B;  /* secondary text, captions              */
+  --d68-text-faint:      #94A3B8;  /* placeholder, empty-state text         */
+  --d68-text-on-dark:    #FFFFFF;
+  --d68-text-on-dark-mut:#8FA6C0;  /* muted text on navy surfaces           */
+
+  /* ---- Border ---- */
+  --d68-border:          #E2E8F0;  /* default control border                */
+  --d68-border-card:     #E7EDF3;  /* card / panel border                   */
+  --d68-border-soft:     #EEF2F6;  /* hairline divider                      */
+
+  /* ---- Status ---- */
+  --d68-success:         #16A34A;
+  --d68-success-ink:     #4ADE80;  /* success text on dark                  */
+  --d68-success-wash:    rgba(22,163,74,.16);
+  --d68-success-solid-wash: #E9F9EF; /* solid success banner (register flow) */
+  --d68-success-solid-border: #BBF0CE;
+  --d68-danger:          #DC2626;
+  --d68-danger-border:   #FCA5A5;
+  --d68-danger-solid-wash: #FDECEC; /* solid error banner (login/register)  */
+  --d68-danger-solid-border: #F8B4B4;
+  --d68-danger-solid-ink:  #B91C1C;
+  --d68-warn:            #F2B51D;
+  --d68-warn-ink:        #8A6300;  /* warn text (pending review banner)     */
+  --d68-warn-wash:       #FEF3D3;
+  --d68-warn-border:     #F5D98B;
+
+  /* ---- Typography ---- */
+  --d68-font: 'Be Vietnam Pro', system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  --d68-fw-regular: 400;
+  --d68-fw-medium:  500;
+  --d68-fw-semibold:600;
+  --d68-fw-bold:    700;
+  --d68-fw-extrabold:800;
+
+  /* type scale (px) — page uses a fluid range; these are the anchors */
+  --d68-fs-xs:   12px;   /* legal, meta                    */
+  --d68-fs-sm:   13.5px; /* captions, helper text          */
+  --d68-fs-base: 14.5px; /* body / inputs                  */
+  --d68-fs-md:   16px;   /* emphasised body / primary CTA  */
+  --d68-fs-lg:   19px;   /* card H2                        */
+  --d68-fs-xl:   20px;   /* section H2                     */
+  --d68-fs-2xl:  28px;   /* page title                     */
+  --d68-fs-3xl:  40px;   /* hero                           */
+  --d68-lh-tight: 1.2;
+  --d68-lh-base:  1.5;
+  --d68-lh-relaxed: 1.6;
+
+  /* ---- Spacing scale ---- */
+  --d68-space-1:  4px;
+  --d68-space-2:  8px;
+  --d68-space-3:  12px;
+  --d68-space-4:  16px;
+  --d68-space-6:  24px;
+  --d68-space-8:  32px;
+  --d68-space-12: 48px;
+  --d68-space-16: 64px;
+
+  /* ---- Radius ----
+     Real screens use a slightly wider range (8–20px) than a strict 4-step
+     scale; these buckets are the dev-facing simplification — closest token
+     wins. Exact px seen in source noted per bucket. */
+  --d68-radius-xs:  8px;    /* small chips / dropdown items (8–10px)   */
+  --d68-radius-sm:  10px;   /* buttons, inputs (9–11px)                */
+  --d68-radius-md:  14px;   /* small cards, popovers (12–14px)         */
+  --d68-radius-lg:  18px;   /* cards, panels (16–18px)                 */
+  --d68-radius-xl:  20px;   /* hero panels, price cards (20px)         */
+  --d68-radius-pill: 999px; /* badges, segmented toggles               */
+
+  /* ---- Shadow ---- */
+  --d68-shadow-card:     0 1px 2px rgba(15,42,74,.04);      /* resting card   */
+  --d68-shadow-raised:   0 18px 44px rgba(6,20,40,.12);     /* lifted panel   */
+  --d68-shadow-dropdown: 0 14px 34px rgba(15,42,74,.16);    /* menus/popover  */
+  --d68-shadow-modal:    0 24px 60px rgba(6,20,40,.28);     /* dialog         */
+  --d68-shadow-button:   0 6px 16px rgba(27,173,234,.30);   /* primary CTA    */
+
+  /* ---- Layout ---- */
+  --d68-container:      1240px;  /* max content width         */
+  --d68-container-narrow: 1040px;
+  --d68-sidebar-w:      264px;   /* dashboard left menu       */
+  --d68-header-h:       72px;
+
+  /* ---- Motion ---- */
+  --d68-ease:      cubic-bezier(.4, 0, .2, 1);
+  --d68-dur-fast:  120ms;
+  --d68-dur-base:  200ms;
+
+  /* ---- Breakpoints (reference; use in media queries) ---- */
+  /* desktop 1440 · laptop 1280 · tablet 768 · mobile 375     */
+  --d68-bp-laptop: 1280px;
+  --d68-bp-tablet: 768px;
+  --d68-bp-mobile: 375px;
+}
+
+/* ============================================================
+   Deals68.com — base.css  (LAYER: d68-base)
+   Chuẩn hóa element gốc: typography H1–H6, body, link, form,
+   input/select/textarea, label, button, layout primitive.
+   MỌI giá trị tham chiếu token trong design-tokens.css — KHÔNG hard-code hex/px.
+
+   Import: nằm trong @layer d68-base (xem src/styles/index.css).
+   Nguyên tắc: element chưa gắn class vẫn HIỂN THỊ ĐÚNG mặc định,
+   nhờ vậy trang mới không cần vá inline. Dùng .d68-btn/.d68-input...
+   cho biến thể; KHÔNG viết lại giá trị đã có ở đây.
+   ============================================================ */
+
+/* ---------- Reset tối thiểu ---------- */
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+html, body { margin: 0; padding: 0; }
+body {
+  font-family: var(--d68-font);
+  font-size: var(--d68-fs-base);
+  line-height: var(--d68-lh-base);
+  color: var(--d68-text);
+  background: var(--d68-bg);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+img, svg, video { max-width: 100%; display: block; }
+::selection { background: var(--d68-blue-wash); color: var(--d68-navy); }
+
+/* ---------- Typography scale (H1–H6) ----------
+   Fluid: co giãn giữa mobile 375 và desktop 1440 bằng clamp().
+   H1 hero dùng riêng .d68-hero-title trong page CSS; H1 trang thường theo đây. */
+h1, h2, h3, h4, h5, h6 {
+  margin: 0 0 var(--d68-space-3);
+  color: var(--d68-navy);
+  font-weight: var(--d68-fw-extrabold);
+  line-height: var(--d68-lh-tight);
+  letter-spacing: -.02em;
+}
+h1 { font-size: clamp(26px, 2.2vw + 18px, 40px); }
+h2 { font-size: clamp(22px, 1.4vw + 15px, 30px); letter-spacing: -.015em; }
+h3 { font-size: clamp(18px, .6vw + 15px, 21px); font-weight: var(--d68-fw-bold); }
+h4 { font-size: var(--d68-fs-md); font-weight: var(--d68-fw-bold); }
+h5 { font-size: var(--d68-fs-base); font-weight: var(--d68-fw-bold); }
+h6 { font-size: var(--d68-fs-sm); font-weight: var(--d68-fw-bold); text-transform: uppercase; letter-spacing: .04em; color: var(--d68-text-muted); }
+
+p  { margin: 0 0 var(--d68-space-4); line-height: var(--d68-lh-relaxed); }
+small { font-size: var(--d68-fs-sm); color: var(--d68-text-muted); }
+strong, b { font-weight: var(--d68-fw-bold); }
+
+a { color: var(--d68-blue-ink); text-decoration: none; transition: color var(--d68-dur-fast) var(--d68-ease); }
+a:hover { color: var(--d68-blue); }
+a:focus-visible, button:focus-visible, [tabindex]:focus-visible {
+  outline: 2px solid var(--d68-blue); outline-offset: 2px; border-radius: 4px;
+}
+
+ul, ol { margin: 0 0 var(--d68-space-4); padding-left: var(--d68-space-6); line-height: var(--d68-lh-relaxed); }
+hr { border: 0; border-top: 1px solid var(--d68-border-soft); margin: var(--d68-space-6) 0; }
+code, pre { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .92em; }
+
+/* ---------- Bilingual toggle ---------- */
+[data-lang="vi"] .l-en { display: none !important; }
+[data-lang="en"] .l-vi { display: none !important; }
+
+/* ---------- Layout primitives ---------- */
+.d68-container { max-width: var(--d68-container); margin-inline: auto; padding-inline: var(--d68-space-6); width: 100%; }
+.d68-container--narrow { max-width: var(--d68-container-narrow); }
+.d68-section { padding-block: var(--d68-space-16); }
+.d68-stack   { display: flex; flex-direction: column; gap: var(--d68-space-4); }
+.d68-row     { display: flex; align-items: center; gap: var(--d68-space-4); }
+.d68-row--between { justify-content: space-between; }
+.d68-grid    { display: grid; gap: var(--d68-space-6); }
+.d68-grid-2  { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.d68-grid-3  { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.d68-grid-4  { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+@media (max-width: 960px) { .d68-grid-3, .d68-grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 620px) { .d68-grid-2, .d68-grid-3, .d68-grid-4 { grid-template-columns: 1fr; } }
+
+/* ---------- Form elements (raw + class) ----------
+   Áp cho CẢ element thô lẫn class .d68-* để trang chưa gắn class vẫn đúng. */
+label, .d68-label {
+  font-size: var(--d68-fs-sm); font-weight: var(--d68-fw-semibold);
+  color: #334155; display: inline-block;
+}
+.d68-field { display: flex; flex-direction: column; gap: 6px; }
+.d68-form  { display: flex; flex-direction: column; gap: var(--d68-space-4); }
+
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+select, textarea,
+.d68-input, .d68-select, .d68-textarea {
+  font-family: inherit;
+  font-size: var(--d68-fs-base);
+  color: var(--d68-text);
+  background: var(--d68-bg);
+  border: 1px solid var(--d68-border);
+  border-radius: var(--d68-radius-sm);
+  padding: 11px 12px;
+  width: 100%;
+  outline: none;
+  transition: border-color var(--d68-dur-fast) var(--d68-ease), box-shadow var(--d68-dur-fast) var(--d68-ease);
+}
+input:focus, select:focus, textarea:focus,
+.d68-input:focus, .d68-select:focus, .d68-textarea:focus {
+  border-color: var(--d68-blue);
+  box-shadow: 0 0 0 3px rgba(27, 173, 234, .15);
+  background: var(--d68-surface);
+}
+input::placeholder, textarea::placeholder { color: var(--d68-text-faint); }
+input:disabled, select:disabled, textarea:disabled { background: var(--d68-surface-alt); color: var(--d68-text-faint); cursor: not-allowed; }
+textarea { min-height: 108px; resize: vertical; line-height: var(--d68-lh-base); }
+[aria-invalid="true"], .d68-input--error { border-color: var(--d68-danger); }
+.d68-help  { font-size: var(--d68-fs-xs); color: var(--d68-text-muted); }
+.d68-error { font-size: var(--d68-fs-xs); color: var(--d68-danger); font-weight: var(--d68-fw-semibold); }
+
+input[type="checkbox"], input[type="radio"] { accent-color: var(--d68-blue); width: 16px; height: 16px; cursor: pointer; }
+
+/* ---------- Buttons ----------
+   .d68-btn là gốc; thêm biến thể --primary/--gold/--ghost/--outline/--danger.
+   Kích thước: --sm / (mặc định) / --lg / --block. */
+.d68-btn {
+  --_bg: var(--d68-navy); --_fg: #fff; --_bd: transparent;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  font-family: inherit; font-size: var(--d68-fs-base); font-weight: var(--d68-fw-bold);
+  line-height: 1; white-space: nowrap; cursor: pointer;
+  padding: 12px 20px; border-radius: var(--d68-radius-sm);
+  background: var(--_bg); color: var(--_fg); border: 1px solid var(--_bd);
+  transition: transform var(--d68-dur-fast) var(--d68-ease), box-shadow var(--d68-dur-fast) var(--d68-ease), background var(--d68-dur-fast) var(--d68-ease);
+  text-decoration: none;
+}
+.d68-btn:hover { transform: translateY(-1px); }
+.d68-btn:active { transform: translateY(0); }
+.d68-btn:disabled, .d68-btn[aria-disabled="true"] { opacity: .55; cursor: not-allowed; transform: none; }
+
+.d68-btn--primary { --_bg: var(--d68-blue); --_fg: #fff; box-shadow: var(--d68-shadow-button); }
+.d68-btn--primary:hover { --_bg: var(--d68-blue-ink); }
+.d68-btn--gold    { --_bg: var(--d68-gold); --_fg: var(--d68-navy); }
+.d68-btn--navy    { --_bg: var(--d68-navy); --_fg: #fff; }
+.d68-btn--ghost   { --_bg: transparent; --_fg: var(--d68-navy-2); }
+.d68-btn--ghost:hover { --_bg: var(--d68-surface-2); }
+.d68-btn--outline { --_bg: transparent; --_fg: var(--d68-navy-2); --_bd: var(--d68-border); }
+.d68-btn--outline:hover { --_bd: var(--d68-blue); --_fg: var(--d68-blue-ink); }
+.d68-btn--danger  { --_bg: var(--d68-danger); --_fg: #fff; }
+
+.d68-btn--sm    { padding: 8px 14px; font-size: var(--d68-fs-sm); }
+.d68-btn--lg    { padding: 15px 28px; font-size: var(--d68-fs-md); }
+.d68-btn--block { display: flex; width: 100%; }
+
+/* ---------- Badge ---------- */
+.d68-badge { display: inline-flex; align-items: center; gap: 6px; font-size: var(--d68-fs-xs); font-weight: var(--d68-fw-bold); padding: 5px 10px; border-radius: var(--d68-radius-pill); }
+.d68-badge--info    { background: var(--d68-blue-wash); color: var(--d68-blue-ink); }
+.d68-badge--gold    { background: var(--d68-warn-wash); color: var(--d68-warn-ink); }
+.d68-badge--success { background: var(--d68-success-solid-wash); color: var(--d68-success); }
+.d68-badge--muted   { background: var(--d68-border-soft); color: var(--d68-text-muted); }
+
+/* ---------- Card ---------- */
+.d68-card { background: var(--d68-surface); border: 1px solid var(--d68-border-card); border-radius: var(--d68-radius-lg); box-shadow: var(--d68-shadow-card); }
+.d68-card--pad { padding: var(--d68-space-6); }
+.d68-card--hover { transition: transform var(--d68-dur-base) var(--d68-ease), box-shadow var(--d68-dur-base) var(--d68-ease); }
+.d68-card--hover:hover { transform: translateY(-3px); box-shadow: var(--d68-shadow-raised); }
+
+/* ---------- Utility (dùng có kiểm soát, KHÔNG thay component) ---------- */
+.d68-text-muted { color: var(--d68-text-muted); }
+.d68-text-center { text-align: center; }
+.d68-mt-0 { margin-top: 0; } .d68-mb-0 { margin-bottom: 0; }
+.d68-visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+
+/* ============================================================
+   MOBILE SAFETY / CHỐNG TRÀN — ngăn cuộn ngang & vỡ layout
+   Đây là nhóm quy tắc quan trọng nhất cho mobile. Nguyên nhân
+   tràn viền phổ biến nhất là: (1) flex/grid item không cho co
+   nên tràn; (2) chuỗi dài không dấu cách (URL, email, mã) đẩy
+   rộng container; (3) ảnh/bảng/pre vượt khung.
+   ============================================================ */
+
+/* 1) Chặn cuộn ngang toàn trang (lưới an toàn cuối cùng). */
+html, body { max-width: 100%; overflow-x: clip; }
+
+/* 2) NGUYÊN NHÂN #1: flex/grid item mặc định min-width:auto nên
+      KHÔNG co được -> nội dung dài làm tràn. Cho phép co lại. */
+.d68-row > *, .d68-grid > *, .d68-stack > * { min-width: 0; }
+.d68-container, .d68-card, main, section, header, footer { min-width: 0; }
+
+/* 3) Text dài / chuỗi không dấu cách: xuống dòng thay vì tràn.
+      Áp cho khối văn bản; giữ nguyên nút/toàn vẹn số liệu. */
+p, li, h1, h2, h3, h4, h5, td, th, .d68-label, .d68-help, .d68-error,
+.d68-card h3, .d68-card p, dd, blockquote {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+/* 4) Link/email/URL dài: bẻ dòng ở mọi vị trí để không đẩy khung. */
+a { overflow-wrap: anywhere; }
+
+/* 5) Ảnh/media không bao giờ vượt khung. */
+img, svg, video, canvas, iframe { max-width: 100%; height: auto; }
+
+/* 6) Bảng: bọc trong .d68-table-wrap để cuộn NGANG cục bộ,
+      không kéo giãn cả trang trên mobile. */
+.d68-table-wrap { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.d68-table { min-width: 560px; } /* giữ cột đọc được; wrapper lo phần cuộn */
+
+/* 7) pre/code dài: cuộn trong khối, không tràn trang. */
+pre { overflow-x: auto; max-width: 100%; }
+
+/* 8) Cắt tiêu đề/mô tả quá dài bằng số dòng (giữ chiều cao thẻ đều). */
+.d68-clamp-1 { display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
+.d68-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.d68-clamp-3 { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+
+/* 9) Padding trang an toàn theo notch/safe-area trên mobile. */
+@media (max-width: 620px) {
+  .d68-container { padding-inline: max(16px, env(safe-area-inset-left)); }
+}
+
+/* ============================================================
+   OVERFLOW SAFETY — chống tràn viền & lỗi text dài trên mobile
+   Đây là phần bắt buộc để deals68.com không vỡ layout ở 375px.
+   Nguyên nhân tràn phổ biến & cách xử lý gốc rễ:
+   1) Chuỗi dài không ngắt (URL, email, mã, tên) → overflow-wrap/word-break
+   2) Con của flex/grid không co được → min-width:0
+   3) Bảng rộng đẩy cả trang → bọc .d68-table-wrap cuộn ngang riêng
+   4) Ảnh/iframe không giới hạn → max-width:100% (đã có ở phần base)
+   ============================================================ */
+
+/* Lưới an toàn cuối cùng: chặn cuộn ngang toàn trang mà KHÔNG phá position:sticky.
+   overflow-x:clip an toàn hơn hidden (không tạo scroll-container làm hỏng header dính). */
+html, body { overflow-x: clip; max-width: 100%; }
+
+/* Text dài tự xuống dòng thay vì tràn viền — áp cho mọi element chứa chữ. */
+h1, h2, h3, h4, h5, h6,
+p, span, a, li, dd, dt, b, strong, em, label, td, th, figcaption, blockquote {
+  overflow-wrap: break-word;   /* ngắt trong từ khi cần */
+  word-break: break-word;      /* xử lý chuỗi dài không có khoảng trắng (URL/mã) */
+  hyphens: auto;
+}
+
+/* Con của flex/grid PHẢI được co lại, nếu không sẽ đẩy tràn khung. */
+.d68-row > *, .d68-grid > *, .d68-stack > *,
+.d68-form > *, .d68-field > * { min-width: 0; }
+
+/* Bảng rộng: bọc trong .d68-table-wrap để cuộn ngang riêng, không đẩy cả trang. */
+.d68-table-wrap { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.d68-table-wrap > .d68-table { min-width: 560px; }   /* giữ cột đọc được, cuộn nếu hẹp */
+
+/* Helper cắt/giới hạn dòng cho tiêu đề & mô tả trong thẻ (khớp UI Reference). */
+.d68-truncate { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.d68-clamp-1, .d68-clamp-2, .d68-clamp-3 { display: -webkit-box; -webkit-box-orient: vertical; overflow: hidden; }
+.d68-clamp-1 { -webkit-line-clamp: 1; }
+.d68-clamp-2 { -webkit-line-clamp: 2; }
+.d68-clamp-3 { -webkit-line-clamp: 3; }
+
+/* Nút & badge: không để text dài kéo giãn vỡ hàng; cho xuống dòng gọn. */
+.d68-btn { max-width: 100%; }
+.d68-badge { max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+
+/* Chuỗi kỹ thuật (mã hồ sơ, email, link) cần ngắt cứng để không tràn card hẹp. */
+.d68-breakall { word-break: break-all; overflow-wrap: anywhere; }
+
+/* Media luôn trong khung. */
+img, svg, video, iframe, embed, object { max-width: 100%; height: auto; }
+
+
+/* ---- styleguide chrome (không phải phần chuẩn, chỉ để trình bày trang demo) ---- */
+.sg-wrap { max-width: var(--d68-container); margin-inline: auto; padding: 0 var(--d68-space-6) var(--d68-space-16); }
+.sg-top { background: linear-gradient(180deg,#0F2A4A,#14315A); color:#fff; }
+.sg-top .sg-wrap { padding-top: var(--d68-space-12); padding-bottom: var(--d68-space-12); }
+.sg-top h1 { color:#fff; }
+.sg-top p { color:#c6d5e6; max-width: 640px; }
+.sg-eyebrow { display:inline-flex; align-items:center; gap:8px; background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.16); color:#cfe8f6; font-weight:700; font-size:13px; padding:7px 14px; border-radius:999px; margin-bottom:16px; }
+.sg-toolbar { position:sticky; top:0; z-index:20; background:var(--d68-surface); border-bottom:1px solid var(--d68-border-card); }
+.sg-toolbar .sg-wrap { display:flex; align-items:center; gap:12px; padding-block:12px; flex-wrap:wrap; }
+.sg-toolbar b { color:var(--d68-navy); }
+.sg-section { margin-top: var(--d68-space-12); }
+.sg-section > h2 { padding-bottom:10px; border-bottom:2px solid var(--d68-border-card); }
+.sg-note { background:var(--d68-warn-wash); border:1px solid var(--d68-warn-border); color:var(--d68-warn-ink); border-radius:var(--d68-radius-md); padding:12px 16px; font-size:14px; font-weight:600; margin: 12px 0; }
+.sg-demo { background:var(--d68-surface); border:1px dashed var(--d68-border); border-radius:var(--d68-radius-md); padding: var(--d68-space-6); margin-top:12px; }
+.sg-label { font-size:12px; font-weight:800; letter-spacing:.5px; text-transform:uppercase; color:var(--d68-text-faint); margin: 18px 0 8px; }
+.sg-swatches { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:12px; }
+.sg-sw { border:1px solid var(--d68-border-card); border-radius:var(--d68-radius-md); overflow:hidden; font-size:12px; }
+.sg-sw > div { height:56px; }
+.sg-sw > p { margin:0; padding:8px 10px; }
+.sg-sw code { font-size:11.5px; color:var(--d68-navy); }
+/* khung điện thoại để xem mobile ngay trong trang */
+.sg-phone { width:375px; max-width:100%; margin:12px auto 0; border:10px solid #0F2A4A; border-radius:32px; overflow:hidden; box-shadow:var(--d68-shadow-raised); }
+.sg-phone iframe { width:100%; height:640px; border:0; display:block; background:#fff; }
+
+</style>
+</head>
+<body>
+
+<header class="sg-top">
+  <div class="sg-wrap">
+    <div class="sg-eyebrow">Deals68 · UI Standard v1.0</div>
+    <h1>Bảng quy chuẩn UI &amp; Kiểm thử tràn viền</h1>
+    <p>Trang này render trực tiếp bằng <b>design-tokens.css</b> + <b>base.css</b> thật của dự án. Dùng để đối chiếu pixel, và kiểm tra text dài / URL / bảng rộng KHÔNG vỡ trên mobile 375px.</p>
+  </div>
+</header>
+
+<div class="sg-toolbar">
+  <div class="sg-wrap">
+    <b>Ngôn ngữ:</b>
+    <div class="d68-seg" role="tablist">
+      <button aria-selected="true" onclick="setLang('vi',this)">VI</button>
+      <button aria-selected="false" onclick="setLang('en',this)">EN</button>
+    </div>
+    <span class="d68-text-muted" style="font-size:13px">Thu nhỏ cửa sổ về ~375px để kiểm tra mobile, hoặc xem khung điện thoại ở cuối trang.</span>
+  </div>
+</div>
+
+<main class="sg-wrap">
+
+  <section class="sg-section">
+    <h2>1. Màu (design token)</h2>
+    <div class="sg-swatches">
+      <div class="sg-sw"><div style="background:var(--d68-navy)"></div><p><code>--d68-navy</code></p></div>
+      <div class="sg-sw"><div style="background:var(--d68-blue)"></div><p><code>--d68-blue</code></p></div>
+      <div class="sg-sw"><div style="background:var(--d68-blue-ink)"></div><p><code>--d68-blue-ink</code></p></div>
+      <div class="sg-sw"><div style="background:var(--d68-gold)"></div><p><code>--d68-gold</code></p></div>
+      <div class="sg-sw"><div style="background:var(--d68-success)"></div><p><code>--d68-success</code></p></div>
+      <div class="sg-sw"><div style="background:var(--d68-danger)"></div><p><code>--d68-danger</code></p></div>
+      <div class="sg-sw"><div style="background:var(--d68-bg);border-bottom:1px solid var(--d68-border)"></div><p><code>--d68-bg</code></p></div>
+      <div class="sg-sw"><div style="background:var(--d68-text-muted)"></div><p><code>--d68-text-muted</code></p></div>
+    </div>
+  </section>
+
+  <section class="sg-section">
+    <h2>2. Typography — H1 đến H6</h2>
+    <div class="sg-demo">
+      <h1>H1 — Nơi Doanh nghiệp gặp gỡ Nhà đầu tư</h1>
+      <h2>H2 — Doanh nghiệp đang chào bán &amp; gọi vốn</h2>
+      <h3>H3 — Chuỗi phòng khám da liễu &amp; thẩm mỹ</h3>
+      <h4>H4 — Thông tin tài chính</h4>
+      <h5>H5 — Phụ đề nhỏ</h5>
+      <h6>H6 — Eyebrow / nhãn section</h6>
+      <p>Body — Deals68 hiển thị hồ sơ ẩn danh với dữ liệu thật từ database, chỉ mở thông tin nhạy cảm sau khi kết nối được duyệt. <a href="#">Đây là một liên kết</a>.</p>
+      <p><small>small — thông tin phụ, chú thích, ghi chú pháp lý.</small></p>
+    </div>
+    <div class="sg-note">Cỡ chữ H1/H2 dùng <code>clamp()</code> nên tự co giãn giữa mobile và desktop — không cần set fontSize theo từng màn hình.</div>
+  </section>
+
+  <section class="sg-section">
+    <h2>3. Button</h2>
+    <div class="sg-demo">
+      <div class="d68-row" style="flex-wrap:wrap; gap:12px">
+        <button class="d68-btn d68-btn--primary">Tìm kiếm</button>
+        <button class="d68-btn d68-btn--gold">Định giá ngay</button>
+        <button class="d68-btn d68-btn--navy">Đăng ký</button>
+        <a class="d68-btn d68-btn--outline" href="#">Xem chi tiết</a>
+        <button class="d68-btn d68-btn--ghost">Xóa lọc</button>
+        <button class="d68-btn d68-btn--danger">Xóa</button>
+        <button class="d68-btn d68-btn--primary" disabled>Đang xử lý…</button>
+      </div>
+      <p class="sg-label">Kích thước</p>
+      <div class="d68-row" style="flex-wrap:wrap; gap:12px">
+        <button class="d68-btn d68-btn--primary d68-btn--sm">Nhỏ (sm)</button>
+        <button class="d68-btn d68-btn--primary">Mặc định</button>
+        <button class="d68-btn d68-btn--primary d68-btn--lg">Lớn (lg)</button>
+      </div>
+      <p class="sg-label">Nút full-width (mobile CTA)</p>
+      <button class="d68-btn d68-btn--gold d68-btn--block">Đăng cơ hội của bạn ngay hôm nay</button>
+    </div>
+  </section>
+
+  <section class="sg-section">
+    <h2>4. Form · input · label</h2>
+    <div class="sg-demo">
+      <form class="d68-form" onsubmit="return false" style="max-width:520px">
+        <div class="d68-field">
+          <label class="d68-label" for="f1">Tên doanh nghiệp</label>
+          <input id="f1" class="d68-input" placeholder="VD: Công ty TNHH ABC" />
+          <span class="d68-help">Tên thật chỉ hiển thị cho Admin, không public.</span>
+        </div>
+        <div class="d68-field">
+          <label class="d68-label" for="f2">Ngành</label>
+          <select id="f2" class="d68-select"><option>Y tế &amp; Sức khỏe</option><option>Công nghệ</option><option>F&amp;B</option></select>
+        </div>
+        <div class="d68-field">
+          <label class="d68-label" for="f3">Mô tả cơ hội</label>
+          <textarea id="f3" class="d68-textarea" placeholder="Mô tả ngắn gọn…"></textarea>
+        </div>
+        <div class="d68-field">
+          <label class="d68-label" for="f4">Email (đang lỗi)</label>
+          <input id="f4" class="d68-input" aria-invalid="true" value="email-sai" />
+          <span class="d68-error">Email không hợp lệ.</span>
+        </div>
+        <label class="d68-row" style="gap:10px"><input type="checkbox" checked /> <span>Tôi đồng ý với Điều khoản sử dụng</span></label>
+        <button class="d68-btn d68-btn--primary d68-btn--block" type="submit">Gửi hồ sơ</button>
+      </form>
+    </div>
+  </section>
+
+  <section class="sg-section">
+    <h2>5. Badge · Alert</h2>
+    <div class="sg-demo">
+      <div class="d68-row" style="flex-wrap:wrap; gap:8px; margin-bottom:16px">
+        <span class="d68-badge d68-badge--info">◆ Verified</span>
+        <span class="d68-badge d68-badge--gold">★ Featured</span>
+        <span class="d68-badge d68-badge--success">Đang hoạt động</span>
+        <span class="d68-badge d68-badge--muted">Đã ẩn</span>
+      </div>
+      <div class="d68-stack">
+        <div class="d68-alert d68-alert--info">Thông tin: hồ sơ đang chờ Admin duyệt bản công khai.</div>
+        <div class="d68-alert d68-alert--success-solid">Thành công: đã lưu thay đổi.</div>
+        <div class="d68-alert d68-alert--warn">Cảnh báo: một số thay đổi cần Admin duyệt lại trước khi hiển thị.</div>
+        <div class="d68-alert d68-alert--danger">Lỗi: không tải được dữ liệu. Vui lòng thử lại.</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sg-section">
+    <h2>6. Card · lưới responsive</h2>
+    <div class="sg-demo" style="background:var(--d68-bg)">
+      <div class="d68-grid d68-grid-3">
+        <article class="d68-card d68-card--hover">
+          <div style="height:120px;background:var(--d68-blue-wash)"></div>
+          <div style="padding:18px">
+            <div class="d68-row" style="gap:6px;flex-wrap:wrap;margin-bottom:8px">
+              <span class="d68-badge d68-badge--info">Y tế</span><span class="d68-badge d68-badge--muted">📍 TP.HCM</span>
+            </div>
+            <h3 class="d68-clamp-2">Chuỗi phòng khám da liễu &amp; thẩm mỹ 5 chi nhánh đang gọi vốn mở rộng toàn quốc</h3>
+            <p class="d68-clamp-2 d68-text-muted">Đội ngũ bác sĩ chuyên khoa, biên lợi nhuận cao, khách hàng thân thiết lặp lại lớn.</p>
+            <a class="d68-btn d68-btn--outline d68-btn--block" href="#">Xem chi tiết</a>
+          </div>
+        </article>
+        <article class="d68-card d68-card--pad">
+          <h3>Thẻ nội dung thường</h3>
+          <p class="d68-text-muted">Dùng <code>.d68-card--pad</code> khi cần padding sẵn.</p>
+        </article>
+        <article class="d68-card d68-card--pad">
+          <h3>Grid tự co</h3>
+          <p class="d68-text-muted">3 cột trên desktop → 2 cột ở 960px → 1 cột ở 620px.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="sg-section">
+    <h2>7. Bảng (bọc cuộn ngang an toàn)</h2>
+    <div class="sg-demo">
+      <div class="d68-table-wrap">
+        <table class="d68-table">
+          <thead><tr><th>Mã</th><th>Doanh nghiệp</th><th>Ngành</th><th class="num">Doanh thu</th><th class="num">Nhu cầu vốn</th><th>Trạng thái</th></tr></thead>
+          <tbody>
+            <tr><td>D68-01</td><td>Hồ sơ ẩn danh</td><td>Y tế</td><td class="num">20 tỷ ₫</td><td class="num">25 tỷ ₫</td><td><span class="d68-badge d68-badge--success">Active</span></td></tr>
+            <tr><td>D68-02</td><td>Hồ sơ ẩn danh</td><td>Công nghệ</td><td class="num">$2.0M</td><td class="num">$2.0M</td><td><span class="d68-badge d68-badge--gold">Featured</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="sg-note">Bảng luôn bọc trong <code>.d68-table-wrap</code> → hẹp thì cuộn ngang RIÊNG, không đẩy vỡ cả trang trên mobile.</div>
+  </section>
+
+  <section class="sg-section">
+    <h2 style="color:var(--d68-danger)">8. ⚠ Stress test — text dài / URL / tràn viền</h2>
+    <div class="sg-note">Đây là các ca hay gây lỗi tràn viền trên mobile. Với base.css chuẩn, tất cả PHẢI tự xuống dòng, KHÔNG có cuộn ngang toàn trang ở 375px.</div>
+    <div class="sg-demo">
+      <p class="sg-label">Tiêu đề dài không ngắt + trong thẻ hẹp</p>
+      <div class="d68-card d68-card--pad" style="max-width:280px">
+        <h3>Sieuchuoiphongkhamdalieuthammyxuyenvietkhongdaucachnaotachtukhonghekhoangtrang gọi vốn</h3>
+        <p class="d68-breakall">https://deals68.com/businesses/dermatology-aesthetics-chain-vietnam?ref=D68MP-US-CA-001&amp;utm_campaign=verylongcampaignname2026</p>
+        <p class="d68-breakall">email-rat-dai-khong-khoang-trang@doanhnghiepratdaikhongkhoangtrang.example.com</p>
+      </div>
+
+      <p class="sg-label">Nút với nhãn dài trên mobile</p>
+      <button class="d68-btn d68-btn--primary d68-btn--block">Đăng ký làm Đối tác thị trường tại Việt Nam và toàn cầu ngay hôm nay</button>
+
+      <p class="sg-label">Badge nhãn dài</p>
+      <span class="d68-badge d68-badge--gold" style="max-width:200px">★ Featured Priority Sponsor Doanh nghiệp nổi bật</span>
+
+      <p class="sg-label">Hàng flex với 1 ô chứa chuỗi dài (min-width:0 giúp ô co lại)</p>
+      <div class="d68-row" style="gap:10px;border:1px solid var(--d68-border);border-radius:12px;padding:12px">
+        <span class="d68-badge d68-badge--info">Mã</span>
+        <span class="d68-breakall">D68MP-US-CALIFORNIA-LONGREGION-000000001-referralcodekhongngat</span>
+        <button class="d68-btn d68-btn--sm d68-btn--outline">Sao chép</button>
+      </div>
+
+      <p class="sg-label">Đoạn văn rất dài</p>
+      <p>Deals68.com là nền tảng kết nối cơ hội mua bán doanh nghiệp, sang nhượng cửa hàng, đầu tư, vay vốn và cho vay dành cho doanh nghiệp Việt toàn cầu, nhà đầu tư toàn cầu và các đối tác vốn quốc tế; nền tảng giúp các bên trình bày cơ hội rõ ràng hơn, tìm kiếm đối tác phù hợp hơn và bắt đầu quá trình trao đổi một cách có cấu trúc hơn — kể cả khi nội dung rất dài như thế này vẫn phải xuống dòng gọn trong khung.</p>
+    </div>
+  </section>
+
+  <section class="sg-section">
+    <h2>9. Xem thử trên khung điện thoại (375px)</h2>
+    <p class="d68-text-muted">Khung dưới nhúng chính trang này ở 375px để bạn thấy ngay hiển thị mobile mà không cần đổi kích thước cửa sổ.</p>
+    <div class="sg-phone"><iframe src="?embed=1" title="Xem mobile 375px"></iframe></div>
+  </section>
+
+</main>
+
+<footer class="d68-footer" style="margin-top:48px">
+  <div class="sg-wrap" style="padding-block:28px">
+    <p style="margin:0;color:var(--d68-text-on-dark-mut)">Deals68.com — Bảng quy chuẩn UI. Render bằng design-tokens.css + base.css thật của dự án. Không sửa file này bằng tay để đổi giao diện — sửa ở token/CSS chuẩn.</p>
+  </div>
+</footer>
+
+<script>
+  function setLang(l, btn){
+    document.documentElement.setAttribute('data-lang', l);
+    document.querySelectorAll('.d68-seg button').forEach(b=>b.setAttribute('aria-selected','false'));
+    btn.setAttribute('aria-selected','true');
+  }
+  // chế độ nhúng: ẩn phần chrome demo để iframe điện thoại gọn
+  if (new URLSearchParams(location.search).get('embed')==='1'){
+    document.documentElement.classList.add('sg-embed');
+  }
+</script>
+<style>
+  .sg-embed .sg-toolbar, .sg-embed .sg-top p, .sg-embed #sg-phone-section { display:none; }
+  .sg-embed .sg-section:last-of-type { display:none; }
+</style>
+
+</body>
+</html>
