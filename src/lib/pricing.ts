@@ -57,15 +57,16 @@ export function calculatePricing(input: PricingInput, promoDiscountPct = 0): Pri
   const role = normaliseRole(input.role);
   const country = input.country || 'VN';
   const currency = country === 'VN' ? 'VND' : 'USD';
-  const termWeeks = Math.max(1, Math.min(52, Number(input.termWeeks || 1)));
+  const termWeeks = Math.max(1, Math.min(104, Number(input.termWeeks || 1)));
+  const termMonths = Math.max(1, Math.round(termWeeks / 4));
   const businessPlan: BusinessPlan = input.businessPlan === 'featured' ? 'featured' : 'standard';
-  const baseWeekly = currency === 'VND' ? 500_000 : 20;
+  const baseWeekly = role === 'business' ? (currency === 'VND' ? 500_000 : 20) : (currency === 'VND' ? 1_000_000 : 50);
   const featuredWeekly = Math.round(baseWeekly * 1.3);
   const planWeekly = role === 'business' && businessPlan === 'featured' ? featuredWeekly : baseWeekly;
-  const subtotal = planWeekly * termWeeks;
+  const subtotal = planWeekly * (role === 'business' ? termWeeks : termMonths);
   const termDiscountPct = role === 'business'
     ? termDiscountForBusiness(termWeeks)
-    : termWeeks >= 48 ? 20 : termWeeks >= 24 ? 15 : 0;
+    : termMonths >= 16 ? 20 : termMonths >= 8 ? 15 : 0;
   const termDiscount = Math.round(subtotal * termDiscountPct / 100);
   const afterTerm = subtotal - termDiscount;
   const safePromoPct = Math.max(0, Math.min(100, Number(promoDiscountPct || 0)));

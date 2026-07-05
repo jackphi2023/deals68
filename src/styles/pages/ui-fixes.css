@@ -221,3 +221,8 @@
 .d68-auth-ghost:disabled{cursor:not-allowed;opacity:.55}
 .d68-auth-success--inline{text-align:left}
 @media(max-width:520px){.d68-auth-otp-field input{letter-spacing:5px}}
+
+/* Investor registration/payment refinements */
+.d68-bizreg-options button:disabled{opacity:.58;cursor:not-allowed;background:#F8FAFC}.d68-bizreg-options button:disabled:hover{transform:none;box-shadow:0 1px 2px rgba(15,42,74,.04)}
+.d68-register-section .d68-auth-field--spaced textarea{min-height:104px}
+@media(max-width:620px){.d68-bizreg-options button{min-height:0}.d68-bizreg-promo{grid-template-columns:1fr}.d68-bizreg-promo button{padding:12px}}

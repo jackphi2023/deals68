@@ -1,67 +1,112 @@
-# Deals68 patch — Business signup OTP login flow
+# Deals68 Investor Flow + OTP Auth Patch — 2026-07-05
 
-Target branch: `beta-reference`
+Target branch: beta-reference
+Commit message: fix: align investor signup otp and public profile flow
 
-This patch is based on the previous combined Business Flow patch and adds the corrected Supabase Email OTP authentication workflow requested in `Deals68_Auth_Flow_Supabase_OTP.md`.
+Scope
+- Keeps the prior combined fixes: corrected valuation engine, industry taxonomy, location taxonomy, mobile business filter, business register/payment/detail, and OTP login/reset flow.
+- Adds Investor flow parity with Business: signup + payment -> /login OTP -> dashboard editable but not public -> Admin approve public -> Investor edits become pending_profile_changes until Admin approves.
+- Does not weaken public Business guard or Investor public visibility guard.
 
-## Scope
+Files included
+- src/contexts/AuthContext.tsx
+- src/App.tsx
+- src/components/Header.tsx
+- src/lib/industryTaxonomy.ts
+- src/lib/locationTaxonomy.ts
+- src/lib/labels.ts
+- src/lib/labelsBase.ts
+- src/lib/numberFormat.ts
+- src/lib/pricing.ts
+- src/lib/valuationEngine.ts
+- src/pages/AdminValuation.tsx
+- src/pages/BusinessDashboard.tsx
+- src/pages/BusinessDetail.tsx
+- src/pages/ForgotPassword.tsx
+- src/pages/InvestorDetail.tsx
+- src/pages/Login.tsx
+- src/pages/Register.tsx
+- src/pages/ResetPassword.tsx
+- src/pages/StaticPages.tsx
+- src/pages/Valuation.tsx
+- src/styles/pages/dashboard.css
+- src/styles/pages/investor-detail.css
+- src/styles/pages/ui-fixes.css
+- src/styles/pages/valuation.css
+- supabase/migrations/20260705_valuation_engine_and_taxonomy.sql
+- supabase/migrations/20260705_business_location_taxonomy_and_flow.sql
+- supabase/migrations/20260705_register_business_assets_signup_bundle.sql
+- supabase/migrations/20260705_investor_flow_contact_and_email.sql
 
-- Keep previous fixes: valuation corrected scope, 23-industry taxonomy, VN/location taxonomy, mobile business filters, Business Register pricing/payment, Business Detail public display cleanup.
-- Add signup OTP flow:
-  - Register Business/Investor still creates Auth user + private profile/listing/payment order.
-  - After submit, user is redirected to `/login?otp=1&email=...&next=...`.
-  - Login page shows Email + Password + OTP input with wording: “Hãy nhập mã OTP đã gửi đến Email của Anh/Chị dưới đây.”
-  - `verifyOtp({ type: 'signup' })` creates a Supabase session, activates dashboard login, then redirects to the proper dashboard.
-- Add resend signup OTP with 60-second cooldown.
-- Add recovery OTP flow:
-  - `/forgot-password` sends reset OTP.
-  - `/reset-password` asks Email + OTP + New password + Confirm.
-  - `verifyOtp({ type: 'recovery' })` then `updateUser({ password })`.
+Investor Register changes
+- "Tiêu chí đầu tư" -> "Thông tin Nhà đầu tư".
+- Adds "Giới thiệu chung" for anonymous public description: maps to investors.desc_vi.
+- Keeps "Mô tả khẩu vị đầu tư" as detailed appetite: maps to criteria.investment_appetite.
+- Adds consistent service package/payment UI, QR transfer, disabled Sepay, disabled Stripe/Paypal.
+- Investor terms are 4/8/12/16/24 months.
+- Promo/referral input uses Supabase promo_codes via lookupPromo.
+- VN uses VND; non-VN uses USD, consistent with Pricing page logic.
+- Requires payment acknowledgment for Investor signup.
+- Button: "Tạo tài khoản Nhà đầu tư".
+- On success redirects to /login?role=investor&otp=1&next=/dashboard/investor.
+- If visible/active investor email already exists, shows: "Email đã được đăng ký, vui lòng liên hệ partner@vietcapitalpartners.com để được hỗ trợ." Hidden investors remain allowed by the RPC rule.
 
-## Important Supabase configuration
+Investor Detail changes
+- UI structure aligned to reference screenshots:
+  - Anonymous title + description + badges + right CTA "Gửi hồ sơ DN".
+  - Box "Thông tin Nhà đầu tư": type, country, region, ticket size, stage, sectors.
+  - Box "Tiêu chí đầu tư".
+  - Box "Lịch sử nhận Proposal" without fabricated history; empty state if no approved public history exists.
+  - Box "Thông tin liên hệ" with locked rows.
+- Contact information is not selected from public query.
+- Contact unlock is via RPC get_investor_contact_if_connected(), requiring authenticated connected Business with approved/connected proposal, investor owner, or Admin.
+- Contact respects investor privacy share flags for email/phone/website.
 
-This patch expects Supabase Auth Email templates to use `{{ .Token }}` for Confirm signup and Reset password, not magic-link-only templates. Also configure SMTP because Supabase default email limits are low.
+Database/Supabase changes
+- Adds investor_public_email_exists(email_text) SECURITY DEFINER RPC.
+- Adds get_investor_contact_if_connected(investor_uuid) SECURITY DEFINER RPC.
+- Existing create_signup_bundle already creates investor visible=false, status=pending_admin_review, profile dashboard_login_enabled=true.
 
-## Files changed
+Apply
+```bash
+git checkout beta-reference
+unzip deals68_investor_flow_otp_register_detail_patch_20260705.zip -d /tmp/deals68_investor_patch
+cp -R /tmp/deals68_investor_patch/src ./
+cp -R /tmp/deals68_investor_patch/supabase ./
+npm run build
+git status
+git add src supabase/migrations
+git commit -m "fix: align investor signup otp and public profile flow"
+git push origin beta-reference
+```
 
-- `src/contexts/AuthContext.tsx`
-- `src/pages/Login.tsx`
-- `src/pages/ForgotPassword.tsx`
-- `src/pages/ResetPassword.tsx`
-- `src/pages/Register.tsx`
-- `src/styles/pages/ui-fixes.css`
-- Previous Business Flow files remain included in this combined zip.
-- `supabase/migrations/20260705_register_business_assets_signup_bundle.sql` now sets new profiles to `pending_admin_review` and `dashboard_login_enabled=true`; email verification remains the actual login gate because no session exists before OTP verification.
+Migration order
+1. 20260705_valuation_engine_and_taxonomy.sql
+2. 20260705_business_location_taxonomy_and_flow.sql
+3. 20260705_register_business_assets_signup_bundle.sql
+4. 20260705_investor_flow_contact_and_email.sql
 
-## Known implementation note
+Routes to test
+- /register/investor
+- /en/register/investor
+- /login?role=investor&otp=1
+- /dashboard/investor
+- /dashboard/investor/profile
+- /admin/investors
+- /investors
+- /investors/:code
+- /register/business
+- /login?role=business&otp=1
+- /forgot-password?role=investor
+- /reset-password
 
-When Supabase Email OTP is enabled, `auth.signUp` usually does not return a session. Because private storage upload requires an authenticated session and RLS owner checks, file/image bytes selected on Register cannot be uploaded before OTP verification unless a secure backend/service-role upload endpoint is added. This patch stores the upload plan metadata and tells users to upload files/images again in Dashboard after OTP login if no session exists at signup time.
+Mobile checklist
+- 375px: investor register sections stack, payment plan cards stack, QR box stack, no horizontal overflow.
+- 375px: investor detail hero/CTA/contact lock rows stack cleanly.
+- 768px: investor detail hero becomes single column; profile boxes readable.
+- 1440px: investor detail right CTA sticky and cards match reference proportions.
 
-## Suggested commit message
-
-`fix: add signup otp login flow for business accounts`
-
-## Test routes
-
-- `/register/business`
-- `/en/register/business`
-- `/login?role=business&otp=1`
-- `/forgot-password?role=business`
-- `/reset-password`
-- `/dashboard/business`
-- `/admin/business-review`
-- `/businesses`
-- `/valuation`
-
-## Manual QA checklist
-
-1. Register a business with a fresh email.
-2. Confirm Supabase sends Confirm signup OTP.
-3. Browser redirects to `/login` and shows OTP prompt.
-4. Enter email + password + OTP.
-5. User lands on `/dashboard/business`.
-6. Business row remains `visible=false`, `status=pending_admin_review`, `public_snapshot_json=null`.
-7. Admin can still approve public snapshot later.
-8. Forgot password sends recovery OTP.
-9. Reset password works from `/reset-password` with Email + OTP + new password.
-10. Mobile 375px: Login OTP form and Register payment section do not overflow.
+Not performed
+- No GitHub commit/push.
+- No Supabase migration applied.
+- Build not executed against the full repository runtime; run npm run build after applying.
