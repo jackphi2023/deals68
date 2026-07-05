@@ -1,7 +1,7 @@
 import { FormEvent, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { createSignupBundle } from '../lib/data';
+import { createSignupBundle, uploadBusinessFile, uploadBusinessImage } from '../lib/data';
 import { slugify } from '../lib/format';
 import { calculatePricing, normaliseRole, roleLabel, type BusinessPlan } from '../lib/pricing';
 import { toLocalizedPath } from '../lib/i18nRoutes';
@@ -20,6 +20,12 @@ import {
 } from '../lib/labels';
 
 const countryIso: Record<string, string> = Object.fromEntries(countryOptions.map((c) => [c.vi, c.iso2]).concat(countryOptions.map((c) => [c.en, c.iso2])));
+const MAX_BUSINESS_IMAGES = 3;
+const MAX_BUSINESS_DOCS = 3;
+const DOC_EXTENSIONS = ['.pdf', '.doc', '.docx', '.ppt', '.pptx', '.xls', '.xlsx'];
+
+type PendingAsset = { id: string; file: File; displayName: string };
+type ValuationCheck = { level: string; label: string; message: string; impliedValue: number | null; revenueMultiple: number | null; ebitdaMultiple: number | null };
 
 function safeUsername(email: string, name: string) {
   return (email.split('@')[0] || slugify(name)).toLowerCase().replace(/[^a-z0-9._-]/g, '').slice(0, 42);
@@ -28,12 +34,63 @@ function money(v: number, cur: string) {
   return cur === 'VND' ? Math.round(v).toLocaleString('vi-VN') + ' ₫' : '$' + Math.round(v).toLocaleString('en-US');
 }
 
-function Field({ label, children, wide=false }: { label: string; children: any; wide?: boolean }) {
-  return <label className={`d68-auth-field${wide ? ' d68-auth-field--wide' : ''}`}><span>{label}</span>{children}</label>;
+
+function splitNumberParts(value: any, allowDecimal = false) {
+  const raw = String(value ?? '').replace(/\s/g, '').replace(/[^0-9,.-]/g, '');
+  const negative = raw.startsWith('-') ? '-' : '';
+  let body = raw.replace(/-/g, '');
+  let decimal = '';
+  let hasDecimal = false;
+  if (allowDecimal) {
+    const commaIndex = body.lastIndexOf(',');
+    if (commaIndex >= 0) {
+      hasDecimal = true;
+      decimal = body.slice(commaIndex + 1).replace(/\D/g, '').slice(0, 2);
+      body = body.slice(0, commaIndex);
+    }
+  }
+  const integer = body.replace(/\D/g, '').replace(/^0+(?=\d)/, '');
+  return { negative, integer, decimal, hasDecimal };
 }
 
+function formatNumberTyping(value: any, allowDecimal = false) {
+  const { negative, integer, decimal, hasDecimal } = splitNumberParts(value, allowDecimal);
+  if (!integer && !decimal) return '';
+  const grouped = (integer || '0').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  return `${negative}${grouped}${hasDecimal ? `,${decimal}` : ''}`;
+}
+
+function parseFormattedNumber(value: any, allowDecimal = false) {
+  const { negative, integer, decimal } = splitNumberParts(value, allowDecimal);
+  if (!integer && !decimal) return 0;
+  return Number(`${negative}${integer || '0'}${allowDecimal && decimal ? `.${decimal}` : ''}`) || 0;
+}
+function moneyShort(v: number, cur: string) {
+  if (!Number.isFinite(v) || v <= 0) return '—';
+  if (cur === 'VND') return v >= 1_000_000_000 ? `${(v / 1_000_000_000).toLocaleString('vi-VN', { maximumFractionDigits: 1 })} tỷ ₫` : `${Math.round(v / 1_000_000).toLocaleString('vi-VN')} triệu ₫`;
+  return v >= 1_000_000 ? `$${(v / 1_000_000).toLocaleString('en-US', { maximumFractionDigits: 2 })}M` : `$${Math.round(v).toLocaleString('en-US')}`;
+}
+function formatBytes(size: number) {
+  if (!Number.isFinite(size)) return '';
+  if (size >= 1_048_576) return `${(size / 1_048_576).toFixed(1)} MB`;
+  if (size >= 1024) return `${Math.round(size / 1024)} KB`;
+  return `${size} B`;
+}
+function Field({ label, children, wide=false, hint }: { label: string; children: any; wide?: boolean; hint?: string }) {
+  return <label className={`d68-auth-field${wide ? ' d68-auth-field--wide' : ''}`}><span>{label}</span>{children}{hint ? <small>{hint}</small> : null}</label>;
+}
 function toggleValue(list: string[], value: string) {
   return list.includes(value) ? list.filter((x) => x !== value) : [...list, value];
+}
+function assetId(file: File) {
+  return `${file.name}-${file.size}-${file.lastModified}-${Math.random().toString(36).slice(2)}`;
+}
+function isBusinessDoc(file: File) {
+  const lower = file.name.toLowerCase();
+  return DOC_EXTENSIONS.some((x) => lower.endsWith(x));
+}
+function planText(plan: BusinessPlan, lang: Lang) {
+  return plan === 'featured' ? T(lang, 'Ưu tiên', 'Priority') : T(lang, 'Thường', 'Standard');
 }
 
 export default function Register({ lang = 'vi' }: { lang?: Lang }) {
@@ -58,13 +115,18 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
   const [ask, setAsk] = useState('');
   const [stake, setStake] = useState('');
   const [reason, setReason] = useState('');
+  const [assetsOwned, setAssetsOwned] = useState('');
+  const [excludedAssetValue, setExcludedAssetValue] = useState('');
+  const [financialSource, setFinancialSource] = useState('management_accounts');
+  const [businessImages, setBusinessImages] = useState<PendingAsset[]>([]);
+  const [businessDocs, setBusinessDocs] = useState<PendingAsset[]>([]);
   const [invType, setInvType] = useState('Individual/Angel');
   const [selectedIndustries, setSelectedIndustries] = useState<string[]>(['F&B', 'Công nghệ']);
   const [stage, setStage] = useState('Growth');
   const [investorDealTypes, setInvestorDealTypes] = useState<string[]>(['Investment']);
   const [preferredCountries, setPreferredCountries] = useState<string[]>(['VN']);
-  const [ticketMin, setTicketMin] = useState('100000');
-  const [ticketMax, setTicketMax] = useState('5000000');
+  const [ticketMin, setTicketMin] = useState(formatNumberTyping('100000'));
+  const [ticketMax, setTicketMax] = useState(formatNumberTyping('5000000'));
   const [desc, setDesc] = useState('');
   const [phoneIso, setPhoneIso] = useState('VN');
   const [phone, setPhone] = useState('');
@@ -76,12 +138,78 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
   const isBusiness = normalized === 'business';
   const isInvestor = normalized === 'investor';
   const countryCode = countryIso[country] || 'VN';
-  const price = calculatePricing({ role: normalized as any, country: countryCode, termWeeks: Number(intent.termWeeks || (isBusiness ? 4 : 12)), businessPlan: plan, promoCode: intent.promoCode }, Number(intent.price?.promoDiscountPct || 0));
+  const serviceWeeks = Number(intent.termWeeks || (isBusiness ? 4 : 12));
+  const price = calculatePricing({ role: normalized as any, country: countryCode, termWeeks: serviceWeeks, businessPlan: plan, promoCode: intent.promoCode }, Number(intent.price?.promoDiscountPct || 0));
+  const standardPrice = calculatePricing({ role: 'business', country: countryCode, termWeeks: serviceWeeks, businessPlan: 'standard', promoCode: intent.promoCode }, Number(intent.price?.promoDiscountPct || 0));
+  const featuredPrice = calculatePricing({ role: 'business', country: countryCode, termWeeks: serviceWeeks, businessPlan: 'featured', promoCode: intent.promoCode }, Number(intent.price?.promoDiscountPct || 0));
   const pricingSummary = intent.price ? `${money(Number(intent.price.total || price.total), intent.price.currency || price.currency)} · ${intent.units || intent.termWeeks || price.termWeeks} ${intent.unitLabel || T(lang, 'tuần', 'weeks')}` : `${money(price.total, price.currency)} · ${price.termWeeks} ${T(lang, 'tuần', 'weeks')}`;
+
+  const valuationCheck: ValuationCheck = useMemo(() => {
+    const currency = countryCode === 'VN' ? 'VND' : 'USD';
+    const rev = parseFormattedNumber(revenue);
+    const askAmount = parseFormattedNumber(ask);
+    const stakePct = parseFormattedNumber(stake, true);
+    const ebitdaPct = parseFormattedNumber(ebitda, true);
+    const excluded = parseFormattedNumber(excludedAssetValue);
+    if (!askAmount || !stakePct) return { level: 'pending', label: T(lang, 'Chưa đủ dữ liệu', 'Need more inputs'), message: T(lang, 'Nhập Nhu cầu vốn/Giá chào và Tỷ lệ cổ phần để hệ thống gợi ý mức định giá.', 'Enter Ask and Stake to estimate valuation reasonableness.'), impliedValue: null, revenueMultiple: null, ebitdaMultiple: null };
+    const impliedValue = askAmount / Math.max(stakePct / 100, 0.0001);
+    const revenueMultiple = rev > 0 ? impliedValue / rev : null;
+    const ebitdaAmount = rev > 0 && ebitdaPct > 0 ? rev * ebitdaPct / 100 : 0;
+    const ebitdaMultiple = ebitdaAmount > 0 ? impliedValue / ebitdaAmount : null;
+    let level = 'balanced';
+    let label = T(lang, 'Tương đối hợp lý', 'Broadly reasonable');
+    let message = T(lang, 'Khoản giá trị suy ra nằm trong vùng tham khảo sơ bộ. Admin vẫn cần kiểm tra hồ sơ, ngành và tài liệu.', 'The implied valuation is in an indicative range. Admin still needs to review sector, documents and context.');
+    if (revenueMultiple !== null && revenueMultiple < 0.3) {
+      level = 'low'; label = T(lang, 'Có thể đang thấp', 'May be low');
+      message = T(lang, 'Định giá suy ra thấp so với doanh thu. Cần kiểm tra đây là bán tài sản, chuyển nhượng một phần hay có khoản nợ/tài sản loại trừ.', 'Implied valuation is low versus revenue. Check whether this is an asset sale, partial transfer, or excludes debt/assets.');
+    } else if ((revenueMultiple !== null && revenueMultiple > 5) || (ebitdaMultiple !== null && ebitdaMultiple > 20)) {
+      level = 'high'; label = T(lang, 'Có thể đang cao', 'May be high');
+      message = T(lang, 'Định giá suy ra khá cao. Nên bổ sung tăng trưởng, biên lợi nhuận, tài sản/IP, hợp đồng hoặc lợi thế cạnh tranh để Admin/nhà đầu tư thẩm định.', 'Implied valuation is high. Add growth, margin, assets/IP, contracts or competitive advantages for Admin/investor review.');
+    }
+    if (excluded > 0 && impliedValue > 0 && excluded / impliedValue > 0.25) {
+      level = 'watch'; label = T(lang, 'Cần làm rõ tài sản loại trừ', 'Clarify excluded assets');
+      message = T(lang, 'Giá trị tài sản vật chất không nằm trong giao dịch khá lớn so với định giá suy ra. Cần ghi rõ để tránh hiểu nhầm khi Admin duyệt public snapshot.', 'Excluded physical assets are material versus implied valuation. Clarify this to avoid confusion when Admin approves the public snapshot.');
+    }
+    return { level, label, message, impliedValue, revenueMultiple, ebitdaMultiple };
+  }, [ask, countryCode, ebitda, excludedAssetValue, lang, revenue, stake]);
 
   function toggleIndustry(x: string) { setSelectedIndustries((cur) => toggleValue(cur, x)); }
   function toggleInvestorDeal(x: string) { setInvestorDealTypes((cur) => toggleValue(cur, normalizeInvestorDealForDb(x))); }
   function togglePreferredCountry(iso: string) { setPreferredCountries((cur) => toggleValue(cur, iso)); }
+
+  function addImages(files: FileList | null) {
+    const incoming = Array.from(files || []).filter((f) => f.type.startsWith('image/')).slice(0, Math.max(0, MAX_BUSINESS_IMAGES - businessImages.length));
+    if (!incoming.length) return;
+    setBusinessImages((cur) => [...cur, ...incoming.map((file) => ({ id: assetId(file), file, displayName: file.name.replace(/\.[^.]+$/, '') }))]);
+  }
+  function addDocs(files: FileList | null) {
+    const incoming = Array.from(files || []).filter(isBusinessDoc).slice(0, Math.max(0, MAX_BUSINESS_DOCS - businessDocs.length));
+    if (!incoming.length) return;
+    setBusinessDocs((cur) => [...cur, ...incoming.map((file) => ({ id: assetId(file), file, displayName: file.name.replace(/\.[^.]+$/, '') }))]);
+  }
+  function updateAssetName(kind: 'image' | 'doc', id: string, displayName: string) {
+    const setter = kind === 'image' ? setBusinessImages : setBusinessDocs;
+    setter((cur) => cur.map((x) => x.id === id ? { ...x, displayName } : x));
+  }
+  function removeAsset(kind: 'image' | 'doc', id: string) {
+    const setter = kind === 'image' ? setBusinessImages : setBusinessDocs;
+    setter((cur) => cur.filter((x) => x.id !== id));
+  }
+
+  async function uploadPendingBusinessAssets(businessId: string, ownerId: string) {
+    const errors: string[] = [];
+    let imageCount = 0;
+    let fileCount = 0;
+    for (const item of businessImages) {
+      try { await uploadBusinessImage(businessId, ownerId, item.file, item.displayName.trim() || item.file.name); imageCount++; }
+      catch (err: any) { errors.push(`${item.file.name}: ${err?.message || 'upload failed'}`); }
+    }
+    for (const item of businessDocs) {
+      try { await uploadBusinessFile(businessId, ownerId, item.file, 'profile', 'locked', item.displayName.trim() || item.file.name); fileCount++; }
+      catch (err: any) { errors.push(`${item.file.name}: ${err?.message || 'upload failed'}`); }
+    }
+    return { imageCount, fileCount, errors };
+  }
 
   async function submit(e: FormEvent) {
     e.preventDefault();
@@ -109,6 +237,8 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
 
       if (isBusiness) {
         const titleVi = `${dealType} · ${industry} · ${city}`;
+        const revenueCurrency = countryCode === 'VN' ? 'VND' : 'USD';
+        const uploadPlan = { images: businessImages.map((x) => ({ file_name: x.file.name, display_name: x.displayName, size_bytes: x.file.size })), files: businessDocs.map((x) => ({ file_name: x.file.name, display_name: x.displayName, size_bytes: x.file.size })) };
         businessPayload = {
           username,
           slug: `${slugify(titleVi || realName)}-${Date.now().toString(36)}`,
@@ -122,18 +252,26 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
           industry,
           deal_type: dealType,
           plan,
-          revenue_2025: Number(revenue || 0),
-          revenue_currency: countryCode === 'VN' ? 'VND' : 'USD',
-          ebitda_margin: Number(ebitda || 0),
-          ask_amount: Number(ask || 0),
-          ask_currency: countryCode === 'VN' ? 'VND' : 'USD',
-          stake_pct: Number(stake || 0),
+          revenue_2025: parseFormattedNumber(revenue),
+          revenue_currency: revenueCurrency,
+          ebitda_margin: parseFormattedNumber(ebitda, true),
+          ask_amount: parseFormattedNumber(ask),
+          ask_currency: revenueCurrency,
+          stake_pct: parseFormattedNumber(stake, true),
           quota_total: plan === 'featured' ? 200 : 100,
           highlights_vi: highlights,
           highlights_en: '',
           investment_reason_vi: reason,
           investment_reason_en: '',
-          data_confidence: 0,
+          financial_input: {
+            assets_owned: assetsOwned,
+            excluded_physical_asset_value: parseFormattedNumber(excludedAssetValue),
+            financial_source: financialSource,
+            valuation_check: valuationCheck,
+            upload_plan: uploadPlan
+          },
+          valuation_reasonableness: valuationCheck.level,
+          data_confidence: [revenue, ebitda, ask, stake, highlights, reason, financialSource, assetsOwned].filter((x) => String(x || '').trim()).length * 8,
           quality_score: 0
         };
       } else if (isInvestor) {
@@ -150,8 +288,8 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
           region: countryCode === 'VN' ? 'asia' : 'global',
           industries: selectedIndustries,
           deal_types: investorDealTypes.length ? investorDealTypes : ['Investment'],
-          ticket_min: Number(ticketMin || 0),
-          ticket_max: Number(ticketMax || 0),
+          ticket_min: parseFormattedNumber(ticketMin),
+          ticket_max: parseFormattedNumber(ticketMax),
           type: invType,
           stage,
           criteria: { sectors: selectedIndustries, stage, dealTypes: investorDealTypes, preferredCountries },
@@ -159,7 +297,7 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
         };
       }
 
-      await createSignupBundle({
+      const bundle = await createSignupBundle({
         userId: sr.user.id,
         email: email.trim(),
         role: (isInvestor ? 'investor' : isBusiness ? 'business' : 'affiliate'),
@@ -169,8 +307,16 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
         payment: { title: `${roleLabel(normalized as any, lang)} · ${pricingSummary}`, role: normalized, country: countryCode, plan, checkout_intent: intent, price, source: 'register_beta_reference' }
       });
 
-      setMsg(T(lang, 'Tài khoản, hồ sơ và đơn thanh toán pending đã được tạo. Admin xác nhận thanh toán để mở dashboard, sau đó duyệt public.', 'Account, profile and pending payment order created. Admin confirms payment to open dashboard, then approves public listing.'));
-      setTimeout(() => navigate(toLocalizedPath('/login', lang)), 1700);
+      let uploadNote = '';
+      if (isBusiness && bundle?.business_id && (businessImages.length || businessDocs.length)) {
+        const upload = await uploadPendingBusinessAssets(bundle.business_id, sr.user.id);
+        uploadNote = upload.errors.length
+          ? T(lang, ` Đã tạo hồ sơ; upload thành công ${upload.imageCount} ảnh và ${upload.fileCount} file. Một số file cần Admin kiểm tra lại: ${upload.errors.join('; ')}`, ` Profile created; uploaded ${upload.imageCount} images and ${upload.fileCount} files. Some files need Admin review: ${upload.errors.join('; ')}`)
+          : T(lang, ` Đã upload ${upload.imageCount} ảnh và ${upload.fileCount} file hồ sơ.`, ` Uploaded ${upload.imageCount} images and ${upload.fileCount} profile files.`);
+      }
+
+      setMsg(T(lang, 'Tài khoản, hồ sơ và đơn thanh toán pending đã được tạo. Admin xác nhận thanh toán để mở dashboard, sau đó duyệt public.', 'Account, profile and pending payment order created. Admin confirms payment to open dashboard, then approves public listing.') + uploadNote);
+      setTimeout(() => navigate(toLocalizedPath('/login', lang)), 2100);
     } catch (err: any) {
       setMsg(err?.message || T(lang, 'Tài khoản đã tạo, nhưng hồ sơ/đơn thanh toán cần Admin kiểm tra lại.', 'Account created, but profile/payment order needs Admin review.'));
     } finally {
@@ -178,7 +324,8 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
     }
   }
 
-  const planLabel = plan === 'featured' ? T(lang, 'Ưu tiên', 'Priority') : T(lang, 'Thường', 'Standard');
+  const planLabel = planText(plan, lang);
+  const currentCurrency = countryCode === 'VN' ? 'VND' : 'USD';
 
   return <main className="d68-auth-page d68-register-page"><section className="d68-auth-card d68-register-card">
     <div className="d68-auth-head">
@@ -188,45 +335,94 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
     </div>
     {intent.createdAt ? <div className="d68-auth-banner">✓ {T(lang, 'Đã lấy gói từ Bảng giá:', 'Plan carried over from Pricing:')} {pricingSummary} <Link to={toLocalizedPath('/pricing', lang)}>{T(lang, 'Đổi lựa chọn', 'Change')}</Link></div> : null}
     <form onSubmit={submit} className="d68-register-form">
-      <div className="d68-form-grid">
-        <Field label={T(lang, 'Email đăng nhập', 'Login email')}><input required type="email" value={email} onChange={(e) => setEmail(e.target.value)} /></Field>
-        <Field label={T(lang, 'Mật khẩu', 'Password')}><input required type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder={T(lang, 'Tối thiểu 8 ký tự', 'At least 8 characters')} /></Field>
-        <Field label={T(lang, 'Tên người phụ trách', 'Contact name')}><input required value={name} onChange={(e) => setName(e.target.value)} /></Field>
-        <Field label={T(lang, 'Quốc gia', 'Country')}><select value={country} onChange={(e) => setCountry(e.target.value)}>{countryOptions.map((x) => <option key={x.iso2}>{T(lang, x.vi, x.en)}</option>)}</select></Field>
-      </div>
-
-      {isBusiness ? <section>
-        <h2>{T(lang, 'Thông tin doanh nghiệp', 'Business information')}</h2>
+      <section className="d68-register-section d68-register-section--account">
+        <h2>{T(lang, 'Thông tin tài khoản', 'Account information')}</h2>
         <div className="d68-form-grid">
-          <Field label={T(lang, 'Tên DN thật (chỉ Admin thấy)', 'Real company name (Admin only)')}><input value={companyName} onChange={(e) => setCompanyName(e.target.value)} /></Field>
-          <Field label={T(lang, 'Ngành', 'Industry')}><select value={industry} onChange={(e) => setIndustry(e.target.value)}>{industryOptions.map((x) => <option key={x.vi}>{T(lang, x.vi, x.en)}</option>)}</select></Field>
-          <Field label={T(lang, 'Thành phố', 'City')}><input value={city} onChange={(e) => setCity(e.target.value)} /></Field>
-          <Field label={T(lang, 'Loại giao dịch', 'Deal type')}><select value={dealType} onChange={(e) => setDealType(e.target.value)}>{businessDealOptions.map((x) => <option key={x.vi}>{T(lang, x.vi, x.en)}</option>)}</select></Field>
-          <Field label={T(lang, 'Doanh thu 2025', '2025 revenue')}><input type="number" value={revenue} onChange={(e) => setRevenue(e.target.value)} /></Field>
-          <Field label="EBITDA margin (%)"><input type="number" value={ebitda} onChange={(e) => setEbitda(e.target.value)} /></Field>
-          <Field label={T(lang, 'Nhu cầu vốn/Giá chào', 'Capital sought / Ask')}><input type="number" value={ask} onChange={(e) => setAsk(e.target.value)} /></Field>
-          <Field label={T(lang, 'Tỷ lệ cổ phần (%)', 'Stake (%)')}><input type="number" value={stake} onChange={(e) => setStake(e.target.value)} /></Field>
+          <Field label={T(lang, 'Email đăng nhập', 'Login email')}><input required type="email" value={email} onChange={(e) => setEmail(e.target.value)} /></Field>
+          <Field label={T(lang, 'Mật khẩu', 'Password')}><input required type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder={T(lang, 'Tối thiểu 8 ký tự', 'At least 8 characters')} /></Field>
+          <Field label={T(lang, 'Tên người phụ trách', 'Contact name')}><input required value={name} onChange={(e) => setName(e.target.value)} /></Field>
+          <Field label={T(lang, 'Quốc gia', 'Country')}><select value={country} onChange={(e) => setCountry(e.target.value)}>{countryOptions.map((x) => <option key={x.iso2}>{T(lang, x.vi, x.en)}</option>)}</select></Field>
         </div>
-        <Field label={T(lang, 'Điểm nổi bật', 'Highlights')} wide><textarea rows={4} value={highlights} onChange={(e) => setHighlights(e.target.value)} placeholder={T(lang, 'Mỗi ý một dòng hoặc phân cách bằng dấu ;', 'One point per line or separated by ;')} /></Field>
-        <Field label={T(lang, 'Lý do gọi vốn/chuyển nhượng', 'Reason for fundraising/sale')} wide><textarea rows={3} value={reason} onChange={(e) => setReason(e.target.value)} /></Field>
-        <div className="d68-plan-toggle" aria-label={T(lang, 'Chọn gói hiển thị', 'Choose listing plan')}>
-          <button type="button" className={plan === 'standard' ? 'active' : ''} onClick={() => setPlan('standard')}>{T(lang, 'Thường', 'Standard')}</button>
-          <button type="button" className={plan === 'featured' ? 'active' : ''} onClick={() => setPlan('featured')}>{T(lang, 'Ưu tiên', 'Priority')}</button>
-          <span>{T(lang, 'Gói đang chọn:', 'Selected plan:')} <b>{planLabel}</b></span>
-        </div>
-      </section> : null}
+      </section>
 
-      {isInvestor ? <section>
+      {isBusiness ? <>
+        <section className="d68-register-section">
+          <h2>{T(lang, 'Thông tin doanh nghiệp', 'Business information')}</h2>
+          <div className="d68-form-grid">
+            <Field label={T(lang, 'Tên DN thật (chỉ Admin thấy)', 'Real company name (Admin only)')}><input value={companyName} onChange={(e) => setCompanyName(e.target.value)} /></Field>
+            <Field label={T(lang, 'Ngành', 'Industry')}><select value={industry} onChange={(e) => setIndustry(e.target.value)}>{industryOptions.map((x) => <option key={x.vi}>{T(lang, x.vi, x.en)}</option>)}</select></Field>
+            <Field label={T(lang, 'Thành phố', 'City')}><input value={city} onChange={(e) => setCity(e.target.value)} /></Field>
+            <Field label={T(lang, 'Loại giao dịch', 'Deal type')}><select value={dealType} onChange={(e) => setDealType(e.target.value)}>{businessDealOptions.map((x) => <option key={x.vi}>{T(lang, x.vi, x.en)}</option>)}</select></Field>
+            <Field label={T(lang, 'Doanh thu 2025', '2025 revenue')} hint={T(lang, `Nhập số tuyệt đối theo ${currentCurrency}`, `Enter absolute amount in ${currentCurrency}`)}><input inputMode="numeric" value={revenue} onChange={(e) => setRevenue(formatNumberTyping(e.target.value))} /></Field>
+            <Field label="EBITDA margin (%)"><input inputMode="decimal" value={ebitda} onChange={(e) => setEbitda(formatNumberTyping(e.target.value, true))} /></Field>
+            <Field label={T(lang, 'Nhu cầu vốn/Giá chào', 'Capital sought / Ask')} hint={T(lang, `Cùng đơn vị với doanh thu: ${currentCurrency}`, `Same currency as revenue: ${currentCurrency}`)}><input inputMode="numeric" value={ask} onChange={(e) => setAsk(formatNumberTyping(e.target.value))} /></Field>
+            <Field label={T(lang, 'Tỷ lệ cổ phần (%)', 'Stake (%)')}><input inputMode="decimal" value={stake} onChange={(e) => setStake(formatNumberTyping(e.target.value, true))} /></Field>
+          </div>
+          <Field label={T(lang, 'Điểm nổi bật của doanh nghiệp', 'Business highlights')} wide hint={T(lang, 'Mỗi ý một dòng hoặc phân cách bằng dấu chấm phẩy.', 'One point per line or separated by semicolons.')}><textarea rows={4} value={highlights} onChange={(e) => setHighlights(e.target.value)} /></Field>
+          <Field label={T(lang, 'Lý do gọi vốn/chuyển nhượng', 'Reason for fundraising/sale')} wide><textarea rows={3} value={reason} onChange={(e) => setReason(e.target.value)} /></Field>
+        </section>
+
+        <section className="d68-register-section">
+          <h2>{T(lang, 'Ảnh & hồ sơ doanh nghiệp', 'Business images & profile files')}</h2>
+          <div className="d68-upload-grid">
+            <div className="d68-upload-box">
+              <div><b>{T(lang, 'Ảnh doanh nghiệp', 'Business images')}</b><p>{T(lang, 'Upload tối đa 3 ảnh. Admin sẽ làm sạch/ẩn thương hiệu nếu cần trước khi public.', 'Upload up to 3 images. Admin will sanitize/anonymize branding if needed before public display.')}</p></div>
+              <input type="file" accept="image/png,image/jpeg,image/webp,image/*" multiple onChange={(e) => { addImages(e.target.files); e.currentTarget.value = ''; }} />
+              <div className="d68-upload-list">{businessImages.map((item) => <div key={item.id} className="d68-upload-item"><span>{item.file.name}<small>{formatBytes(item.file.size)}</small></span><input value={item.displayName} onChange={(e) => updateAssetName('image', item.id, e.target.value)} placeholder={T(lang, 'Tên hiển thị của ảnh', 'Image display name')} /><button type="button" onClick={() => removeAsset('image', item.id)}>{T(lang, 'Xóa', 'Remove')}</button></div>)}{!businessImages.length ? <em>{T(lang, 'Chưa chọn ảnh.', 'No images selected.')}</em> : null}</div>
+            </div>
+            <div className="d68-upload-box">
+              <div><b>{T(lang, 'File Hồ sơ doanh nghiệp', 'Business profile files')}</b><p>{T(lang, 'Upload tối đa 3 file PDF/Word/PowerPoint/Excel. File mặc định bị khóa, chỉ mở theo duyệt kết nối.', 'Upload up to 3 PDF/Word/PowerPoint/Excel files. Files are locked by default and only unlock through approved connection workflow.')}</p></div>
+              <input type="file" accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx" multiple onChange={(e) => { addDocs(e.target.files); e.currentTarget.value = ''; }} />
+              <div className="d68-upload-list">{businessDocs.map((item) => <div key={item.id} className="d68-upload-item"><span>{item.file.name}<small>{formatBytes(item.file.size)}</small></span><input value={item.displayName} onChange={(e) => updateAssetName('doc', item.id, e.target.value)} placeholder={T(lang, 'Tên hiển thị của file', 'File display name')} /><button type="button" onClick={() => removeAsset('doc', item.id)}>{T(lang, 'Xóa', 'Remove')}</button></div>)}{!businessDocs.length ? <em>{T(lang, 'Chưa chọn file hồ sơ.', 'No profile files selected.')}</em> : null}</div>
+            </div>
+          </div>
+        </section>
+
+        <section className="d68-register-section">
+          <h2>{T(lang, 'Thông tin tài sản & nguồn số liệu', 'Assets & financial source')}</h2>
+          <Field label={T(lang, 'Tài sản hữu hình & vô hình DN sở hữu', 'Tangible & intangible assets owned')} wide hint={T(lang, 'VD: thiết bị, thương hiệu, IP, phần mềm, hợp đồng thuê, giấy phép, dữ liệu khách hàng...', 'Examples: equipment, brand, IP, software, leases, licenses, customer data...')}><textarea rows={3} value={assetsOwned} onChange={(e) => setAssetsOwned(e.target.value)} /></Field>
+          <div className="d68-form-grid">
+            <Field label={T(lang, 'Giá trị tài sản vật chất KHÔNG nằm trong giao dịch', 'Physical asset value excluded from transaction')} hint={T(lang, `Nhập số tuyệt đối theo ${currentCurrency}`, `Enter absolute amount in ${currentCurrency}`)}><input inputMode="numeric" value={excludedAssetValue} onChange={(e) => setExcludedAssetValue(formatNumberTyping(e.target.value))} /></Field>
+            <Field label={T(lang, 'Nguồn số liệu tài chính', 'Financial data source')}><select value={financialSource} onChange={(e) => setFinancialSource(e.target.value)}><option value="management_accounts">{T(lang, 'Số liệu quản trị nội bộ', 'Management accounts')}</option><option value="tax_report">{T(lang, 'Báo cáo thuế', 'Tax filings')}</option><option value="audited_financials">{T(lang, 'Báo cáo kiểm toán', 'Audited financials')}</option><option value="bank_statement">{T(lang, 'Sao kê ngân hàng / POS', 'Bank / POS statements')}</option><option value="estimate">{T(lang, 'Ước tính của chủ DN', 'Founder estimate')}</option></select></Field>
+          </div>
+          <div className={`d68-valuation-check d68-valuation-check--${valuationCheck.level}`}>
+            <div><span>{T(lang, 'Gợi ý kiểm tra định giá', 'Valuation sanity check')}</span><b>{valuationCheck.label}</b><p>{valuationCheck.message}</p></div>
+            <dl>
+              <div><dt>{T(lang, 'Định giá suy ra', 'Implied valuation')}</dt><dd>{valuationCheck.impliedValue ? moneyShort(valuationCheck.impliedValue, currentCurrency) : '—'}</dd></div>
+              <div><dt>Revenue multiple</dt><dd>{valuationCheck.revenueMultiple ? `${valuationCheck.revenueMultiple.toFixed(1)}×` : '—'}</dd></div>
+              <div><dt>EBITDA multiple</dt><dd>{valuationCheck.ebitdaMultiple ? `${valuationCheck.ebitdaMultiple.toFixed(1)}×` : '—'}</dd></div>
+            </dl>
+          </div>
+        </section>
+
+        <section className="d68-register-section d68-register-section--pricing">
+          <h2>{T(lang, 'Gói dịch vụ & thanh toán', 'Service package & payment')}</h2>
+          <div className="d68-pricing-cards">
+            {[{ key: 'standard' as BusinessPlan, price: standardPrice }, { key: 'featured' as BusinessPlan, price: featuredPrice }].map((item) => <button key={item.key} type="button" className={plan === item.key ? 'active' : ''} onClick={() => setPlan(item.key)}>
+              <span>{planText(item.key, lang)}</span>
+              <b>{money(item.price.total, item.price.currency)}</b>
+              <small>{item.price.termWeeks} {T(lang, 'tuần hiển thị', 'weeks listing')} · {item.price.proposalQuota} {T(lang, 'lượt đề xuất', 'proposal quota')}</small>
+              <em>{item.key === 'featured' ? T(lang, 'Ưu tiên thứ hạng & quota cao hơn', 'Higher ranking & quota') : T(lang, 'Hiển thị tiêu chuẩn sau khi duyệt', 'Standard listing after approval')}</em>
+            </button>)}
+          </div>
+          <div className="d68-payment-note">
+            <div><b>{T(lang, 'Thời gian dịch vụ', 'Service duration')}</b><span>{price.termWeeks} {T(lang, 'tuần kể từ khi Admin xác nhận thanh toán/kích hoạt.', 'weeks from Admin payment confirmation/activation.')}</span></div>
+            <div><b>{T(lang, 'Phương thức thanh toán', 'Payment methods')}</b><span>{T(lang, 'Chuyển khoản ngân hàng/VietQR/Sepay Beta; Admin xác nhận thủ công trước khi mở dashboard.', 'Bank transfer/VietQR/Sepay Beta; Admin manually confirms before dashboard access opens.')}</span></div>
+            <div><b>{T(lang, 'Gói đang chọn', 'Selected package')}</b><span>{planLabel} · {pricingSummary}</span></div>
+          </div>
+        </section>
+      </> : null}
+
+      {isInvestor ? <section className="d68-register-section">
         <h2>{T(lang, 'Tiêu chí đầu tư', 'Investment criteria')}</h2>
         <div className="d68-form-grid">
           <Field label={T(lang, 'Loại nhà đầu tư', 'Investor type')}><select value={invType} onChange={(e) => setInvType(e.target.value)}>{investorTypeOptions.map((x) => <option key={x.en}>{T(lang, x.vi, x.en)}</option>)}</select></Field>
           <Field label={T(lang, 'Giai đoạn', 'Stage')}><select value={stage} onChange={(e) => setStage(e.target.value)}>{stageOptions.map((x) => <option key={x.en}>{T(lang, x.vi, x.en)}</option>)}</select></Field>
-          <Field label={T(lang, 'Khoản đầu tư tối thiểu (USD)', 'Minimum ticket (USD)')}><input type="number" value={ticketMin} onChange={(e) => setTicketMin(e.target.value)} /></Field>
-          <Field label={T(lang, 'Khoản đầu tư tối đa (USD)', 'Maximum ticket (USD)')}><input type="number" value={ticketMax} onChange={(e) => setTicketMax(e.target.value)} /></Field>
+          <Field label={T(lang, 'Khoản đầu tư tối thiểu (USD)', 'Minimum ticket (USD)')}><input inputMode="numeric" value={ticketMin} onChange={(e) => setTicketMin(formatNumberTyping(e.target.value))} /></Field>
+          <Field label={T(lang, 'Khoản đầu tư tối đa (USD)', 'Maximum ticket (USD)')}><input inputMode="numeric" value={ticketMax} onChange={(e) => setTicketMax(formatNumberTyping(e.target.value))} /></Field>
           <Field label={T(lang, 'Website riêng (không public)', 'Private website (not public)')}><input value={website} onChange={(e) => setWebsite(e.target.value)} /></Field>
           <Field label={T(lang, 'Số điện thoại riêng/WhatsApp/Zalo', 'Private phone / WhatsApp / Zalo')}><div className="d68-phone-row"><select value={phoneIso} onChange={(e) => setPhoneIso(e.target.value)}>{countryOptions.map((c) => <option key={c.iso2} value={c.iso2}>{c.dial} · {c.iso2}</option>)}</select><input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder={T(lang, 'Số điện thoại', 'Phone number')} /></div></Field>
         </div>
-
         <div className="d68-field-group"><h3>{T(lang, 'Loại giao dịch quan tâm', 'Interested deal types')}</h3><div className="d68-chip-select">{investorDealOptions.map((x) => <button key={x.en} type="button" className={investorDealTypes.includes(normalizeInvestorDealForDb(x.en)) ? 'active' : ''} onClick={() => toggleInvestorDeal(x.en)}>{T(lang, x.vi, x.en)}</button>)}</div></div>
         <div className="d68-field-group"><h3>{T(lang, 'Khu vực quan tâm đầu tư', 'Preferred investment markets')}</h3><div className="d68-chip-select">{countryOptions.slice(0, 9).map((x) => <button key={x.iso2} type="button" className={preferredCountries.includes(x.iso2) ? 'active' : ''} onClick={() => togglePreferredCountry(x.iso2)}>{T(lang, x.vi, x.en)}</button>)}</div></div>
         <div className="d68-field-group"><h3>{T(lang, 'Ngành quan tâm', 'Preferred industries')}</h3><div className="d68-chip-select">{industryOptions.map((x) => <button key={x.vi} type="button" className={selectedIndustries.includes(x.vi) || selectedIndustries.includes(x.en) ? 'active' : ''} onClick={() => toggleIndustry(T(lang, x.vi, x.en))}>{T(lang, x.vi, x.en)}</button>)}</div></div>

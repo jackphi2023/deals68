@@ -70,3 +70,94 @@
   .d68-sort-label{display:flex!important;width:100%;align-items:center!important}
   .d68-sort-label select{flex:1}
 }
+
+
+/* Header/mobile hotfix — no checkbox runtime, close drawer after navigation. */
+@media(max-width:760px){
+  .d68-mdrawer.is-open{display:flex!important}
+  .d68-burger[aria-expanded="true"]{background:#0F2A4A!important;color:#fff!important;border-color:#0F2A4A!important}
+}
+@media(min-width:761px){
+  .d68-mdrawer.is-open{display:none!important}
+}
+
+/* /businesses mobile guard — keep filter/tabs/toolbar inside 375px width. */
+@media(max-width:700px){
+  .d68-businesses-page,
+  .d68-businesses-page *{min-width:0}
+  .d68-businesses-page .d68-txbar,
+  .d68-businesses-page .d68-txtabs{max-width:100%;overflow-x:auto}
+  .d68-businesses-page .d68-list-cols{width:100%;max-width:100%;padding-left:16px;padding-right:16px}
+  .d68-businesses-page .d68-sidebar{width:100%;max-width:100%;position:static;overflow:hidden}
+  .d68-businesses-page .d68-filter-scroll{max-height:none;overflow:visible}
+  .d68-businesses-page .d68-filter-check{display:grid!important;grid-template-columns:18px minmax(0,1fr)auto;align-items:center}
+  .d68-businesses-page .d68-filter-check em{min-width:24px;text-align:right}
+  .d68-businesses-page .d68-filter-select,
+  .d68-businesses-page .d68-businesses-toolbar select,
+  .d68-businesses-page .d68-sort-label select{width:100%;max-width:100%;min-width:0}
+  .d68-businesses-page .d68-view-toggle{width:100%}
+  .d68-businesses-page .d68-view-toggle button{flex:1}
+}
+
+/* Home reference alignment — Featured industries + investors cards. */
+.d68-home-industries{max-width:none;margin:0;background:#F7FAFC;border-top:1px solid #E7EDF3;border-bottom:1px solid #E7EDF3;padding:72px 0}
+.d68-home-industries .d68-home-container{max-width:1200px;margin:0 auto;padding:0 24px}
+.d68-home-industry-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:22px}
+.d68-home-industry-card{min-height:205px;border-radius:18px;background:#fff;border:1px solid #E7EDF3;box-shadow:0 1px 2px rgba(15,42,74,.04);overflow:hidden;text-decoration:none;color:inherit;display:flex;flex-direction:column}
+.d68-home-industry-card>div{height:116px;background:linear-gradient(135deg,#E7F6FD 0%,#FEF3D3 100%)!important;display:flex;align-items:center;justify-content:center}
+.d68-home-industry-card>div span{font-size:42px;filter:none}
+.d68-home-industry-card section{background:#fff;padding:18px 20px 20px;display:flex;flex-direction:column;gap:5px;flex:1}
+.d68-home-industry-card strong{font-size:17px;line-height:1.3;font-weight:800;color:#0F2A4A}
+.d68-home-industry-card p{font-size:13.5px;line-height:1.5;color:#64748B;margin:0}
+.d68-home-container.d68-home-section:has(.d68-home-investor-grid){padding-top:66px;padding-bottom:72px}
+.d68-home-investor-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:20px}
+.d68-home-investor-card{min-height:218px;border-radius:18px;padding:24px;background:#fff;border:1px solid #E7EDF3;box-shadow:0 1px 2px rgba(15,42,74,.04);display:flex;flex-direction:column;color:#0F2A4A;text-decoration:none;transition:transform .18s,box-shadow .18s}
+.d68-home-investor-card:hover{transform:translateY(-4px);box-shadow:0 18px 40px rgba(15,42,74,.10)}
+.d68-home-investor-card__icon{width:48px;height:48px;border-radius:14px;background:#E7F6FD;color:#1596cc;display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:16px}
+.d68-home-investor-card h3{font-size:17px;font-weight:800;line-height:1.35;margin:0 0 8px;color:#0F2A4A;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.d68-home-investor-card p{font-size:14px;line-height:1.45;color:#64748B;margin:0 0 18px;flex:1}
+.d68-home-investor-card a{display:inline-flex;align-items:center;justify-content:center;border-radius:10px;background:#0F2A4A;color:#fff;font-weight:800;padding:11px 14px;text-align:center}
+.d68-home-investor-card a:hover{background:#F2B51D;color:#0F2A4A}
+@media(max-width:980px){.d68-home-industry-grid,.d68-home-investor-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:620px){.d68-home-industries{padding:54px 0}.d68-home-industry-grid,.d68-home-investor-grid{grid-template-columns:1fr}.d68-home-container.d68-home-section:has(.d68-home-investor-grid){padding-top:52px;padding-bottom:56px}.d68-home-industry-card{min-height:0}.d68-home-investor-card{min-height:0}}
+
+/* Register Business reference alignment — richer profile intake without changing public guards. */
+.d68-register-page{align-items:flex-start;background:linear-gradient(180deg,#F7FAFC 0%,#EEF2F6 100%);padding-top:42px}
+.d68-register-card{max-width:1120px;border-radius:22px;padding:34px;overflow:hidden}
+.d68-register-form{gap:18px}
+.d68-register-section{background:#fff;border:1px solid #E7EDF3;border-radius:18px;padding:22px;margin-top:6px;box-shadow:0 1px 2px rgba(15,42,74,.03)}
+.d68-register-section h2{font-size:19px;font-weight:800;margin:0 0 16px;color:#0F2A4A}
+.d68-register-section--account{margin-top:0}
+.d68-auth-field small{font-size:12px;color:#94A3B8;line-height:1.4}
+.d68-upload-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.d68-upload-box{border:1px dashed #CBD5E1;background:#F8FAFC;border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:13px;min-width:0}
+.d68-upload-box b{display:block;color:#0F2A4A;font-size:15px;margin-bottom:4px}
+.d68-upload-box p{font-size:13px;line-height:1.5;color:#64748B;margin:0}
+.d68-upload-box>input[type=file]{background:#fff;border:1px solid #E2E8F0;border-radius:11px;padding:10px;width:100%;font-size:13px;color:#334155}
+.d68-upload-list{display:flex;flex-direction:column;gap:10px}
+.d68-upload-list em{font-size:13px;color:#94A3B8;font-style:normal}
+.d68-upload-item{display:grid;grid-template-columns:minmax(0,1fr) minmax(160px,.8fr) auto;gap:8px;align-items:center;background:#fff;border:1px solid #E7EDF3;border-radius:12px;padding:10px}
+.d68-upload-item span{min-width:0;font-size:12.5px;font-weight:800;color:#0F2A4A;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.d68-upload-item small{display:block;color:#94A3B8;font-weight:700;margin-top:2px}
+.d68-upload-item input{border:1px solid #E2E8F0;border-radius:9px;padding:9px 10px;font-size:13.5px;min-width:0;width:100%;font-family:inherit;color:#0F2A4A;background:#F7FAFC}
+.d68-upload-item button{border:0;background:#FDECEC;color:#B91C1C;border-radius:9px;font-weight:800;padding:9px 11px;cursor:pointer}
+.d68-valuation-check{margin-top:16px;border:1px solid #D5E0ED;background:#F8FAFC;border-radius:16px;padding:18px;display:grid;grid-template-columns:minmax(0,1.2fr) minmax(260px,.8fr);gap:18px;align-items:start}
+.d68-valuation-check span{display:inline-flex;font-size:11.5px;letter-spacing:.5px;text-transform:uppercase;font-weight:900;color:#1596cc;background:#E7F6FD;border-radius:999px;padding:6px 10px;margin-bottom:9px}
+.d68-valuation-check b{display:block;font-size:19px;color:#0F2A4A;margin-bottom:6px}
+.d68-valuation-check p{margin:0;color:#64748B;line-height:1.55;font-size:14px}
+.d68-valuation-check dl{display:grid;grid-template-columns:1fr;gap:8px;margin:0}
+.d68-valuation-check dl div{display:flex;justify-content:space-between;gap:12px;background:#fff;border:1px solid #E7EDF3;border-radius:11px;padding:10px 12px}
+.d68-valuation-check dt{color:#64748B;font-size:12.5px;font-weight:800}
+.d68-valuation-check dd{margin:0;color:#0F2A4A;font-weight:900;font-size:13.5px;text-align:right}
+.d68-valuation-check--high,.d68-valuation-check--watch{border-color:#F5DFA0;background:#FFFCF3}
+.d68-valuation-check--low{border-color:#BBF0CE;background:#F2FBF6}
+.d68-pricing-cards{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.d68-pricing-cards button{text-align:left;border:1px solid #E2E8F0;border-radius:16px;background:#fff;padding:18px;cursor:pointer;color:#0F2A4A;display:flex;flex-direction:column;gap:7px;box-shadow:0 1px 2px rgba(15,42,74,.04)}
+.d68-pricing-cards button.active{border-color:#1BADEA;background:#F5FBFE;box-shadow:0 12px 26px rgba(27,173,234,.12)}
+.d68-pricing-cards span{font-size:12px;text-transform:uppercase;letter-spacing:.5px;color:#1596cc;font-weight:900}
+.d68-pricing-cards b{font-size:24px;letter-spacing:-.5px;color:#0F2A4A}
+.d68-pricing-cards small,.d68-pricing-cards em{font-size:13px;color:#64748B;line-height:1.45;font-style:normal}
+.d68-payment-note{margin-top:14px;border:1px solid #E7EDF3;background:#F8FAFC;border-radius:16px;padding:16px;display:grid;gap:10px}
+.d68-payment-note div{display:grid;grid-template-columns:180px minmax(0,1fr);gap:12px;font-size:13.5px;line-height:1.5;color:#64748B}
+.d68-payment-note b{color:#0F2A4A}
+@media(max-width:780px){.d68-register-card{padding:22px;border-radius:18px}.d68-register-page{padding:24px 14px}.d68-register-section{padding:18px}.d68-upload-grid,.d68-pricing-cards,.d68-valuation-check{grid-template-columns:1fr}.d68-upload-item{grid-template-columns:1fr}.d68-upload-item button{width:100%}.d68-payment-note div{grid-template-columns:1fr;gap:4px}}
