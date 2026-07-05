@@ -1,5 +1,5 @@
 import { Route, Routes, Navigate, useLocation } from 'react-router-dom';
-import { lazy, Suspense, useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import Home from './pages/Home';
@@ -15,7 +15,7 @@ import Register from './pages/Register';
 import Valuation from './pages/Valuation';
 import ModuleScreen from './pages/ModuleScreen';
 import NotFound from './pages/NotFound';
-import type { Lang } from './lib/i18n';
+import { langFromPath, stripLangPrefix } from './lib/i18nRoutes';
 
 const BusinessDashboard = lazy(() => import('./pages/BusinessDashboard'));
 const InvestorDashboard = lazy(() => import('./pages/InvestorDashboard'));
@@ -38,66 +38,66 @@ function ScrollToTop() {
   return null;
 }
 
+function LegacyViRedirect() {
+  const location = useLocation();
+  return <Navigate to={`${stripLangPrefix(location.pathname)}${location.search || ''}`} replace />;
+}
+
 export default function App(){
   const location = useLocation();
-  const [lang,setLang]=useState<Lang>(() => location.pathname.startsWith('/en') ? 'en' : 'vi');
-
-  useEffect(() => {
-    if (location.pathname === '/en' || location.pathname.startsWith('/en/')) setLang('en');
-    if (location.pathname === '/vi' || location.pathname.startsWith('/vi/')) setLang('vi');
-  }, [location.pathname]);
+  const lang = langFromPath(location.pathname);
 
   return <div data-lang={lang}>
     <ScrollToTop />
-    <Header lang={lang} setLang={setLang}/>
+    <Header lang={lang}/>
     <Suspense fallback={<RouteFallback/>}>
       <Routes>
-        <Route path="/" element={<Home lang={lang}/>}/>
-        <Route path="/businesses" element={<Businesses lang={lang}/>}/>
-        <Route path="/businesses/:slug" element={<BusinessDetail lang={lang}/>}/>
-        <Route path="/investors" element={<Investors lang={lang}/>}/>
-        <Route path="/investors/:code" element={<InvestorDetail lang={lang}/>}/>
-        <Route path="/pricing" element={<Pricing lang={lang}/>}/>
-        <Route path="/valuation" element={<Valuation lang={lang}/>}/>
-
-        <Route path="/vi" element={<Home lang="vi"/>}/>
-        <Route path="/en" element={<Home lang="en"/>}/>
-        <Route path="/vi/businesses" element={<Businesses lang="vi"/>}/>
-        <Route path="/en/businesses" element={<Businesses lang="en"/>}/>
-        <Route path="/vi/businesses/:slug" element={<BusinessDetail lang="vi"/>}/>
-        <Route path="/en/businesses/:slug" element={<BusinessDetail lang="en"/>}/>
-        <Route path="/vi/investors" element={<Investors lang="vi"/>}/>
-        <Route path="/en/investors" element={<Investors lang="en"/>}/>
-        <Route path="/vi/investors/:code" element={<InvestorDetail lang="vi"/>}/>
-        <Route path="/en/investors/:code" element={<InvestorDetail lang="en"/>}/>
-        <Route path="/vi/pricing" element={<Pricing lang="vi"/>}/>
-        <Route path="/en/pricing" element={<Pricing lang="en"/>}/>
-        <Route path="/vi/valuation" element={<Valuation lang="vi"/>}/>
-        <Route path="/en/valuation" element={<Valuation lang="en"/>}/>
-        <Route path="/vi/about" element={<About lang="vi"/>}/>
-        <Route path="/en/about" element={<About lang="en"/>}/>
-        <Route path="/vi/terms" element={<Terms lang="vi"/>}/>
-        <Route path="/en/terms" element={<Terms lang="en"/>}/>
-        <Route path="/vi/privacy" element={<Privacy lang="vi"/>}/>
-        <Route path="/en/privacy" element={<Privacy lang="en"/>}/>
-        <Route path="/vi/contact" element={<Contact lang="vi"/>}/>
-        <Route path="/en/contact" element={<Contact lang="en"/>}/>
-        <Route path="/vi/partners" element={<MarketPartner lang="vi"/>}/>
-        <Route path="/en/partners" element={<MarketPartner lang="en"/>}/>
-        <Route path="/vi/market-partner" element={<MarketPartner lang="vi"/>}/>
-        <Route path="/en/market-partner" element={<MarketPartner lang="en"/>}/>
-        <Route path="/vi/login" element={<Login lang="vi"/>}/>
-        <Route path="/en/login" element={<Login lang="en"/>}/>
-        <Route path="/vi/forgot-password" element={<ForgotPassword lang="vi"/>}/>
-        <Route path="/en/forgot-password" element={<ForgotPassword lang="en"/>}/>
-
-        <Route path="/login" element={<Login lang={lang}/>}/>
-        <Route path="/admin/login" element={<Login lang={lang}/>}/>
-        <Route path="/forgot-password" element={<ForgotPassword lang={lang}/>}/>
-        <Route path="/reset-password" element={<ResetPassword/>}/>
-        <Route path="/register/:role" element={<Register/>}/>
+        {/* Vietnamese canonical routes: no prefix */}
+        <Route path="/" element={<Home lang="vi"/>}/>
+        <Route path="/businesses" element={<Businesses lang="vi"/>}/>
+        <Route path="/businesses/:slug" element={<BusinessDetail lang="vi"/>}/>
+        <Route path="/investors" element={<Investors lang="vi"/>}/>
+        <Route path="/investors/:code" element={<InvestorDetail lang="vi"/>}/>
+        <Route path="/pricing" element={<Pricing lang="vi"/>}/>
+        <Route path="/valuation" element={<Valuation lang="vi"/>}/>
+        <Route path="/login" element={<Login lang="vi"/>}/>
+        <Route path="/forgot-password" element={<ForgotPassword lang="vi"/>}/>
+        <Route path="/reset-password" element={<ResetPassword lang="vi"/>}/>
+        <Route path="/register/:role" element={<Register lang="vi"/>}/>
         <Route path="/register" element={<Navigate to="/pricing" replace/>}/>
+        <Route path="/about" element={<About lang="vi"/>}/>
+        <Route path="/terms" element={<Terms lang="vi"/>}/>
+        <Route path="/privacy" element={<Privacy lang="vi"/>}/>
+        <Route path="/contact" element={<Contact lang="vi"/>}/>
+        <Route path="/partners" element={<MarketPartner lang="vi"/>}/>
+        <Route path="/market-partner" element={<MarketPartner lang="vi"/>}/>
 
+        {/* English routes: /en prefix */}
+        <Route path="/en" element={<Home lang="en"/>}/>
+        <Route path="/en/businesses" element={<Businesses lang="en"/>}/>
+        <Route path="/en/businesses/:slug" element={<BusinessDetail lang="en"/>}/>
+        <Route path="/en/investors" element={<Investors lang="en"/>}/>
+        <Route path="/en/investors/:code" element={<InvestorDetail lang="en"/>}/>
+        <Route path="/en/pricing" element={<Pricing lang="en"/>}/>
+        <Route path="/en/valuation" element={<Valuation lang="en"/>}/>
+        <Route path="/en/login" element={<Login lang="en"/>}/>
+        <Route path="/en/forgot-password" element={<ForgotPassword lang="en"/>}/>
+        <Route path="/en/reset-password" element={<ResetPassword lang="en"/>}/>
+        <Route path="/en/register/:role" element={<Register lang="en"/>}/>
+        <Route path="/en/register" element={<Navigate to="/en/pricing" replace/>}/>
+        <Route path="/en/about" element={<About lang="en"/>}/>
+        <Route path="/en/terms" element={<Terms lang="en"/>}/>
+        <Route path="/en/privacy" element={<Privacy lang="en"/>}/>
+        <Route path="/en/contact" element={<Contact lang="en"/>}/>
+        <Route path="/en/partners" element={<MarketPartner lang="en"/>}/>
+        <Route path="/en/market-partner" element={<MarketPartner lang="en"/>}/>
+
+        {/* Deprecated /vi routes redirect to Vietnamese canonical URLs */}
+        <Route path="/vi" element={<Navigate to="/" replace/>}/>
+        <Route path="/vi/*" element={<LegacyViRedirect/>}/>
+
+        {/* App/private routes stay unprefixed */}
+        <Route path="/admin/login" element={<Login lang={lang}/>}/>
         <Route path="/dashboard/business" element={<BusinessDashboard/>}/>
         <Route path="/dashboard/business/*" element={<BusinessDashboard/>}/>
         <Route path="/dashboard/investor" element={<InvestorDashboard/>}/>
@@ -105,7 +105,6 @@ export default function App(){
         <Route path="/admin" element={<Admin/>}/>
         <Route path="/admin/*" element={<Admin/>}/>
 
-        <Route path="/about" element={<About lang={lang}/>}/>
         <Route path="/how-it-works" element={<ModuleScreen/>}/>
         <Route path="/businesses/featured" element={<ModuleScreen/>}/>
         <Route path="/businesses/fundraising" element={<ModuleScreen/>}/>
@@ -118,14 +117,8 @@ export default function App(){
         <Route path="/pricing/investor" element={<ModuleScreen/>}/>
         <Route path="/valuation/rules" element={<ModuleScreen/>}/>
         <Route path="/faq" element={<ModuleScreen/>}/>
-        <Route path="/contact" element={<Contact lang={lang}/>}/>
-        <Route path="/terms" element={<Terms lang={lang}/>}/>
-        <Route path="/privacy" element={<Privacy lang={lang}/>}/>
-        <Route path="/partners" element={<MarketPartner lang={lang}/>}/>
-        <Route path="/market-partner" element={<MarketPartner lang={lang}/>}/>
         <Route path="/localization" element={<ModuleScreen/>}/>
         <Route path="/market-intelligence" element={<ModuleScreen/>}/>
-
         <Route path="/dashboard/advisor/profile" element={<ModuleScreen/>}/>
         <Route path="/dashboard/advisor/clients" element={<ModuleScreen/>}/>
         <Route path="/dashboard/advisor/opportunities" element={<ModuleScreen/>}/>
@@ -141,7 +134,6 @@ export default function App(){
         <Route path="/dashboard/affiliate/conversions" element={<Navigate to="/dashboard/market-partner/conversions" replace/>}/>
         <Route path="/dashboard/affiliate/payouts" element={<Navigate to="/dashboard/market-partner/payouts" replace/>}/>
         <Route path="/dashboard/affiliate/settings" element={<Navigate to="/dashboard/market-partner/settings" replace/>}/>
-
         <Route path="/checkout" element={<ModuleScreen/>}/>
         <Route path="/payment/pending" element={<ModuleScreen/>}/>
         <Route path="/payment/success" element={<ModuleScreen/>}/>

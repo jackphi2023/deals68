@@ -1,34 +1,22 @@
 /* ============================================================
    Deals68 — CSS ENTRY DUY NHẤT (import 1 lần trong main.tsx)
-   Thứ tự layer = thứ tự ưu tiên tăng dần. Rule ở layer sau
-   LUÔN thắng layer trước, bất kể specificity => không cần
-   !important, không còn "style cũ lẫn style mới".
-
-   d68-legacy      : CSS thiết kế cũ (sẽ xóa dần)
-   d68-base        : design system handoff (app.css)
-   d68-components  : trích xuất tự động từ ui-reference (class có tên)
-   d68-utilities   : trích xuất tự động (inline style vô danh)
-   d68-overrides   : patch tay tạm thời (mục tiêu: rỗng)
-
-   QUY TẮC CHO DEV:
-   1. KHÔNG thêm CSS ngoài các file dưới đây.
-   2. KHÔNG dùng !important (layer đã lo thứ tự thắng/thua).
-   3. KHÔNG sửa 3 file trong reference/ bằng tay — sửa design ở
-      nhánh ui-reference rồi chạy: npm run extract:reference
+   SPEC v1.3: CSS page ports go through this file, no random CSS files.
    ============================================================ */
 @layer d68-legacy, d68-base, d68-components, d68-utilities, d68-overrides;
 
 @import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap');
-
-/* Biến toàn cục — nằm ngoài layer, mọi layer đều đọc được */
 @import './design-tokens.css';
-
-@import './legacy.css';                       /* tự bọc @layer d68-legacy */
-@import './app.css' layer(d68-base);          /* handoff design system    */
-@import './reference/d68-page-styles.css';    /* tự bọc @layer d68-components */
-@import './reference/d68-components.css';     /* tự bọc @layer d68-components */
-@import './reference/d68-utilities.css';      /* tự bọc @layer d68-utilities  */
-@import './overrides.css';                    /* tự bọc @layer d68-overrides  */
-@import './pages/businesses.css' layer(d68-overrides);        /* pilot port: /businesses */
-@import './pages/home.css' layer(d68-overrides);              /* pilot port: / */
-@import './pages/business-detail.css' layer(d68-overrides);   /* pilot port: /businesses/:slug */
+@import './legacy.css';
+@import './app.css' layer(d68-base);
+@import './reference/d68-page-styles.css';
+@import './reference/d68-components.css';
+@import './reference/d68-utilities.css';
+@import './overrides.css';
+@import './pages/businesses.css' layer(d68-overrides);
+@import './pages/home.css' layer(d68-overrides);
+@import './pages/business-detail.css' layer(d68-overrides);
+@import './pages/investors.css' layer(d68-overrides);
+@import './pages/investor-detail.css' layer(d68-overrides);
+@import './pages/pricing.css' layer(d68-overrides);
+@import './pages/valuation.css' layer(d68-overrides);
+@import './pages/auth.css' layer(d68-overrides);

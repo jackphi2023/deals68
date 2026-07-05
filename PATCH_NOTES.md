@@ -1,76 +1,46 @@
-# Deals68 beta-reference — Baseline + Business Detail port patch
+# Deals68 beta-reference patch — Pricing / Valuation / Auth + Home/Nav fixes
 
-## Mục tiêu
-Patch này gộp baseline hardening Home + /businesses trước đó và thêm Business Detail để deploy/test chung một lần trên Netlify branch `beta-reference`.
+Scope following Spec v1.3:
 
-## File trong patch
-- `src/lib/data.ts`
-- `src/pages/Home.tsx`
-- `src/pages/Businesses.tsx`
-- `src/pages/BusinessDetail.tsx`
-- `src/styles/index.css`
-- `src/styles/pages/home.css`
-- `src/styles/pages/business-detail.css`
+- Fix i18n public route standard:
+  - VI canonical: `/`, `/businesses`, `/investors`, `/pricing`, `/valuation`, `/login`, `/register/...`
+  - EN canonical: `/en`, `/en/businesses`, `/en/investors`, `/en/pricing`, `/en/valuation`, `/en/login`, `/en/register/...`
+  - Deprecated `/vi/...` redirects to VI canonical.
+- Header language switch uses React Router navigation, not full browser reload.
+- Header nav links keep EN prefix when user is in EN.
+- Navigation logo uses transparent SVG: `public/assets/logo-nav.svg`.
+- Home stats third box now displays live public total deal value from Supabase active/visible businesses, not “Ẩn danh”.
+- Home featured industries styling aligned closer to UI Reference: white background, tile grid, gradient image area, note text.
+- Port/baseline pages:
+  - Pricing
+  - Valuation
+  - Register business/investor/advisor
+  - Login
+  - Forgot password
+  - Reset password
+  - Investors / Investor Detail included to ensure i18n route patch is complete if previous commit did not include it.
 
-## Business Detail — phạm vi sửa
-- Port lại `/businesses/:slug` theo block order của `ui-reference/Deals68 Business Detail.dc.html`:
-  - breadcrumb
-  - status badges + title + lead
-  - image slider/thumbnail
-  - key facts grid
-  - highlights
-  - business profile
-  - financials table
-  - documents locked/public state
-  - disclaimer
-  - transaction sidebar
-  - connect card / locked fields
-  - verification card
-  - similar businesses
-  - FAQ
-- Dùng CSS class riêng trong `src/styles/pages/business-detail.css`, không dùng inline redesign cũ.
-- Data lấy qua:
-  - `getBusinessBySlug(slug)`
-  - `getBusinessDetailAssets(b.id, { publicOnly: true })`
-  - `listBusinesses()` cho similar businesses.
-- Không render private fields: company_name_private, owner_id, financial_input, pending_changes_json, private contact, file_path, image_path.
-- Deal type render theo VI/EN, không để raw English như `asset transfer/fundraise` trên UI tiếng Việt.
+Files included:
+- public/assets/logo-nav.svg
+- src/lib/i18nRoutes.ts
+- src/lib/publicMetrics.ts
+- src/App.tsx
+- src/components/Header.tsx
+- src/pages/Home.tsx
+- src/pages/Investors.tsx
+- src/pages/InvestorDetail.tsx
+- src/pages/Pricing.tsx
+- src/pages/Valuation.tsx
+- src/pages/Register.tsx
+- src/pages/Login.tsx
+- src/pages/ForgotPassword.tsx
+- src/pages/ResetPassword.tsx
+- src/styles/index.css
+- src/styles/pages/home.css
+- src/styles/pages/investors.css
+- src/styles/pages/investor-detail.css
+- src/styles/pages/pricing.css
+- src/styles/pages/valuation.css
+- src/styles/pages/auth.css
 
-## Baseline hardening giữ lại từ patch trước
-- Home business cards dùng class riêng, không dùng `.d68-home-role-card`.
-- Home không fallback public slug sang `username`.
-- `/businesses` map nhãn deal type VI/EN.
-- `data.ts` bỏ fallback `row.username || row.id` trong public slug.
-- `data.ts` mở rộng synonym filter dealType nhưng giữ public guard.
-
-## Không đụng tới
-- Investors
-- Investor Detail
-- Pricing / Valuation
-- Dashboards
-- Admin
-- Static pages
-- Supabase schema/migrations
-- Netlify config
-
-## Commit message đề xuất
-`feat(beta-reference): port business detail and harden public baseline`
-
-## Test sau deploy
-- `/`
-- `/en`
-- `/businesses`
-- `/en/businesses`
-- `/businesses/<slug thật>`
-- `/en/businesses/<slug thật>`
-
-Checklist:
-- Home business cards không vỡ.
-- `/businesses` tiếng Việt không còn raw deal_type tiếng Anh.
-- Business Detail không trắng, không vỡ layout 1440/768/375.
-- Business Detail không lộ tên DN thật/private fields.
-- Image/detail/docs chỉ hiện public/sanitized/locked states.
-- Interest/request data nếu chưa login redirect đúng login.
-
-## Rollback
-Revert commit vừa upload trên branch `beta-reference` hoặc thay lại các file từ commit trước đó.
+No Dashboard/Admin/Supabase schema changes.

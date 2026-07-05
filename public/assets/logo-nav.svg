@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="210" height="48" viewBox="0 0 210 48" fill="none" role="img" aria-label="Deals68.com">
+  <rect width="210" height="48" fill="transparent"/>
+  <g transform="translate(2 6)">
+    <rect x="0" y="0" width="36" height="36" rx="10" fill="#0F2A4A"/>
+    <path d="M9 25.5h18" stroke="#F2B51D" stroke-width="3" stroke-linecap="round"/>
+    <path d="M11 23l5.2-7 4.6 3.9L27 10" stroke="#1BADEA" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <text x="48" y="29" font-family="Be Vietnam Pro, Inter, Arial, sans-serif" font-size="24" font-weight="800" letter-spacing="-.8" fill="#0F2A4A">Deals<tspan fill="#1BADEA">68</tspan><tspan font-size="14" font-weight="700" fill="#64748B">.com</tspan></text>
+</svg>
