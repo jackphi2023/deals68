@@ -226,3 +226,52 @@
 .d68-bizreg-options button:disabled{opacity:.58;cursor:not-allowed;background:#F8FAFC}.d68-bizreg-options button:disabled:hover{transform:none;box-shadow:0 1px 2px rgba(15,42,74,.04)}
 .d68-register-section .d68-auth-field--spaced textarea{min-height:104px}
 @media(max-width:620px){.d68-bizreg-options button{min-height:0}.d68-bizreg-promo{grid-template-columns:1fr}.d68-bizreg-promo button{padding:12px}}
+
+/* Front-end visual polish — Home UI Reference + Static hero brand band (2026-07-05)
+   Additive CSS only. Does not modify data/auth/dashboard/public guards. */
+.d68-home-industries{background:#fff!important;padding:68px 0 58px!important;border:0!important}
+.d68-home-industries .d68-home-title{margin-bottom:34px!important}
+.d68-home-industries .d68-home-title h2{font-size:34px!important;letter-spacing:-.8px!important;line-height:1.12!important;color:#0F2A4A!important;margin:0 0 12px!important;text-align:center!important}
+.d68-home-industries .d68-home-title p{font-size:16px!important;color:#64748B!important;line-height:1.55!important;text-align:center!important;margin:0 auto!important;max-width:620px!important}
+.d68-home-industry-grid{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:20px!important}
+.d68-home-industry-card{border:1px solid #E1EAF3!important;border-radius:13px!important;background:#fff!important;box-shadow:0 2px 6px rgba(15,42,74,.06)!important;overflow:hidden!important;min-height:196px!important;text-decoration:none!important;color:#0F2A4A!important;transition:transform .18s ease,box-shadow .18s ease!important}
+.d68-home-industry-card:hover{transform:translateY(-3px)!important;box-shadow:0 16px 34px rgba(15,42,74,.10)!important}
+.d68-home-industry-card>div{height:120px!important;border-radius:0!important;background:#FF7826!important;display:flex!important;align-items:center!important;justify-content:center!important}
+.d68-home-industry-card:nth-child(2)>div{background:#2DAFE3!important}
+.d68-home-industry-card:nth-child(3)>div{background:#6C6BEE!important}
+.d68-home-industry-card:nth-child(4)>div{background:#219B86!important}
+.d68-home-industry-card:nth-child(5)>div{background:#E3378B!important}
+.d68-home-industry-card:nth-child(6)>div{background:#2F72EA!important}
+.d68-home-industry-card:nth-child(7)>div{background:linear-gradient(135deg,#C95C00,#F49B00)!important}
+.d68-home-industry-card:nth-child(8)>div{background:#8D55EA!important}
+.d68-home-industry-card>div span{font-size:34px!important;line-height:1!important;filter:drop-shadow(0 5px 8px rgba(15,42,74,.12))!important}
+.d68-home-industry-card section{background:#fff!important;padding:17px 18px 18px!important;gap:5px!important}
+.d68-home-industry-card strong{font-size:16px!important;font-weight:900!important;line-height:1.28!important;color:#0F2A4A!important;letter-spacing:-.2px!important}
+.d68-home-industry-card p{font-size:13px!important;line-height:1.45!important;color:#64748B!important;margin:0!important}
+
+.d68-home-container.d68-home-section:has(.d68-home-investor-grid){padding-top:62px!important;padding-bottom:64px!important;background:#fff!important}
+.d68-home-container.d68-home-section:has(.d68-home-investor-grid) .d68-home-title--row{align-items:flex-end!important;margin-bottom:28px!important}
+.d68-home-container.d68-home-section:has(.d68-home-investor-grid) .d68-home-title h2{font-size:34px!important;letter-spacing:-.8px!important;line-height:1.14!important;color:#0F2A4A!important;margin-top:16px!important}
+.d68-home-container.d68-home-section:has(.d68-home-investor-grid) .d68-home-title>a{font-size:14px!important;font-weight:900!important;color:#1BADEA!important;white-space:nowrap!important}
+.d68-home-badge--blue{background:#DDF4FE!important;color:#1596cc!important;border-radius:999px!important;padding:8px 13px!important;letter-spacing:.7px!important;font-size:12px!important;font-weight:900!important}
+.d68-home-investor-grid{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:20px!important}
+.d68-home-investor-card{position:relative!important;min-height:272px!important;border:1px solid #E1EAF3!important;border-radius:16px!important;background:#fff!important;box-shadow:0 2px 6px rgba(15,42,74,.05)!important;padding:24px!important;color:#0F2A4A!important;text-decoration:none!important;display:flex!important;flex-direction:column!important;transition:transform .18s ease,box-shadow .18s ease!important}
+.d68-home-investor-card:hover{transform:translateY(-3px)!important;box-shadow:0 16px 34px rgba(15,42,74,.10)!important}
+.d68-home-investor-card::after{content:'✓';position:absolute;right:24px;top:40px;min-width:32px;height:24px;border-radius:8px;background:#E9F9EF;color:#16A34A;font-weight:900;font-size:13px;display:flex;align-items:center;justify-content:center;pointer-events:none}
+.d68-home-investor-card__icon{width:48px!important;height:48px!important;border-radius:12px!important;background:#EEF4FA!important;color:#1596cc!important;display:flex!important;align-items:center!important;justify-content:center!important;font-size:23px!important;margin:0 0 18px!important}
+.d68-home-investor-card h3{font-size:18px!important;font-weight:900!important;line-height:1.28!important;letter-spacing:-.2px!important;color:#0F2A4A!important;margin:0 54px 14px 0!important;min-height:46px!important}
+.d68-home-investor-card p{font-size:13.5px!important;line-height:1.7!important;color:#64748B!important;margin:0 0 18px!important;flex:1!important;font-weight:600!important}
+.d68-home-investor-card a{display:flex!important;align-items:center!important;justify-content:center!important;width:100%!important;min-height:40px!important;border-radius:10px!important;border:1px solid #E1EAF3!important;background:#fff!important;color:#0F2A4A!important;font-size:14px!important;font-weight:900!important;padding:10px 12px!important;text-align:center!important;text-decoration:none!important}
+.d68-home-investor-card:first-child a{border-color:#F2B51D!important;background:#F2B51D!important;color:#0F2A4A!important}
+.d68-home-investor-card a:hover{border-color:#0F2A4A!important;background:#0F2A4A!important;color:#fff!important}
+
+.d68-static-hero{background:linear-gradient(135deg,#1BADEA 0%,#1596cc 52%,#0F8FC4 100%)!important;border-bottom:0!important;color:#fff!important}
+.d68-static-hero__inner{text-align:center!important;padding-top:70px!important;padding-bottom:62px!important}
+.d68-static-eyebrow{background:rgba(255,255,255,.18)!important;color:#fff!important;border:1px solid rgba(255,255,255,.38)!important;box-shadow:0 8px 24px rgba(15,42,74,.10)!important}
+.d68-static-hero h1,.d68-static-hero p{color:#fff!important;text-align:center!important}
+.d68-static-hero h1{font-size:44px!important;line-height:1.1!important;text-shadow:0 2px 12px rgba(15,42,74,.15)!important}
+.d68-static-hero p{opacity:.96!important;max-width:820px!important}
+.d68-static-card strong{color:#F2B51D!important}
+
+@media(max-width:1040px){.d68-home-industry-grid,.d68-home-investor-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}.d68-home-container.d68-home-section:has(.d68-home-investor-grid) .d68-home-title h2,.d68-home-industries .d68-home-title h2{font-size:30px!important}}
+@media(max-width:620px){.d68-home-industries{padding:52px 0 44px!important}.d68-home-industry-grid,.d68-home-investor-grid{grid-template-columns:1fr!important;gap:16px!important}.d68-home-industry-card{min-height:0!important}.d68-home-industry-card>div{height:110px!important}.d68-home-investor-card{min-height:0!important;padding:22px!important}.d68-home-investor-card h3{min-height:0!important}.d68-home-container.d68-home-section:has(.d68-home-investor-grid){padding-top:50px!important;padding-bottom:52px!important}.d68-home-container.d68-home-section:has(.d68-home-investor-grid) .d68-home-title--row{align-items:flex-start!important}.d68-static-hero__inner{padding-top:52px!important;padding-bottom:46px!important}.d68-static-hero h1{font-size:32px!important}.d68-static-hero p{font-size:15.5px!important}}
