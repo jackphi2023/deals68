@@ -42,8 +42,8 @@ begin
     coalesce(nullif(profile_payload->>'country_iso2',''), 'VN'),
     coalesce(nullif(profile_payload->>'language_code',''), case when safe_role = 'investor' then 'en' else 'vi' end),
     coalesce(nullif(profile_payload->>'timezone',''), 'Asia/Ho_Chi_Minh'),
-    'payment_pending'::public.account_status,
-    false,
+    'pending_admin_review'::public.account_status,
+    true,
     nullif(profile_payload->>'phone_country_iso2',''),
     nullif(profile_payload->>'phone','')
   )

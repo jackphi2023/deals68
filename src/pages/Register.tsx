@@ -2,6 +2,7 @@ import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { createSignupBundle, uploadBusinessFile, uploadBusinessImage } from '../lib/data';
+import { supabase } from '../lib/supabase';
 import { slugify } from '../lib/format';
 import { calculatePricing, lookupPromo, normaliseRole, roleLabel, type BusinessPlan } from '../lib/pricing';
 import { toLocalizedPath } from '../lib/i18nRoutes';
@@ -371,17 +372,25 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
       });
 
       let uploadNote = '';
+      const { data: sessionData } = await supabase.auth.getSession().catch(() => ({ data: { session: null } } as any));
       if (isBusiness && bundle?.business_id && (businessImages.length || businessDocs.length)) {
-        const upload = await uploadPendingBusinessAssets(bundle.business_id, sr.user.id);
-        uploadNote = upload.errors.length
-          ? T(lang, ` Đã tạo hồ sơ; upload thành công ${upload.imageCount} ảnh và ${upload.fileCount} file. Một số file cần Admin kiểm tra lại: ${upload.errors.join('; ')}`, ` Profile created; uploaded ${upload.imageCount} images and ${upload.fileCount} files. Some files need Admin review: ${upload.errors.join('; ')}`)
-          : T(lang, ` Đã upload ${upload.imageCount} ảnh và ${upload.fileCount} file hồ sơ.`, ` Uploaded ${upload.imageCount} images and ${upload.fileCount} profile files.`);
+        if (sessionData?.session) {
+          const upload = await uploadPendingBusinessAssets(bundle.business_id, sr.user.id);
+          uploadNote = upload.errors.length
+            ? T(lang, ` Đã tạo hồ sơ; upload thành công ${upload.imageCount} ảnh và ${upload.fileCount} file. Một số file cần Admin kiểm tra lại: ${upload.errors.join('; ')}`, ` Profile created; uploaded ${upload.imageCount} images and ${upload.fileCount} files. Some files need Admin review: ${upload.errors.join('; ')}`)
+            : T(lang, ` Đã upload ${upload.imageCount} ảnh và ${upload.fileCount} file hồ sơ.`, ` Uploaded ${upload.imageCount} images and ${upload.fileCount} profile files.`);
+        } else {
+          uploadNote = T(lang, ' Sau khi xác thực OTP và vào Dashboard, Anh/Chị có thể upload lại ảnh/file tại tab Tài liệu/Ảnh.', ' After OTP verification and dashboard login, you can upload images/files again in the Documents/Images tabs.');
+        }
       }
 
       setMsgType('ok');
-      setMsg(T(lang, 'Anh/Chị đã tạo tài khoản thành công. Vui lòng đợi chúng tôi xác nhận, khởi tạo tài khoản và thông báo cho Anh/Chị.', 'Your business account has been created successfully. Please wait while we confirm, initialize the account and notify you.') + uploadNote);
+      setMsg(T(lang, 'Anh/Chị đã tạo tài khoản doanh nghiệp thành công. Hệ thống đã gửi mã OTP đến email. Đang chuyển sang trang đăng nhập để xác thực email.', 'Your business account has been created successfully. An OTP has been sent to your email. Redirecting to login for email verification.') + uploadNote);
       await signOut().catch(() => undefined);
-      setTimeout(() => navigate(toLocalizedPath('/', lang)), 12000);
+      const loginRole = isInvestor ? 'investor' : isBusiness ? 'business' : 'affiliate';
+      const nextPath = isInvestor ? '/dashboard/investor' : isBusiness ? '/dashboard/business' : '/dashboard/market-partner';
+      const loginPath = `/login?role=${loginRole}&email=${encodeURIComponent(email.trim())}&otp=1&signup=1&next=${encodeURIComponent(nextPath)}`;
+      setTimeout(() => navigate(toLocalizedPath(loginPath, lang), { replace: true }), 1500);
     } catch (err: any) {
       setMsgType('err');
       setMsg(err?.message || T(lang, 'Tài khoản đã tạo, nhưng hồ sơ/đơn thanh toán cần Admin kiểm tra lại.', 'Account created, but profile/payment order needs Admin review.'));

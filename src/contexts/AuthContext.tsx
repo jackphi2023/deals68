@@ -15,12 +15,14 @@ type Profile = {
   dashboard_login_enabled?: boolean;
 };
 
+type AuthResult = { error?: string; code?: string; status?: number; user?: User | null };
+
 type AuthContextValue = {
   user: User | null;
   profile: Profile | null;
   loading: boolean;
-  signIn: (emailOrUsername: string, password: string) => Promise<{ error?: string }>;
-  signUp: (role: Role, email: string, password: string, meta?: Partial<Profile>) => Promise<{ error?: string; user?: User | null }>;
+  signIn: (emailOrUsername: string, password: string) => Promise<AuthResult>;
+  signUp: (role: Role, email: string, password: string, meta?: Partial<Profile>) => Promise<AuthResult>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 };
@@ -36,6 +38,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { data, error } = await supabase.from('profiles').select('*').eq('id', uid).maybeSingle();
     if (error) console.error(error);
     setProfile(data as Profile | null);
+    return data as Profile | null;
   }
 
   async function refreshProfile() {
@@ -67,15 +70,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return data || input.trim();
   }
 
-  async function signIn(emailOrUsername: string, password: string) {
+  async function signIn(emailOrUsername: string, password: string): Promise<AuthResult> {
     const email = await resolveEmail(emailOrUsername);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) return { error: error.message };
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) {
+      const anyErr = error as any;
+      return { error: error.message, code: anyErr.code || anyErr.error_code, status: anyErr.status };
+    }
     await refreshProfile();
-    return {};
+    return { user: data.user };
   }
 
-  async function signUp(role: Role, email: string, password: string, meta: Partial<Profile> = {}) {
+  async function signUp(role: Role, email: string, password: string, meta: Partial<Profile> = {}): Promise<AuthResult> {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -90,11 +96,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       }
     });
-    if (error) return { error: error.message };
+    if (error) {
+      const anyErr = error as any;
+      return { error: error.message, code: anyErr.code || anyErr.error_code, status: anyErr.status };
+    }
 
-    // Profile/listing/payment are created by Register via create_signup_bundle RPC.
-    // This avoids the RLS failure that can occur immediately after signUp when
-    // Supabase has not yet attached an authenticated session.
+    // With Email OTP enabled, Supabase creates the user and sends the OTP but
+    // does not return a session until verifyOtp succeeds on /login.
     if (data.session?.user) {
       setUser(data.session.user);
       await loadProfile(data.session.user.id).catch(() => undefined);

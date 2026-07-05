@@ -214,3 +214,10 @@
 .d68-quality-panel strong{font-size:34px;color:#0F2A4A;display:block;margin-bottom:8px}.d68-quality-panel p{color:#64748B;line-height:1.65}.d68-quality-panel a{color:#1596cc;font-weight:900}.d68-quality-panel ul{display:grid;gap:8px;margin:0;padding:0;list-style:none}.d68-quality-panel li{border-radius:10px;padding:10px 12px;font-weight:800;font-size:13.5px}.d68-quality-panel li.ok{background:#E9F9EF;color:#15803D}.d68-quality-panel li.warn{background:#FEF3D3;color:#B8860B}
 .d68-doc-download{border:0;border-radius:10px;background:#0F2A4A;color:#fff;font-weight:900;padding:9px 12px;cursor:pointer;white-space:nowrap}.d68-doc-download.locked{background:#EEF2F6;color:#64748B;cursor:pointer}
 @media(max-width:780px){.d68-bizreg-options,.d68-bizreg-paygrid,.d68-bizreg-qrbox{grid-template-columns:1fr}.d68-bizreg-options em{margin-left:0;margin-top:7px}.d68-bizreg-summary strong{display:block}.d68-bizreg-summary strong b{display:block;margin-top:5px}.d68-doc-download{width:100%;margin-top:8px}.d68-detail-doc-row{align-items:flex-start;flex-wrap:wrap}.d68-detail-doc-row>div{flex-basis:calc(100% - 54px)}}
+
+/* Auth OTP flow — signup verification and reset-password OTP. */
+.d68-auth-otp-field input{font-size:22px!important;font-weight:900!important;letter-spacing:8px;text-align:center}
+.d68-auth-ghost{background:#fff;border:1px solid #E2E8F0;border-radius:11px;color:#0F2A4A;cursor:pointer;font-size:14px;font-weight:800;margin-top:0;padding:12px 13px;width:100%}
+.d68-auth-ghost:disabled{cursor:not-allowed;opacity:.55}
+.d68-auth-success--inline{text-align:left}
+@media(max-width:520px){.d68-auth-otp-field input{letter-spacing:5px}}
