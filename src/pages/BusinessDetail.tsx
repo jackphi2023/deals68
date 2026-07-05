@@ -1,32 +1,129 @@
 import { useEffect, useMemo, useState } from 'react';
+import type { ReactNode } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { getBusinessBySlug, getBusinessDetailAssets, getInvestorByOwner } from '../lib/data';
+import { getBusinessBySlug, getBusinessDetailAssets, getInvestorByOwner, listBusinesses } from '../lib/data';
 import { formatCompactMoney, percent } from '../lib/format';
 import { useAuth } from '../contexts/AuthContext';
 import type { Lang } from '../lib/i18n';
 
-const T = (lang: Lang, vi: string, en: string) => lang === 'en' ? en : vi;
+/**
+ * Business Detail (/businesses/:slug) — port theo ui-reference/Deals68 Business Detail.dc.html.
+ * SPEC v1.3 guardrails:
+ * - Chỉ đọc business public qua getBusinessBySlug(): visible=true, status=active, public_snapshot_json is not null.
+ * - Chỉ đọc assets publicOnly: files không lộ file_path; images public_visible + is_sanitized.
+ * - Không dùng username/fallback private route; không render private company/contact fields.
+ * - Không fabricate dữ liệu; field thiếu hiển thị empty/locked state production-safe.
+ */
+
+const T = (lang: Lang, vi: string, en: string) => (lang === 'en' ? en : vi);
 
 type Doc = { id?: string; file_name?: string; display_name?: string; file_type?: string; size_bytes?: number; category?: string; privacy_level?: string; created_at?: string };
 type Img = { id?: string; public_url?: string; display_title?: string; title?: string; is_hero?: boolean };
+type SimilarDeal = { id: string; slug: string; title: string; industry: string; city: string; revenue: string; ask: string; image: string | null };
+type FactRow = { label: string; value: string };
 
-function lines(v: any): string[] {
-  if (Array.isArray(v)) return v.filter(Boolean).map(String);
-  return String(v || '').split(/\n|;/).map((x) => x.trim()).filter(Boolean);
+function cleanText(value: any) {
+  return String(value || '').trim();
 }
-function money(v: any, cur: string) { return Number(v || 0) > 0 ? formatCompactMoney(v, cur) : 'TBD'; }
-function qualityLabel(lang: Lang, q: any) { const n = Number(q); if (!Number.isFinite(n) || q === null || q === undefined || q === '') return T(lang, 'Đang cập nhật', 'Pending'); return `${Math.round(n)}/100`; }
-function fileExt(d: Doc) { const name = d.file_name || ''; const fromName = name.includes('.') ? name.split('.').pop() : ''; const fromType = String(d.file_type || '').split('/').pop(); return String(fromName || fromType || 'file').toUpperCase(); }
-function fileSize(bytes?: number) { const n = Number(bytes || 0); if (!n) return ''; if (n > 1024 * 1024) return `${(n / 1024 / 1024).toFixed(1)} MB`; if (n > 1024) return `${Math.round(n / 1024)} KB`; return `${n} B`; }
+
+function lines(value: any): string[] {
+  if (Array.isArray(value)) return value.filter(Boolean).map(String).map((x) => x.trim()).filter(Boolean);
+  return String(value || '').split(/\n|;/).map((x) => x.trim()).filter(Boolean);
+}
+
+function money(lang: Lang, value: any, currency: string) {
+  return Number(value || 0) > 0 ? formatCompactMoney(value, currency || 'VND') : T(lang, 'Đang cập nhật', 'Pending');
+}
+
+function qualityLabel(lang: Lang, value: any) {
+  const n = Number(value);
+  if (!Number.isFinite(n) || value === null || value === undefined || value === '') return T(lang, 'Đang cập nhật', 'Pending');
+  return `${Math.round(n)}/100`;
+}
+
+function qualityShort(value: any) {
+  const n = Number(value);
+  if (!Number.isFinite(n) || value === null || value === undefined || value === '') return null;
+  return `${Math.round(n / 10).toFixed(1)} / 10`;
+}
+
+function fileExt(doc: Doc) {
+  const name = doc.file_name || doc.display_name || '';
+  const fromName = name.includes('.') ? name.split('.').pop() : '';
+  const fromType = String(doc.file_type || '').split('/').pop();
+  return String(fromName || fromType || 'file').slice(0, 5).toUpperCase();
+}
+
+function fileSize(bytes?: number) {
+  const n = Number(bytes || 0);
+  if (!n) return '';
+  if (n > 1024 * 1024) return `${(n / 1024 / 1024).toFixed(1)} MB`;
+  if (n > 1024) return `${Math.round(n / 1024)} KB`;
+  return `${n} B`;
+}
+
+function primaryIndustry(raw: any) {
+  return cleanText(raw).split(';').map((x) => x.trim()).filter(Boolean)[0] || '';
+}
+
+function dealKind(raw: any): 'asset' | 'fundraise' | 'loan' | 'partner' | 'sale' | 'other' {
+  const v = String(raw || '').toLowerCase();
+  if (v.includes('asset')) return 'asset';
+  if (v.includes('loan') || v.includes('debt') || v.includes('vay')) return 'loan';
+  if (v.includes('jv') || v.includes('joint') || v.includes('partner') || v.includes('đối tác')) return 'partner';
+  if (v.includes('fund') || v.includes('raise') || v.includes('invest') || v.includes('equity') || v.includes('gọi') || v.includes('vốn')) return 'fundraise';
+  if (v.includes('sale') || v.includes('transfer') || v.includes('m&a') || v.includes('acquisition') || v.includes('bán') || v.includes('chuyển')) return 'sale';
+  return 'other';
+}
+
+function dealLabel(lang: Lang, raw: any) {
+  const kind = dealKind(raw);
+  const fallback = cleanText(raw) || T(lang, 'Đang cập nhật', 'Pending');
+  const labels: Record<typeof kind, { vi: string; en: string }> = {
+    asset: { vi: 'Chuyển nhượng tài sản', en: 'Asset transfer' },
+    fundraise: { vi: 'Gọi vốn / Đầu tư', en: 'Fundraising / Investment' },
+    loan: { vi: 'Vay vốn', en: 'Business loan' },
+    partner: { vi: 'JV / Đối tác', en: 'JV / Partnership' },
+    sale: { vi: 'M&A / Chuyển nhượng', en: 'M&A / Business sale' },
+    other: { vi: fallback, en: fallback }
+  };
+  return T(lang, labels[kind].vi, labels[kind].en);
+}
+
+function askLabel(lang: Lang, raw: any) {
+  const kind = dealKind(raw);
+  if (kind === 'asset' || kind === 'sale') return T(lang, 'Giá chào', 'Asking price');
+  if (kind === 'loan') return T(lang, 'Nhu cầu vay', 'Loan sought');
+  if (kind === 'partner') return T(lang, 'Quy mô hợp tác', 'Partnership scope');
+  return T(lang, 'Nhu cầu vốn', 'Capital sought');
+}
+
+function normalizeSimilar(row: any, lang: Lang): SimilarDeal | null {
+  const slug = cleanText(row.slug);
+  if (!slug) return null;
+  const title = T(lang, row.title_vi || row.public_code || 'Hồ sơ doanh nghiệp ẩn danh', row.title_en || row.title_vi || row.public_code || 'Anonymous business profile');
+  return {
+    id: String(row.id || slug),
+    slug,
+    title,
+    industry: primaryIndustry(row.industry) || T(lang, 'Đang cập nhật', 'Pending'),
+    city: cleanText(row.city) || cleanText(row.country_iso2) || 'VN',
+    revenue: money(lang, row.revenue_2025, row.revenue_currency || 'VND'),
+    ask: money(lang, row.ask_amount, row.ask_currency || row.revenue_currency || 'VND'),
+    image: row.image_url || row.hero_image_url || null
+  };
+}
 
 export default function BusinessDetail({ lang }: { lang: Lang }) {
   const { slug = '' } = useParams();
   const { profile } = useAuth();
   const navigate = useNavigate();
+
   const [business, setBusiness] = useState<any>(null);
   const [docs, setDocs] = useState<Doc[]>([]);
   const [images, setImages] = useState<Img[]>([]);
+  const [similar, setSimilar] = useState<SimilarDeal[]>([]);
   const [activeImage, setActiveImage] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -34,53 +131,135 @@ export default function BusinessDetail({ lang }: { lang: Lang }) {
 
   useEffect(() => {
     let live = true;
+
     async function load() {
-      setLoading(true); setError(''); setBusiness(null); setDocs([]); setImages([]); setActiveImage(0);
+      setLoading(true);
+      setError('');
+      setMsg('');
+      setBusiness(null);
+      setDocs([]);
+      setImages([]);
+      setSimilar([]);
+      setActiveImage(0);
+
       try {
         const b = await getBusinessBySlug(slug);
         if (!live) return;
-        if (!b) { setError(T(lang, 'Không tìm thấy hồ sơ doanh nghiệp hoặc hồ sơ chưa được Admin duyệt công khai.', 'Business profile not found or not approved for public display.')); return; }
+
+        if (!b) {
+          setError(T(lang, 'Không tìm thấy hồ sơ doanh nghiệp hoặc hồ sơ chưa được Admin duyệt công khai.', 'Business profile not found or not approved for public display.'));
+          return;
+        }
+
         setBusiness(b);
-        const assets = await getBusinessDetailAssets(b.id, { publicOnly: true });
-        if (live) { setDocs(assets.files || []); setImages(assets.images || []); }
-      } catch (e: any) { if (live) setError(e?.message || T(lang, 'Không tải được hồ sơ.', 'Could not load profile.')); }
-      finally { if (live) setLoading(false); }
+
+        const assets = await getBusinessDetailAssets(b.id, { publicOnly: true }).catch(() => ({ files: [], images: [] }));
+        if (!live) return;
+        setDocs((assets.files || []) as Doc[]);
+        setImages((assets.images || []) as Img[]);
+
+        const industry = primaryIndustry(b.industry);
+        const related = await listBusinesses({ limit: 4, industry: industry || undefined, sort: 'featured' }).catch(() => []);
+        if (!live) return;
+        setSimilar((related || [])
+          .map((row: any) => normalizeSimilar(row, lang))
+          .filter((row: SimilarDeal | null): row is SimilarDeal => !!row && row.slug !== b.slug)
+          .slice(0, 3));
+      } catch (e: any) {
+        if (live) setError(e?.message || T(lang, 'Không tải được hồ sơ.', 'Could not load profile.'));
+      } finally {
+        if (live) setLoading(false);
+      }
     }
+
     load();
     return () => { live = false; };
   }, [slug, lang]);
 
-  const title = business ? T(lang, business.title_vi || business.public_code || 'Hồ sơ doanh nghiệp ẩn danh', business.title_en || business.title_vi || business.public_code || 'Anonymous business profile') : '';
-  const description = business ? T(lang, business.description_vi || business.highlights_vi || 'Hồ sơ đang được cập nhật từ bản Admin đã duyệt.', business.description_en || business.description_vi || 'Profile is being updated from the Admin-approved version.') : '';
-  const highlights = useMemo(() => business ? lines(lang === 'vi' ? business.highlights_vi : (business.highlights_en || business.highlights_vi)) : [], [business, lang]);
-  const overview = useMemo(() => business ? [description, ...lines(lang === 'vi' ? business.investment_reason_vi : (business.investment_reason_en || business.investment_reason_vi))].filter(Boolean) : [], [business, lang, description]);
+  const title = useMemo(() => {
+    if (!business) return '';
+    return T(lang, business.title_vi || business.public_code || 'Hồ sơ doanh nghiệp ẩn danh', business.title_en || business.title_vi || business.public_code || 'Anonymous business profile');
+  }, [business, lang]);
+
+  const description = useMemo(() => {
+    if (!business) return '';
+    return T(
+      lang,
+      business.description_vi || business.highlights_vi || 'Hồ sơ công khai đang được Admin cập nhật.',
+      business.description_en || business.description_vi || 'The public profile is being updated by Admin.'
+    );
+  }, [business, lang]);
+
+  const highlights = useMemo(() => {
+    if (!business) return [];
+    return lines(lang === 'vi' ? business.highlights_vi : (business.highlights_en || business.highlights_vi));
+  }, [business, lang]);
+
+  const profileBullets = useMemo(() => {
+    if (!business) return [];
+    const investmentReason = lines(lang === 'vi' ? business.investment_reason_vi : (business.investment_reason_en || business.investment_reason_vi));
+    const descLines = lines(lang === 'vi' ? business.description_vi : (business.description_en || business.description_vi));
+    return [...descLines, ...investmentReason].filter(Boolean);
+  }, [business, lang]);
+
   const heroImages = useMemo(() => {
-    const approved = images.filter((img) => img.public_url).map((img) => ({ url: img.public_url || '', title: img.display_title || img.title || '', isHero: !!img.is_hero }));
-    const fallback = business?.hero_image_url || business?.image_url ? [{ url: business.hero_image_url || business.image_url, title, isHero: true }] : [];
-    const merged = [...approved, ...fallback].filter((x, idx, arr) => x.url && arr.findIndex((y) => y.url === x.url) === idx);
+    const approved = images
+      .filter((img) => cleanText(img.public_url))
+      .map((img) => ({ url: cleanText(img.public_url), title: img.display_title || img.title || '', isHero: !!img.is_hero }));
+    const fallbackUrl = business?.hero_image_url || business?.image_url;
+    const fallback = fallbackUrl ? [{ url: String(fallbackUrl), title, isHero: true }] : [];
+    const merged = [...approved, ...fallback].filter((img, idx, arr) => img.url && arr.findIndex((x) => x.url === img.url) === idx);
     return merged.sort((a, b) => Number(b.isHero) - Number(a.isHero));
   }, [images, business, title]);
-  const hero = heroImages[activeImage] || heroImages[0];
-  const facts = business ? [
-    [T(lang, 'Mã hồ sơ', 'Profile code'), business.public_code || business.slug || '-'],
-    [T(lang, 'Ngành', 'Industry'), business.industry || T(lang, 'Đang cập nhật', 'Pending')],
-    [T(lang, 'Địa điểm', 'Location'), business.city || business.country_iso2 || T(lang, 'Đang cập nhật', 'Pending')],
-    [T(lang, 'Loại giao dịch', 'Transaction'), business.deal_type || T(lang, 'Đang cập nhật', 'Pending')],
-    [T(lang, 'Doanh thu năm', 'Annual revenue'), money(business.revenue_2025, business.revenue_currency || 'VND')],
-    ['EBITDA', business.ebitda_margin === null || business.ebitda_margin === undefined ? T(lang, 'Đang cập nhật', 'Pending') : percent(business.ebitda_margin)],
-    [T(lang, 'Nhu cầu vốn/giá chào', 'Capital sought / asking'), money(business.ask_amount, business.ask_currency || business.revenue_currency || 'VND')],
-    [T(lang, 'Tỷ lệ cổ phần', 'Stake'), business.stake_pct === null || business.stake_pct === undefined ? 'TBD' : percent(business.stake_pct)],
-    ['Business Quality Score', qualityLabel(lang, business.quality_score)],
-    [T(lang, 'Phiên bản public', 'Public version'), business.public_version ? `v${business.public_version}` : 'v1']
+
+  const activeHero = heroImages[activeImage] || heroImages[0];
+  const dealTypeLabel = business ? dealLabel(lang, business.deal_type) : '';
+  const ask = business ? money(lang, business.ask_amount, business.ask_currency || business.revenue_currency || 'VND') : '';
+  const revenue = business ? money(lang, business.revenue_2025, business.revenue_currency || 'VND') : '';
+  const stake = business?.stake_pct === null || business?.stake_pct === undefined ? T(lang, 'Đang cập nhật', 'Pending') : percent(business.stake_pct);
+  const quality = business ? qualityLabel(lang, business.quality_score) : '';
+  const qualityRating = business ? qualityShort(business.quality_score) : null;
+  const industry = business ? primaryIndustry(business.industry) || T(lang, 'Đang cập nhật', 'Pending') : '';
+  const location = business ? (cleanText(business.city) || cleanText(business.country_iso2) || T(lang, 'Đang cập nhật', 'Pending')) : '';
+
+  const facts: FactRow[] = business ? [
+    { label: T(lang, 'Mã hồ sơ', 'Profile code'), value: business.public_code || business.slug || '—' },
+    { label: T(lang, 'Ngành', 'Industry'), value: industry },
+    { label: T(lang, 'Địa điểm', 'Location'), value: location },
+    { label: T(lang, 'Loại giao dịch', 'Transaction'), value: dealTypeLabel },
+    { label: T(lang, 'Doanh thu năm', 'Annual revenue'), value: revenue },
+    { label: 'EBITDA', value: business.ebitda_margin === null || business.ebitda_margin === undefined ? T(lang, 'Đang cập nhật', 'Pending') : percent(business.ebitda_margin) },
+    { label: askLabel(lang, business.deal_type), value: ask },
+    { label: T(lang, 'Tỷ lệ cổ phần', 'Stake'), value: stake },
+    { label: 'Business Quality Score', value: quality },
+    { label: T(lang, 'Phiên bản public', 'Public version'), value: business.public_version ? `v${business.public_version}` : 'v1' }
   ] : [];
-  const publicDocs = docs.filter((d) => d.privacy_level === 'public');
-  const lockedDocs = docs.filter((d) => d.privacy_level !== 'public');
+
+  const financialRows = business ? [
+    { label: T(lang, 'Doanh thu', 'Revenue'), y1: '—', y2: '—', y3: revenue },
+    { label: 'EBITDA', y1: '—', y2: '—', y3: business.ebitda_margin === null || business.ebitda_margin === undefined ? '—' : percent(business.ebitda_margin) },
+    { label: askLabel(lang, business.deal_type), y1: '—', y2: '—', y3: ask },
+    { label: T(lang, 'Tỷ lệ cổ phần', 'Stake offered'), y1: '—', y2: '—', y3: business.stake_pct === null || business.stake_pct === undefined ? '—' : percent(business.stake_pct) }
+  ] : [];
+
+  const publicDocs = docs.filter((doc) => doc.privacy_level === 'public');
+  const lockedDocs = docs.filter((doc) => doc.privacy_level !== 'public');
 
   async function expressInterest() {
-    if (!profile) { navigate(`/login?next=/businesses/${slug}`); return; }
-    if (profile.role !== 'investor') { setMsg(T(lang, 'Chỉ tài khoản Nhà đầu tư được bày tỏ quan tâm.', 'Only Investor accounts can express interest.')); return; }
+    if (!profile) {
+      navigate(`/login?next=/businesses/${slug}`);
+      return;
+    }
+    if (profile.role !== 'investor') {
+      setMsg(T(lang, 'Chỉ tài khoản Nhà đầu tư được bày tỏ quan tâm.', 'Only Investor accounts can express interest.'));
+      return;
+    }
+
     const inv = await getInvestorByOwner(profile.id).catch(() => null);
-    if (!inv?.id || !business?.id) { setMsg(T(lang, 'Không tìm thấy hồ sơ nhà đầu tư.', 'Investor profile not found.')); return; }
+    if (!inv?.id || !business?.id) {
+      setMsg(T(lang, 'Không tìm thấy hồ sơ nhà đầu tư.', 'Investor profile not found.'));
+      return;
+    }
 
     let upErr: any = null;
     try {
@@ -103,43 +282,229 @@ export default function BusinessDetail({ lang }: { lang: Lang }) {
 
     setMsg(upErr ? upErr.message : T(lang, 'Đã ghi nhận quan tâm. Admin/Doanh nghiệp sẽ duyệt kết nối trước khi mở thêm dữ liệu.', 'Interest recorded. Admin/Business approval is required before additional data unlocks.'));
   }
+
   async function requestData() {
-    if (!profile) { navigate(`/login?next=/businesses/${slug}`); return; }
-    if (profile.role !== 'investor') { setMsg(T(lang, 'Chỉ tài khoản Nhà đầu tư được yêu cầu tài liệu.', 'Only Investor accounts can request documents.')); return; }
+    if (!profile) {
+      navigate(`/login?next=/businesses/${slug}`);
+      return;
+    }
+    if (profile.role !== 'investor') {
+      setMsg(T(lang, 'Chỉ tài khoản Nhà đầu tư được yêu cầu tài liệu.', 'Only Investor accounts can request documents.'));
+      return;
+    }
+
     const inv = await getInvestorByOwner(profile.id).catch(() => null);
-    if (!inv?.id || !business?.id) { setMsg(T(lang, 'Không tìm thấy hồ sơ nhà đầu tư.', 'Investor profile not found.')); return; }
-    const { error: reqErr } = await supabase.from('request_data').insert({ investor_id: inv.id, business_id: business.id, requested_items: ['IM', 'Financials'], note: 'Requested from public business detail page.', status: 'requested' });
+    if (!inv?.id || !business?.id) {
+      setMsg(T(lang, 'Không tìm thấy hồ sơ nhà đầu tư.', 'Investor profile not found.'));
+      return;
+    }
+
+    const { error: reqErr } = await supabase.from('request_data').insert({
+      investor_id: inv.id,
+      business_id: business.id,
+      requested_items: ['IM', 'Financials'],
+      note: 'Requested from public business detail page.',
+      status: 'requested'
+    });
     setMsg(reqErr ? reqErr.message : T(lang, 'Đã gửi yêu cầu tài liệu qua Deals68.', 'Data request sent via Deals68.'));
   }
 
-  if (loading) return <main style={{ maxWidth: 1180, margin: '0 auto', padding: '48px 24px' }}><div style={{ background: '#fff', border: '1px solid #E7EDF3', borderRadius: 18, padding: 32 }}>{T(lang, 'Đang tải bản public đã duyệt...', 'Loading approved public profile...')}</div></main>;
-  if (error || !business) return <main style={{ maxWidth: 920, margin: '0 auto', padding: '48px 24px' }}><div style={{ background: '#fff', border: '1px solid #E7EDF3', borderRadius: 18, padding: 32 }}><h1>{T(lang, 'Không hiển thị được hồ sơ', 'Profile unavailable')}</h1><p style={{ color: '#64748B' }}>{error}</p><Link to="/businesses" style={{ color: '#1596cc', fontWeight: 700 }}>← {T(lang, 'Quay lại danh sách', 'Back to businesses')}</Link></div></main>;
+  function sharePage() {
+    const url = typeof window !== 'undefined' ? window.location.href : '';
+    if (!url) return;
+    if (navigator.share) {
+      navigator.share({ title, url }).catch(() => undefined);
+      return;
+    }
+    navigator.clipboard?.writeText(url).then(() => setMsg(T(lang, 'Đã copy liên kết hồ sơ.', 'Profile link copied.'))).catch(() => undefined);
+  }
 
-  return <main style={{ background: '#F7FAFC' }}>
-    <section style={{ maxWidth: 1180, margin: '0 auto', padding: '28px 24px 60px' }}>
-      <div style={{ fontSize: 13, color: '#94A3B8', marginBottom: 18 }}><Link to="/">{T(lang, 'Trang chủ', 'Home')}</Link> › <Link to="/businesses">{T(lang, 'Doanh nghiệp', 'Businesses')}</Link> › <b style={{ color: '#475569' }}>{business.public_code || business.slug}</b></div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) 340px', gap: 26 }} className="d68-detail-cols">
-        <article style={{ background: '#fff', border: '1px solid #E7EDF3', borderRadius: 18, overflow: 'hidden' }}>
-          <div style={{ height: 390, background: '#EAF0F6', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94A3B8', fontWeight: 800 }}>{hero?.url ? <img src={hero.url} alt={hero.title || title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : T(lang, 'Ảnh doanh nghiệp đang cập nhật sau duyệt Admin', 'Business image pending Admin approval')}</div>
-          {heroImages.length > 1 ? <div style={{ display: 'flex', gap: 10, padding: 14, overflowX: 'auto', borderBottom: '1px solid #EEF2F6' }}>{heroImages.map((img, i) => <button key={`${img.url}-${i}`} onClick={() => setActiveImage(i)} style={{ width: 92, height: 62, borderRadius: 10, overflow: 'hidden', border: i === activeImage ? '2px solid #1BADEA' : '1px solid #E2E8F0', background: '#fff', padding: 0, cursor: 'pointer', flexShrink: 0 }}><img src={img.url} alt={img.title || title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /></button>)}</div> : null}
-          <div style={{ padding: 28 }}>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 14 }}><span style={pill('#E7F6FD','#1596cc')}>{business.industry || 'Industry TBD'}</span><span style={pill('#F1F5F9','#64748B')}>{business.deal_type || 'Transaction TBD'}</span><span style={pill('#FEF3D3','#8a6413')}>Quality: {qualityLabel(lang, business.quality_score)}</span></div>
-            <h1 style={{ fontSize: 30, lineHeight: 1.18, margin: '0 0 12px', letterSpacing: -.7 }}>{title}</h1>
-            <p style={{ color: '#64748B', lineHeight: 1.65, margin: '0 0 22px' }}>{description}</p>
-            <Section title={T(lang, 'Thông tin chính', 'Key facts')}><div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,minmax(0,1fr))', gap: 12 }} className="d68-form-2">{facts.map(([k, v]) => <Fact key={k} k={k} v={v} />)}</div></Section>
-            <Section title={T(lang, 'Điểm nổi bật', 'Highlights')}><ul style={{ margin: 0, paddingLeft: 20, color: '#334155', lineHeight: 1.7 }}>{highlights.length ? highlights.map((x, i) => <li key={i}>{x}</li>) : <li>{T(lang, 'Chưa có điểm nổi bật đã duyệt.', 'No approved highlights yet.')}</li>}</ul></Section>
-            <Section title={T(lang, 'Hồ sơ doanh nghiệp', 'Business profile')}><ul style={{ margin: 0, paddingLeft: 20, color: '#334155', lineHeight: 1.7 }}>{overview.length ? overview.map((x, i) => <li key={i}>{x}</li>) : <li>{T(lang, 'Chưa có mô tả chi tiết trong bản public.', 'No detailed public description yet.')}</li>}</ul></Section>
-            <Section title={T(lang, 'Danh sách file đã duyệt', 'Approved file list')}><DocList docs={publicDocs} title={T(lang, 'Công khai', 'Public')} empty={T(lang, 'Chưa có file công khai đã duyệt.', 'No approved public files yet.')} /><DocList docs={lockedDocs} title={T(lang, 'Khóa sau kết nối/NDA', 'Locked after connection/NDA')} empty={T(lang, 'Chưa có file khóa đã duyệt.', 'No approved locked files yet.')} /></Section>
-            <div style={{ background: '#FEF3D3', color: '#7a5c12', border: '1px solid #F5D98A', borderRadius: 14, padding: 16, fontSize: 13.5, lineHeight: 1.55 }}><b>{T(lang, 'Nguyên tắc hiển thị', 'Display rule')}:</b> {T(lang, 'Trang này chỉ hiển thị bản ẩn danh đã được Admin duyệt. User sửa dữ liệu sẽ không thay đổi trang public cho tới khi Admin duyệt phiên bản mới.', 'This page only displays the Admin-approved anonymous snapshot. User edits do not change the public page until Admin approves a new version.')}</div>
+  if (loading) {
+    return <main className="d68-business-detail-page"><div className="d68-detail-shell"><div className="d68-detail-loading">{T(lang, 'Đang tải bản public đã duyệt...', 'Loading approved public profile...')}</div></div></main>;
+  }
+
+  if (error || !business) {
+    return (
+      <main className="d68-business-detail-page">
+        <div className="d68-detail-shell d68-detail-shell--narrow">
+          <div className="d68-detail-empty">
+            <h1>{T(lang, 'Không hiển thị được hồ sơ', 'Profile unavailable')}</h1>
+            <p>{error}</p>
+            <Link to="/businesses">← {T(lang, 'Quay lại danh sách', 'Back to businesses')}</Link>
           </div>
-        </article>
-        <aside style={{ display: 'flex', flexDirection: 'column', gap: 16 }}><div style={{ background: '#0F2A4A', color: '#fff', borderRadius: 18, padding: 24 }}><div style={{ color: '#9db4cc', fontWeight: 700, fontSize: 13, marginBottom: 8 }}>{T(lang, 'Tóm tắt giao dịch', 'Transaction summary')}</div><h2 style={{ margin: '0 0 8px', color: '#F2B51D' }}>{money(business.ask_amount, business.ask_currency || business.revenue_currency || 'VND')}</h2><p style={{ color: '#c6d5e6', margin: 0 }}>{business.stake_pct ? `${percent(business.stake_pct)} · ` : ''}{business.deal_type || 'Transaction TBD'}</p><button onClick={expressInterest} style={sideBtn('#F2B51D', '#0F2A4A')}>{T(lang, 'Bày tỏ quan tâm', 'Express interest')}</button><button onClick={requestData} style={{ ...sideBtn('transparent', '#fff'), border: '1px solid rgba(255,255,255,.2)', marginTop: 10 }}>{T(lang, 'Yêu cầu tài liệu', 'Request documents')}</button></div><div style={{ background: '#fff', border: '1px solid #E7EDF3', borderRadius: 18, padding: 20 }}><h3 style={{ marginTop: 0 }}>Business Quality Score</h3><div style={{ fontSize: 30, fontWeight: 900, color: '#0F2A4A' }}>{qualityLabel(lang, business.quality_score)}</div><p style={{ color: '#64748B', fontSize: 13, lineHeight: 1.55 }}>{T(lang, 'Điểm lấy từ snapshot Admin duyệt/database, không dùng điểm mặc định.', 'Score comes from the Admin-approved/database snapshot, never from a default value.')}</p></div>{msg ? <div style={{ background: '#FEF3D3', color: '#7a5c12', borderRadius: 14, padding: 14, fontSize: 13.5, lineHeight: 1.5 }}>{msg}</div> : null}</aside>
+        </div>
+      </main>
+    );
+  }
+
+  return (
+    <main className="d68-business-detail-page">
+      <div className="d68-detail-shell">
+        <nav className="d68-detail-breadcrumb">
+          <Link to="/">{T(lang, 'Trang chủ', 'Home')}</Link><span>›</span>
+          <Link to="/businesses">{T(lang, 'Doanh nghiệp', 'Businesses')}</Link><span>›</span>
+          <Link to={`/businesses?industry=${encodeURIComponent(industry)}`}>{industry}</Link><span>›</span>
+          <b>{business.public_code || business.slug}</b>
+        </nav>
+
+        <div className="d68-detail-cols">
+          <div className="d68-detail-main">
+            <div className="d68-detail-status-row">
+              <span className="d68-detail-status d68-detail-status--active"><i />{T(lang, 'Đang hiển thị', 'Active')}</span>
+              {business.plan === 'featured' ? <span className="d68-detail-status d68-detail-status--featured">★ {T(lang, 'Nổi bật', 'Featured')}</span> : null}
+              <span className="d68-detail-status d68-detail-status--verified">✓ {T(lang, 'Bản public đã duyệt', 'Approved public version')}</span>
+            </div>
+
+            <h1 className="d68-detail-h1">{title}</h1>
+            <p className="d68-detail-lead">{description}</p>
+
+            <section className="d68-detail-image-card" aria-label={T(lang, 'Hình ảnh doanh nghiệp', 'Business images')}>
+              <div className={`d68-detail-hero-media${activeHero?.url ? ' has-image' : ''}`}>
+                {activeHero?.url ? <img src={activeHero.url} alt={activeHero.title || title} /> : <div className="d68-detail-anon-visual"><b>📷 {T(lang, 'Hồ sơ ẩn danh', 'Anonymous listing')}</b><span>{T(lang, 'Ảnh public đang chờ Admin duyệt', 'Public image pending Admin approval')}</span></div>}
+                {heroImages.length > 1 ? <button type="button" className="d68-detail-slide d68-detail-slide--prev" onClick={() => setActiveImage((v) => (v <= 0 ? heroImages.length - 1 : v - 1))}>‹</button> : null}
+                {heroImages.length > 1 ? <button type="button" className="d68-detail-slide d68-detail-slide--next" onClick={() => setActiveImage((v) => (v + 1) % heroImages.length)}>›</button> : null}
+                <span className="d68-detail-slide-count">{heroImages.length ? `${activeImage + 1}/${heroImages.length}` : '0/0'}</span>
+              </div>
+              {heroImages.length > 1 ? <div className="d68-detail-thumbs">{heroImages.map((img, idx) => <button type="button" key={`${img.url}-${idx}`} className={idx === activeImage ? 'active' : ''} onClick={() => setActiveImage(idx)}><img src={img.url} alt={img.title || title} /></button>)}</div> : null}
+            </section>
+
+            <section className="d68-detail-facts" aria-label={T(lang, 'Thông tin chính', 'Key facts')}>
+              {facts.map((fact) => <Fact key={fact.label} label={fact.label} value={fact.value} />)}
+            </section>
+
+            <InfoSection title={T(lang, 'Điểm nổi bật', 'Highlights')}>
+              <BulletList items={highlights} empty={T(lang, 'Chưa có điểm nổi bật đã duyệt.', 'No approved highlights yet.')} />
+            </InfoSection>
+
+            <InfoSection title={T(lang, 'Hồ sơ doanh nghiệp', 'Business profile')}>
+              <BulletList items={profileBullets} empty={T(lang, 'Chưa có mô tả chi tiết trong bản public.', 'No detailed public description yet.')} />
+            </InfoSection>
+
+            <InfoSection title={T(lang, 'Tài chính', 'Financials')}>
+              <div className="d68-detail-table-wrap">
+                <table className="d68-detail-financials">
+                  <thead><tr><th>{T(lang, 'Chỉ tiêu', 'Metric')}</th><th>2023</th><th>2024</th><th>2025</th></tr></thead>
+                  <tbody>{financialRows.map((row) => <tr key={row.label}><td>{row.label}</td><td>{row.y1}</td><td>{row.y2}</td><td>{row.y3}</td></tr>)}</tbody>
+                </table>
+              </div>
+              <p className="d68-detail-note">{T(lang, 'Dấu “—” nghĩa là chưa có số liệu được Admin duyệt public. Không tự suy đoán số liệu thiếu.', 'A “—” means no Admin-approved public value is available. Missing data is not inferred.')}</p>
+            </InfoSection>
+
+            <InfoSection title={T(lang, 'Tài liệu', 'Documents')} badge={`🔒 ${T(lang, 'Mở khóa sau kết nối', 'Unlocks after connection')}`}>
+              <DocList docs={publicDocs} title={T(lang, 'Công khai', 'Public')} empty={T(lang, 'Chưa có file công khai đã duyệt.', 'No approved public files yet.')} />
+              <DocList docs={lockedDocs} title={T(lang, 'Khóa sau kết nối/NDA', 'Locked after connection/NDA')} empty={T(lang, 'Chưa có file khóa đã duyệt.', 'No approved locked files yet.')} locked />
+            </InfoSection>
+
+            <p className="d68-detail-disclaimer"><b>{T(lang, 'Miễn trừ trách nhiệm:', 'Disclaimer:')}</b> {T(lang, 'Deals68 là sàn kết nối bên bán với nhà đầu tư, người mua, bên cho vay và cố vấn. Thông tin là teaser public đã duyệt và không thay thế thẩm định độc lập trước giao dịch.', 'Deals68 is a marketplace connecting sell-sides with investors, buyers, lenders and advisors. This is an approved public teaser and does not replace independent due diligence before any transaction.')}</p>
+          </div>
+
+          <aside className="d68-detail-side">
+            <div className="d68-detail-summary-card">
+              <div className="d68-detail-summary-head">
+                <span>{T(lang, 'Loại giao dịch', 'Transaction')}</span>
+                <strong>{dealTypeLabel}</strong>
+              </div>
+              <div className="d68-detail-summary-body">
+                <span>{askLabel(lang, business.deal_type)}</span>
+                <b>{ask}</b>
+                <small>{business.ask_currency || business.revenue_currency ? `${T(lang, 'Tiền tệ', 'Currency')}: ${business.ask_currency || business.revenue_currency}` : T(lang, 'Tiền tệ đang cập nhật', 'Currency pending')}</small>
+                <div className="d68-detail-mini-metrics">
+                  <div><span>{T(lang, 'Doanh thu', 'Revenue')}</span><b>{revenue}</b></div>
+                  <div><span>{T(lang, 'Cổ phần', 'Stake')}</span><b>{stake}</b></div>
+                  <div><span>{T(lang, 'Xếp hạng Deals68', 'Deals68 rating')}</span><b>{qualityRating || quality}</b></div>
+                </div>
+              </div>
+            </div>
+
+            <div className="d68-detail-contact-card">
+              <h2>{T(lang, 'Kết nối với doanh nghiệp', 'Connect with the business')}</h2>
+              <p>{T(lang, 'Tên, số điện thoại, email và tài liệu nhạy cảm chỉ mở sau khi hai bên được duyệt kết nối.', 'Name, phone, email and sensitive documents unlock only after an approved connection.')}</p>
+              <LockedField label={T(lang, 'Tên doanh nghiệp', 'Business name')} masked="••••••" />
+              <LockedField label="Email" masked="••••••" />
+              <LockedField label={T(lang, 'Điện thoại', 'Phone')} masked="••••••" />
+              <button type="button" className="d68-detail-primary" onClick={expressInterest}>{T(lang, 'Bày tỏ quan tâm', 'Express interest')}</button>
+              <div className="d68-detail-secondary-row">
+                <button type="button" onClick={requestData}>🔒 {T(lang, 'Yêu cầu tài liệu', 'Request data')}</button>
+                <button type="button" onClick={sharePage}>↗ {T(lang, 'Chia sẻ', 'Share')}</button>
+              </div>
+              {msg ? <div className="d68-detail-msg">{msg}</div> : null}
+            </div>
+
+            <div className="d68-detail-verify-card">
+              <h3>{T(lang, 'Đã xác minh', 'Verified')}</h3>
+              <div>
+                <span>✓ {T(lang, 'Bản public đã duyệt', 'Approved public snapshot')}</span>
+                <span>✓ {T(lang, 'Hồ sơ ẩn danh', 'Anonymous profile')}</span>
+                {heroImages.length ? <span>✓ {T(lang, 'Ảnh public đã duyệt', 'Approved public images')}</span> : null}
+                {qualityRating ? <span>✓ {T(lang, 'Có điểm chất lượng', 'Quality scored')}</span> : null}
+              </div>
+              <p>{T(lang, 'Public page chỉ dùng dữ liệu active/visible/approved; thay đổi mới từ user cần Admin duyệt trước khi hiển thị.', 'This public page only uses active/visible/approved data; user edits require Admin approval before display.')}</p>
+            </div>
+          </aside>
+        </div>
       </div>
-    </section>
-  </main>;
+
+      <section className="d68-detail-similar-band">
+        <div className="d68-detail-shell">
+          <div className="d68-detail-section-head">
+            <h2>{T(lang, 'Xem doanh nghiệp tương tự', 'Similar businesses')}</h2>
+            <Link to={`/businesses?industry=${encodeURIComponent(industry)}`}>{T(lang, 'Xem tất cả cùng ngành', 'View all in this sector')} →</Link>
+          </div>
+          {similar.length ? <div className="d68-detail-sim-grid">{similar.map((deal, idx) => <SimilarCard key={deal.id} deal={deal} idx={idx} lang={lang} />)}</div> : <div className="d68-detail-sim-empty">{T(lang, 'Chưa có hồ sơ tương tự đang hiển thị.', 'No similar public listings are currently available.')}</div>}
+        </div>
+      </section>
+
+      <section className="d68-detail-faq-band">
+        <div className="d68-detail-faq-inner">
+          <h2>{T(lang, 'Câu hỏi thường gặp', 'Frequently asked questions')}</h2>
+          <Faq q={T(lang, 'Tôi có xem được tên doanh nghiệp thật không?', 'Can I see the real company name?')} a={T(lang, 'Không trên trang public. Tên thật và thông tin liên hệ chỉ mở theo quy trình kết nối/NDA được duyệt.', 'Not on the public page. Legal name and contacts unlock only through the approved connection/NDA workflow.')} />
+          <Faq q={T(lang, 'Số liệu tài chính có được đảm bảo không?', 'Are the financials guaranteed?')} a={T(lang, 'Đây là teaser public đã duyệt hiển thị và không thay thế thẩm định độc lập. Nhà đầu tư cần kiểm tra dữ liệu trong giai đoạn due diligence.', 'This is an approved public teaser and does not replace independent due diligence. Investors should verify data during diligence.')} />
+          <Faq q={T(lang, 'Làm sao yêu cầu thêm tài liệu?', 'How do I request more documents?')} a={T(lang, 'Đăng nhập bằng tài khoản nhà đầu tư, bày tỏ quan tâm hoặc gửi yêu cầu tài liệu ngay trên trang này.', 'Log in with an investor account, express interest or request documents from this page.')} />
+        </div>
+      </section>
+    </main>
+  );
 }
-function Section({ title, children }: { title: string; children: any }) { return <section style={{ marginTop: 26 }}><h2 style={{ fontSize: 20, margin: '0 0 14px' }}>{title}</h2>{children}</section>; }
-function Fact({ k, v }: { k: string; v: string }) { return <div style={{ border: '1px solid #EEF2F6', borderRadius: 12, padding: 13, background: '#FAFCFE' }}><div style={{ fontSize: 11.5, color: '#94A3B8', fontWeight: 800, textTransform: 'uppercase' }}>{k}</div><div style={{ fontSize: 14.5, fontWeight: 700, marginTop: 4 }}>{v}</div></div>; }
-function DocList({ docs, title, empty }: { docs: Doc[]; title: string; empty: string }) { return <div style={{ marginBottom: 16 }}><h3 style={{ fontSize: 15, margin: '0 0 8px' }}>{title}</h3>{docs.length ? <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>{docs.map((d) => <div key={d.id || d.file_name} style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', border: '1px solid #EEF2F6', background: '#fff', borderRadius: 10, padding: '10px 12px' }}><div><b>{d.display_name || `${d.category || 'Document'} file`}</b><div style={{ fontSize: 12, color: '#94A3B8' }}>{d.category || 'document'} · {fileExt(d)}{fileSize(d.size_bytes) ? ` · ${fileSize(d.size_bytes)}` : ''}</div></div><span style={{ fontSize: 12, color: '#64748B', fontWeight: 700 }}>{d.privacy_level || 'locked'}</span></div>)}</div> : <p style={{ color: '#94A3B8', margin: 0 }}>{empty}</p>}</div>; }
-function pill(background: string, color: string) { return { background, color, fontWeight: 800, fontSize: 12, padding: '5px 10px', borderRadius: 7 } as const; }
-function sideBtn(bg: string, color: string) { return { width: '100%', marginTop: 18, border: 'none', borderRadius: 10, padding: 12, background: bg, color, fontWeight: 800, cursor: 'pointer' } as const; }
+
+function InfoSection({ title, badge, children }: { title: string; badge?: string; children: ReactNode }) {
+  return <section className="d68-detail-card"><div className="d68-detail-card-head"><h2>{title}</h2>{badge ? <span>{badge}</span> : null}</div>{children}</section>;
+}
+
+function BulletList({ items, empty }: { items: string[]; empty: string }) {
+  if (!items.length) return <p className="d68-detail-muted">{empty}</p>;
+  return <ul className="d68-detail-bullets">{items.map((item, idx) => <li key={`${item}-${idx}`}>{item}</li>)}</ul>;
+}
+
+function Fact({ label, value }: FactRow) {
+  return <div className="d68-detail-fact"><span>{label}</span><b>{value}</b></div>;
+}
+
+function DocList({ docs, title, empty, locked = false }: { docs: Doc[]; title: string; empty: string; locked?: boolean }) {
+  return (
+    <div className="d68-detail-doc-group">
+      <h3>{title}</h3>
+      {docs.length ? <div className="d68-detail-doc-list">{docs.map((doc) => <div key={doc.id || doc.file_name || doc.display_name} className="d68-detail-doc-row"><span>{fileExt(doc)}</span><div><b>{doc.display_name || doc.file_name || doc.category || 'Document'}</b><small>{doc.category || 'document'}{fileSize(doc.size_bytes) ? ` · ${fileSize(doc.size_bytes)}` : ''}</small></div><em>{locked ? '🔒' : '✓'}</em></div>)}</div> : <p className="d68-detail-muted">{empty}</p>}
+    </div>
+  );
+}
+
+function LockedField({ label, masked }: { label: string; masked: string }) {
+  return <div className="d68-detail-locked"><span>🔒</span><b>{label}</b><em>{masked}</em></div>;
+}
+
+function SimilarCard({ deal, idx, lang }: { deal: SimilarDeal; idx: number; lang: Lang }) {
+  return (
+    <Link to={`/businesses/${deal.slug}`} className="d68-detail-sim-card">
+      <div className={`d68-detail-sim-media d68-detail-sim-media--${(idx % 6) + 1}`}>{deal.image ? <img src={deal.image} alt={deal.title} /> : <span>🔒 {T(lang, 'Ẩn danh', 'Anonymous')}</span>}<b>{deal.city}</b></div>
+      <div>
+        <span>{deal.industry}</span>
+        <h3>{deal.title}</h3>
+        <footer><div><small>{T(lang, 'Doanh thu', 'Revenue')}</small><strong>{deal.revenue}</strong></div><div><small>{T(lang, 'Nhu cầu', 'Ask')}</small><strong>{deal.ask}</strong></div></footer>
+      </div>
+    </Link>
+  );
+}
+
+function Faq({ q, a }: { q: string; a: string }) {
+  return <article className="d68-detail-faq"><h3>{q}</h3><p>{a}</p></article>;
+}

@@ -24,7 +24,7 @@ type SortMode = 'featured' | 'created' | 'ask' | 'revenue';
 type Deal = {
   id: string; slug: string; image: string | null;
   titleVi: string; titleEn: string; descVi: string; descEn: string;
-  city: string; industry: string; group: Tx; dealType: string;
+  city: string; industry: string; group: Tx; dealTypeVi: string; dealTypeEn: string;
   revenue: string; ask: string; ebitda: string;
   quality: number | null; featured: boolean;
 };
@@ -39,6 +39,27 @@ function normalizeGroup(raw?: string | null): Tx {
   return 'invest';
 }
 const TX_DB: Record<Exclude<Tx, 'all'>, string> = { sale: 'sale', invest: 'fundrais', loan: 'loan', jv: 'partner' };
+
+function dealTypeLabels(raw?: string | null) {
+  const tokens = String(raw || '')
+    .split(/[;,/|]+/)
+    .map((x) => x.trim().toLowerCase())
+    .filter(Boolean);
+  const vi: string[] = [];
+  const en: string[] = [];
+  const push = (v: string, e: string) => { if (!vi.includes(v)) vi.push(v); if (!en.includes(e)) en.push(e); };
+
+  tokens.forEach((v) => {
+    if (v.includes('asset') || v.includes('transfer') || v.includes('chuyển nhượng tài sản')) push('Chuyển nhượng tài sản', 'Asset transfer');
+    else if (v.includes('fund') || v.includes('raise') || v.includes('invest') || v.includes('gọi') || v.includes('vốn')) push('Gọi vốn', 'Fundraise');
+    else if (v.includes('loan') || v.includes('debt') || v.includes('vay')) push('Vay vốn', 'Debt financing');
+    else if (v.includes('jv') || v.includes('joint') || v.includes('partner') || v.includes('đối tác')) push('JV / Đối tác', 'JV / Partnership');
+    else if (v.includes('sale') || v.includes('m&a') || v.includes('acquisition') || v.includes('bán')) push('M&A / Chuyển nhượng', 'M&A / Sale');
+  });
+
+  if (!vi.length) return { vi: 'Đang cập nhật', en: raw ? String(raw).split(';')[0].trim() : 'Updating' };
+  return { vi: vi.join(' / '), en: en.join(' / ') };
+}
 
 function txFromQuery(raw: string | null): Tx {
   const v = String(raw || '').toLowerCase();
@@ -55,6 +76,7 @@ function normalizeBusiness(b: any): Deal {
   const descVi = b.description_vi || arrText(b.highlights_vi) || b.investment_reason_vi || '';
   const q = b.quality_score === null || b.quality_score === undefined ? null : Number(b.quality_score);
   const askNum = Number(b.ask_amount || 0);
+  const dealLabels = dealTypeLabels(b.deal_type);
   return {
     id: String(b.id || b.slug || b.public_code),
     slug: String(b.slug || ''),
@@ -66,7 +88,8 @@ function normalizeBusiness(b: any): Deal {
     city: b.city || 'Việt Nam',
     industry: String(b.industry || 'Đang cập nhật').split(';')[0].trim(),
     group: normalizeGroup(b.deal_type),
-    dealType: String(b.deal_type || 'Đang cập nhật').split(';')[0].trim(),
+    dealTypeVi: dealLabels.vi,
+    dealTypeEn: dealLabels.en,
     revenue: Number(b.revenue_2025 || 0) > 0 ? formatCompactMoney(b.revenue_2025, b.revenue_currency || 'VND') : 'Đang cập nhật',
     ask: askNum > 0
       ? `${formatCompactMoney(askNum, b.ask_currency || b.revenue_currency || 'VND')}${Number(b.stake_pct || 0) ? ` · ${percent(b.stake_pct)}` : ''}`
@@ -98,7 +121,7 @@ function DealCard({ d, lang, view, tintIndex }: { d: Deal; lang: Lang; view: Vie
           <div><span>EBITDA</span><b>{d.ebitda}</b></div>
           <div><span>{T(lang, 'Nhu cầu', 'Ask')}</span><b>{d.ask}</b></div>
         </div>
-        <div className="d68-business-card__foot"><span>{d.dealType}</span><b>{T(lang, 'Xem chi tiết', 'View details')} →</b></div>
+        <div className="d68-business-card__foot"><span>{T(lang, d.dealTypeVi, d.dealTypeEn)}</span><b>{T(lang, 'Xem chi tiết', 'View details')} →</b></div>
       </div>
     </Link>
   );

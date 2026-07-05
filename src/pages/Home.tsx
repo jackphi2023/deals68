@@ -22,7 +22,7 @@ function normalizeDeal(b: any, lang: Lang): Deal {
   const image = b.image_url || b.hero_image_url || (Array.isArray(b.business_images) && b.business_images[0]?.public_url) || null;
   return {
     id: String(b.id || b.slug),
-    slug: String(b.slug || b.username || b.id),
+    slug: String(b.slug || ''),
     title,
     industry: String(b.industry || 'Đang cập nhật').split(';')[0].trim(),
     city: b.city || 'Việt Nam',
@@ -66,7 +66,7 @@ export default function Home({ lang }: { lang: Lang }) {
       ]);
       if (!live) return;
       setBizCount(bc); setInvCount(ic);
-      setDeals((bs || []).map((b: any) => normalizeDeal(b, lang)));
+      setDeals((bs || []).map((b: any) => normalizeDeal(b, lang)).filter((d) => d.slug));
       setInvestors(invs || []);
       setLoading(false);
     })();
@@ -182,26 +182,27 @@ export default function Home({ lang }: { lang: Lang }) {
           <Link to="/businesses">{T(lang, 'Xem tất cả', 'View all')} →</Link>
         </div>
         {loading
-          ? <div className="d68-home-deals">{Array.from({ length: 3 }).map((_, i) => <div key={i} className="d68-home-role-card" aria-hidden="true" style={{ minHeight: 260 }} />)}</div>
+          ? <div className="d68-home-deals">{Array.from({ length: 3 }).map((_, i) => <div key={i} className="d68-home-business-card d68-home-business-card--loading" aria-hidden="true"><div className="d68-home-business-card__media" /><div className="d68-home-business-card__body" /></div>)}</div>
           : deals.length
             ? <div className="d68-home-deals">
               {deals.slice(0, 6).map((d) => (
-                <Link key={d.id} to={`/businesses/${d.slug}`} className="d68-home-role-card" style={{ padding: 0, overflow: 'hidden' }}>
-                  <div style={{ height: 160, background: '#EAF0F6', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94A3B8', fontWeight: 700, margin: 0, borderRadius: 0, width: '100%' }}>
-                    {d.image ? <img src={d.image} alt={d.title} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : T(lang, 'Ảnh đang cập nhật', 'Image pending')}
+                <Link key={d.id} to={`/businesses/${d.slug}`} className="d68-home-business-card">
+                  <div className="d68-home-business-card__media">
+                    {d.image ? <img src={d.image} alt={d.title} loading="lazy" /> : <span>{T(lang, 'Deals68 · Hồ sơ ẩn danh', 'Deals68 · Anonymous listing')}</span>}
+                    {d.featured ? <b>{T(lang, 'Nổi bật', 'Featured')}</b> : null}
                   </div>
-                  <div style={{ padding: 20, display: 'flex', flexDirection: 'column', flex: 1 }}>
-                    <span style={{ fontSize: 12, fontWeight: 800, color: '#1596cc', textTransform: 'uppercase' }}>{d.industry} · 📍 {d.city}</span>
-                    <h3 style={{ fontSize: 16.5, lineHeight: 1.4, margin: '8px 0 12px', color: '#0F2A4A' }}>{d.title}</h3>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', color: '#64748B', fontSize: 13.5, marginTop: 'auto' }}>
-                      <span>{T(lang, 'Doanh thu', 'Revenue')}: <b style={{ color: '#0F2A4A' }}>{d.revenue}</b></span>
-                      <b style={{ color: '#1596cc' }}>{d.ask}</b>
+                  <div className="d68-home-business-card__body">
+                    <div className="d68-home-business-card__tags"><span>{d.industry}</span><span>📍 {d.city}</span></div>
+                    <h3>{d.title}</h3>
+                    <div className="d68-home-business-card__metrics">
+                      <div><span>{T(lang, 'Doanh thu', 'Revenue')}</span><strong>{d.revenue}</strong></div>
+                      <div><span>{T(lang, 'Nhu cầu', 'Ask')}</span><strong>{d.ask}</strong></div>
                     </div>
                   </div>
                 </Link>
               ))}
             </div>
-            : <div style={{ background: '#fff', border: '1px dashed #CBD5E1', borderRadius: 16, padding: 40, textAlign: 'center', color: '#64748B' }}>{T(lang, 'Chưa có doanh nghiệp đang hiển thị.', 'No active business listings yet.')}</div>}
+            : <div className="d68-home-empty">{T(lang, 'Chưa có doanh nghiệp đang hiển thị.', 'No active business listings yet.')}</div>}
       </section>
 
       {/* INDUSTRIES */}
