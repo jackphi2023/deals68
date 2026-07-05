@@ -1,59 +1,36 @@
-# Deals68 beta-reference patch: Dashboard + Admin workflows
+# Deals68 beta-reference static/admin hardening patch
 
-Scope per Spec v1.3:
-- Business Dashboard
-- Investor Dashboard
-- Admin
-- Register payment-order workflow
-- CSS imports for dashboard/admin
+## Scope
+- Port remaining static pages: About, Terms, Privacy, Contact, Market Partner.
+- Add mobile-safe CSS for static pages.
+- Add Admin leads tab for Contact and Market Partner submissions.
+- Add dashboard payment gate in App routes so Business/Investor dashboards require `dashboard_login_enabled=true` unless admin.
+- Keep existing public Home/Businesses/Business Detail/Investors/Pricing/Valuation/Auth routes unchanged except route gate.
 
-No changes to public Home/Businesses/Business Detail/Investors/Investor Detail/Pricing/Valuation/Auth UI except Register payment-order creation and CSS import entry.
-
-## Workflow covered
-1. User registers Business/Investor.
-   - Creates Supabase Auth user + profile.
-   - Creates business/investor row hidden/pending.
-   - Creates payment_orders row with status=pending.
-2. Admin confirms payment.
-   - payment_orders.status=confirmed.
-   - profiles.status=active, dashboard_login_enabled=true.
-   - listing remains pending Admin public review.
-3. Business user edits dashboard.
-   - Changes saved to businesses.pending_changes_json.
-   - Existing public_snapshot_json remains unchanged.
-   - Existing visible/status active is preserved when a public snapshot already exists.
-4. Admin approves Business public snapshot.
-   - public_snapshot_json updated.
-   - visible=true, status=active.
-   - pending_changes_json cleared.
-   - moderation_status=approved.
-5. Investor user edits dashboard.
-   - Changes saved in investors.privacy.pending_profile_changes.
-   - Public investor fields remain unchanged.
-6. Admin approves Investor profile.
-   - Pending changes applied to public investor fields.
-   - visible=true, status=active.
-   - pending_profile_changes cleared.
+## Supabase migrations already applied
+- `create_static_page_leads`: creates `contact_messages` and `partner_leads` with public insert and admin read/update RLS.
+- `add_public_workflow_rpcs`: creates RPCs `submit_business_proposal` and `approve_business_public_snapshot` to match existing frontend helpers and the real schema (`proposals.message`, not `note`).
 
 ## Files
-- src/pages/BusinessDashboard.tsx
-- src/pages/InvestorDashboard.tsx
-- src/pages/Admin.tsx
-- src/pages/Register.tsx
-- src/styles/index.css
-- src/styles/pages/dashboard.css
-- src/styles/pages/admin.css
+- `src/App.tsx`
+- `src/pages/Admin.tsx`
+- `src/pages/StaticPages.tsx`
+- `src/styles/index.css`
+- `src/styles/pages/admin.css`
+- `src/styles/pages/static.css`
 
 ## Test routes
-- /register/business
-- /register/investor
-- /login
-- /dashboard/business
-- /dashboard/investor
-- /admin/payments
-- /admin/business-review
-- /admin/investors
-- /admin/assets
+- `/about`, `/en/about`
+- `/terms`, `/en/terms`
+- `/privacy`, `/en/privacy`
+- `/contact`, `/en/contact`
+- `/partners`, `/en/partners`
+- `/market-partner`, `/en/market-partner`
+- `/admin/leads`
+- `/dashboard/business` before and after admin payment confirmation
+- `/dashboard/investor` before and after admin payment confirmation
 
-## Netlify
-Run Clear cache and deploy site after upload.
+## Mobile checks
+- 375px: no horizontal overflow on static forms, Admin tables scroll horizontally, Admin side nav stacks.
+- 768px: static cards and contact form collapse cleanly.
+- 1440px: static grid/card spacing matches Deals68 design language.

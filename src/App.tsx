@@ -1,5 +1,5 @@
 import { Route, Routes, Navigate, useLocation } from 'react-router-dom';
-import { lazy, Suspense, useEffect } from 'react';
+import { lazy, Suspense, useEffect, type ReactNode } from 'react';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import Home from './pages/Home';
@@ -15,6 +15,7 @@ import Register from './pages/Register';
 import Valuation from './pages/Valuation';
 import ModuleScreen from './pages/ModuleScreen';
 import NotFound from './pages/NotFound';
+import { useAuth } from './contexts/AuthContext';
 import { langFromPath, stripLangPrefix } from './lib/i18nRoutes';
 
 const BusinessDashboard = lazy(() => import('./pages/BusinessDashboard'));
@@ -41,6 +42,20 @@ function ScrollToTop() {
 function LegacyViRedirect() {
   const location = useLocation();
   return <Navigate to={`${stripLangPrefix(location.pathname)}${location.search || ''}`} replace />;
+}
+
+function DashboardGate({ role, children }: { role: 'business' | 'investor'; children: ReactNode }) {
+  const { profile, loading } = useAuth();
+  const location = useLocation();
+  if (loading) return <RouteFallback />;
+  if (!profile) return <Navigate to={`/login?next=${encodeURIComponent(location.pathname + location.search)}`} replace />;
+  if (profile.role !== role && profile.role !== 'admin') {
+    return <section style={{ maxWidth: 760, margin: '0 auto', padding: '56px 24px' }}><div style={{ background: '#fff', border: '1px solid #E7EDF3', borderRadius: 16, padding: 24 }}><h2>Access restricted</h2><p>Role hiện tại: {profile.role}. Dashboard này dành cho {role}.</p></div></section>;
+  }
+  if (profile.role !== 'admin' && !profile.dashboard_login_enabled) {
+    return <main className="d68-auth-page"><section className="d68-auth-card"><div className="d68-auth-head"><span>🔒 Payment pending</span><h1>Dashboard đang chờ mở khóa</h1><p>Tài khoản đã được tạo nhưng dashboard chỉ mở sau khi Admin xác nhận thanh toán hoặc kích hoạt theo quy trình beta.</p></div><div className="d68-auth-banner">Profile status: {profile.status || 'payment_pending'}</div><a className="d68-auth-submit" href="/pricing">Xem bảng giá / thanh toán</a></section></main>;
+  }
+  return <>{children}</>;
 }
 
 export default function App(){
@@ -98,10 +113,10 @@ export default function App(){
 
         {/* App/private routes stay unprefixed */}
         <Route path="/admin/login" element={<Login lang={lang}/>}/>
-        <Route path="/dashboard/business" element={<BusinessDashboard/>}/>
-        <Route path="/dashboard/business/*" element={<BusinessDashboard/>}/>
-        <Route path="/dashboard/investor" element={<InvestorDashboard/>}/>
-        <Route path="/dashboard/investor/*" element={<InvestorDashboard/>}/>
+        <Route path="/dashboard/business" element={<DashboardGate role="business"><BusinessDashboard/></DashboardGate>}/>
+        <Route path="/dashboard/business/*" element={<DashboardGate role="business"><BusinessDashboard/></DashboardGate>}/>
+        <Route path="/dashboard/investor" element={<DashboardGate role="investor"><InvestorDashboard/></DashboardGate>}/>
+        <Route path="/dashboard/investor/*" element={<DashboardGate role="investor"><InvestorDashboard/></DashboardGate>}/>
         <Route path="/admin" element={<Admin/>}/>
         <Route path="/admin/*" element={<Admin/>}/>
 
