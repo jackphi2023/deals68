@@ -1,59 +1,45 @@
-# Deals68 Front-end Style Patch — Home UI Reference + Static Hero
+# Deals68 Netlify Build Hotfix — Postgrest `.catch()` TS errors
 
 Target branch: beta-reference
-Status: patch zip only; not committed/pushed; no Supabase migration applied by assistant.
+Commit message: fix: unblock Netlify build postgrest catch types
 
-## Scope
-This patch is based on the latest combined patch `deals68_investor_flow_otp_register_detail_patch_20260705.zip` and only adds visual CSS overrides in `src/styles/pages/ui-fixes.css`.
+## Reason
+Netlify build fails during `tsc -b` because several files call `.catch()` on Supabase Postgrest query builders. Runtime code uses Supabase query builders as Promise-like objects, but TypeScript definitions expose `then()` without `catch()` on `PostgrestBuilder` / `PostgrestFilterBuilder` / `PromiseLike`.
 
-No changes to:
-- Auth/OTP logic
-- Register data logic
-- Dashboard/Admin workflows
-- Public business/investor data guards
-- Supabase schema/RLS/RPC
+Errors fixed:
+- src/pages/BusinessDetail.tsx(123,16)
+- src/pages/InvestorDetail.tsx(75,107)
+- src/pages/Login.tsx(88,98)
+- src/pages/Register.tsx(279,144)
 
-## Visual fixes
-1. Home — Featured Industries
-- Match UI Reference card geometry: white section, centered title/subtitle, 4-column desktop grid, rounded cards, fixed color media band, clean content area.
-- Responsive: 2 columns tablet, 1 column mobile.
+## Files
+- src/lib/supabase.ts
+- src/types/postgrest-catch.d.ts
 
-2. Home — Investors looking for deals
-- Match UI Reference style: card border/radius/shadow, top icon block, verified visual marker, outline button, first card highlighted CTA.
-- Responsive: 4 columns desktop, 2 tablet, 1 mobile.
+## What changed
+1. Adds a runtime compatibility shim in `src/lib/supabase.ts` that installs a `.catch()` method on the Supabase Postgrest builder prototype. It delegates to `Promise.resolve(this).catch(...)`.
+2. Adds TypeScript module/global declarations so `tsc -b` accepts the existing `.catch()` call sites.
 
-3. Static Pages Hero
-- Hero background changed to Deals logo blue.
-- Hero text centered and white.
-- Eyebrow pill white/translucent.
-- Prominent numbers in static cards use Deals68 gold.
+## Scope guard
+- No changes to Business/Register/Dashboard/Admin/Public data logic.
+- No changes to Supabase RLS/RPC/migrations.
+- No changes to UI.
 
-## Changed file
-- src/styles/pages/ui-fixes.css
+## Apply
+```bash
+git checkout beta-reference
+unzip deals68_netlify_build_hotfix_20260706.zip -d /tmp/deals68_build_hotfix
+cp -R /tmp/deals68_build_hotfix/src ./
+npm run build
+git status
+git add src/lib/supabase.ts src/types/postgrest-catch.d.ts
+git commit -m "fix: unblock Netlify build postgrest catch types"
+git push origin beta-reference
+```
 
-## Commit message
-fix: align home sections and static hero styling
-
-## Route test
-- /
-- /en
-- /about
-- /en/about
-- /terms
-- /privacy
-- /market-partner
-
-## Mobile checklist
-375px:
-- Featured Industry cards stack 1 column, no overflow.
-- Investor cards stack 1 column, CTA full width.
-- Static hero blue background, white centered text readable.
-
-768px:
-- Home industry/investor cards 2 columns.
-- Static hero maintains center alignment.
-
-1440px:
-- Industry grid 4 columns.
-- Investor grid 4 columns.
-- Static hero blue band spans full width.
+## Test
+- npm run build
+- /businesses/:slug
+- /investors/:code
+- /login?role=business&otp=1
+- /register/investor
