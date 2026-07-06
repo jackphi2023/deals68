@@ -1,0 +1,20 @@
+diff --git a/netlify.toml b/netlify.toml
+--- a/netlify.toml
++++ b/netlify.toml
+@@
+-    Content-Security-Policy = "default-src 'self'; connect-src 'self' https://*.supabase.co wss://*.supabase.co; img-src 'self' data: blob: https://*.supabase.co; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self' data:;"
++    Content-Security-Policy = "default-src 'self'; connect-src 'self' https://*.supabase.co wss://*.supabase.co; img-src 'self' data: blob: https://*.supabase.co https://img.vietqr.io; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self' data:;"
+diff --git a/src/pages/Register.tsx b/src/pages/Register.tsx
+--- a/src/pages/Register.tsx
++++ b/src/pages/Register.tsx
+@@
+ const DOC_EXTENSIONS = ['.pdf', '.doc', '.docx', '.ppt', '.pptx', '.xls', '.xlsx'];
++const STATIC_VIETQR_URL = '/assets/vietqr-vcb.png';
+@@
+   const qrAmountParam = price.currency === 'VND' ? `amount=${Math.round(price.total)}&` : '';
+   const qrUrl = `https://img.vietqr.io/image/VCB-0011004000713-compact2.png?${qrAmountParam}addInfo=${encodeURIComponent(bankContent)}&accountName=${encodeURIComponent('Tieu Vo Dinh Phi')}`;
++  const [qrImageSrc, setQrImageSrc] = useState(qrUrl);
++  useEffect(() => { setQrImageSrc(qrUrl); }, [qrUrl]);
+@@
+-    <div className="d68-bizreg-qrbox"><a href={qrUrl} target="_blank" rel="noreferrer"><img src={qrUrl} alt="QR Vietcombank" /></a><div>
++    <div className="d68-bizreg-qrbox"><a href={qrImageSrc} target="_blank" rel="noreferrer"><img src={qrImageSrc} alt="QR Vietcombank" onError={() => setQrImageSrc(STATIC_VIETQR_URL)} /></a><div>

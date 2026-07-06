@@ -1,32 +1,15 @@
-# How to apply this patch in GitHub Codespaces
+# QA — VietQR dynamic + static fallback
 
-Upload/copy this folder into the repo, then run:
+After Netlify deploy:
 
-```bash
-python3 scripts/apply-nav-proposal-investor-dashboard-ux.py
-npm run build
-git status
-git add src/components/Header.tsx src/App.tsx src/pages/InvestorDetail.tsx src/pages/BusinessDashboard.tsx src/pages/InvestorDashboard.tsx
-git commit -m "fix: improve nav proposal and investor dashboard UX"
-git push origin beta-reference
-```
+1. Open `/register/business`.
+2. Select VN payment so QR amount is VND.
+3. Check QR image loads.
+4. Open DevTools Console; there should be no CSP error for `img.vietqr.io`.
+5. Temporarily block `https://img.vietqr.io` in the browser/network if possible; QR should fallback to `/assets/vietqr-vcb.png`.
 
-Do not run `git add .` because `node_modules/` may be untracked in Codespaces.
+Expected behavior:
 
-## Test after Netlify deploy
-
-Guest:
-- Header shows Đăng nhập + Đăng ký.
-
-Logged-in Business:
-- Header shows Dashboard.
-- Investor profile → Gửi hồ sơ DN → success message and button disabled.
-- Dashboard Business → Proposal shows the sent investor proposal.
-
-Logged-in Investor:
-- Header shows Dashboard.
-- Dashboard Investor → Profile shows Website and internal fund/investor name.
-- Header language EN from dashboard no longer goes to 404.
-
-Dashboards:
-- Logout button is darker.
+- Dynamic QR shows amount + transfer note when VietQR loads.
+- Static QR is shown only if dynamic QR fails.
+- Payment text still shows exact amount and transfer note next to QR.
