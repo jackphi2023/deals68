@@ -11,6 +11,13 @@ function langBtnStyle(active: boolean): CSSProperties {
   return { ...buttonReset, padding: '7px 14px', fontWeight: 700, fontSize: 13, background: active ? '#0F2A4A' : 'transparent', color: active ? '#fff' : '#64748B' };
 }
 
+function dashboardForRole(role?: string) {
+  if (role === 'admin') return '/admin';
+  if (role === 'investor') return '/dashboard/investor';
+  if (role === 'affiliate') return '/dashboard/market-partner';
+  return '/dashboard/business';
+}
+
 export default function Header({ lang }: { lang: Lang }) {
   const { pathname, search } = useLocation();
   const { profile, signOut } = useAuth();
@@ -35,7 +42,7 @@ export default function Header({ lang }: { lang: Lang }) {
   };
 
   const authDesktop = profile
-    ? <button type="button" onClick={logout} style={{ ...buttonReset, background: '#EEF2F6', color: '#14315A', fontWeight: 800, fontSize: 14.5, padding: '10px 16px', borderRadius: 10, whiteSpace: 'nowrap' }}>{T(lang, 'Đăng xuất', 'Log out')}</button>
+    ? <Link to={nav(dashboardForRole(profile.role))} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#1BADEA', color: '#fff', fontWeight: 800, fontSize: 15, padding: '11px 20px', borderRadius: 10, boxShadow: '0 6px 16px rgba(27,173,234,.28)', whiteSpace: 'nowrap' }}>{T(lang, 'Dashboard', 'Dashboard')}</Link>
     : <>
         <Link to={nav('/login')} style={{ fontSize: 15, fontWeight: 600, color: '#14315A', whiteSpace: 'nowrap' }}><span className="l-vi">Đăng nhập</span><span className="l-en">Log in</span></Link>
         <div className="d68-reg-dd" style={{ position: 'relative' }}>
@@ -81,7 +88,7 @@ export default function Header({ lang }: { lang: Lang }) {
           <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #E2E8F0', borderRadius: 999, overflow: 'hidden', fontSize: 13, fontWeight: 700 }}><button type="button" onClick={() => switchLang('vi')} style={langBtnStyle(lang === 'vi')}>VI</button><button type="button" onClick={() => switchLang('en')} style={langBtnStyle(lang === 'en')}>EN</button></div>
         </div>
         {profile
-          ? <button type="button" onClick={logout} style={{ ...buttonReset, textAlign: 'left', padding: '13px 6px', fontSize: 16, fontWeight: 700, color: '#14315A', background: 'transparent' }}>{T(lang, 'Đăng xuất', 'Log out')}</button>
+          ? <Link to={nav(dashboardForRole(profile.role))} onClick={closeDrawer} style={{ textAlign: 'center', background: '#1BADEA', color: '#fff', fontWeight: 800, fontSize: 15, padding: 13, borderRadius: 10, marginTop: 8 }}>Dashboard</Link>
           : <><Link to={nav('/login')} onClick={closeDrawer} style={{ padding: '13px 6px', fontSize: 16, fontWeight: 700, color: '#14315A' }}><span className="l-vi">Đăng nhập</span><span className="l-en">Log in</span></Link><div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 8 }}><Link to={nav('/register/business')} onClick={closeDrawer} style={{ textAlign: 'center', background: '#1BADEA', color: '#fff', fontWeight: 700, fontSize: 15, padding: 13, borderRadius: 10 }}><span className="l-vi">Đăng ký Doanh nghiệp</span><span className="l-en">Register as Business</span></Link><Link to={nav('/register/investor')} onClick={closeDrawer} style={{ textAlign: 'center', border: '1px solid #E2E8F0', color: '#14315A', fontWeight: 700, fontSize: 15, padding: 13, borderRadius: 10 }}><span className="l-vi">Đăng ký Nhà đầu tư</span><span className="l-en">Register as Investor</span></Link></div></>}
       </div>
 

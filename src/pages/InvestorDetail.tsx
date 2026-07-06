@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { getInvestorByCode } from '../lib/data';
+import { getInvestorByCode, getMyBusiness } from '../lib/data';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { toLocalizedPath } from '../lib/i18nRoutes';
@@ -50,6 +50,8 @@ export default function InvestorDetail({ lang }: { lang: Lang }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [msg, setMsg] = useState('');
+  const [proposalBusy, setProposalBusy] = useState(false);
+  const [sentProposal, setSentProposal] = useState<any>(null);
 
   useEffect(() => {
     let live = true;
@@ -79,6 +81,24 @@ export default function InvestorDetail({ lang }: { lang: Lang }) {
     return () => { live = false; };
   }, [profile?.id, inv?.id]);
 
+  useEffect(() => {
+    let live = true;
+    async function loadSentProposal() {
+      setSentProposal(null);
+      if (!profile || profile.role !== 'business' || !inv?.id) return;
+      try {
+        const biz = await getMyBusiness(profile.id);
+        if (!live || !biz?.id) return;
+        const { data } = await supabase.from('proposals').select('id,status,sent_at').eq('business_id', biz.id).eq('investor_id', inv.id).maybeSingle();
+        if (live) setSentProposal(data || null);
+      } catch {
+        if (live) setSentProposal(null);
+      }
+    }
+    loadSentProposal();
+    return () => { live = false; };
+  }, [profile?.id, profile?.role, inv?.id]);
+
   const title = inv ? T(lang, inv.title_vi || inv.code || 'Nhà đầu tư', inv.title_en || inv.title_vi || inv.code || 'Investor') : '';
   const desc = inv ? T(lang, inv.desc_vi || 'Hồ sơ nhà đầu tư ẩn danh đang được cập nhật.', inv.desc_en || inv.desc_vi || 'Anonymous investor profile is being updated.') : '';
   const industries = useMemo(() => arr(inv?.industries), [inv]);
@@ -91,10 +111,46 @@ export default function InvestorDetail({ lang }: { lang: Lang }) {
   }, [inv]);
   const connected = !!contact?.connected;
 
-  function sendProposal() {
-    if (!profile) { navigate(toLocalizedPath('/register/business', lang)); return; }
+  async function sendProposal() {
+    if (!profile) { navigate(toLocalizedPath(`/login?role=business&next=/investors/${code}`, lang)); return; }
     if (profile.role !== 'business') { setMsg(T(lang, 'Chỉ tài khoản Doanh nghiệp được gửi hồ sơ DN.', 'Only Business accounts can send a business profile.')); return; }
-    setMsg(T(lang, 'Vui lòng gửi proposal từ Business Dashboard để hệ thống ghi nhận hạn mức/quota và workflow duyệt.', 'Please send proposals from the Business Dashboard so quota and approval workflow are recorded.'));
+    if (sentProposal) {
+      setMsg(T(lang, 'Bạn đã gửi hồ sơ DN tới nhà đầu tư này. Vui lòng theo dõi tại Dashboard DN → Proposal.', 'You already sent your business profile to this investor. Please track it in Business Dashboard → Proposals.'));
+      return;
+    }
+    setProposalBusy(true); setMsg('');
+    try {
+      const biz = await getMyBusiness(profile.id);
+      if (!biz?.id) {
+        navigate(toLocalizedPath('/dashboard/business', lang));
+        return;
+      }
+      const now = new Date();
+      const { data, error } = await supabase.from('proposals').insert({
+        business_id: biz.id,
+        investor_id: inv.id,
+        message: `Business profile sent from investor profile on ${now.toISOString()}`,
+        status: 'pending',
+        sent_at: now.toISOString()
+      }).select('id,status,sent_at').single();
+      if (error) {
+        const text = String(error.message || '').toLowerCase();
+        if (text.includes('duplicate') || text.includes('unique')) {
+          const { data: existing } = await supabase.from('proposals').select('id,status,sent_at').eq('business_id', biz.id).eq('investor_id', inv.id).maybeSingle();
+          setSentProposal(existing || { status: 'pending', sent_at: now.toISOString() });
+          setMsg(T(lang, 'Bạn đã gửi hồ sơ DN tới nhà đầu tư này trước đó. Vui lòng theo dõi tại Dashboard DN → Proposal.', 'You already sent your business profile to this investor. Please track it in Business Dashboard → Proposals.'));
+          return;
+        }
+        throw error;
+      }
+      setSentProposal(data || { status: 'pending', sent_at: now.toISOString() });
+      const displayDate = now.toLocaleString(lang === 'en' ? 'en-US' : 'vi-VN');
+      setMsg(T(lang, `Bạn đã gửi thành công ngày ${displayDate}. Hãy đợi nhà đầu tư xem xét duyệt.`, `Sent successfully on ${displayDate}. Please wait for the investor to review and approve.`));
+    } catch (e: any) {
+      setMsg(e?.message || T(lang, 'Không gửi được hồ sơ DN. Vui lòng thử lại.', 'Could not send business profile. Please try again.'));
+    } finally {
+      setProposalBusy(false);
+    }
   }
 
   if (loading) return <main className="d68-investor-detail"><div className="d68-id-state">{T(lang, 'Đang tải hồ sơ nhà đầu tư...', 'Loading investor profile...')}</div></main>;
@@ -116,7 +172,7 @@ export default function InvestorDetail({ lang }: { lang: Lang }) {
         </div>
       </article>
       <aside className="d68-id-side d68-id-side--top">
-        <div className="d68-id-cta"><span>{T(lang, 'Gửi hồ sơ DN', 'Send business profile')}</span><p>{T(lang, 'Gửi hồ sơ doanh nghiệp của bạn tới nhà đầu tư này để bắt đầu kết nối.', 'Send your business profile to this investor to start the connection workflow.')}</p><button onClick={sendProposal}>{T(lang, 'Gửi hồ sơ DN', 'Send business profile')}</button><small>{T(lang, 'Proposal còn lại được kiểm tra trong Dashboard Business.', 'Remaining proposal quota is checked in the Business Dashboard.')}</small></div>
+        <div className="d68-id-cta"><span>{T(lang, 'Gửi hồ sơ DN', 'Send business profile')}</span><p>{T(lang, 'Gửi hồ sơ doanh nghiệp của bạn tới nhà đầu tư này để bắt đầu kết nối.', 'Send your business profile to this investor to start the connection workflow.')}</p><button onClick={sendProposal} disabled={proposalBusy || !!sentProposal}>{sentProposal ? T(lang, 'Đã gửi hồ sơ DN', 'Profile sent') : proposalBusy ? T(lang, 'Đang gửi...', 'Sending...') : T(lang, 'Gửi hồ sơ DN', 'Send business profile')}</button><small>{sentProposal ? T(lang, 'Đã gửi. Theo dõi tại Dashboard DN → Proposal.', 'Sent. Track it in Business Dashboard → Proposals.') : T(lang, 'Proposal còn lại được kiểm tra trong Dashboard Business.', 'Remaining proposal quota is checked in the Business Dashboard.')}</small></div>
         <div className="d68-id-access"><h3>{T(lang, 'Ai xem được gì', 'Who can see what')}</h3><p>👤 {T(lang, 'Khách: chỉ thấy teaser ẩn danh', 'Guests: anonymous teaser only')}</p><p>🏢 {T(lang, 'DN đã trả phí: xem tiêu chí đầy đủ, gửi proposal', 'Paid businesses: view criteria and send proposals')}</p><p>✅ {T(lang, 'Sau khi duyệt: mở tên & thông tin liên hệ theo cài đặt', 'After approval: contact details unlock according to settings')}</p></div>
       </aside>
     </div>

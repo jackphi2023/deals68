@@ -136,6 +136,10 @@ export default function App(){
         <Route path="/en/contact" element={<Contact lang="en"/>}/>
         <Route path="/en/partners" element={<MarketPartner lang="en"/>}/>
         <Route path="/en/market-partner" element={<MarketPartner lang="en"/>}/>
+        <Route path="/en/dashboard/business" element={<DashboardGate role="business"><BusinessDashboard/></DashboardGate>}/>
+        <Route path="/en/dashboard/business/*" element={<DashboardGate role="business"><BusinessDashboard/></DashboardGate>}/>
+        <Route path="/en/dashboard/investor" element={<DashboardGate role="investor"><InvestorDashboard/></DashboardGate>}/>
+        <Route path="/en/dashboard/investor/*" element={<DashboardGate role="investor"><InvestorDashboard/></DashboardGate>}/>
 
         <Route path="/vi" element={<Navigate to="/" replace/>}/>
         <Route path="/vi/*" element={<LegacyViRedirect/>}/>
