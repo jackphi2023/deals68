@@ -276,7 +276,13 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
     }
     setLoading(true); setMsg('');
     if (isInvestor) {
-      const duplicateVisible = await supabase.rpc('investor_public_email_exists', { email_text: email.trim() }).then((res: any) => !!res.data).catch(() => false);
+let duplicateVisible = false;
+try {
+  const duplicateRes: any = await (supabase.rpc('investor_public_email_exists', { email_text: email.trim() }) as any);
+  duplicateVisible = !!duplicateRes?.data;
+} catch {
+  duplicateVisible = false;
+}
       if (duplicateVisible) {
         setMsgType('err');
         setMsg(T(lang, 'Email đã được đăng ký, vui lòng liên hệ partner@vietcapitalpartners.com để được hỗ trợ.', 'This email has already been registered. Please contact partner@vietcapitalpartners.com for support.'));
