@@ -1,45 +1,38 @@
-# Deals68 Netlify Build Hotfix — Postgrest `.catch()` TS errors
+# Deals68 AI Automated Test Suite Patch — 2026-07-06
 
 Target branch: beta-reference
-Commit message: fix: unblock Netlify build postgrest catch types
 
-## Reason
-Netlify build fails during `tsc -b` because several files call `.catch()` on Supabase Postgrest query builders. Runtime code uses Supabase query builders as Promise-like objects, but TypeScript definitions expose `then()` without `catch()` on `PostgrestBuilder` / `PostgrestFilterBuilder` / `PromiseLike`.
+## Scope
+Adds automated QA infrastructure for Spec v1.3 + all business updates in this session.
 
-Errors fixed:
-- src/pages/BusinessDetail.tsx(123,16)
-- src/pages/InvestorDetail.tsx(75,107)
-- src/pages/Login.tsx(88,98)
-- src/pages/Register.tsx(279,144)
-
-## Files
+## Files included
+- package.json
+- playwright.config.ts
+- QA_TESTING_GUIDE.md
+- .gitignore.deals68-tests
+- scripts/deals68-print-latest-report.mjs
+- tests/specs/deals68-v1_3-contract.json
+- tests/reporters/deals68-reporter.ts
+- tests/helpers/deals68.ts
+- tests/e2e/00-public-smoke.spec.ts
+- tests/e2e/01-pricing-valuation.spec.ts
+- tests/e2e/02-register-business.spec.ts
+- tests/e2e/03-register-investor.spec.ts
+- tests/e2e/04-public-profile-rules.spec.ts
+- tests/e2e/05-dashboard-admin-workflows.spec.ts
 - src/lib/supabase.ts
 - src/types/postgrest-catch.d.ts
 
-## What changed
-1. Adds a runtime compatibility shim in `src/lib/supabase.ts` that installs a `.catch()` method on the Supabase Postgrest builder prototype. It delegates to `Promise.resolve(this).catch(...)`.
-2. Adds TypeScript module/global declarations so `tsc -b` accepts the existing `.catch()` call sites.
+## Also included
+Small Netlify build hotfix:
+- Adds Postgrest `.catch()` type/runtime compatibility so existing Supabase builder `.catch()` call sites compile under `tsc -b`.
 
-## Scope guard
-- No changes to Business/Register/Dashboard/Admin/Public data logic.
-- No changes to Supabase RLS/RPC/migrations.
-- No changes to UI.
-
-## Apply
+## Commands
 ```bash
-git checkout beta-reference
-unzip deals68_netlify_build_hotfix_20260706.zip -d /tmp/deals68_build_hotfix
-cp -R /tmp/deals68_build_hotfix/src ./
 npm run build
-git status
-git add src/lib/supabase.ts src/types/postgrest-catch.d.ts
-git commit -m "fix: unblock Netlify build postgrest catch types"
-git push origin beta-reference
+D68_BASE_URL=https://beta-reference-deals68.netlify.app npm run test:e2e:public
+npm run test:report
 ```
 
-## Test
-- npm run build
-- /businesses/:slug
-- /investors/:code
-- /login?role=business&otp=1
-- /register/investor
+## Commit message
+test: add automated qa suite for deals68 beta

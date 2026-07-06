@@ -1,0 +1,148 @@
+{
+  "version": "Deals68 Spec v1.3 + session updates 2026-07-05",
+  "baseUrlEnv": "D68_BASE_URL",
+  "previewDefault": "https://beta-reference-deals68.netlify.app",
+  "publicDataGuard": {
+    "businesses": "visible=true AND status=active AND public_snapshot_json IS NOT NULL",
+    "investors": "visible=true AND status=active",
+    "userEdits": "Dashboard edits go to pending changes until Admin approval"
+  },
+  "roles": {
+    "guest": {
+      "canView": [
+        "public business teaser",
+        "public investor teaser",
+        "valuation",
+        "pricing",
+        "static pages"
+      ],
+      "cannotView": [
+        "business contact",
+        "investor contact",
+        "locked documents",
+        "dashboards"
+      ]
+    },
+    "business": {
+      "can": [
+        "register with OTP",
+        "login dashboard after OTP",
+        "edit dashboard pending",
+        "send proposal to investor",
+        "view investor contact after approved connection"
+      ],
+      "cannot": [
+        "publish public profile without Admin approval"
+      ]
+    },
+    "investor": {
+      "can": [
+        "register with OTP",
+        "login dashboard after OTP",
+        "express interest",
+        "request data",
+        "view Business Quality Score details when logged in"
+      ],
+      "cannot": [
+        "download locked business docs without approved connection"
+      ]
+    },
+    "admin": {
+      "can": [
+        "edit/approve business public snapshot",
+        "edit/approve investor public profile",
+        "edit valuation config",
+        "approve images/files"
+      ]
+    }
+  },
+  "routes": {
+    "public": [
+      "/",
+      "/en",
+      "/businesses",
+      "/en/businesses",
+      "/investors",
+      "/en/investors",
+      "/valuation",
+      "/en/valuation",
+      "/pricing",
+      "/en/pricing",
+      "/register/business",
+      "/en/register/business",
+      "/register/investor",
+      "/en/register/investor",
+      "/login",
+      "/forgot-password",
+      "/about",
+      "/terms",
+      "/privacy",
+      "/market-partner"
+    ],
+    "private": [
+      "/dashboard/business",
+      "/dashboard/investor",
+      "/admin",
+      "/admin/valuation"
+    ]
+  },
+  "pricing": {
+    "businessTermsWeeks": [
+      4,
+      8,
+      12,
+      16,
+      24
+    ],
+    "investorTermsMonths": [
+      4,
+      8,
+      12,
+      16,
+      24
+    ],
+    "businessDiscounts": {
+      "8+": 15,
+      "16+": 20
+    },
+    "countryPricing": "VN -> VND, other countries -> USD"
+  },
+  "valuation": {
+    "freeToolInputs": [
+      "country",
+      "industry",
+      "latestAnnualRevenue",
+      "ebitdaMarginPct",
+      "revenueGrowthPct"
+    ],
+    "freeToolMustNotAsk": [
+      "netDebt",
+      "offerAmount",
+      "stakePct"
+    ],
+    "registerBusinessCanUse": [
+      "offerAmount",
+      "stakePct"
+    ],
+    "dashboardBusinessCanUse": [
+      "business current info",
+      "offerAmount",
+      "stakePct"
+    ],
+    "guardrails": [
+      "revenue <= 0 -> no benchmark",
+      "unknown industry -> no benchmark",
+      "growth capped by config",
+      "EBITDA margin below floor -> revenue_only"
+    ]
+  },
+  "wording": {
+    "forbiddenVisibleText": [
+      "undefined",
+      "null",
+      "NaN",
+      "[object Object]"
+    ],
+    "mixedLanguageCheck": "VI routes should not display long English labels except accepted terms: EBITDA, Business Quality Score, USD, QR, OTP, Dashboard"
+  }
+}
