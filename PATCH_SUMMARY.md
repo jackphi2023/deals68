@@ -1,32 +1,40 @@
-# Patch Summary — Business Quality Score v1
+# Deals68 UX Fix Patch — Navigation, Proposal, Investor Dashboard
 
-## Added files
+## Files patched by script
 
-- `supabase/migrations/20260706_business_quality_score_v1.sql`
-- `src/lib/businessQuality.ts`
-- `scripts/apply-business-quality-score-v1.mjs`
-- `patches/business-quality-score-ui.diff`
-- `QA_BUSINESS_QUALITY_SCORE_GUIDE.md`
+- `src/components/Header.tsx`
+- `src/App.tsx`
+- `src/pages/InvestorDetail.tsx`
+- `src/pages/BusinessDashboard.tsx`
+- `src/pages/InvestorDashboard.tsx`
 
-## Scope
+## Fixes
 
-Implements Business Quality Score 100-point calculation and display:
+1. Navigation
+- Guest sees: Đăng nhập + Đăng ký.
+- Logged-in business/investor/admin sees Dashboard button in global nav.
+- Removes global Log out from Header.
+- Logout remains inside dashboards and is made darker.
 
-- Profile completeness: 15
-- Financial data quality: 20
-- Supporting documents: 20
-- Images: 10
-- Valuation & offer reasonableness: 25
-- Transaction/connection readiness: 10
+2. Investor profile CTA
+- Business user logged in can send profile directly from investor public profile.
+- Inserts into `proposals`.
+- Shows success date/time message.
+- Disables button after already sent.
+- Duplicate proposal is handled by existing unique constraint `(business_id, investor_id)`.
 
-## Public rule
+3. Business dashboard
+- Proposal tab shows sent proposals.
+- Investor interests still shown below.
 
-- Guest: sees only assessment categories/explanation.
-- Logged-in Investor: sees detailed score per criterion.
-- Admin: can manually keep a 0-100 score override.
+4. Investor dashboard
+- Adds internal fund/investor name (`private_name`) and Website (`private_website`) in Profile tab.
+- Updates private DB fields immediately; public profile updates still go through `pending_profile_changes`.
+- Moves the admin approval/anonymous notice to bottom above submit button.
+- Adds `/en/dashboard/...` routes to avoid 404 when switching language from dashboards.
 
-## Risks
+## Supabase checks already confirmed
 
-- Existing UI files are patched by script/diff, not pushed directly.
-- Run `npm run build` after applying.
-- Apply SQL migration before relying on `quality_breakdown_json`.
+- `proposals` has unique `(business_id, investor_id)`.
+- Business can insert proposals through existing RLS policy.
+- `investors.private_name` and `investors.private_website` already exist.
