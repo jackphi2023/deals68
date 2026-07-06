@@ -28,6 +28,7 @@ const countryIso: Record<string, string> = Object.fromEntries(countryOptions.map
 const MAX_BUSINESS_IMAGES = 5;
 const MAX_BUSINESS_DOCS = 5;
 const DOC_EXTENSIONS = ['.pdf', '.doc', '.docx', '.ppt', '.pptx', '.xls', '.xlsx'];
+const STATIC_VIETQR_URL = '/assets/vietqr-vcb.png';
 
 type PendingAsset = { id: string; file: File; displayName: string };
 type ValuationCheck = { level: string; label: string; message: string; impliedValue: number | null; revenueMultiple: number | null; ebitdaMultiple: number | null; benchLow?: number | null; benchMid?: number | null; benchHigh?: number | null; method?: string; adjE?: number; adjR?: number; configVersion?: number; };
@@ -178,6 +179,8 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
   const bankContent = `DEALS68-${safeUsername(email || normalized, companyName || name || normalized)}`.toUpperCase();
   const qrAmountParam = price.currency === 'VND' ? `amount=${Math.round(price.total)}&` : '';
   const qrUrl = `https://img.vietqr.io/image/VCB-0011004000713-compact2.png?${qrAmountParam}addInfo=${encodeURIComponent(bankContent)}&accountName=${encodeURIComponent('Tieu Vo Dinh Phi')}`;
+  const [qrImageSrc, setQrImageSrc] = useState(qrUrl);
+  useEffect(() => { setQrImageSrc(qrUrl); }, [qrUrl]);
 
   const benchmarkResult = useMemo(() => valuate({
     revenueYear: parseFormattedNumber(revenue),
@@ -453,7 +456,7 @@ try {
       <aside className="d68-bizreg-summary"><span>{T(lang, 'Tạm tính', 'Estimate')}</span><RowMini a={T(lang, `Subtotal (${currentTermValue} ${isInvestor ? 'tháng' : 'tuần'})`, `Subtotal (${currentTermValue} ${isInvestor ? 'months' : 'weeks'})`)} b={money(price.subtotal, price.currency)} /><RowMini a={T(lang, 'Chiết khấu kỳ hạn', 'Term discount')} b={price.termDiscountPct ? `-${money(price.termDiscount, price.currency)} (${price.termDiscountPct}%)` : T(lang, 'Không', 'None')} good={!!price.termDiscountPct}/><RowMini a={T(lang, 'Giảm giá', 'Promo discount')} b={price.promoDiscountPct ? `-${money(price.promoDiscount, price.currency)} (${price.promoDiscountPct}%)` : T(lang, 'Không', 'None')} good={!!price.promoDiscountPct}/><strong>{T(lang, 'Tổng thanh toán', 'Total due')}<b>{money(price.total, price.currency)}</b></strong></aside>
     </div>
     <div className="d68-bizreg-payment-methods"><button type="button" className="active"><span>💵</span>{T(lang, 'Chuyển khoản QR', 'QR bank transfer')}</button><button type="button" disabled><span>💳</span>Sepay ({T(lang, 'Thẻ nội địa / tín dụng', 'Debit / credit card')}) · {T(lang, 'Sắp ra mắt', 'Coming soon')}</button><button type="button" disabled><span>💳</span>Stripe / Paypal · {T(lang, 'Sắp ra mắt', 'Coming soon')}</button></div>
-    <div className="d68-bizreg-qrbox"><a href={qrUrl} target="_blank" rel="noreferrer"><img src={qrUrl} alt="QR Vietcombank" /></a><div><p>{T(lang, 'Người nhận:', 'Recipient:')} <b>Tieu Vo Dinh Phi</b></p><p>{T(lang, 'Số TK:', 'Account no.:')} <b>0011004000713</b></p><p>{T(lang, 'Nội dung:', 'Transfer note:')} <b>{bankContent}</b></p><p>{T(lang, 'Số tiền:', 'Amount:')} <b>{money(price.total, price.currency)}</b></p></div><label><input type="checkbox" checked={paymentAck} onChange={(e) => setPaymentAck(e.target.checked)} /> {T(lang, 'Tôi đã chuyển khoản đúng số tiền và nội dung ở trên', 'I have transferred the exact amount with the transfer note above')}</label></div>
+    <div className="d68-bizreg-qrbox"><a href={qrImageSrc} target="_blank" rel="noreferrer"><img src={qrImageSrc} alt="QR Vietcombank" onError={() => setQrImageSrc(STATIC_VIETQR_URL)} /></a><div><p>{T(lang, 'Người nhận:', 'Recipient:')} <b>Tieu Vo Dinh Phi</b></p><p>{T(lang, 'Số TK:', 'Account no.:')} <b>0011004000713</b></p><p>{T(lang, 'Nội dung:', 'Transfer note:')} <b>{bankContent}</b></p><p>{T(lang, 'Số tiền:', 'Amount:')} <b>{money(price.total, price.currency)}</b></p></div><label><input type="checkbox" checked={paymentAck} onChange={(e) => setPaymentAck(e.target.checked)} /> {T(lang, 'Tôi đã chuyển khoản đúng số tiền và nội dung ở trên', 'I have transferred the exact amount with the transfer note above')}</label></div>
   </section>;
 
   return <main className="d68-auth-page d68-register-page"><section className="d68-auth-card d68-register-card">
