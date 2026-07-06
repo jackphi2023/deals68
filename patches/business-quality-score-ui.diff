@@ -1,0 +1,42 @@
+diff --git a/src/pages/BusinessDetail.tsx b/src/pages/BusinessDetail.tsx
+--- a/src/pages/BusinessDetail.tsx
++++ b/src/pages/BusinessDetail.tsx
+@@
+ import { formatMoneyForLang, labelIndustry, labelLocation } from '../lib/labels';
+ import type { Lang } from '../lib/i18n';
++import { businessQualityPublicExplanation, normalizeQualityBreakdown, qualityItemLabel, qualityItemNote, qualityPublicCriteria } from '../lib/businessQuality';
+@@
+   const qualityItems = business ? [
+@@
+     { ok: !!business.bench_mid || !!business.valuation_factors, vi: 'Có định giá tham chiếu hệ thống', en: 'System benchmark valuation available' }
+   ] : [];
++  const qualityBreakdown = business ? normalizeQualityBreakdown(business.quality_breakdown_json, business.quality_score) : null;
++  const qualityCriteria = qualityPublicCriteria(lang);
+@@
+-          <InfoSection title="Business Quality Score"><div className="d68-quality-panel"><strong>{quality}</strong>{profile?.role === 'investor' ? <ul>{qualityItems.map((x) => <li key={x.vi} className={x.ok ? 'ok' : 'warn'}>{x.ok ? '✓' : '×'} {T(lang, x.vi, x.en)}</li>)}</ul> : <p>{T(lang, 'Chỉ nhà đầu tư đã đăng nhập mới xem được chi tiết Business Quality Score.', 'Only logged-in investors can view Business Quality Score details.')} <Link to={`/login?next=/businesses/${slug}`}>{T(lang, 'Đăng nhập nhà đầu tư', 'Investor login')}</Link></p>}</div></InfoSection>
++          <InfoSection title="Business Quality Score"><div className="d68-quality-panel"><strong>{quality}</strong><p>{businessQualityPublicExplanation(lang)}</p>{profile?.role === 'investor' ? <div className="d68-quality-breakdown">{qualityBreakdown?.items.map((item) => <div key={item.key} className="d68-quality-breakdown__row"><b>{qualityItemLabel(item, lang)}</b><span>{item.score}/{item.max}</span><small>{qualityItemNote(item, lang)}</small></div>)}<ul>{qualityItems.map((x) => <li key={x.vi} className={x.ok ? 'ok' : 'warn'}>{x.ok ? '✓' : '×'} {T(lang, x.vi, x.en)}</li>)}</ul></div> : <div><ul>{qualityCriteria.map((x) => <li key={x}>• {x}</li>)}</ul><p>{T(lang, 'Nhà đầu tư đã đăng nhập được xem điểm chi tiết từng tiêu chí để quyết định quan tâm, lưu hoặc duyệt proposal của doanh nghiệp.', 'Logged-in investors can view detailed scores by criterion to decide whether to express interest, save or approve the business proposal.')} <Link to={`/login?next=/businesses/${slug}`}>{T(lang, 'Đăng nhập nhà đầu tư', 'Investor login')}</Link></p></div>}</div></InfoSection>
+diff --git a/src/pages/BusinessDashboard.tsx b/src/pages/BusinessDashboard.tsx
+--- a/src/pages/BusinessDashboard.tsx
++++ b/src/pages/BusinessDashboard.tsx
+@@
+ import { DEFAULT_VALUATION_CONFIG, getActiveValuationConfig, valuate, valuationInputFromBusiness, formatValuationMoney, valuationVerdictMessage, VALUATION_DISCLAIMER_VI, VALUATION_DISCLAIMER_EN } from '../lib/valuationEngine';
++import { businessQualityPublicExplanation, normalizeQualityBreakdown, qualityItemLabel, qualityItemNote } from '../lib/businessQuality';
+@@
+   const qualityItems = buildQualityItems(lang, b, files, images);
++  const qualityBreakdown = normalizeQualityBreakdown(b.quality_breakdown_json, score);
+   const dashboardBenchmark = valuate(valuationInputFromBusiness(b), valuationConfig);
+@@
+-<p>{T(lang,'Điểm do hệ thống tính toán dựa trên chất lượng và số lượng tài liệu đăng lên cũng như định giá doanh nghiệp.', 'Score is calculated by the system based on the quality and quantity of uploaded materials as well as business valuation inputs.')}</p>
++<p>{businessQualityPublicExplanation(lang)}</p>
+@@
+-<div className="d68-quality-list d68-dashboard-card"><div className="d68-quality-list__head"><BarChart3 size={18}/><h2>{T(lang,'Hồ sơ/tài liệu đạt yêu cầu','Required profile materials')}</h2></div>{qualityItems.map((item) => <div key={item.label} className={`d68-quality-item ${item.ok ? 'ok' : 'missing'}`}><b>{item.ok ? '✓' : '×'} {item.label}</b><span>{item.detail}</span></div>)}</div>
++<div className="d68-quality-list d68-dashboard-card"><div className="d68-quality-list__head"><BarChart3 size={18}/><h2>{T(lang,'Điểm theo nhóm tiêu chí','Score by criterion')}</h2></div>{qualityBreakdown.items.map((item) => <div key={item.key} className={`d68-quality-item ${item.score >= item.max * 0.7 ? 'ok' : 'missing'}`}><b>{qualityItemLabel(item, lang)}</b><span>{item.score}/{item.max} · {qualityItemNote(item, lang)}</span></div>)}</div><div className="d68-quality-list d68-dashboard-card"><div className="d68-quality-list__head"><BarChart3 size={18}/><h2>{T(lang,'Hồ sơ/tài liệu đạt yêu cầu','Required profile materials')}</h2></div>{qualityItems.map((item) => <div key={item.label} className={`d68-quality-item ${item.ok ? 'ok' : 'missing'}`}><b>{item.ok ? '✓' : '×'} {item.label}</b><span>{item.detail}</span></div>)}</div>
+diff --git a/src/pages/Admin.tsx b/src/pages/Admin.tsx
+--- a/src/pages/Admin.tsx
++++ b/src/pages/Admin.tsx
+@@
+-placeholder="Quality score" className="d68-admin-input"/><input name="data_confidence"
++placeholder="Business Quality Score 0-100" min="0" max="100" className="d68-admin-input"/><label className="d68-admin-check"><input name="quality_score_manual_override" type="checkbox" defaultChecked={!!b.quality_score_manual_override}/> Giữ điểm Admin nhập</label><input name="data_confidence"
+@@
+-quality_score: snapshot.quality_score, data_confidence: snapshot.data_confidence,
++quality_score: Math.max(0, Math.min(100, snapshot.quality_score)), quality_score_manual_override: fd.get('quality_score_manual_override') === 'on', data_confidence: snapshot.data_confidence,
