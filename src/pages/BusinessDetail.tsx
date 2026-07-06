@@ -7,6 +7,7 @@ import { percent } from '../lib/format';
 import { useAuth } from '../contexts/AuthContext';
 import { formatMoneyForLang, labelIndustry, labelLocation } from '../lib/labels';
 import type { Lang } from '../lib/i18n';
+import { businessQualityPublicExplanation, normalizeQualityBreakdown, qualityItemLabel, qualityItemNote, qualityPublicCriteria } from '../lib/businessQuality';
 
 const T = (lang: Lang, vi: string, en: string) => (lang === 'en' ? en : vi);
 
@@ -186,6 +187,8 @@ export default function BusinessDetail({ lang }: { lang: Lang }) {
     { ok: heroImages.length > 0, vi: 'Có hình ảnh doanh nghiệp đã duyệt', en: 'Approved business images available' },
     { ok: !!business.bench_mid || !!business.valuation_factors, vi: 'Có định giá tham chiếu hệ thống', en: 'System benchmark valuation available' }
   ] : [];
+  const qualityBreakdown = business ? normalizeQualityBreakdown(business.quality_breakdown_json, business.quality_score) : null;
+  const qualityCriteria = qualityPublicCriteria(lang);
 
   async function expressInterest() {
     if (!profile) { navigate(`/login?next=/businesses/${slug}`); return; }
@@ -232,7 +235,7 @@ export default function BusinessDetail({ lang }: { lang: Lang }) {
           <section className="d68-detail-facts" aria-label={T(lang, 'Thông tin chính', 'Key facts')}>{facts.map((fact) => <Fact key={fact.label} label={fact.label} value={fact.value} />)}</section>
           <InfoSection title={T(lang, 'Điểm nổi bật', 'Highlights')}><BulletList items={highlights} empty={T(lang, 'Chưa có điểm nổi bật đã duyệt.', 'No approved highlights yet.')} /></InfoSection>
           <InfoSection title={T(lang, 'Tài liệu Hồ sơ doanh nghiệp', 'Business Profile Documents')} badge={investorAccess ? `✓ ${T(lang, 'Đã kết nối', 'Connected')}` : `🔒 ${T(lang, 'Mở sau kết nối', 'Unlock after connection')}`}><DocList docs={docsToShow} lang={lang} investorAccess={investorAccess} onDownload={downloadDoc} empty={T(lang, 'Chưa có tài liệu hồ sơ đã duyệt tên hiển thị.', 'No approved profile document names yet.')} /></InfoSection>
-          <InfoSection title="Business Quality Score"><div className="d68-quality-panel"><strong>{quality}</strong>{profile?.role === 'investor' ? <ul>{qualityItems.map((x) => <li key={x.vi} className={x.ok ? 'ok' : 'warn'}>{x.ok ? '✓' : '×'} {T(lang, x.vi, x.en)}</li>)}</ul> : <p>{T(lang, 'Chỉ nhà đầu tư đã đăng nhập mới xem được chi tiết Business Quality Score.', 'Only logged-in investors can view Business Quality Score details.')} <Link to={`/login?next=/businesses/${slug}`}>{T(lang, 'Đăng nhập nhà đầu tư', 'Investor login')}</Link></p>}</div></InfoSection>
+          <InfoSection title="Business Quality Score"><div className="d68-quality-panel"><strong>{quality}</strong><p>{businessQualityPublicExplanation(lang)}</p>{profile?.role === 'investor' ? <div className="d68-quality-breakdown">{qualityBreakdown?.items.map((item) => <div key={item.key} className="d68-quality-breakdown__row"><b>{qualityItemLabel(item, lang)}</b><span>{item.score}/{item.max}</span><small>{qualityItemNote(item, lang)}</small></div>)}<ul>{qualityItems.map((x) => <li key={x.vi} className={x.ok ? 'ok' : 'warn'}>{x.ok ? '✓' : '×'} {T(lang, x.vi, x.en)}</li>)}</ul></div> : <div><ul>{qualityCriteria.map((x) => <li key={x}>• {x}</li>)}</ul><p>{T(lang, 'Nhà đầu tư đã đăng nhập được xem điểm chi tiết từng tiêu chí để quyết định quan tâm, lưu hoặc duyệt proposal của doanh nghiệp.', 'Logged-in investors can view detailed scores by criterion to decide whether to express interest, save or approve the business proposal.')} <Link to={`/login?next=/businesses/${slug}`}>{T(lang, 'Đăng nhập nhà đầu tư', 'Investor login')}</Link></p></div>}</div></InfoSection>
           <p className="d68-detail-disclaimer"><b>{T(lang, 'Miễn trừ trách nhiệm:', 'Disclaimer:')}</b> {T(lang, 'Deals68 là sàn kết nối bên bán với nhà đầu tư, người mua, bên cho vay và cố vấn. Thông tin là teaser public đã duyệt và không thay thế thẩm định độc lập trước giao dịch.', 'Deals68 is a marketplace connecting sell-sides with investors, buyers, lenders and advisors. This is an approved public teaser and does not replace independent due diligence before any transaction.')}</p>
         </div>
         <aside className="d68-detail-side"><div className="d68-detail-summary-card"><div className="d68-detail-summary-head"><span>{T(lang, 'Loại giao dịch', 'Transaction')}</span><strong>{dealTypeLabel}</strong></div><div className="d68-detail-summary-body"><span>{askLabel(lang, business.deal_type)}</span><b>{ask}</b><small>{business.ask_currency || business.revenue_currency ? `${T(lang, 'Tiền tệ', 'Currency')}: ${business.ask_currency || business.revenue_currency}` : T(lang, 'Tiền tệ đang cập nhật', 'Currency pending')}</small><div className="d68-detail-mini-metrics"><div><span>{T(lang, 'Doanh thu', 'Revenue')}</span><b>{revenue}</b></div><div><span>{T(lang, 'Cổ phần', 'Stake')}</span><b>{stake}</b></div><div><span>{T(lang, 'DN tự định giá', 'Self-valuation')}</span><b>{selfValLabel}</b></div></div></div></div>
