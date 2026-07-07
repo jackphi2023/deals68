@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="178" height="42" viewBox="0 0 178 42" fill="none">
+  <rect width="178" height="42" fill="none"/>
+  <g transform="translate(2 4)">
+    <rect x="0" y="0" width="34" height="34" rx="10" fill="#0F2A4A"/>
+    <path d="M9 24.5L15.2 18.1L19.4 21.9L26.2 11.2" stroke="#F2B51D" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="26.5" cy="10.5" r="2.6" fill="#1BADEA"/>
+  </g>
+  <text x="44" y="24" font-family="Be Vietnam Pro, Arial, sans-serif" font-weight="800" font-size="20" letter-spacing="-0.6" fill="#0F2A4A">Deals</text>
+  <text x="101" y="24" font-family="Be Vietnam Pro, Arial, sans-serif" font-weight="800" font-size="20" letter-spacing="-0.6" fill="#F2B51D">68</text>
+  <text x="126" y="24" font-family="Be Vietnam Pro, Arial, sans-serif" font-weight="700" font-size="12" fill="#64748B">.com</text>
+</svg>

@@ -49,10 +49,9 @@ export function qualityPublicCriteria(lang: Lang) {
 export function qualityBand(score: number | null | undefined, lang: Lang) {
   const n = Number(score);
   if (!Number.isFinite(n)) return { label: lang === 'en' ? 'Pending' : 'Đang cập nhật', cls: 'gold' };
-  if (n >= 80) return { label: lang === 'en' ? 'Strong' : 'Mạnh', cls: 'green' };
-  if (n >= 65) return { label: lang === 'en' ? 'Good' : 'Tốt', cls: 'blue' };
-  if (n >= 50) return { label: lang === 'en' ? 'Needs data' : 'Cần bổ sung', cls: 'gold' };
-  return { label: lang === 'en' ? 'Not ready' : 'Chưa sẵn sàng', cls: 'red' };
+  if (n >= 85) return { label: lang === 'en' ? 'Excellent' : 'Xuất sắc', cls: 'green' };
+  if (n >= 70) return { label: lang === 'en' ? 'Good' : 'Tốt', cls: 'blue' };
+  return { label: lang === 'en' ? 'Needs data' : 'Cần bổ sung', cls: 'gold' };
 }
 
 export function normalizeQualityBreakdown(raw: any, fallbackScore: any = 0): BusinessQualityBreakdown {

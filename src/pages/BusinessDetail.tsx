@@ -7,7 +7,7 @@ import { percent } from '../lib/format';
 import { useAuth } from '../contexts/AuthContext';
 import { formatMoneyForLang, labelIndustry, labelLocation } from '../lib/labels';
 import type { Lang } from '../lib/i18n';
-import { businessQualityPublicExplanation, normalizeQualityBreakdown, qualityItemLabel, qualityItemNote, qualityPublicCriteria } from '../lib/businessQuality';
+import { businessQualityPublicExplanation, normalizeQualityBreakdown, qualityBand, qualityItemLabel, qualityItemNote, qualityPublicCriteria } from '../lib/businessQuality';
 
 const T = (lang: Lang, vi: string, en: string) => (lang === 'en' ? en : vi);
 
@@ -108,6 +108,15 @@ export default function BusinessDetail({ lang }: { lang: Lang }) {
         if (!live) return;
         if (!b) { setError(T(lang, 'Không tìm thấy hồ sơ doanh nghiệp hoặc hồ sơ chưa được Admin duyệt công khai.', 'Business profile not found or not approved for public display.')); return; }
         setBusiness(b);
+        if (profile?.role === 'investor' || profile?.role === 'admin') {
+          const { data: qrow } = await supabase
+            .from('businesses')
+            .select('quality_score,quality_breakdown_json,quality_breakdown')
+            .eq('id', b.id)
+            .maybeSingle()
+            .catch(() => ({ data: null } as any));
+          if (live && qrow) setBusiness({ ...b, quality_score: qrow.quality_score ?? b.quality_score, quality_breakdown_json: qrow.quality_breakdown_json ?? qrow.quality_breakdown });
+        }
 
         let canDownload = false;
         if (profile?.role === 'investor') {
@@ -165,6 +174,9 @@ export default function BusinessDetail({ lang }: { lang: Lang }) {
   const selfVal = business ? inferredSelfValuation(business) : 0;
   const selfValLabel = selfVal > 0 ? money(lang, selfVal, business.ask_currency || business.revenue_currency || 'VND') : T(lang, 'Đang cập nhật', 'Pending');
   const docsToShow = docs.filter((d) => d.public_visible !== false || investorAccess);
+  const canViewRealQuality = profile?.role === 'investor' || profile?.role === 'admin';
+  const scoreNumber = business?.quality_score === null || business?.quality_score === undefined ? null : Math.round(Number(business.quality_score));
+  const bqsBand = qualityBand(scoreNumber, lang);
 
   const facts: FactRow[] = business ? [
     { label: T(lang, 'Mã hồ sơ', 'Profile code'), value: business.public_code || business.slug || '—' },
@@ -176,7 +188,7 @@ export default function BusinessDetail({ lang }: { lang: Lang }) {
     { label: askLabel(lang, business.deal_type), value: ask },
     { label: T(lang, 'Tỷ lệ cổ phần', 'Stake'), value: stake },
     { label: T(lang, 'DN tự định giá', 'Company self-valuation'), value: selfValLabel },
-    { label: 'Business Quality Score', value: quality }
+    { label: 'Business Quality Score', value: canViewRealQuality ? quality : T(lang, 'Chỉ nhà đầu tư đăng nhập', 'Investor login required') }
   ] : [];
 
   const qualityItems = business ? [
@@ -191,7 +203,7 @@ export default function BusinessDetail({ lang }: { lang: Lang }) {
   const qualityCriteria = qualityPublicCriteria(lang);
 
   async function expressInterest() {
-    if (!profile) { navigate(`/login?next=/businesses/${slug}`); return; }
+    if (!profile) { setMsg(T(lang, 'Bạn cần là nhà đầu tư để thao tác. Hãy đăng ký/đăng nhập tài khoản nhà đầu tư để thực hiện.', 'You need an Investor account to perform this action. Please register or log in as an investor.')); return; }
     if (profile.role !== 'investor') { setMsg(T(lang, 'Chỉ tài khoản Nhà đầu tư được bày tỏ quan tâm.', 'Only Investor accounts can express interest.')); return; }
     const inv = await getInvestorByOwner(profile.id).catch(() => null);
     if (!inv?.id || !business?.id) { setMsg(T(lang, 'Không tìm thấy hồ sơ nhà đầu tư.', 'Investor profile not found.')); return; }
@@ -201,12 +213,12 @@ export default function BusinessDetail({ lang }: { lang: Lang }) {
     setMsg(upErr ? upErr.message : T(lang, 'Đã ghi nhận quan tâm. Admin/Doanh nghiệp sẽ duyệt kết nối trước khi mở thêm dữ liệu.', 'Interest recorded. Admin/Business approval is required before additional data unlocks.'));
   }
   async function requestData() {
-    if (!profile) { navigate(`/login?next=/businesses/${slug}`); return; }
+    if (!profile) { setMsg(T(lang, 'Bạn cần là nhà đầu tư để thao tác. Hãy đăng ký/đăng nhập tài khoản nhà đầu tư để thực hiện.', 'You need an Investor account to perform this action. Please register or log in as an investor.')); return; }
     if (profile.role !== 'investor') { setMsg(T(lang, 'Chỉ tài khoản Nhà đầu tư được yêu cầu tài liệu.', 'Only Investor accounts can request documents.')); return; }
     const inv = await getInvestorByOwner(profile.id).catch(() => null);
     if (!inv?.id || !business?.id) { setMsg(T(lang, 'Không tìm thấy hồ sơ nhà đầu tư.', 'Investor profile not found.')); return; }
-    const { error: reqErr } = await supabase.from('request_data').insert({ investor_id: inv.id, business_id: business.id, requested_items: ['IM', 'Financials'], note: 'Requested from public business detail page.', status: 'requested' });
-    setMsg(reqErr ? reqErr.message : T(lang, 'Đã gửi yêu cầu tài liệu qua Deals68.', 'Data request sent via Deals68.'));
+    const { error: reqErr } = await supabase.from('request_data').insert({ investor_id: inv.id, business_id: business.id, requested_items: ['IM', 'Financials'], note: 'Requested from public business detail page. e-NDA placeholder pending Beta completion.', status: 'pending' });
+    setMsg(reqErr ? reqErr.message : T(lang, 'Đã gửi yêu cầu tài liệu qua Deals68. Luồng e-NDA sẽ được hoàn thiện ở bước tiếp theo.', 'Data request sent via Deals68. The e-NDA flow will be completed in the next step.'));
   }
   async function downloadDoc(doc: Doc) {
     if (!investorAccess || !doc.file_path) { await requestData(); return; }
@@ -235,7 +247,7 @@ export default function BusinessDetail({ lang }: { lang: Lang }) {
           <section className="d68-detail-facts" aria-label={T(lang, 'Thông tin chính', 'Key facts')}>{facts.map((fact) => <Fact key={fact.label} label={fact.label} value={fact.value} />)}</section>
           <InfoSection title={T(lang, 'Điểm nổi bật', 'Highlights')}><BulletList items={highlights} empty={T(lang, 'Chưa có điểm nổi bật đã duyệt.', 'No approved highlights yet.')} /></InfoSection>
           <InfoSection title={T(lang, 'Tài liệu Hồ sơ doanh nghiệp', 'Business Profile Documents')} badge={investorAccess ? `✓ ${T(lang, 'Đã kết nối', 'Connected')}` : `🔒 ${T(lang, 'Mở sau kết nối', 'Unlock after connection')}`}><DocList docs={docsToShow} lang={lang} investorAccess={investorAccess} onDownload={downloadDoc} empty={T(lang, 'Chưa có tài liệu hồ sơ đã duyệt tên hiển thị.', 'No approved profile document names yet.')} /></InfoSection>
-          <InfoSection title="Business Quality Score"><div className="d68-quality-panel"><strong>{quality}</strong><p>{businessQualityPublicExplanation(lang)}</p>{profile?.role === 'investor' ? <div className="d68-quality-breakdown">{qualityBreakdown?.items.map((item) => <div key={item.key} className="d68-quality-breakdown__row"><b>{qualityItemLabel(item, lang)}</b><span>{item.score}/{item.max}</span><small>{qualityItemNote(item, lang)}</small></div>)}<ul>{qualityItems.map((x) => <li key={x.vi} className={x.ok ? 'ok' : 'warn'}>{x.ok ? '✓' : '×'} {T(lang, x.vi, x.en)}</li>)}</ul></div> : <div><ul>{qualityCriteria.map((x) => <li key={x}>• {x}</li>)}</ul><p>{T(lang, 'Nhà đầu tư đã đăng nhập được xem điểm chi tiết từng tiêu chí để quyết định quan tâm, lưu hoặc duyệt proposal của doanh nghiệp.', 'Logged-in investors can view detailed scores by criterion to decide whether to express interest, save or approve the business proposal.')} <Link to={`/login?next=/businesses/${slug}`}>{T(lang, 'Đăng nhập nhà đầu tư', 'Investor login')}</Link></p></div>}</div></InfoSection>
+          <InfoSection title="Business Quality Score"><div className={`d68-bqs-card ${canViewRealQuality ? 'is-real' : 'is-demo'}`}><div className="d68-bqs-ring-col"><div className="d68-bqs-ring" style={{ background: `conic-gradient(${bqsBand.cls === 'green' ? '#27A844' : bqsBand.cls === 'blue' ? '#1596cc' : '#B8860B'} ${Math.max(0, Math.min(100, scoreNumber ?? 68)) * 3.6}deg, #EEF2F6 0deg)` }}><div><b>{canViewRealQuality ? (scoreNumber ?? '—') : 'BQS'}</b><span>{canViewRealQuality ? '/100' : T(lang, 'Demo', 'Demo')}</span></div></div></div><div className="d68-bqs-body"><div className="d68-bqs-head"><h3>Business Quality Score</h3><span className={`d68-bqs-badge ${bqsBand.cls}`}>{canViewRealQuality ? bqsBand.label : T(lang, 'Demo tiêu chí', 'Criteria demo')}</span></div><p>{businessQualityPublicExplanation(lang)}</p><div className="d68-bqs-chips">{canViewRealQuality ? qualityBreakdown?.items.map((item) => <span key={item.key}>• {qualityItemLabel(item, lang)}: {item.score}/{item.max}</span>) : qualityCriteria.map((x) => <span key={x}>• {x}</span>)}</div>{canViewRealQuality ? <div className="d68-bqs-breakdown">{qualityBreakdown?.items.map((item) => <div key={item.key} className="d68-bqs-breakdown__row"><b>{qualityItemLabel(item, lang)}</b><span>{item.score}/{item.max}</span><small>{qualityItemNote(item, lang)}</small></div>)}</div> : <div className="d68-bqs-alert">🔒 {T(lang, 'Chỉ nhà đầu tư đã đăng nhập mới xem được chi tiết Business Quality Score.', 'Only logged-in investors can view the detailed Business Quality Score.')} <Link to={`/login?role=investor&next=/businesses/${slug}`}>{T(lang, 'Đăng nhập nhà đầu tư', 'Investor login')}</Link></div>}</div></div></InfoSection>
           <p className="d68-detail-disclaimer"><b>{T(lang, 'Miễn trừ trách nhiệm:', 'Disclaimer:')}</b> {T(lang, 'Deals68 là sàn kết nối bên bán với nhà đầu tư, người mua, bên cho vay và cố vấn. Thông tin là teaser public đã duyệt và không thay thế thẩm định độc lập trước giao dịch.', 'Deals68 is a marketplace connecting sell-sides with investors, buyers, lenders and advisors. This is an approved public teaser and does not replace independent due diligence before any transaction.')}</p>
         </div>
         <aside className="d68-detail-side"><div className="d68-detail-summary-card"><div className="d68-detail-summary-head"><span>{T(lang, 'Loại giao dịch', 'Transaction')}</span><strong>{dealTypeLabel}</strong></div><div className="d68-detail-summary-body"><span>{askLabel(lang, business.deal_type)}</span><b>{ask}</b><small>{business.ask_currency || business.revenue_currency ? `${T(lang, 'Tiền tệ', 'Currency')}: ${business.ask_currency || business.revenue_currency}` : T(lang, 'Tiền tệ đang cập nhật', 'Currency pending')}</small><div className="d68-detail-mini-metrics"><div><span>{T(lang, 'Doanh thu', 'Revenue')}</span><b>{revenue}</b></div><div><span>{T(lang, 'Cổ phần', 'Stake')}</span><b>{stake}</b></div><div><span>{T(lang, 'DN tự định giá', 'Self-valuation')}</span><b>{selfValLabel}</b></div></div></div></div>

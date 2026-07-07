@@ -2,3 +2,7 @@
 
 /* Spec v1.3 UI correction patch — Investors list hover/mobile */
 .d68-investor-card__actions a{transition:background .16s,border-color .16s,color .16s}.d68-investor-card__actions a:hover{background:#F2B51D!important;border-color:#F2B51D!important;color:#0F2A4A!important}.d68-investor-card__actions button:hover{background:#0F2A4A;color:#fff;border-color:#0F2A4A}@media(max-width:720px){.d68-investors-layout{padding:8px 16px 38px}.d68-investor-card{grid-template-columns:1fr!important}.d68-investor-card__icon{width:48px;height:48px}.d68-investor-card__actions{flex-direction:row!important;align-items:stretch}.d68-investor-card__actions a,.d68-investor-card__actions button{flex:1;text-align:center}.d68-investors-sidebar{position:static}.d68-investors-toolbar{align-items:flex-start}.d68-investors-title{padding:28px 16px 16px}}
+
+
+/* Deals68 Beta v1.3 — Proposal button states */
+.d68-investor-card__actions button:disabled{opacity:.62;cursor:not-allowed;background:#94A3B8!important;border-color:#94A3B8!important;color:#fff!important}.d68-investors-toolbar span:last-child{font-weight:800;color:#0F2A4A}

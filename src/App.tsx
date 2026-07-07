@@ -21,6 +21,7 @@ import { langFromPath, stripLangPrefix, toLocalizedPath } from './lib/i18nRoutes
 const BusinessDashboard = lazy(() => import('./pages/BusinessDashboard'));
 const InvestorDashboard = lazy(() => import('./pages/InvestorDashboard'));
 const Admin = lazy(() => import('./pages/Admin'));
+const AdminProposals = lazy(() => import('./pages/AdminProposals'));
 const AdminValuation = lazy(() => import('./pages/AdminValuation'));
 const About = lazy(() => import('./pages/StaticPages').then((m) => ({ default: m.About })));
 const Terms = lazy(() => import('./pages/StaticPages').then((m) => ({ default: m.Terms })));
@@ -151,6 +152,7 @@ export default function App(){
         <Route path="/dashboard/investor/*" element={<DashboardGate role="investor"><InvestorDashboard/></DashboardGate>}/>
         <Route path="/admin/valuation" element={<AdminValuation/>}/>
         <Route path="/admin/valuation-config" element={<AdminValuation/>}/>
+        <Route path="/admin/proposals" element={<AdminProposals/>}/>
         <Route path="/admin" element={<Admin/>}/>
         <Route path="/admin/*" element={<Admin/>}/>
 
