@@ -10,3 +10,4 @@ yarn-debug.log*
 yarn-error.log*
 playwright-report/
 test-results/
+reports/deals68/

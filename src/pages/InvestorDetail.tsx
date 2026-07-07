@@ -46,6 +46,15 @@ function fmtDate(value: any, lang: Lang) {
   const d = value ? new Date(value) : new Date();
   return Number.isNaN(d.getTime()) ? '' : d.toLocaleDateString(lang === 'en' ? 'en-US' : 'vi-VN');
 }
+function relativeTime(value: any, lang: Lang) {
+  const d = value ? new Date(value) : new Date();
+  const diffDays = Math.max(0, Math.floor((Date.now() - d.getTime()) / 86400000));
+  if (!Number.isFinite(diffDays)) return '';
+  if (diffDays < 1) return T(lang, 'Hôm nay', 'Today');
+  if (diffDays < 30) return T(lang, `${diffDays} ngày trước`, `${diffDays} day${diffDays > 1 ? 's' : ''} ago`);
+  const months = Math.max(1, Math.floor(diffDays / 30));
+  return T(lang, `${months} tháng trước`, `${months} month${months > 1 ? 's' : ''} ago`);
+}
 
 export default function InvestorDetail({ lang }: { lang: Lang }) {
   const { code = '' } = useParams();
@@ -58,7 +67,7 @@ export default function InvestorDetail({ lang }: { lang: Lang }) {
   const [msg, setMsg] = useState('');
   const [proposalBusy, setProposalBusy] = useState(false);
   const [sentProposal, setSentProposal] = useState<any>(null);
-  const [publicHistory, setPublicHistory] = useState<string[]>([]);
+  const [publicHistory, setPublicHistory] = useState<any[]>([]);
 
   useEffect(() => {
     let live = true;
@@ -70,17 +79,17 @@ export default function InvestorDetail({ lang }: { lang: Lang }) {
         if (!data) setError(T(lang, 'Không tìm thấy hồ sơ nhà đầu tư hoặc hồ sơ chưa public.', 'Investor profile not found or not public.'));
         else {
           setInv(data);
-          const fallback = proposalHistory(data).map((item) => `${item}`);
+          const fallback = proposalHistory(data).map((item) => ({ label: `${item}`, slug: '', sent_at: null }));
           setPublicHistory(fallback);
           const { data: hist } = await supabase
-            .from('proposals')
-            .select('id,sent_at,businesses(public_code,title_vi,title_en)')
-            .eq('investor_id', data.id)
-            .order('sent_at', { ascending: false })
-            .limit(8)
+            .rpc('get_public_investor_proposal_history', { investor_uuid: data.id })
             .catch(() => ({ data: null } as any));
           if (live && hist?.length) {
-            setPublicHistory(hist.map((row: any) => `[${fmtDate(row.sent_at, lang)}] ${T(lang, 'DN XXX gửi hồ sơ', 'Business XXX sent a profile')}`));
+            setPublicHistory(hist.slice(0, 10).map((row: any) => ({
+              sent_at: row.sent_at,
+              slug: row.business_slug,
+              label: row.business_title || row.business_public_code || T(lang, 'Hồ sơ doanh nghiệp ẩn danh', 'Anonymous business profile')
+            })));
           }
         }
       } catch (e: any) {
@@ -172,7 +181,7 @@ export default function InvestorDetail({ lang }: { lang: Lang }) {
         </article>
         <section className="d68-id-section d68-id-section--card"><h2>{T(lang, 'Tiêu chí đầu tư', 'Investment criteria')}</h2><ul className="d68-id-bullets">{criteria.length ? criteria.map((x, i) => <li key={i}>{x}</li>) : <li>{T(lang, 'Chưa có tiêu chí chi tiết được Admin duyệt public.', 'No detailed Admin-approved criteria yet.')}</li>}</ul></section>
         <section className="d68-id-section d68-id-section--card"><h2>{T(lang, 'Ngành quan tâm', 'Sectors of interest')}</h2><div className="d68-id-tags">{industries.length ? industries.map((x) => <span key={x}>{labelIndustry(x, lang)}</span>) : <span>{T(lang, 'Đang cập nhật', 'Updating')}</span>}</div></section>
-        <section className="d68-id-section d68-id-section--card"><h2>{T(lang, 'Lịch sử nhận Proposal', 'Proposal history')}</h2>{publicHistory.length ? <div className="d68-id-timeline">{publicHistory.map((item, idx) => <div key={idx}><i /> <span>{item}</span></div>)}</div> : <p className="d68-id-muted">{T(lang, 'Chưa có lịch sử proposal công khai được Admin duyệt.', 'No Admin-approved public proposal history yet.')}</p>}</section>
+        <section className="d68-id-section d68-id-section--card"><h2>{T(lang, 'Lịch sử nhận proposal', 'Proposal history')}</h2>{publicHistory.length ? <div className="d68-id-timeline d68-id-timeline--proposal">{publicHistory.map((item, idx) => <div key={idx}><i /> <span><small>{relativeTime(item.sent_at, lang)}</small>{item.slug ? <Link to={`/businesses/${item.slug}`} target="_blank" rel="noreferrer">{item.label}</Link> : <b>{item.label}</b>}</span></div>)}</div> : <p className="d68-id-muted">{T(lang, 'Chưa có lịch sử proposal công khai được Admin duyệt.', 'No Admin-approved public proposal history yet.')}</p>}</section>
         <section className="d68-id-section d68-id-section--card"><h2>{T(lang, 'Thông tin liên hệ', 'Contact information')}</h2><p className="d68-id-muted">{T(lang, 'Chỉ Doanh nghiệp đã kết nối với Nhà đầu tư mới được xem.', 'Only businesses connected with this investor can view contact details.')}</p><div className="d68-id-contact-list"><ContactRow label={T(lang, 'Người liên hệ', 'Contact person')} value={contact?.name} unlocked={connected && !!contact?.name} /><ContactRow label="Email" value={contact?.email} unlocked={connected && !!contact?.email} /><ContactRow label={T(lang, 'Website', 'Website')} value={contact?.website} unlocked={connected && !!contact?.website} href={contact?.website} /></div></section>
       </div>
       <aside className="d68-id-side d68-id-side--sticky">

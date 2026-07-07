@@ -356,7 +356,7 @@ export default function BusinessDashboard() {
           supabase.from('request_data').select('*, investors(code,title_en,title_vi,type,country)').eq('business_id', biz.id).order('created_at', { ascending: false }),
           supabase.from('investor_interests').select('*, investors(id,code,title_en,title_vi,type,country,industries,deal_types,ticket_min,ticket_max)').eq('business_id', biz.id).order('created_at', { ascending: false }),
           supabase.from('payment_orders').select('*').eq('business_id', biz.id).order('created_at', { ascending: false }),
-          supabase.from('proposals').select('*, investors(code,title_en,title_vi,type,country)').eq('business_id', biz.id).order('sent_at', { ascending: false }),
+          supabase.from('proposals').select('*, investors(code,title_en,title_vi,type,country,country_iso2,ticket_min,ticket_max)').eq('business_id', biz.id).order('sent_at', { ascending: false }),
           supabase.from('saved_businesses').select('id,investor_id,business_id,created_at').eq('business_id', biz.id).order('created_at', { ascending: false }),
           supabase.from('businesses').select('id,industry,country_iso2,revenue_2025,revenue_currency,ask_amount,ask_currency,stake_pct,deal_type,visible,status,public_snapshot_json').eq('visible', true).eq('status', 'active').not('public_snapshot_json', 'is', null).eq('country_iso2', biz.country_iso2 || 'VN').limit(80)
         ]);
@@ -509,7 +509,7 @@ export default function BusinessDashboard() {
       {tab === 'profile' ? <ProfileForm lang={lang} b={b} saveProfile={saveProfile} /> : null}
       {tab === 'documents' ? <Documents lang={lang} files={files} deleteFile={deleteFile} renameFile={renameFile} fileChange={fileChange} newDocName={newDocName} setNewDocName={setNewDocName} newDocCategory={newDocCategory} setNewDocCategory={setNewDocCategory} /> : null}
       {tab === 'images' ? <Images lang={lang} images={images} imageChange={imageChange} deleteImage={deleteImage} renameImage={renameImage} suggestHero={suggestHero} /> : null}
-      {tab === 'interests' ? <><Rows title={T(lang,'Proposal đã gửi','Sent proposals')} rows={proposals} empty={T(lang,'Chưa gửi hồ sơ DN tới nhà đầu tư nào.','No business profile proposals sent yet.')} /><Rows title={T(lang,'Nhà đầu tư quan tâm','Investor interests')} rows={interests} empty={T(lang,'Chưa có nhà đầu tư quan tâm.','No investor interests yet.')} actions={(row: any) => <><button onClick={() => acceptInterest(row)} className="d68-dashboard-btn green">Accept</button><button onClick={() => rejectInterest(row)} className="d68-dashboard-btn red">Reject</button></>} /></> : null}
+      {tab === 'interests' ? <><ProposalRows lang={lang} rows={proposals} empty={T(lang,'Chưa gửi hồ sơ DN tới nhà đầu tư nào.','No business profile proposals sent yet.')} /><Rows title={T(lang,'Nhà đầu tư quan tâm','Investor interests')} rows={interests} empty={T(lang,'Chưa có nhà đầu tư quan tâm.','No investor interests yet.')} actions={(row: any) => <><button onClick={() => acceptInterest(row)} className="d68-dashboard-btn green">Accept</button><button onClick={() => rejectInterest(row)} className="d68-dashboard-btn red">Reject</button></>} /></> : null}
       {tab === 'requests' ? <Rows title={T(lang,'Yêu cầu dữ liệu','Data requests')} rows={requests} empty={T(lang,'Chưa có yêu cầu dữ liệu.','No data requests yet.')} actions={(row: any) => <button onClick={() => fulfillRequest(row)} className="d68-dashboard-btn green">Fulfilled</button>} /> : null}
       {tab === 'services' ? <div className="d68-dashboard-card"><h2>Services & Billing</h2><p>{T(lang,'Đơn thanh toán gần đây','Recent payment orders')}: {payments.length}</p>{payments.map((p) => <div key={p.id} className="d68-dashboard-row"><div style={{ flex: 1 }}><b>{p.title || p.id}</b><div className="d68-dashboard-mini">{p.status} · {new Date(p.created_at).toLocaleString()}</div></div></div>)}<Link to="/pricing" className="d68-dashboard-btn gold">Renew / Upgrade →</Link></div> : null}
     </section></div>
@@ -557,6 +557,24 @@ function Images({ lang, images, imageChange, deleteImage, renameImage, suggestHe
   return <div className="d68-dashboard-card"><h2>{T(lang,'Ảnh doanh nghiệp','Business images')}</h2><p>{T(lang,'Ảnh public chỉ hiển thị sau khi Admin kiểm duyệt/làm mờ thông tin nhạy cảm.', 'Images are public only after Admin review/sanitization.')}</p>{images.map((im: any) => <div key={im.id} className="d68-dashboard-row"><img className="d68-dashboard-thumb" src={im.public_url} alt={im.title || 'image'}/><div style={{ flex: 1 }}><b>{im.display_title || im.title || 'Image'}</b><div className="d68-dashboard-mini">{im.public_visible ? 'public' : 'not public'} · {im.is_sanitized ? 'sanitized' : 'pending sanitize'} · {im.is_hero ? 'hero' : 'gallery'}</div></div><button onClick={() => renameImage(im)} className="d68-dashboard-btn light">{T(lang,'Sửa tên','Rename')}</button><button onClick={() => suggestHero(im)} className="d68-dashboard-btn gold">Hero</button><button onClick={() => deleteImage(im)} className="d68-dashboard-btn red">{T(lang,'Xóa','Delete')}</button></div>)}{!images.length ? <div className="d68-dashboard-empty">{T(lang,'Chưa có ảnh.','No images yet.')}</div> : null}<label className="d68-dashboard-btn" style={{ display: 'inline-block', marginTop: 14 }}>+ {T(lang,'Tải ảnh','Upload image')}<input type="file" accept="image/png,image/jpeg,image/webp" onChange={imageChange} style={{ display: 'none' }}/></label></div>;
 }
 
+function proposalDisplayStatus(status: any, lang: Lang) {
+  const s = String(status || 'sent');
+  if (s === 'approved' || s === 'connected') return { label: T(lang, 'Đã duyệt', 'Approved'), cls: 'green' };
+  if (s === 'declined') return { label: T(lang, 'Đã từ chối', 'Declined'), cls: 'red' };
+  if (s === 'request_data') return { label: T(lang, 'Yêu cầu tài liệu', 'Data requested'), cls: 'blue' };
+  return { label: T(lang, 'Chưa duyệt', 'Pending review'), cls: 'gold' };
+}
+function investorTicket(inv: any, lang: Lang) {
+  const min = Number(inv?.ticket_min || 0), max = Number(inv?.ticket_max || 0);
+  const fmt = (v: number) => v >= 1_000_000 ? `$${(v / 1_000_000).toLocaleString('en-US', { maximumFractionDigits: 1 })}M` : `$${Math.round(v / 1000).toLocaleString('en-US')}K`;
+  if (min && max) return `${fmt(min)} – ${fmt(max)}`;
+  if (max) return `≤ ${fmt(max)}`;
+  if (min) return `≥ ${fmt(min)}`;
+  return T(lang, 'Đang cập nhật', 'Updating');
+}
+function ProposalRows({ lang, rows, empty }: any) {
+  return <div className="d68-dashboard-card"><h2>{T(lang,'Proposal đã gửi','Sent proposals')}</h2>{rows.map((row: any) => { const inv = row.investors || {}; const st = proposalDisplayStatus(row.status, lang); const title = inv.title_vi || inv.title_en || inv.code || row.investor_id || row.id; return <div key={row.id} className="d68-dashboard-row d68-proposal-row"><div style={{ flex: 1 }}><a href={inv.code ? `/investors/${inv.code}` : undefined} target="_blank" rel="noreferrer" className="d68-dashboard-row-title">{title}</a><div className="d68-dashboard-mini">{inv.country || inv.country_iso2 || '—'} · {T(lang,'Khoản đầu tư','Ticket')}: {investorTicket(inv, lang)} · {new Date(row.sent_at || row.created_at || Date.now()).toLocaleString(lang === 'en' ? 'en-US' : 'vi-VN')}</div></div><span className={`d68-dashboard-badge ${st.cls}`}>{st.label}</span></div>; })}{!rows.length ? <div className="d68-dashboard-empty">{empty}</div> : null}</div>;
+}
 function Rows({ title, rows, empty, actions }: any) {
   return <div className="d68-dashboard-card"><h2>{title}</h2>{rows.map((row: any) => <div key={row.id} className="d68-dashboard-row"><div style={{ flex: 1 }}><b>{row.investors?.title_vi || row.investors?.title_en || row.investors?.code || row.id}</b><div className="d68-dashboard-mini">{row.status || 'new'} · {new Date(row.created_at || row.sent_at || Date.now()).toLocaleString()}</div>{row.message || row.note ? <p>{row.message || row.note}</p> : null}</div><div className="d68-dashboard-actions">{actions ? actions(row) : null}</div></div>)}{!rows.length ? <div className="d68-dashboard-empty">{empty}</div> : null}</div>;
 }

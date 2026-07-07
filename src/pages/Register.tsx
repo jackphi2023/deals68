@@ -416,12 +416,16 @@ try {
       }
 
       setMsgType('ok');
-      setMsg((isInvestor ? T(lang, 'Anh/Chị đã tạo tài khoản Nhà đầu tư thành công. Hệ thống đã gửi mã OTP đến email. Đang chuyển sang trang đăng nhập để xác thực email.', 'Your investor account has been created successfully. An OTP has been sent to your email. Redirecting to login for email verification.') : T(lang, 'Anh/Chị đã tạo tài khoản doanh nghiệp thành công. Hệ thống đã gửi mã OTP đến email. Đang chuyển sang trang đăng nhập để xác thực email.', 'Your business account has been created successfully. An OTP has been sent to your email. Redirecting to login for email verification.')) + uploadNote);
+      const successBase = isInvestor
+        ? T(lang, 'Anh/Chị đã tạo tài khoản Nhà đầu tư thành công. Hệ thống đã gửi mã OTP đến email. Sau vài giây, hệ thống sẽ chuyển sang trang đăng nhập để xác thực OTP.', 'Your investor account has been created successfully. An OTP has been sent to your email. The system will redirect to login for OTP verification shortly.')
+        : T(lang, 'Anh/Chị đã tạo tài khoản Doanh nghiệp thành công. Hệ thống đã gửi mã OTP đến email. Sau vài giây, hệ thống sẽ chuyển sang trang đăng nhập để xác thực OTP.', 'Your business account has been created successfully. An OTP has been sent to your email. The system will redirect to login for OTP verification shortly.');
+      const spamNote = T(lang, 'Hãy kiểm tra cả hòm thư Spam/Quảng cáo nếu email OTP không vào trực tiếp Inbox.', 'Please also check your Spam/Promotions folder if the OTP email does not arrive in your Inbox.');
+      setMsg(`${successBase} ${spamNote}${uploadNote}`);
       await signOut().catch(() => undefined);
       const loginRole = isInvestor ? 'investor' : isBusiness ? 'business' : 'affiliate';
       const nextPath = isInvestor ? '/dashboard/investor' : isBusiness ? '/dashboard/business' : '/dashboard/market-partner';
       const loginPath = `/login?role=${loginRole}&email=${encodeURIComponent(email.trim())}&otp=1&signup=1&next=${encodeURIComponent(nextPath)}`;
-      setTimeout(() => navigate(toLocalizedPath(loginPath, lang), { replace: true }), 1500);
+      setTimeout(() => navigate(toLocalizedPath(loginPath, lang), { replace: true }), 10000);
     } catch (err: any) {
       setMsgType('err');
       setMsg(err?.message || T(lang, 'Tài khoản đã tạo, nhưng hồ sơ/đơn thanh toán cần Admin kiểm tra lại.', 'Account created, but profile/payment order needs Admin review.'));

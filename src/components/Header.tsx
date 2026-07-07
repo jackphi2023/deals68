@@ -87,7 +87,6 @@ export default function Header({ lang }: { lang: Lang }) {
     closeDrawer();
     setAvatarOpen(false);
     await signOut();
-    navigate(nav('/'));
   };
 
   const authDesktop = profile

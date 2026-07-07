@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { getBusinessBySlug, getBusinessDetailAssets, getInvestorByOwner, listBusinesses } from '../lib/data';
+import { getBusinessBySlug, getBusinessDetailAssets, getInvestorByOwner, getMyBusiness, listBusinesses } from '../lib/data';
 import { percent } from '../lib/format';
 import { useAuth } from '../contexts/AuthContext';
 import { formatMoneyForLang, labelIndustry, labelLocation } from '../lib/labels';
@@ -94,6 +94,7 @@ export default function BusinessDetail({ lang }: { lang: Lang }) {
   const [similar, setSimilar] = useState<SimilarDeal[]>([]);
   const [activeImage, setActiveImage] = useState(0);
   const [investorAccess, setInvestorAccess] = useState(false);
+  const [isOwnerBusiness, setIsOwnerBusiness] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [msg, setMsg] = useState('');
@@ -101,13 +102,19 @@ export default function BusinessDetail({ lang }: { lang: Lang }) {
   useEffect(() => {
     let live = true;
     async function load() {
-      setLoading(true); setError(''); setMsg(''); setInvestorAccess(false);
+      setLoading(true); setError(''); setMsg(''); setInvestorAccess(false); setIsOwnerBusiness(false);
       setBusiness(null); setDocs([]); setImages([]); setSimilar([]); setActiveImage(0);
       try {
         const b = await getBusinessBySlug(slug);
         if (!live) return;
         if (!b) { setError(T(lang, 'Không tìm thấy hồ sơ doanh nghiệp hoặc hồ sơ chưa được Admin duyệt công khai.', 'Business profile not found or not approved for public display.')); return; }
         setBusiness(b);
+        let ownerViewing = false;
+        if (profile?.role === 'business') {
+          const myBiz = await getMyBusiness(profile.id).catch(() => null);
+          ownerViewing = !!myBiz?.id && myBiz.id === b.id;
+          if (live) setIsOwnerBusiness(ownerViewing);
+        }
         if (profile?.role === 'investor' || profile?.role === 'admin') {
           const { data: qrow } = await supabase
             .from('businesses')
@@ -136,7 +143,7 @@ export default function BusinessDetail({ lang }: { lang: Lang }) {
         }
         if (!live) return;
         setInvestorAccess(canDownload);
-        const assets = await getBusinessDetailAssets(b.id, { publicOnly: !canDownload }).catch(() => ({ files: [], images: [] }));
+        const assets = await getBusinessDetailAssets(b.id, { publicOnly: !(canDownload || ownerViewing) }).catch(() => ({ files: [], images: [] }));
         if (!live) return;
         setDocs((assets.files || []) as Doc[]);
         setImages((assets.images || []) as Img[]);
@@ -173,7 +180,7 @@ export default function BusinessDetail({ lang }: { lang: Lang }) {
   const location = business ? labelLocation(cleanText(business.city) || cleanText(business.country_iso2), lang) : '';
   const selfVal = business ? inferredSelfValuation(business) : 0;
   const selfValLabel = selfVal > 0 ? money(lang, selfVal, business.ask_currency || business.revenue_currency || 'VND') : T(lang, 'Đang cập nhật', 'Pending');
-  const docsToShow = docs.filter((d) => d.public_visible !== false || investorAccess);
+  const docsToShow = docs.filter((d) => d.public_visible !== false || investorAccess || isOwnerBusiness);
   const canViewRealQuality = profile?.role === 'investor' || profile?.role === 'admin';
   const scoreNumber = business?.quality_score === null || business?.quality_score === undefined ? null : Math.round(Number(business.quality_score));
   const bqsBand = qualityBand(scoreNumber, lang);
@@ -246,8 +253,8 @@ export default function BusinessDetail({ lang }: { lang: Lang }) {
           <section className="d68-detail-image-card" aria-label={T(lang, 'Hình ảnh doanh nghiệp', 'Business images')}><div className={`d68-detail-hero-media${activeHero?.url ? ' has-image' : ''}`}>{activeHero?.url ? <img src={activeHero.url} alt={activeHero.title || title} /> : <div className="d68-detail-anon-visual"><b>📷 {T(lang, 'Hồ sơ ẩn danh', 'Anonymous listing')}</b><span>{T(lang, 'Ảnh public đang chờ Admin duyệt', 'Public image pending Admin approval')}</span></div>}{heroImages.length > 1 ? <button type="button" className="d68-detail-slide d68-detail-slide--prev" onClick={() => setActiveImage((v) => (v <= 0 ? heroImages.length - 1 : v - 1))}>‹</button> : null}{heroImages.length > 1 ? <button type="button" className="d68-detail-slide d68-detail-slide--next" onClick={() => setActiveImage((v) => (v + 1) % heroImages.length)}>›</button> : null}<span className="d68-detail-slide-count">{heroImages.length ? `${activeImage + 1}/${heroImages.length}` : '0/0'}</span></div>{heroImages.length > 1 ? <div className="d68-detail-thumbs">{heroImages.map((img, idx) => <button type="button" key={`${img.url}-${idx}`} className={idx === activeImage ? 'active' : ''} onClick={() => setActiveImage(idx)}><img src={img.url} alt={img.title || title} /></button>)}</div> : null}</section>
           <section className="d68-detail-facts" aria-label={T(lang, 'Thông tin chính', 'Key facts')}>{facts.map((fact) => <Fact key={fact.label} label={fact.label} value={fact.value} />)}</section>
           <InfoSection title={T(lang, 'Điểm nổi bật', 'Highlights')}><BulletList items={highlights} empty={T(lang, 'Chưa có điểm nổi bật đã duyệt.', 'No approved highlights yet.')} /></InfoSection>
-          <InfoSection title={T(lang, 'Tài liệu Hồ sơ doanh nghiệp', 'Business Profile Documents')} badge={investorAccess ? `✓ ${T(lang, 'Đã kết nối', 'Connected')}` : `🔒 ${T(lang, 'Mở sau kết nối', 'Unlock after connection')}`}><DocList docs={docsToShow} lang={lang} investorAccess={investorAccess} onDownload={downloadDoc} empty={T(lang, 'Chưa có tài liệu hồ sơ đã duyệt tên hiển thị.', 'No approved profile document names yet.')} /></InfoSection>
-          <InfoSection title="Business Quality Score"><div className={`d68-bqs-card ${canViewRealQuality ? 'is-real' : 'is-demo'}`}><div className="d68-bqs-ring-col"><div className="d68-bqs-ring" style={{ background: `conic-gradient(${bqsBand.cls === 'green' ? '#27A844' : bqsBand.cls === 'blue' ? '#1596cc' : '#B8860B'} ${Math.max(0, Math.min(100, scoreNumber ?? 68)) * 3.6}deg, #EEF2F6 0deg)` }}><div><b>{canViewRealQuality ? (scoreNumber ?? '—') : 'BQS'}</b><span>{canViewRealQuality ? '/100' : T(lang, 'Demo', 'Demo')}</span></div></div></div><div className="d68-bqs-body"><div className="d68-bqs-head"><h3>Business Quality Score</h3><span className={`d68-bqs-badge ${bqsBand.cls}`}>{canViewRealQuality ? bqsBand.label : T(lang, 'Demo tiêu chí', 'Criteria demo')}</span></div><p>{businessQualityPublicExplanation(lang)}</p><div className="d68-bqs-chips">{canViewRealQuality ? qualityBreakdown?.items.map((item) => <span key={item.key}>• {qualityItemLabel(item, lang)}: {item.score}/{item.max}</span>) : qualityCriteria.map((x) => <span key={x}>• {x}</span>)}</div>{canViewRealQuality ? <div className="d68-bqs-breakdown">{qualityBreakdown?.items.map((item) => <div key={item.key} className="d68-bqs-breakdown__row"><b>{qualityItemLabel(item, lang)}</b><span>{item.score}/{item.max}</span><small>{qualityItemNote(item, lang)}</small></div>)}</div> : <div className="d68-bqs-alert">🔒 {T(lang, 'Chỉ nhà đầu tư đã đăng nhập mới xem được chi tiết Business Quality Score.', 'Only logged-in investors can view the detailed Business Quality Score.')} <Link to={`/login?role=investor&next=/businesses/${slug}`}>{T(lang, 'Đăng nhập nhà đầu tư', 'Investor login')}</Link></div>}</div></div></InfoSection>
+          <InfoSection title={T(lang, 'Tài liệu Hồ sơ doanh nghiệp', 'Business Profile Documents')} badge={investorAccess ? `✓ ${T(lang, 'Đã kết nối', 'Connected')}` : isOwnerBusiness ? `👁 ${T(lang, 'Bản xem của doanh nghiệp', 'Business owner view')}` : `🔒 ${T(lang, 'Mở sau kết nối', 'Unlock after connection')}`}><DocList docs={docsToShow} lang={lang} investorAccess={investorAccess} onDownload={downloadDoc} empty={T(lang, 'Chưa có tài liệu hồ sơ đã duyệt tên hiển thị.', 'No approved profile document names yet.')} /></InfoSection>
+          <InfoSection title="Business Quality Score"><div className={`d68-bqs-score-grid ${canViewRealQuality ? 'is-real' : 'is-demo'}`}>{canViewRealQuality ? qualityBreakdown?.items.map((item) => <div key={item.key} className="d68-bqs-score-card"><b>{qualityItemLabel(item, lang)}</b><strong>{item.score}/{item.max}</strong><span>{qualityItemNote(item, lang)}</span></div>) : qualityCriteria.map((x) => <div key={x} className="d68-bqs-score-card"><b>{x}</b><strong>Demo</strong><span>{T(lang, 'Đăng nhập Nhà đầu tư để xem điểm chi tiết.', 'Investor login is required to view detailed scoring.')}</span></div>)}{!canViewRealQuality ? <div className="d68-bqs-alert d68-bqs-alert--wide">🔒 {T(lang, 'Chỉ nhà đầu tư đã đăng nhập mới xem được chi tiết Business Quality Score.', 'Only logged-in investors can view the detailed Business Quality Score.')} <Link to={`/login?role=investor&next=/businesses/${slug}`}>{T(lang, 'Đăng nhập nhà đầu tư', 'Investor login')}</Link></div> : null}</div></InfoSection>
           <p className="d68-detail-disclaimer"><b>{T(lang, 'Miễn trừ trách nhiệm:', 'Disclaimer:')}</b> {T(lang, 'Deals68 là sàn kết nối bên bán với nhà đầu tư, người mua, bên cho vay và cố vấn. Thông tin là teaser public đã duyệt và không thay thế thẩm định độc lập trước giao dịch.', 'Deals68 is a marketplace connecting sell-sides with investors, buyers, lenders and advisors. This is an approved public teaser and does not replace independent due diligence before any transaction.')}</p>
         </div>
         <aside className="d68-detail-side"><div className="d68-detail-summary-card"><div className="d68-detail-summary-head"><span>{T(lang, 'Loại giao dịch', 'Transaction')}</span><strong>{dealTypeLabel}</strong></div><div className="d68-detail-summary-body"><span>{askLabel(lang, business.deal_type)}</span><b>{ask}</b><small>{business.ask_currency || business.revenue_currency ? `${T(lang, 'Tiền tệ', 'Currency')}: ${business.ask_currency || business.revenue_currency}` : T(lang, 'Tiền tệ đang cập nhật', 'Currency pending')}</small><div className="d68-detail-mini-metrics"><div><span>{T(lang, 'Doanh thu', 'Revenue')}</span><b>{revenue}</b></div><div><span>{T(lang, 'Cổ phần', 'Stake')}</span><b>{stake}</b></div><div><span>{T(lang, 'DN tự định giá', 'Self-valuation')}</span><b>{selfValLabel}</b></div></div></div></div>
@@ -263,6 +270,6 @@ export default function BusinessDetail({ lang }: { lang: Lang }) {
 function InfoSection({ title, badge, children }: { title: string; badge?: string; children: ReactNode }) { return <section className="d68-detail-card"><div className="d68-detail-card-head"><h2>{title}</h2>{badge ? <span>{badge}</span> : null}</div>{children}</section>; }
 function BulletList({ items, empty }: { items: string[]; empty: string }) { return items.length ? <ul className="d68-detail-bullets">{items.map((item, idx) => <li key={`${item}-${idx}`}>{item}</li>)}</ul> : <p className="d68-detail-muted">{empty}</p>; }
 function Fact({ label, value }: FactRow) { return <div className="d68-detail-fact"><span>{label}</span><b>{value}</b></div>; }
-function DocList({ docs, lang, investorAccess, onDownload, empty }: { docs: Doc[]; lang: Lang; investorAccess: boolean; onDownload: (doc: Doc) => void; empty: string }) { return docs.length ? <div className="d68-detail-doc-list">{docs.map((doc) => <div key={doc.id || doc.file_name || doc.display_name} className="d68-detail-doc-row"><span>{fileExt(doc)}</span><div><b>{doc.display_name || doc.file_name || doc.category || 'Document'}</b><small>{doc.category || 'document'}{fileSize(doc.size_bytes) ? ` · ${fileSize(doc.size_bytes)}` : ''}</small></div><button type="button" className={investorAccess ? 'd68-doc-download' : 'd68-doc-download locked'} onClick={() => onDownload(doc)}>{investorAccess ? T(lang, 'Tải tài liệu', 'Download') : '🔒'}</button></div>)}</div> : <p className="d68-detail-muted">{empty}</p>; }
+function DocList({ docs, lang, investorAccess, onDownload, empty }: { docs: Doc[]; lang: Lang; investorAccess: boolean; onDownload: (doc: Doc) => void; empty: string }) { return docs.length ? <div className="d68-detail-doc-list">{docs.map((doc) => <div key={doc.id || doc.file_name || doc.display_name} className="d68-detail-doc-row"><span>{fileExt(doc)}</span><div><b>{doc.display_name || doc.file_name || doc.category || 'Document'}</b><small>{doc.category || 'document'}{fileSize(doc.size_bytes) ? ` · ${fileSize(doc.size_bytes)}` : ''}</small></div><button type="button" disabled={!investorAccess} aria-disabled={!investorAccess} className={investorAccess ? 'd68-doc-download' : 'd68-doc-download locked'} onClick={() => investorAccess ? onDownload(doc) : undefined}>{investorAccess ? T(lang, 'Tải tài liệu', 'Download') : T(lang, 'Khóa', 'Locked')}</button></div>)}</div> : <p className="d68-detail-muted">{empty}</p>; }
 function LockedField({ label, masked }: { label: string; masked: string }) { return <div className="d68-detail-locked"><span>🔒</span><b>{label}</b><em>{masked}</em></div>; }
 function SimilarCard({ deal, idx, lang }: { deal: SimilarDeal; idx: number; lang: Lang }) { return <Link to={`/businesses/${deal.slug}`} className="d68-detail-sim-card"><div className={`d68-detail-sim-media d68-detail-sim-media--${(idx % 6) + 1}`}>{deal.image ? <img src={deal.image} alt={deal.title} /> : <span>🔒 {T(lang, 'Ẩn danh', 'Anonymous')}</span>}<b>{deal.city}</b></div><div><span>{deal.industry}</span><h3>{deal.title}</h3><footer><div><small>{T(lang, 'Doanh thu', 'Revenue')}</small><strong>{deal.revenue}</strong></div><div><small>{T(lang, 'Nhu cầu', 'Ask')}</small><strong>{deal.ask}</strong></div></footer></div></Link>; }

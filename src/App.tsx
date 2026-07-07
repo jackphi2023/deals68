@@ -152,7 +152,7 @@ export default function App(){
         <Route path="/dashboard/investor/*" element={<DashboardGate role="investor"><InvestorDashboard/></DashboardGate>}/>
         <Route path="/admin/valuation" element={<AdminValuation/>}/>
         <Route path="/admin/valuation-config" element={<AdminValuation/>}/>
-        <Route path="/admin/proposals" element={<AdminProposals/>}/>
+        <Route path="/admin/proposals" element={<Admin/>}/>
         <Route path="/admin" element={<Admin/>}/>
         <Route path="/admin/*" element={<Admin/>}/>
 

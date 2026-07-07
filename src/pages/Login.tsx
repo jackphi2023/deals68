@@ -63,7 +63,7 @@ export default function Login({ lang = 'vi' }: { lang?: Lang }) {
 
   useEffect(() => {
     if (fromSignup && signupOtp) {
-      setInfo(T(lang, 'Hãy nhập mã OTP đã gửi đến Email của Anh/Chị dưới đây.', 'Enter the OTP code sent to your email below.'));
+      setInfo(T(lang, 'Hãy nhập mã OTP đã gửi đến Email của Anh/Chị dưới đây. Hãy kiểm tra cả hòm thư Spam/Quảng cáo nếu email OTP không vào trực tiếp Inbox.', 'Enter the OTP code sent to your email below. Please also check your Spam/Promotions folder if the OTP email does not arrive in your Inbox.'));
     }
   }, [fromSignup, signupOtp, lang]);
 
@@ -117,7 +117,7 @@ export default function Login({ lang = 'vi' }: { lang?: Lang }) {
     const { error } = await supabase.auth.resend({ type: 'signup', email: value });
     setLoading(false);
     if (error) setErr(error.message);
-    else { setInfo(T(lang, 'Đã gửi lại mã OTP. Vui lòng kiểm tra email.', 'OTP resent. Please check your email.')); setCooldown(60); }
+    else { setInfo(T(lang, 'Đã gửi lại mã OTP. Vui lòng kiểm tra Inbox và cả hòm thư Spam/Quảng cáo.', 'OTP resent. Please check your Inbox and Spam/Promotions folder.')); setCooldown(60); }
   }
 
   async function submit(e: FormEvent) {
@@ -129,14 +129,18 @@ export default function Login({ lang = 'vi' }: { lang?: Lang }) {
     if (result.error) {
       if (!isAdminLogin && isEmailNotConfirmed(result)) {
         setOtpMode(true);
-        setInfo(T(lang, 'Hãy nhập mã OTP đã gửi đến Email của Anh/Chị dưới đây.', 'Enter the OTP code sent to your email below.'));
+        setInfo(T(lang, 'Hãy nhập mã OTP đã gửi đến Email của Anh/Chị dưới đây. Hãy kiểm tra cả hòm thư Spam/Quảng cáo nếu email OTP không vào trực tiếp Inbox.', 'Enter the OTP code sent to your email below. Please also check your Spam/Promotions folder if the OTP email does not arrive in your Inbox.'));
         return;
       }
       setErr(T(lang, 'Sai email hoặc mật khẩu.', 'Incorrect email or password.'));
       return;
     }
-    if (next) navigate(next, { replace: true });
-    else setPendingRedirect(true);
+    await refreshProfile().catch(() => undefined);
+    const { data: authData } = await supabase.auth.getUser().catch(() => ({ data: { user: null } } as any));
+    const { data: prof } = authData.user?.id
+      ? await supabase.from('profiles').select('role').eq('id', authData.user.id).maybeSingle().catch(() => ({ data: null } as any))
+      : ({ data: null } as any);
+    navigate(next || dashboardForRole(prof?.role || role), { replace: true });
   }
 
   return (
@@ -149,7 +153,7 @@ export default function Login({ lang = 'vi' }: { lang?: Lang }) {
             {isAdminLogin
               ? 'Admin truy cập qua URL riêng.'
               : otpMode
-                ? T(lang, 'Hãy nhập mã OTP đã gửi đến Email của Anh/Chị dưới đây.', 'Enter the OTP code sent to your email below.')
+                ? T(lang, 'Hãy nhập mã OTP đã gửi đến Email của Anh/Chị dưới đây. Hãy kiểm tra cả hòm thư Spam/Quảng cáo nếu email OTP không vào trực tiếp Inbox.', 'Enter the OTP code sent to your email below. Please also check your Spam/Promotions folder if the OTP email does not arrive in your Inbox.')
                 : T(lang, 'Đăng nhập vào tài khoản Doanh nghiệp, Nhà đầu tư hoặc Đối tác thị trường.', 'Sign in to your Business, Investor or Market Partner account.')}
           </p>
         </div>

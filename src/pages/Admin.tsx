@@ -3,13 +3,14 @@ import { Link, Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { getBusinessFiles, getBusinessImages, listBusinesses, updateBusinessFile, updateBusinessImage } from '../lib/data';
 import { supabase } from '../lib/supabase';
+import { proposalStatusLabel, updateProposalStatus, type ProposalStatus } from '../lib/proposals';
 
-type AdminTab = 'overview' | 'payments' | 'businesses' | 'business_review' | 'assets' | 'investors' | 'promos' | 'requests' | 'leads' | 'logs' | 'settings';
+type AdminTab = 'overview' | 'payments' | 'proposals' | 'businesses' | 'business_review' | 'assets' | 'investors' | 'promos' | 'requests' | 'leads' | 'logs' | 'settings';
 
 type Row = Record<string, any>;
 
 const pathTabs: Record<string, AdminTab> = {
-  '': 'overview', overview: 'overview', payments: 'payments', approvals: 'payments', businesses: 'businesses',
+  '': 'overview', overview: 'overview', payments: 'payments', approvals: 'payments', proposals: 'proposals', businesses: 'businesses',
   'business-review': 'business_review', assets: 'assets', investors: 'investors', promo: 'promos', promos: 'promos',
   'data-requests': 'requests', requests: 'requests', leads: 'leads', 'market-partners': 'leads', contacts: 'leads',
   audit: 'logs', logs: 'logs', settings: 'settings'
@@ -18,6 +19,7 @@ const pathTabs: Record<string, AdminTab> = {
 const tabs: { id: AdminTab; label: string; icon: string; href: string }[] = [
   { id: 'overview', label: 'Tổng quan', icon: '📊', href: '/admin' },
   { id: 'payments', label: 'Thanh toán', icon: '💳', href: '/admin/payments' },
+  { id: 'proposals', label: 'Proposal', icon: '📨', href: '/admin/proposals' },
   { id: 'business_review', label: 'Duyệt public DN', icon: '✅', href: '/admin/business-review' },
   { id: 'businesses', label: 'Doanh nghiệp', icon: '🏢', href: '/admin/businesses' },
   { id: 'assets', label: 'Ảnh/File DN', icon: '🖼️', href: '/admin/assets' },
@@ -51,6 +53,7 @@ export default function Admin() {
   const [profiles, setProfiles] = useState<Row[]>([]);
   const [promos, setPromos] = useState<Row[]>([]);
   const [requests, setRequests] = useState<Row[]>([]);
+  const [proposals, setProposals] = useState<Row[]>([]);
   const [payments, setPayments] = useState<Row[]>([]);
   const [logs, setLogs] = useState<Row[]>([]);
   const [contactMessages, setContactMessages] = useState<Row[]>([]);
@@ -66,12 +69,13 @@ export default function Admin() {
     if (profile?.role !== 'admin') return;
     setBusy(true); setError('');
     try {
-      const [biz, invRes, profRes, promoRes, reqRes, payRes, logRes, cmRes, leadRes] = await Promise.all([
+      const [biz, invRes, profRes, promoRes, reqRes, propRes, payRes, logRes, cmRes, leadRes] = await Promise.all([
         listBusinesses({ includeHidden: true }).catch(() => []),
         supabase.from('investors').select('*').order('admin_priority', { ascending: false }).order('created_at', { ascending: false }).limit(2000),
         supabase.from('profiles').select('*').order('created_at', { ascending: false }).limit(2000),
         supabase.from('promo_codes').select('*').order('created_at', { ascending: false }).limit(500),
         supabase.from('request_data').select('*, businesses(title_vi,title_en,public_code,slug), investors(title_en,title_vi,code,type)').order('created_at', { ascending: false }).limit(500),
+        supabase.from('proposals').select('id,business_id,investor_id,message,status,sent_at,updated_at,businesses(id,slug,company_name_private,title_vi,title_en,public_code),investors(id,code,private_name,title_vi,title_en,private_email)').order('sent_at', { ascending: false }).limit(1000),
         supabase.from('payment_orders').select('*').order('created_at', { ascending: false }).limit(500),
         supabase.from('audit_logs').select('*').order('created_at', { ascending: false }).limit(120),
         supabase.from('contact_messages').select('*').order('created_at', { ascending: false }).limit(300),
@@ -82,11 +86,12 @@ export default function Admin() {
       setProfiles(profRes.data || []);
       setPromos(promoRes.data || []);
       setRequests(reqRes.data || []);
+      setProposals(propRes.data || []);
       setPayments(payRes.data || []);
       setLogs(logRes.data || []);
       setContactMessages(cmRes.data || []);
       setPartnerLeads(leadRes.data || []);
-      const firstErr = invRes.error || profRes.error || promoRes.error || reqRes.error || payRes.error || logRes.error || cmRes.error || leadRes.error;
+      const firstErr = invRes.error || profRes.error || promoRes.error || reqRes.error || propRes.error || payRes.error || logRes.error || cmRes.error || leadRes.error;
       if (firstErr) setError(firstErr.message);
     } catch (e: any) { setError(e?.message || 'Could not load admin data.'); }
     finally { setBusy(false); }
@@ -149,6 +154,13 @@ export default function Admin() {
     if (!err) await logAction('mark_data_request', 'request_data', r.id, { status });
     setError(err?.message || ''); setMsg(err ? '' : 'Request updated.'); load();
   }
+  async function markProposal(row: Row, status: ProposalStatus) {
+    try {
+      await updateProposalStatus(row.id, status);
+      await logAction('mark_proposal', 'proposal', row.id, { status });
+      setError(''); setMsg('Đã cập nhật trạng thái Proposal.'); load();
+    } catch (e: any) { setError(e?.message || 'Could not update proposal.'); setMsg(''); }
+  }
   async function createPromo(e: FormEvent) {
     e.preventDefault(); const fd = new FormData(e.currentTarget as HTMLFormElement);
     const { error: err } = await supabase.from('promo_codes').insert({ code: String(fd.get('code') || '').toUpperCase(), description: fd.get('description'), role: fd.get('role'), discount_pct: Number(fd.get('discount_pct') || 0), quota_total: Number(fd.get('quota_total') || 0), starts_at: fd.get('starts_at') || new Date().toISOString(), ends_at: fd.get('ends_at') || null, active: true, created_by: profile.id });
@@ -168,6 +180,7 @@ export default function Admin() {
       <input className="d68-admin-input d68-admin-search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search businesses/investors/profiles..." />
       {tab === 'overview' && <Overview businesses={businesses} investors={investors} profiles={profiles} payments={payments} pendingBusinesses={pendingBusinesses} pendingInvestors={pendingInvestors} leads={contactMessages.length + partnerLeads.length}/>} 
       {tab === 'payments' && <Payments payments={payments} profiles={profiles} markPayment={markPayment} />}
+      {tab === 'proposals' && <ProposalList proposals={proposals} markProposal={markProposal} />}
       {tab === 'business_review' && <BusinessReviewList rows={pendingBusinesses} approveBusiness={approveBusiness} toggleBusiness={toggleBusiness} />}
       {tab === 'businesses' && <BusinessReviewList rows={filteredBusinesses} approveBusiness={approveBusiness} toggleBusiness={toggleBusiness} />}
       {tab === 'assets' && <div>{filteredBusinesses.map((b) => <AssetEditor key={b.id} b={b} />)}</div>}
@@ -185,6 +198,7 @@ function Card({ children }: { children: React.ReactNode }) { return <div classNa
 function Empty({ text }: { text: string }) { return <div className="d68-admin-empty">{text}</div>; }
 function Metric({ label, value, color = '#0F2A4A' }: { label: string; value: string; color?: string }) { return <Card><div className="d68-admin-metric-label">{label}</div><div className="d68-admin-metric-value" style={{ color }}>{value}</div></Card>; }
 function Overview({ businesses, investors, profiles, payments, pendingBusinesses, pendingInvestors, leads }: any) { return <><div className="d68-admin-grid4"><Metric label="Businesses" value={String(businesses.length)} color="#1596cc"/><Metric label="Investors" value={String(investors.length)} color="#B8860B"/><Metric label="Pending DN" value={String(pendingBusinesses.length)} color="#DC2626"/><Metric label="Leads" value={String(leads || 0)} color="#16A34A"/></div><Card><h3>Baseline workflow test</h3><ol className="d68-admin-steps"><li>User đăng ký Business/Investor → tạo profile + listing ẩn + payment_order pending.</li><li>Admin xác nhận payment → mở dashboard_login_enabled cho user.</li><li>Business tự sửa dashboard → pending_changes_json, public snapshot cũ vẫn giữ.</li><li>Admin duyệt snapshot → visible=true, status=active, public_snapshot_json cập nhật.</li><li>Investor tự sửa profile → lưu vào privacy.pending_profile_changes, public profile cũ không đổi; Admin duyệt mới public.</li></ol><p>Profiles: {profiles.length} · Payments: {payments.length} · Pending investors: {pendingInvestors.length}</p></Card></>; }
+function ProposalList({ proposals, markProposal }: any) { return <Card><h3>Proposal Business → Investor</h3><div className="d68-admin-table-wrap"><table className="d68-admin-table"><thead><tr><th>Thời gian</th><th>Doanh nghiệp</th><th>Nhà đầu tư</th><th>Trạng thái</th><th>Action</th></tr></thead><tbody>{proposals.map((row: Row) => { const st = proposalStatusLabel(row.status, 'vi'); const b = row.businesses || {}; const i = row.investors || {}; return <tr key={row.id}><td>{new Date(row.sent_at || row.updated_at || Date.now()).toLocaleString('vi-VN')}</td><td>{b.slug ? <a href={`/businesses/${b.slug}`} target="_blank" rel="noreferrer"><b>{b.company_name_private || b.title_vi || b.title_en || b.public_code || row.business_id}</b></a> : <b>{b.company_name_private || b.title_vi || b.title_en || row.business_id}</b>}<br/><span className="d68-admin-badge warn">{b.public_code || 'Business'}</span></td><td>{i.code ? <a href={`/investors/${i.code}`} target="_blank" rel="noreferrer"><b>{i.private_name || i.title_vi || i.title_en || i.code}</b></a> : <b>{i.private_name || i.title_vi || i.title_en || row.investor_id}</b>}<br/><span>{i.private_email || i.code || 'Investor'}</span></td><td><span className={`d68-admin-badge ${st.cls === 'green' ? 'ok' : st.cls === 'red' ? 'err' : 'warn'}`}>{st.label}</span></td><td><div className="d68-admin-actions"><button className="d68-admin-btn green" onClick={() => markProposal(row, 'approved')}>Duyệt</button><button className="d68-admin-btn red" onClick={() => markProposal(row, 'declined')}>Từ chối</button><button className="d68-admin-btn blue" onClick={() => markProposal(row, 'connected')}>Connected</button></div></td></tr>; })}</tbody></table></div>{!proposals.length ? <Empty text="No proposals."/> : null}</Card>; }
 function Payments({ payments, profiles, markPayment }: any) { return <Card><h3>Thanh toán / mở dashboard</h3>{payments.length ? <div className="d68-admin-table-wrap"><table className="d68-admin-table"><thead><tr><th>Order</th><th>Status</th><th>Profile</th><th>Amount</th><th>Action</th></tr></thead><tbody>{payments.map((p: Row) => { const prof = profiles.find((x: Row) => x.id === (p.profile_id || p.created_by)); const amount = p.payload?.price?.total || p.payload?.total || ''; const cur = p.payload?.price?.currency || p.payload?.currency || ''; return <tr key={p.id}><td><b>{p.title || p.id}</b><br/><span className="d68-admin-badge warn">{new Date(p.created_at).toLocaleString()}</span></td><td>{p.status}</td><td>{prof?.email || p.profile_id || p.created_by || '—'}<br/>{prof?.role}</td><td>{amount} {cur}</td><td><button className="d68-admin-btn green" onClick={() => markPayment(p, 'confirmed')}>Xác nhận thanh toán & mở dashboard</button> <button className="d68-admin-btn red" onClick={() => markPayment(p, 'rejected')}>Từ chối</button></td></tr>; })}</tbody></table></div> : <Empty text="No payment orders."/>}</Card>; }
 function BusinessReviewList({ rows, approveBusiness, toggleBusiness }: any) { return <div>{rows.length ? rows.map((b: Row) => <BusinessPublicEditor key={b.id} b={b} onApprove={approveBusiness} onToggle={toggleBusiness} />) : <Empty text="No business pending review."/>}</div>; }
 function BusinessPublicEditor({ b, onApprove, onToggle }: any) { const src = sourceOf(b); const pub = publicOf(b); return <Card><form onSubmit={(e) => onApprove(e, b)}><div className="d68-admin-row-head"><div><b>{b.public_code || 'D68'} · {b.company_name_private || src.company_name_private || 'Private name pending'}</b><div className="d68-admin-subtle">{b.status || 'pending'} · public v{b.public_version || 0} · {b.public_snapshot_json ? 'has snapshot' : 'no snapshot'}</div></div><span className={`d68-admin-badge ${b.visible ? 'ok' : 'warn'}`}>{b.visible ? 'visible' : 'not public'}</span></div><div className="d68-admin-notice err">Nguồn user/pending chỉ để tham khảo. Chỉ các field Admin duyệt dưới đây mới được public.</div><details className="d68-admin-source"><summary>Xem dữ liệu user gửi/pending</summary><pre>{JSON.stringify(src, null, 2)}</pre></details><div className="d68-admin-form4"><input name="title_vi" defaultValue={pub.title_vi || src.title_vi || 'Hồ sơ doanh nghiệp ẩn danh'} placeholder="Tên ẩn danh VI" required className="d68-admin-input"/><input name="title_en" defaultValue={pub.title_en || autoEn(pub.title_vi || src.title_vi || '')} placeholder="Anonymous title EN" className="d68-admin-input"/><input name="industry" defaultValue={pub.industry || src.industry || ''} placeholder="Industry" className="d68-admin-input"/><input name="deal_type" defaultValue={pub.deal_type || src.deal_type || ''} placeholder="Deal type" className="d68-admin-input"/><input name="city" defaultValue={pub.city || src.city || ''} placeholder="City" className="d68-admin-input"/><input name="country_iso2" defaultValue={pub.country_iso2 || src.country_iso2 || 'VN'} placeholder="Country ISO2" className="d68-admin-input"/><input name="revenue_2025" type="number" defaultValue={pub.revenue_2025 || src.revenue_2025 || 0} placeholder="Revenue" className="d68-admin-input"/><select name="revenue_currency" defaultValue={pub.revenue_currency || src.revenue_currency || 'VND'} className="d68-admin-input"><option>VND</option><option>USD</option></select><input name="ebitda_margin" type="number" defaultValue={pub.ebitda_margin ?? src.ebitda_margin ?? 0} placeholder="EBITDA %" className="d68-admin-input"/><input name="ask_amount" type="number" defaultValue={pub.ask_amount || src.ask_amount || 0} placeholder="Ask amount" className="d68-admin-input"/><select name="ask_currency" defaultValue={pub.ask_currency || src.ask_currency || src.revenue_currency || 'VND'} className="d68-admin-input"><option>VND</option><option>USD</option></select><input name="stake_pct" type="number" defaultValue={pub.stake_pct ?? src.stake_pct ?? 0} placeholder="Stake %" className="d68-admin-input"/><input name="quality_score" type="number" defaultValue={pub.quality_score ?? b.quality_score ?? 0} placeholder="Business Quality Score 0-100" min="0" max="100" className="d68-admin-input"/><label className="d68-admin-check"><input name="quality_score_manual_override" type="checkbox" defaultChecked={!!b.quality_score_manual_override}/> Giữ điểm Admin nhập</label><input name="data_confidence" type="number" defaultValue={pub.data_confidence ?? b.data_confidence ?? 0} placeholder="Data confidence" className="d68-admin-input"/><input name="hero_image_url" defaultValue={pub.hero_image_url || pub.image_url || ''} placeholder="Approved hero image URL" className="d68-admin-input d68-admin-span2"/><textarea name="description_vi" defaultValue={pub.description_vi || src.description_vi || ''} placeholder="Mô tả public VI" className="d68-admin-input textarea d68-admin-span2"/><textarea name="description_en" defaultValue={pub.description_en || autoEn(pub.description_vi || src.description_vi || '')} placeholder="Description EN" className="d68-admin-input textarea d68-admin-span2"/><textarea name="highlights_vi" defaultValue={lines(pub.highlights_vi || src.highlights_vi)} placeholder="Điểm nổi bật VI" className="d68-admin-input textarea d68-admin-span2"/><textarea name="highlights_en" defaultValue={lines(pub.highlights_en) || autoEn(lines(pub.highlights_vi || src.highlights_vi))} placeholder="Highlights EN" className="d68-admin-input textarea d68-admin-span2"/><textarea name="investment_reason_vi" defaultValue={pub.investment_reason_vi || src.investment_reason_vi || ''} placeholder="Lý do giao dịch VI" className="d68-admin-input textarea d68-admin-span2"/><textarea name="investment_reason_en" defaultValue={pub.investment_reason_en || autoEn(pub.investment_reason_vi || src.investment_reason_vi || '')} placeholder="Reason EN" className="d68-admin-input textarea d68-admin-span2"/></div><div className="d68-admin-actions"><button className="d68-admin-btn green">Duyệt & hiển thị public snapshot</button><button type="button" onClick={() => onToggle(b)} className={`d68-admin-btn ${b.visible ? 'red' : ''}`}>{b.visible ? 'Ẩn public' : 'Bật visible'}</button>{b.slug ? <Link to={`/businesses/${b.slug}`} className="d68-admin-btn blue">Public ↗</Link> : null}</div></form></Card>; }
