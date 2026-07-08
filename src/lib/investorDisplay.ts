@@ -1,6 +1,7 @@
 
 import type { Lang } from './i18n';
 import { investorTargetCountries } from './data';
+export { investorTargetCountries };
 import { formatMoneyForLang, labelCountry, labelIndustry, labelInvestorType, labelStage, T } from './labels';
 
 type AnyRow = Record<string, any>;
@@ -35,22 +36,20 @@ export function investorPublicDescription(row: AnyRow, lang: Lang) {
   const ticket = investorTicketLabel(lang, row);
 
   if (lang === 'en') {
-    const parts = [
+    return [
       `An anonymous ${labelInvestorType(row?.type, lang).toLowerCase()} profile interested in ${industries.join(', ') || 'multiple sectors'}.`,
       targets.length ? `Target investment markets: ${targets.join('; ')}.` : '',
       stage ? `Preferred stage: ${stage}.` : '',
       ticket ? `Indicative ticket size: ${ticket}.` : '',
       'Name, organization and contact details are kept private for admin verification and are only shared after an approved connection.'
-    ].filter(Boolean);
-    return parts.join(' ');
+    ].filter(Boolean).join(' ');
   }
 
-  const parts = [
+  return [
     `Hồ sơ ${labelInvestorType(row?.type, lang).toLowerCase()} ẩn danh quan tâm ${industries.join(', ') || 'đa lĩnh vực'}.`,
     targets.length ? `Thị trường quan tâm đầu tư: ${targets.join('; ')}.` : '',
     stage ? `Giai đoạn ưu tiên: ${stage}.` : '',
     ticket ? `Quy mô ticket tham khảo: ${ticket}.` : '',
     'Tên, tổ chức và thông tin liên hệ chỉ lưu cho admin xác thực và chỉ mở sau khi kết nối được duyệt.'
-  ].filter(Boolean);
-  return parts.join(' ');
+  ].filter(Boolean).join(' ');
 }
