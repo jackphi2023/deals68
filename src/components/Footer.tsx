@@ -10,8 +10,8 @@ export default function Footer({ lang }: { lang: Lang }) {
         <div>
           <img src="/assets/logo-white.png" alt="Deals68.com" style={{ height: 34, marginBottom: 16 }} />
           <p style={{ fontSize: 14, lineHeight: 1.6, color: '#8fa6c0', margin: '0 0 14px', maxWidth: 280 }}>
-            <span className="l-vi">Sàn mua bán doanh nghiệp, M&amp;A, huy động vốn và kết nối nhà đầu tư cho Việt Nam, Đông Nam Á và toàn cầu.</span>
-            <span className="l-en">Marketplace for business sale, M&amp;A, fundraising and investor matching across Vietnam, Southeast Asia and beyond.</span>
+            <span className="l-vi">Sàn mua bán doanh nghiệp, M&amp;A, huy động vốn và kết nối nhà đầu tư trong nước và quốc tế cho doanh nghiệp Việt Nam trên toàn cầu.</span>
+            <span className="l-en">Marketplace for business sales, M&amp;A, fundraising and domestic/international investor matching for Vietnamese businesses worldwide.</span>
           </p>
         </div>
         <div>

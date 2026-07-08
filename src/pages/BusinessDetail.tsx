@@ -7,6 +7,7 @@ import { percent } from '../lib/format';
 import { useAuth } from '../contexts/AuthContext';
 import { formatMoneyForLang, labelIndustry, labelLocation } from '../lib/labels';
 import type { Lang } from '../lib/i18n';
+import { BusinessFaq } from '../components/BusinessFaq';
 import { businessQualityPublicExplanation, normalizeQualityBreakdown, qualityBand, qualityItemLabel, qualityItemNote, qualityPublicCriteria } from '../lib/businessQuality';
 
 const T = (lang: Lang, vi: string, en: string) => (lang === 'en' ? en : vi);
@@ -115,7 +116,7 @@ export default function BusinessDetail({ lang }: { lang: Lang }) {
           ownerViewing = !!myBiz?.id && myBiz.id === b.id;
           if (live) setIsOwnerBusiness(ownerViewing);
         }
-        if (profile?.role === 'investor' || profile?.role === 'admin') {
+        if (profile?.role === 'investor' || profile?.role === 'admin' || ownerViewing) {
           const { data: qrow } = await supabase
             .from('businesses')
             .select('quality_score,quality_breakdown_json,quality_breakdown')
@@ -181,7 +182,7 @@ export default function BusinessDetail({ lang }: { lang: Lang }) {
   const selfVal = business ? inferredSelfValuation(business) : 0;
   const selfValLabel = selfVal > 0 ? money(lang, selfVal, business.ask_currency || business.revenue_currency || 'VND') : T(lang, 'Đang cập nhật', 'Pending');
   const docsToShow = docs.filter((d) => d.public_visible !== false || investorAccess || isOwnerBusiness);
-  const canViewRealQuality = profile?.role === 'investor' || profile?.role === 'admin';
+  const canViewRealQuality = profile?.role === 'investor' || profile?.role === 'admin' || isOwnerBusiness;
   const scoreNumber = business?.quality_score === null || business?.quality_score === undefined ? null : Math.round(Number(business.quality_score));
   const bqsBand = qualityBand(scoreNumber, lang);
 
@@ -254,7 +255,7 @@ export default function BusinessDetail({ lang }: { lang: Lang }) {
           <section className="d68-detail-facts" aria-label={T(lang, 'Thông tin chính', 'Key facts')}>{facts.map((fact) => <Fact key={fact.label} label={fact.label} value={fact.value} />)}</section>
           <InfoSection title={T(lang, 'Điểm nổi bật', 'Highlights')}><BulletList items={highlights} empty={T(lang, 'Chưa có điểm nổi bật đã duyệt.', 'No approved highlights yet.')} /></InfoSection>
           <InfoSection title={T(lang, 'Tài liệu Hồ sơ doanh nghiệp', 'Business Profile Documents')} badge={investorAccess ? `✓ ${T(lang, 'Đã kết nối', 'Connected')}` : isOwnerBusiness ? `👁 ${T(lang, 'Bản xem của doanh nghiệp', 'Business owner view')}` : `🔒 ${T(lang, 'Mở sau kết nối', 'Unlock after connection')}`}><DocList docs={docsToShow} lang={lang} investorAccess={investorAccess} onDownload={downloadDoc} empty={T(lang, 'Chưa có tài liệu hồ sơ đã duyệt tên hiển thị.', 'No approved profile document names yet.')} /></InfoSection>
-          <InfoSection title="Business Quality Score"><div className={`d68-bqs-score-grid ${canViewRealQuality ? 'is-real' : 'is-demo'}`}>{canViewRealQuality ? qualityBreakdown?.items.map((item) => <div key={item.key} className="d68-bqs-score-card"><b>{qualityItemLabel(item, lang)}</b><strong>{item.score}/{item.max}</strong><span>{qualityItemNote(item, lang)}</span></div>) : qualityCriteria.map((x) => <div key={x} className="d68-bqs-score-card"><b>{x}</b><strong>Demo</strong><span>{T(lang, 'Đăng nhập Nhà đầu tư để xem điểm chi tiết.', 'Investor login is required to view detailed scoring.')}</span></div>)}{!canViewRealQuality ? <div className="d68-bqs-alert d68-bqs-alert--wide">🔒 {T(lang, 'Chỉ nhà đầu tư đã đăng nhập mới xem được chi tiết Business Quality Score.', 'Only logged-in investors can view the detailed Business Quality Score.')} <Link to={`/login?role=investor&next=/businesses/${slug}`}>{T(lang, 'Đăng nhập nhà đầu tư', 'Investor login')}</Link></div> : null}</div></InfoSection>
+          <InfoSection title="Business Quality Score"><div className={`d68-bqs-card ${canViewRealQuality ? 'is-real' : 'is-demo'}`}><div className="d68-bqs-ring-col"><div className="d68-bqs-ring" style={{ background: `conic-gradient(${canViewRealQuality ? (bqsBand.cls === 'green' ? '#16A34A' : bqsBand.cls === 'blue' ? '#1596cc' : '#B8860B') : '#CBD5E1'} ${canViewRealQuality ? Math.max(0, Math.min(100, scoreNumber ?? 0)) * 3.6 : 0}deg, #EEF2F6 0deg)` }}><div><b>{canViewRealQuality ? (scoreNumber === null ? '—' : scoreNumber) : 'BQS'}</b><span>/100</span></div></div></div><div className="d68-bqs-body"><div className="d68-bqs-head"><h3>Business Quality Score</h3>{canViewRealQuality ? <span className={`d68-bqs-badge ${bqsBand.cls}`}>{bqsBand.label}</span> : <span className="d68-bqs-badge gold">{T(lang, 'Demo public', 'Public demo')}</span>}</div><p>{canViewRealQuality ? businessQualityPublicExplanation(lang) : `${businessQualityPublicExplanation(lang)} ${T(lang, 'Chỉ Nhà đầu tư đăng nhập mới được xem cụ thể.', 'Only logged-in investors can view details.')}`}</p>{canViewRealQuality ? <div className="d68-bqs-breakdown">{qualityBreakdown?.items.map((item) => <div key={item.key} className="d68-bqs-breakdown__row"><b>{qualityItemLabel(item, lang)}</b><span>{item.score}/{item.max}</span><small>{qualityItemNote(item, lang)}</small></div>)}</div> : <div className="d68-bqs-public-criteria">{qualityCriteria.map((x) => <span key={x}>✓ {x}</span>)}</div>}{!canViewRealQuality ? <div className="d68-bqs-alert">🔒 {T(lang, 'Chỉ nhà đầu tư đã đăng nhập mới xem được điểm chi tiết.', 'Only logged-in investors can view the detailed score.')} <Link to={`/login?role=investor&next=/businesses/${slug}`}>{T(lang, 'Đăng nhập nhà đầu tư', 'Investor login')}</Link></div> : null}</div></div></InfoSection>
           <p className="d68-detail-disclaimer"><b>{T(lang, 'Miễn trừ trách nhiệm:', 'Disclaimer:')}</b> {T(lang, 'Deals68 là sàn kết nối bên bán với nhà đầu tư, người mua, bên cho vay và cố vấn. Thông tin là teaser public đã duyệt và không thay thế thẩm định độc lập trước giao dịch.', 'Deals68 is a marketplace connecting sell-sides with investors, buyers, lenders and advisors. This is an approved public teaser and does not replace independent due diligence before any transaction.')}</p>
         </div>
         <aside className="d68-detail-side"><div className="d68-detail-summary-card"><div className="d68-detail-summary-head"><span>{T(lang, 'Loại giao dịch', 'Transaction')}</span><strong>{dealTypeLabel}</strong></div><div className="d68-detail-summary-body"><span>{askLabel(lang, business.deal_type)}</span><b>{ask}</b><small>{business.ask_currency || business.revenue_currency ? `${T(lang, 'Tiền tệ', 'Currency')}: ${business.ask_currency || business.revenue_currency}` : T(lang, 'Tiền tệ đang cập nhật', 'Currency pending')}</small><div className="d68-detail-mini-metrics"><div><span>{T(lang, 'Doanh thu', 'Revenue')}</span><b>{revenue}</b></div><div><span>{T(lang, 'Cổ phần', 'Stake')}</span><b>{stake}</b></div><div><span>{T(lang, 'DN tự định giá', 'Self-valuation')}</span><b>{selfValLabel}</b></div></div></div></div>
@@ -263,6 +264,7 @@ export default function BusinessDetail({ lang }: { lang: Lang }) {
         </aside>
       </div>
     </div>
+    <div className="d68-detail-shell"><BusinessFaq lang={lang} /></div>
     <section className="d68-detail-similar-band"><div className="d68-detail-shell"><div className="d68-detail-section-head"><h2>{T(lang, 'Xem doanh nghiệp tương tự', 'Similar businesses')}</h2><Link to={`/businesses?industry=${encodeURIComponent(industry)}`}>{T(lang, 'Xem tất cả cùng ngành', 'View all in this sector')} →</Link></div>{similar.length ? <div className="d68-detail-sim-grid">{similar.map((deal, idx) => <SimilarCard key={deal.id} deal={deal} idx={idx} lang={lang} />)}</div> : <div className="d68-detail-sim-empty">{T(lang, 'Chưa có hồ sơ tương tự đang hiển thị.', 'No similar public listings are currently available.')}</div>}</div></section>
   </main>;
 }

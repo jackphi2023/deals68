@@ -54,7 +54,7 @@ export default function Valuation({ lang }: { lang: Lang }) {
     </div></article>
 
     <aside className="d68-val-result d68-val-result--benchmark">
-      <span>{T(lang, 'Định giá tham chiếu', 'Valuation benchmark')} · v{config.version}</span>
+      <span>{T(lang, 'Định giá tham chiếu', 'Valuation benchmark')}</span>
       {result ? <>
         <h2>{formatValuationMoney(result.low, result.currency, lang)} – {formatValuationMoney(result.high, result.currency, lang)}</h2>
         <div className="d68-val-band"><i/><b/><em/></div>
@@ -63,9 +63,7 @@ export default function Valuation({ lang }: { lang: Lang }) {
           <Row a={T(lang, 'Thấp', 'Low')} b={formatValuationMoney(result.low, result.currency, lang)}/>
           <Row a={T(lang, 'Trung bình', 'Midpoint')} b={formatValuationMoney(result.mid, result.currency, lang)}/>
           <Row a={T(lang, 'Cao', 'High')} b={formatValuationMoney(result.high, result.currency, lang)}/>
-          <Row a={T(lang, 'Phương pháp', 'Method')} b={result.method === 'blend' ? 'EBITDA + Revenue' : 'Revenue only'}/>
-          <Row a={T(lang, 'Bội số EBITDA đã điều chỉnh', 'Adjusted EBITDA multiple')} b={mult(result.adjE)}/>
-          <Row a={T(lang, 'Bội số doanh thu đã điều chỉnh', 'Adjusted revenue multiple')} b={mult(result.adjR)}/>
+          <Row a={T(lang, 'Phương pháp', 'Method')} b={result.method === 'blend' ? T(lang, 'Hệ số Doanh thu + Lợi nhuận', 'Revenue + profit multiples') : T(lang, 'Hệ số Doanh thu', 'Revenue multiple')}/>
           <Row a={T(lang,'Ngành','Industry')} b={T(lang, industry.vi, industry.en)}/>
           <Row a={T(lang,'Quốc gia','Country')} b={countryLabel ? T(lang, countryLabel.vi, countryLabel.en) : country}/>
         </div>
@@ -73,6 +71,6 @@ export default function Valuation({ lang }: { lang: Lang }) {
       <Link to={toLocalizedPath('/register/business', lang)}>{T(lang, 'Đăng hồ sơ doanh nghiệp', 'List your business')} →</Link>
     </aside></div></section>
 
-    <section className="d68-val-method"><h2>{T(lang, 'Cách Deals68 tính tham khảo', 'How Deals68 estimates')}</h2><div><article><b>1</b><h3>{T(lang,'Bội số ngành','Industry multiples')}</h3><p>{T(lang,'Dùng bội số EV/EBITDA và EV/Doanh thu theo 23 nhóm ngành chuẩn hóa.', 'Uses EV/EBITDA and EV/Revenue multiples across the standardized 23 industries.')}</p></article><article><b>2</b><h3>{T(lang,'Điều chỉnh hệ số','Factor adjustment')}</h3><p>{T(lang,'Điều chỉnh theo quốc gia, tăng trưởng và quy mô doanh thu quy đổi USD.', 'Adjusted by country, growth and USD-converted revenue size.')}</p></article><article><b>3</b><h3>{T(lang,'Không thay thế thẩm định','Not a formal valuation')}</h3><p>{T(lang,'Kết quả là benchmark tham khảo, không dùng nợ ròng, offer hoặc tỷ lệ cổ phần tại trang công cụ miễn phí.', 'The result is an indicative benchmark; the free tool does not use net debt, offer amount or stake.')}</p></article></div><aside className="d68-static-notice"><b>⚠️</b><span>{disclaimer}</span></aside></section>
+    <section className="d68-val-method"><h2>{T(lang, 'Cách Deals68 tính tham khảo', 'How Deals68 estimates')}</h2><div><article><b>1</b><h3>{T(lang,'Bội số ngành','Industry multiples')}</h3><p>{T(lang,'Dùng bội số EV/EBITDA và EV/Doanh thu theo 23 nhóm ngành chuẩn hóa.', 'Uses EV/EBITDA and EV/Revenue multiples across the standardized 23 industries.')}</p></article><article><b>2</b><h3>{T(lang,'Điều chỉnh hệ số','Factor adjustment')}</h3><p>{T(lang,'Điều chỉnh theo quốc gia, tăng trưởng và quy mô doanh thu quy đổi USD.', 'Adjusted by country, growth and USD-converted revenue size.')}</p></article><article><b>3</b><h3>{T(lang,'Không thay thế thẩm định','Not a formal valuation')}</h3><p>{T(lang,'Kết quả là tham khảo, chưa sử dụng các nghiệp vụ định giá chuyên sâu cho từng doanh nghiệp.', 'The result is indicative and does not yet apply in-depth valuation work tailored to each business.')}</p></article></div><aside className="d68-static-notice"><span>{disclaimer}</span></aside></section>
   </main>;
 }

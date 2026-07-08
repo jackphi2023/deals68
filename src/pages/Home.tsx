@@ -5,6 +5,7 @@ import { getPublicDealValueSummary, type PublicDealValueSummary } from '../lib/p
 import { toLocalizedPath } from '../lib/i18nRoutes';
 import { formatMoneyForLang, labelIndustry, labelInvestorType, labelCountry, T } from '../lib/labels';
 import type { Lang } from '../lib/i18n';
+import { HeroBannerSlider, PromotionBanner } from '../components/SiteBanners';
 
 type SearchMode = 'business' | 'investor';
 type Deal = { id: string; slug: string; title: string; industry: string; city: string; revenue: string; ask: string; image: string | null; featured: boolean };
@@ -106,12 +107,14 @@ export default function Home({ lang }: { lang: Lang }) {
     { emoji: '🏥', vi: 'Y tế & Sức khỏe', en: 'Healthcare', noteVi: 'Phòng khám, nha khoa, chăm sóc sức khỏe', noteEn: 'Clinics, dental and healthcare' },
     { emoji: '💻', vi: 'Công nghệ', en: 'Technology', noteVi: 'SaaS, AI, phần mềm, tự động hóa', noteEn: 'SaaS, AI, software, automation' },
     { emoji: '🍜', vi: 'F&B', en: 'F&B', noteVi: 'Nhà hàng, chuỗi, nhượng quyền', noteEn: 'Restaurants, chains, franchises' },
+    { emoji: '🏢', vi: 'Bất động sản', en: 'Real Estate', noteVi: 'Tòa nhà, khách sạn, bất động sản vận hành', noteEn: 'Buildings, hotels and operating real estate' },
+    { emoji: '🎓', vi: 'Giáo dục', en: 'Education', noteVi: 'Trường học, trung tâm đào tạo, EdTech', noteEn: 'Schools, training centers and EdTech' },
     { emoji: '🐟', vi: 'Thủy sản & Xuất khẩu', en: 'Seafood & Export', noteVi: 'Xuất khẩu, chế biến, kho lạnh', noteEn: 'Export, processing, cold storage' },
     { emoji: '🏭', vi: 'Sản xuất & Kho vận', en: 'Manufacturing & Logistics', noteVi: 'Nhà máy, logistics, tài sản vận hành', noteEn: 'Factories, logistics, operating assets' }
   ];
 
   const steps = [
-    { n: '1', title: T(lang, 'Đăng hồ sơ ẩn danh', 'Create an anonymous profile'), desc: T(lang, 'Doanh nghiệp nhập dữ liệu thật; Admin biên tập bản công khai ẩn danh trước khi hiển thị.', 'Businesses submit real data; Admin edits an anonymous public snapshot before publishing.') },
+    { n: '1', title: T(lang, 'Đăng hồ sơ ẩn danh', 'Create an anonymous profile'), desc: T(lang, 'Doanh nghiệp nhập dữ liệu thật; đội ngũ Deals68 duyệt thông tin công khai ẩn danh trước khi hiển thị.', 'Businesses submit real data; the Deals68 team reviews the anonymous public information before publishing.') },
     { n: '2', title: T(lang, 'Chuẩn hóa & duyệt', 'Structure & approve'), desc: T(lang, 'Hồ sơ được phân loại theo ngành, quy mô, nhu cầu vốn và được chấm điểm chất lượng.', 'Profiles are categorised by industry, size and capital need, then quality-scored.') },
     { n: '3', title: T(lang, 'Kết nối phù hợp', 'Connect with the right party'), desc: T(lang, 'Nhà đầu tư lọc, lưu, bày tỏ quan tâm; thông tin nhạy cảm mở sau khi kết nối được duyệt.', 'Investors filter, save and express interest; sensitive data unlocks after an approved connection.') }
   ];
@@ -121,37 +124,16 @@ export default function Home({ lang }: { lang: Lang }) {
   return (
     <main>
       <section className="d68-home-hero">
+        <HeroBannerSlider lang={lang} />
         <span className="d68-home-hero__orb" aria-hidden="true" />
         <div className="d68-home-container d68-home-hero__inner">
           <div className="d68-home-eyebrow"><span />{T(lang, 'Kết nối thương vụ, khai mở lộc phát', 'Connecting Deals, Unlocking Prosperity')}</div>
           <h1 className="d68-home-hero__title"><span>{T(lang, 'Nơi Doanh nghiệp gặp gỡ', 'Where Businesses Meet')}</span><strong>{T(lang, 'Nhà đầu tư', 'Investors')}</strong></h1>
           <p className="d68-home-hero__desc">{T(lang, 'Deals68 hiển thị hồ sơ ẩn danh với dữ liệu thật từ database, và chỉ mở thông tin nhạy cảm sau khi kết nối được duyệt.', 'Deals68 displays anonymous profiles with live database-backed data, unlocking sensitive information only after an approved connection.')}</p>
-
-          <form className="d68-home-search" onSubmit={submitSearch}>
-            <div className="d68-home-search__tabs">
-              <button type="button" className={mode === 'business' ? 'active' : ''} onClick={() => setMode('business')}>{T(lang, 'Tìm Doanh nghiệp', 'Find Businesses')}</button>
-              <button type="button" className={mode === 'investor' ? 'active' : ''} onClick={() => setMode('investor')}>{T(lang, 'Tìm Nhà đầu tư', 'Find Investors')}</button>
-            </div>
-            <div className="d68-home-search__row">
-              <label><span>{T(lang, 'Từ khóa', 'Keyword')}</span><input value={keyword} onChange={(e) => setKeyword(e.target.value)} placeholder={T(lang, 'Ngành, mã, địa điểm…', 'Industry, code, location…')} /></label>
-              <label><span>{T(lang, 'Ngành', 'Industry')}</span><input value={industry} onChange={(e) => setIndustry(e.target.value)} placeholder={T(lang, 'Tất cả', 'All')} /></label>
-              <label><span>{mode === 'business' ? T(lang, 'Loại giao dịch', 'Deal type') : T(lang, 'Loại nhà đầu tư', 'Investor type')}</span>
-                {mode === 'business'
-                  ? <select value={dealType} onChange={(e) => setDealType(e.target.value)}><option value="">{T(lang, 'Tất cả', 'All')}</option><option value="fundrais">{T(lang, 'Gọi vốn', 'Fundraise')}</option><option value="sale">{T(lang, 'Mua bán', 'Sale')}</option><option value="loan">{T(lang, 'Vay vốn', 'Loan')}</option><option value="partner">JV</option></select>
-                  : <select value={investorType} onChange={(e) => setInvestorType(e.target.value)}><option value="">{T(lang, 'Tất cả', 'All')}</option><option>VC</option><option>PE</option><option>Family Office</option><option>Corporate/Strategic</option><option>Individual/Angel</option><option>Lender/Debt</option></select>}
-              </label>
-              <button type="submit">{T(lang, 'Tìm kiếm', 'Search')} →</button>
-            </div>
-          </form>
-        </div>
-      </section>
-
-      <section className="d68-home-stats">
-        <div className="d68-home-container">
-          <div className="d68-home-stats__grid">
-            <div><b>{bizCount ?? (loading ? '…' : deals.length)}</b><span>{T(lang, 'Doanh nghiệp đang hiển thị', 'Active business listings')}</span></div>
-            <div><b>{invCount ?? (loading ? '…' : investors.length)}</b><span>{T(lang, 'Nhà đầu tư & người mua', 'Investors & buyers')}</span></div>
-            <div className="d68-home-stat--dealvalue"><b>{dealValueLabel}</b><span>{T(lang, 'Tổng giá trị thương vụ', 'Total deal value')}</span></div>
+          <div className="d68-home-hero-stats">
+            <div><b>{bizCount ?? (loading ? '…' : deals.length)}</b><span>{T(lang, 'Doanh nghiệp đang chào', 'Active business listings')}</span></div>
+            <div><b>{invCount ?? (loading ? '…' : investors.length)}</b><span>{T(lang, 'Nhà đầu tư hoạt động', 'Active investors')}</span></div>
+            <div><b>{dealValueLabel}</b><span>{T(lang, 'Tổng giá trị thương vụ', 'Total deal value')}</span></div>
           </div>
         </div>
       </section>
@@ -161,7 +143,7 @@ export default function Home({ lang }: { lang: Lang }) {
         <div className="d68-home-role-grid">{roleCards.map((r) => <div key={r.title} className="d68-home-role-card"><div style={{ background: r.bg, color: r.color }}>{r.icon}</div><h3>{r.title}</h3><p>{r.desc}</p><Link to={nav(r.to)}><span>{r.cta} →</span></Link></div>)}</div>
       </section>
 
-      <section className="d68-home-promo d68-home-container"><Link to={nav('/pricing')}><img src={promoImg} alt={T(lang, 'Ưu đãi Beta Deals68', 'Deals68 Beta promotion')} /></Link></section>
+      <PromotionBanner placement="home_promotion" lang={lang} className="d68-home-container" />
 
       <section className="d68-home-container d68-home-section">
         <div className="d68-home-title d68-home-title--row"><div><span className="d68-home-badge d68-home-badge--gold">★ {T(lang, 'Thương vụ nổi bật', 'Featured Deals')}</span><h2>{T(lang, 'Cơ hội đang được chào', 'Opportunities on the market')}</h2></div><Link to={nav('/businesses')}>{T(lang, 'Xem tất cả', 'View all')} →</Link></div>
@@ -180,8 +162,6 @@ export default function Home({ lang }: { lang: Lang }) {
       <section className="d68-home-container d68-home-section"><div className="d68-home-title d68-home-title--row"><div><span className="d68-home-badge d68-home-badge--blue">◆ {T(lang, 'Nhà đầu tư tiêu biểu', 'Featured investors')}</span><h2>{T(lang, 'Nhà đầu tư đang tìm thương vụ', 'Investors looking for deals')}</h2></div><Link to={nav('/investors')}>{T(lang, 'Xem tất cả', 'View all')} →</Link></div>{loading ? <div className="d68-home-investor-grid">{Array.from({ length: 4 }).map((_, i) => <div key={i} className="d68-home-investor-card" aria-hidden="true" />)}</div> : investors.length ? <div className="d68-home-investor-grid">{investors.map((i) => <article key={i.id || i.code} className="d68-home-investor-card"><div className="d68-home-investor-card__icon">💼</div><h3>{T(lang, i.title_vi || i.title_en || i.code, i.title_en || i.title_vi || i.code)}</h3><p>{labelInvestorType(i.type, lang)} · {labelCountry(i.country || i.country_iso2 || 'Global', lang)}</p><Link to={nav(`/investors/${i.code}`)}>{T(lang, 'Xem chi tiết', 'View detail')} →</Link></article>)}</div> : <div className="d68-home-empty">{T(lang, 'Chưa có nhà đầu tư đang hiển thị.', 'No active investor listings yet.')}</div>}</section>
 
       <section className="d68-home-how"><div className="d68-home-container"><div className="d68-home-title d68-home-title--center"><h2 style={{ color: '#0F2A4A' }}>{T(lang, 'Cách hoạt động', 'How it works')}</h2><p>{T(lang, 'Ba bước để bắt đầu một thương vụ trên Deals68.', 'Three steps to start a deal on Deals68.')}</p></div><div className="d68-home-steps">{steps.map((s) => <div key={s.n}><b>{s.n}</b><h3>{s.title}</h3><p>{s.desc}</p></div>)}</div></div></section>
-
-      <section className="d68-home-partner"><div className="d68-home-container"><div><div className="d68-home-partner__flags">🇻🇳 🇺🇸 🇨🇦 🇦🇺 🇸🇬 🇯🇵 🇰🇷 🇩🇪</div><h2>{T(lang, 'Tham gia Đối tác thị trường cùng chúng tôi', 'Join our Market Partner network')}</h2><p>{T(lang, 'Phát triển mạng lưới doanh nghiệp và nhà đầu tư tại thị trường của bạn, cùng Deals68 mở rộng ra toàn cầu.', 'Grow the network of businesses and investors in your market as Deals68 expands globally.')}</p></div><Link to={nav('/partners')}>{T(lang, 'Tìm hiểu chương trình đối tác', 'Explore the partner program')} →</Link></div></section>
-    </main>
+</main>
   );
 }

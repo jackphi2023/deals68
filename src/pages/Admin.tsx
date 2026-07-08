@@ -4,13 +4,14 @@ import { useAuth } from '../contexts/AuthContext';
 import { getBusinessFiles, getBusinessImages, listBusinesses, updateBusinessFile, updateBusinessImage } from '../lib/data';
 import { supabase } from '../lib/supabase';
 import { proposalStatusLabel, updateProposalStatus, type ProposalStatus } from '../lib/proposals';
+import { AdminBannerManager } from '../components/SiteBanners';
 
-type AdminTab = 'overview' | 'payments' | 'proposals' | 'businesses' | 'business_review' | 'assets' | 'investors' | 'promos' | 'requests' | 'leads' | 'logs' | 'settings';
+type AdminTab = 'overview' | 'payments' | 'proposals' | 'banners' | 'businesses' | 'business_review' | 'assets' | 'investors' | 'promos' | 'requests' | 'leads' | 'logs' | 'settings';
 
 type Row = Record<string, any>;
 
 const pathTabs: Record<string, AdminTab> = {
-  '': 'overview', overview: 'overview', payments: 'payments', approvals: 'payments', proposals: 'proposals', businesses: 'businesses',
+  '': 'overview', overview: 'overview', payments: 'payments', approvals: 'payments', proposals: 'proposals', banners: 'banners', banner: 'banners', businesses: 'businesses',
   'business-review': 'business_review', assets: 'assets', investors: 'investors', promo: 'promos', promos: 'promos',
   'data-requests': 'requests', requests: 'requests', leads: 'leads', 'market-partners': 'leads', contacts: 'leads',
   audit: 'logs', logs: 'logs', settings: 'settings'
@@ -20,6 +21,7 @@ const tabs: { id: AdminTab; label: string; icon: string; href: string }[] = [
   { id: 'overview', label: 'Tổng quan', icon: '📊', href: '/admin' },
   { id: 'payments', label: 'Thanh toán', icon: '💳', href: '/admin/payments' },
   { id: 'proposals', label: 'Proposal', icon: '📨', href: '/admin/proposals' },
+  { id: 'banners', label: 'Banner', icon: '🖼️', href: '/admin/banners' },
   { id: 'business_review', label: 'Duyệt public DN', icon: '✅', href: '/admin/business-review' },
   { id: 'businesses', label: 'Doanh nghiệp', icon: '🏢', href: '/admin/businesses' },
   { id: 'assets', label: 'Ảnh/File DN', icon: '🖼️', href: '/admin/assets' },
@@ -181,6 +183,7 @@ export default function Admin() {
       {tab === 'overview' && <Overview businesses={businesses} investors={investors} profiles={profiles} payments={payments} pendingBusinesses={pendingBusinesses} pendingInvestors={pendingInvestors} leads={contactMessages.length + partnerLeads.length}/>} 
       {tab === 'payments' && <Payments payments={payments} profiles={profiles} markPayment={markPayment} />}
       {tab === 'proposals' && <ProposalList proposals={proposals} markProposal={markProposal} />}
+      {tab === 'banners' && <AdminBannerManager />}
       {tab === 'business_review' && <BusinessReviewList rows={pendingBusinesses} approveBusiness={approveBusiness} toggleBusiness={toggleBusiness} />}
       {tab === 'businesses' && <BusinessReviewList rows={filteredBusinesses} approveBusiness={approveBusiness} toggleBusiness={toggleBusiness} />}
       {tab === 'assets' && <div>{filteredBusinesses.map((b) => <AssetEditor key={b.id} b={b} />)}</div>}

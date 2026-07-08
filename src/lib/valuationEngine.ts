@@ -222,5 +222,5 @@ export function valuationVerdictMessage(lang: Lang, r: ValuationResult | null) {
   return T(lang, `Đang cao hơn tham chiếu khoảng ${r.pctAbove || 0}% — cân nhắc điều chỉnh offer hoặc bổ sung dữ liệu chứng minh.`, `Around ${r.pctAbove || 0}% above benchmark — consider adjusting the offer or adding supporting data.`);
 }
 
-export const VALUATION_DISCLAIMER_VI = 'Đây là mức định giá tham chiếu do hệ thống ước tính theo dữ liệu bạn cung cấp và mặt bằng ngành. Không phải thẩm định giá chính thức và không thay thế tư vấn tài chính, pháp lý độc lập.';
-export const VALUATION_DISCLAIMER_EN = 'This is an indicative benchmark estimated from your inputs and industry averages. It is not a formal valuation and does not replace independent financial or legal advice.';
+export const VALUATION_DISCLAIMER_VI = 'Đây là mức định giá tham chiếu do hệ thống ước tính theo dữ liệu bạn cung cấp và mặt bằng ngành. Doanh nghiệp cần tính toán định giá chi tiết và chuyên sâu thì liên hệ với chúng tôi để được hỗ trợ.';
+export const VALUATION_DISCLAIMER_EN = 'This is an indicative valuation benchmark estimated from your inputs and industry averages. Businesses that need detailed, in-depth valuation support can contact us for assistance.';

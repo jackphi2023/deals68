@@ -34,10 +34,10 @@ export const BUSINESS_QUALITY_PUBLIC_CRITERIA = [
 ] as const;
 
 const DEFAULT_MAX: Record<string, number> = {
-  profile: 15,
+  profile: 20,
   financial: 20,
   documents: 20,
-  images: 10,
+  images: 5,
   valuation: 25,
   readiness: 10,
 };
@@ -104,6 +104,6 @@ export function qualityItemNote(item: BusinessQualityItem, lang: Lang) {
 
 export function businessQualityPublicExplanation(lang: Lang) {
   return lang === 'en'
-    ? 'Business Quality Score is assessed from profile completeness, financial data quality, supporting documents, images, valuation/offer reasonableness, and transaction readiness. The detailed scoring formula is not publicly disclosed.'
-    : 'Business Quality Score được đánh giá dựa trên độ đầy đủ hồ sơ, chất lượng số liệu tài chính, tài liệu chứng minh, hình ảnh, định giá & độ hợp lý đề xuất, và mức sẵn sàng giao dịch/kết nối. Công thức chấm điểm chi tiết không công khai.';
+    ? 'Business Quality Score is assessed from profile completeness, financial data quality, supporting documents, images, valuation/offer reasonableness, and transaction readiness.'
+    : 'Business Quality Score được đánh giá dựa trên độ đầy đủ hồ sơ, chất lượng số liệu tài chính, tài liệu chứng minh, hình ảnh, định giá & độ hợp lý đề xuất, và mức sẵn sàng giao dịch/kết nối.';
 }

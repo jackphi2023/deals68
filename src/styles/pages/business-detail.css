@@ -152,3 +152,10 @@
 
 /* D68 beta feature fix: BQS score cards */
 .d68-bqs-score-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:10px}.d68-bqs-score-card{background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:14px 16px}.d68-bqs-score-card b{display:block;color:#0f2a4a;font-size:14px}.d68-bqs-score-card strong{display:block;color:#1badea;font-size:22px;line-height:1.1;margin:3px 0}.d68-bqs-score-card span{color:#64748b;font-size:13px}.d68-bqs-alert--wide{grid-column:1/-1}.d68-doc-download.locked:disabled{opacity:.72;cursor:not-allowed;background:#eef2f6;color:#64748b}@media(max-width:640px){.d68-bqs-score-grid{grid-template-columns:1fr}}
+
+/* Deals68 BQS v1.1 display refinements */
+.d68-bqs-card.is-demo .d68-bqs-ring{background:#EEF2F6!important}
+.d68-bqs-card.is-demo .d68-bqs-ring b{font-size:22px;color:#0F2A4A;letter-spacing:-.4px}
+.d68-bqs-public-criteria{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:12px 0}
+.d68-bqs-public-criteria span{background:#F8FAFC;border:1px solid #EEF2F6;border-radius:10px;color:#334155;font-size:13px;font-weight:750;padding:10px 12px}
+@media(max-width:640px){.d68-bqs-public-criteria{grid-template-columns:1fr}}

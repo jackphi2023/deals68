@@ -2,3 +2,6 @@
 
 /* Spec v1.3 mobile hardening */
 .d68-admin-card{overflow-x:auto}.d68-admin-table{min-width:720px}.d68-admin-side{max-height:calc(100vh - 110px);overflow:auto}@media(max-width:700px){.d68-admin-table{min-width:640px}.d68-admin-title{gap:10px}.d68-admin-btn{padding:8px 10px}.d68-admin-form4 textarea,.d68-admin-form4 input[style*="span 2"]{grid-column:auto!important}}
+
+/* Deals68 Banner Admin */
+.d68-banner-admin__section{margin-bottom:18px}.d68-banner-admin__section h3{margin:0 0 4px;color:#0F2A4A}.d68-admin-field{display:flex;flex-direction:column;gap:5px}.d68-admin-field span{font-size:12px;color:#64748B;font-weight:800}.d68-banner-admin__list{display:flex;flex-direction:column;gap:12px;margin-top:16px}.d68-banner-admin__row{display:grid;grid-template-columns:260px minmax(0,1fr);gap:14px;align-items:start;border:1px solid #E7EDF3;border-radius:14px;padding:12px;background:#fff}.d68-banner-admin__row>img{width:260px;height:132px;border-radius:8px;object-fit:cover;background:#F1F5F9}.d68-banner-admin__edit{min-width:0}.d68-banner-admin .d68-admin-actions{margin-top:10px}@media(max-width:760px){.d68-banner-admin__row{grid-template-columns:1fr}.d68-banner-admin__row>img{width:100%;height:auto}}

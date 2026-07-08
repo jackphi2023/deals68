@@ -5,6 +5,8 @@ import { percent } from '../lib/format';
 import { toLocalizedPath } from '../lib/i18nRoutes';
 import { formatMoneyForLang, labelDealType, labelIndustry, labelCountry, T } from '../lib/labels';
 import type { Lang } from '../lib/i18n';
+import { BusinessOnsiteContent } from '../components/BusinessFaq';
+import { PromotionBanner } from '../components/SiteBanners';
 
 const PAGE_SIZE = 9;
 type Tx = 'all' | 'sale' | 'invest' | 'loan' | 'jv';
@@ -132,6 +134,7 @@ export default function Businesses({ lang }: { lang: Lang }) {
     const p = new URLSearchParams(location.search);
     setQuery(p.get('search') || p.get('q') || '');
     setIndustries(p.get('industry') ? [p.get('industry') as string] : []);
+    setCities(p.get('city') ? [p.get('city') as string] : []);
     setTx(txFromQuery(p.get('dealType')));
     setPage(1);
   }, [location.search]);
@@ -191,15 +194,15 @@ export default function Businesses({ lang }: { lang: Lang }) {
     { key: 'sale', vi: 'Bán doanh nghiệp', en: 'Businesses for sale' },
     { key: 'invest', vi: 'Gọi vốn & Đầu tư', en: 'Investment opportunities' },
     { key: 'loan', vi: 'Vay vốn', en: 'Business loans' },
-    { key: 'jv', vi: 'JV & Đối tác', en: 'JV & Partnership' }
+    { key: 'jv', vi: 'Liên doanh, đối tác', en: 'Joint ventures and partnerships' }
   ];
 
   return (
     <main className="d68-businesses-page">
       <section className="d68-businesses-title">
         <div className="d68-businesses-breadcrumb"><Link to={nav('/')}>{T(lang, 'Trang chủ', 'Home')}</Link> › <b>{T(lang, 'Doanh nghiệp', 'Businesses')}</b></div>
-        <h1>{T(lang, 'Doanh nghiệp đang chào bán & gọi vốn tại Việt Nam', 'Businesses for Sale & Investment in Vietnam')}</h1>
-        <p>{T(lang, 'Khám phá các cơ hội mua bán, gọi vốn và vay vốn đã được Admin duyệt hiển thị. Hồ sơ ẩn danh; thông tin nhạy cảm chỉ mở khi kết nối được chấp thuận.', 'Explore Admin-approved acquisition, fundraising and lending opportunities. Listings are anonymous; sensitive details unlock only after an approved connection.')}</p>
+        <h1>{T(lang, 'Doanh nghiệp đang chào bán & gọi vốn', 'Businesses for Sale & Investment')}</h1>
+        <p>{T(lang, 'Khám phá các cơ hội mua bán, gọi vốn và vay vốn của doanh nghiệp tại Việt Nam và quốc tế. Hồ sơ ẩn danh, thông tin nhạy cảm chỉ mở khi kết nối được chấp thuận.', 'Explore business sale, fundraising and lending opportunities from businesses in Vietnam and internationally. Profiles are anonymous, and sensitive information is unlocked only after an approved connection.')}</p>
       </section>
 
       <div className="d68-txbar"><div className="d68-txtabs" role="tablist">{txDefs.map((t) => <button key={t.key} role="tab" aria-selected={tx === t.key} className={tx === t.key ? 'active' : ''} onClick={() => { setTx(t.key); setPage(1); }}>{T(lang, t.vi, t.en)}{facets.length ? ` (${txCounts[t.key]})` : ''}</button>)}</div></div>
@@ -247,8 +250,10 @@ export default function Businesses({ lang }: { lang: Lang }) {
           {!loading && !error && !rows.length ? <div className="d68-list-empty"><b>{T(lang, 'Chưa có hồ sơ phù hợp bộ lọc hiện tại.', 'No profiles match the current filters.')}</b><p>{T(lang, 'Thử xóa bớt bộ lọc hoặc quay lại sau — hồ sơ mới hiển thị ngay khi được Admin duyệt.', 'Try clearing filters or check back soon — new profiles appear as soon as Admin approves them.')}</p><button onClick={clearAll}>{T(lang, 'Xóa toàn bộ bộ lọc', 'Clear all filters')}</button></div> : null}
 
           {pageCount > 1 ? <div className="d68-pagination" style={{ justifyContent: 'center', marginTop: 24 }}><button disabled={page <= 1 || loading} onClick={() => setPage((p) => Math.max(1, p - 1))}>←</button>{Array.from({ length: pageCount }).map((_, i) => <button key={i} aria-current={page === i + 1} onClick={() => setPage(i + 1)}>{i + 1}</button>)}<button disabled={loading || page >= pageCount} onClick={() => setPage((p) => p + 1)}>→</button></div> : null}
+          <PromotionBanner placement="listing_promotion" lang={lang} className="d68-listing-promo" />
         </section>
       </div>
+      <BusinessOnsiteContent lang={lang} />
     </main>
   );
 }
