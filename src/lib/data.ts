@@ -1,6 +1,7 @@
 import { supabase } from './supabase';
 import { seedBusinesses } from '../data/seedBusinesses';
 import { computeBusinessQuality } from './scoring';
+import { industryKeyFromLabel } from './industryTaxonomy';
 
 type BusinessAssetRow = Record<string, any>;
 type BusinessDetailAssets = { files: BusinessAssetRow[]; images: BusinessAssetRow[] };
@@ -154,6 +155,23 @@ function applyInvestorTargetFilter(rows: any[], filters: any) {
   return out;
 }
 
+function investorIndustryMatches(row: any, rawIndustry: any) {
+  const wantedKey = industryKeyFromLabel(rawIndustry);
+  if (!wantedKey) return true;
+  const criteria = row?.criteria && typeof row.criteria === 'object' ? row.criteria : {};
+  const values = [
+    ...(Array.isArray(row?.industries) ? row.industries : []),
+    ...(Array.isArray(criteria.sectors) ? criteria.sectors : [])
+  ];
+  return values.some((value) => industryKeyFromLabel(value) === wantedKey);
+}
+function applyInvestorClientFilters(rows: any[], filters: any) {
+  let out = rows;
+  if (filters.country || filters.region) out = applyInvestorTargetFilter(out, filters);
+  if (filters.industry) out = out.filter((row) => investorIndustryMatches(row, filters.industry));
+  return out;
+}
+
 function dealTypeSearchTerms(raw: any) {
   const v = String(raw || '').toLowerCase();
   if (!v) return [];
@@ -269,7 +287,6 @@ export async function listInvestors(filters: any = {}): Promise<any[]> {
   if (!filters.includeHidden) q = q.eq('visible', true).eq('status', 'active');
   if (filters.type) q = q.eq('type', filters.type);
   // country/region filters mean target investment markets, not investor office location.
-  if (filters.industry) q = q.contains('industries', [filters.industry]);
   if (filters.dealType) { const value = String(filters.dealType); q = q.or(`deal_types.cs.{${value}},deal_types.cs.{"${value}"}`); }
   if (filters.stage) q = q.ilike('stage', `%${safeLikeTerm(filters.stage)}%`);
   if (filters.minTicket) q = q.gte('ticket_max', Number(filters.minTicket));
@@ -280,25 +297,24 @@ export async function listInvestors(filters: any = {}): Promise<any[]> {
   else if (sort === 'newest') q = q.order('created_at', { ascending: false });
   else if (sort === 'verified') q = q.order('verified', { ascending: false }).order('admin_priority', { ascending: false }).order('created_at', { ascending: false });
   else q = q.order('admin_priority', { ascending: false }).order('verified', { ascending: false }).order('created_at', { ascending: false });
-  const needsClientTargetFilter = !!(filters.country || filters.region);
-  q = applyPagination(q, needsClientTargetFilter ? { ...filters, limit: filters.rawLimit || 1000, offset: 0 } : { ...filters, limit: filters.limit || 24 });
+  const needsClientFilter = !!(filters.country || filters.region || filters.industry);
+  q = applyPagination(q, needsClientFilter ? { ...filters, limit: filters.rawLimit || 1000, offset: 0 } : { ...filters, limit: filters.limit || 24 });
   const { data, error } = await q;
   if (error) throw error;
-  const rows = needsClientTargetFilter ? applyInvestorTargetFilter((data || []) as any[], filters) : ((data || []) as any[]);
-  if (!needsClientTargetFilter) return rows;
+  const rows = needsClientFilter ? applyInvestorClientFilters((data || []) as any[], filters) : ((data || []) as any[]);
+  if (!needsClientFilter) return rows;
   const offset = Math.max(0, Number(filters.offset || 0)); const limit = Number(filters.limit || 24);
   return rows.slice(offset, offset + limit);
 }
 
 export async function countInvestors(filters: any = {}): Promise<number> {
-  if (filters.country || filters.region) {
+  if (filters.country || filters.region || filters.industry) {
     const rows = await listInvestors({ ...filters, limit: 1000, offset: 0, rawLimit: 1000 });
     return rows.length;
   }
   let q: any = supabase.from('investors').select('id', { count: 'exact', head: true });
   if (!filters.includeHidden) q = q.eq('visible', true).eq('status', 'active');
   if (filters.type) q = q.eq('type', filters.type);
-  if (filters.industry) q = q.contains('industries', [filters.industry]);
   if (filters.dealType) { const value = String(filters.dealType); q = q.or(`deal_types.cs.{${value}},deal_types.cs.{"${value}"}`); }
   if (filters.stage) q = q.ilike('stage', `%${safeLikeTerm(filters.stage)}%`);
   if (filters.minTicket) q = q.gte('ticket_max', Number(filters.minTicket));

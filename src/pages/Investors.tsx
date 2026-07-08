@@ -8,6 +8,7 @@ import { labelCountry, labelDealType, labelIndustry, labelInvestorType, labelReg
 import type { Lang } from '../lib/i18n';
 import { PromotionBanner } from '../components/SiteBanners';
 import { investorPublicDescription, investorPublicTitle, investorTicketLabel } from '../lib/investorDisplay';
+import { industryOptions } from '../lib/industryTaxonomy';
 
 const PAGE_SIZE = 12;
 const investorTypes = ['VC', 'PE', 'Institutional', 'Corporate/Strategic', 'Individual/Angel', 'Family Office', 'Lender/Debt'];
@@ -278,7 +279,7 @@ export default function Investors({ lang }: { lang: Lang }) {
           <label>{T(lang, 'Loại nhà đầu tư', 'Investor type')}<select value={type} onChange={(e) => { setType(e.target.value); setPage(1); }}><option value="">{T(lang, 'Tất cả', 'All')}</option>{investorTypes.map((x) => <option key={x} value={x}>{labelInvestorType(x, lang)}</option>)}</select></label>
           <label>{T(lang, 'Khu vực đầu tư', 'Investment region')}<select value={region} onChange={(e) => { setRegion(e.target.value); setPage(1); }}><option value="">{T(lang, 'Tất cả', 'All')}</option>{regions.map((x) => <option key={x} value={x}>{labelRegion(x, lang)}</option>)}</select></label>
           <label>{T(lang, 'Quốc gia đầu tư', 'Investment country')}<select value={country} onChange={(e) => { setCountry(e.target.value); setPage(1); }}><option value="">{T(lang, 'Tất cả', 'All')}</option>{countries.map((x) => <option key={x} value={x}>{labelCountry(x, lang)}</option>)}</select></label>
-          <label>{T(lang, 'Ngành quan tâm', 'Preferred industry')}<input value={industry} onChange={(e) => { setIndustry(e.target.value); setPage(1); }} placeholder={T(lang, 'F&B, Công nghệ...', 'F&B, Technology...')} /></label>
+          <label>{T(lang, 'Ngành quan tâm', 'Preferred industry')}<select value={industry} onChange={(e) => { setIndustry(e.target.value); setPage(1); }}><option value="">{T(lang, 'Tất cả', 'All')}</option>{industryOptions.map((x) => <option key={x.key} value={x.key}>{T(lang, x.vi, x.en)}</option>)}</select></label>
           <label>{T(lang, 'Loại giao dịch', 'Deal type')}<select value={dealType} onChange={(e) => { setDealType(e.target.value); setPage(1); }}><option value="">{T(lang, 'Tất cả', 'All')}</option>{dealTypes.map((x) => <option key={x} value={x}>{labelDealType(x, lang, true)}</option>)}</select></label>
           <label>{T(lang, 'Giai đoạn', 'Stage')}<select value={stage} onChange={(e) => { setStage(e.target.value); setPage(1); }}><option value="">{T(lang, 'Tất cả', 'All')}</option>{stages.map((x) => <option key={x} value={x}>{labelStage(x, lang)}</option>)}</select></label>
           <label>{T(lang, 'Khoản đầu tư tối thiểu', 'Minimum ticket')}<select value={minTicket} onChange={(e) => { setMinTicket(e.target.value); setPage(1); }}><option value="">{T(lang, 'Tất cả', 'All')}</option><option value="100000">≤ $100K</option><option value="1000000">≤ $1M</option><option value="5000000">≤ $5M</option><option value="50000000">≤ $50M</option></select></label>
