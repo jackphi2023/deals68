@@ -288,7 +288,7 @@ export default function Investors({ lang }: { lang: Lang }) {
         <div className="d68-investors-results">
           <div className="d68-investors-toolbar">
             <span>{loading ? T(lang, 'Đang tải dữ liệu thật...', 'Loading live data...') : `${items.length}${total !== null ? ` / ${total}` : ''} ${T(lang, 'hồ sơ', 'profiles')}`}</span>
-            <span>{myBusiness ? `${T(lang, 'Proposal đã gửi', 'Proposals sent')}: ${quotaUsed}/${quotaTotal}` : T(lang, 'Nguồn: Supabase active + visible', 'Source: Supabase active + visible')}</span>
+            {myBusiness ? <span>{`${T(lang, 'Proposal đã gửi', 'Proposals sent')}: ${quotaUsed}/${quotaTotal}`}</span> : null}
           </div>
 
           {feedback ? <div className="d68-investors-feedback">{feedback}</div> : null}

@@ -275,3 +275,102 @@
 
 @media(max-width:1040px){.d68-home-industry-grid,.d68-home-investor-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}.d68-home-container.d68-home-section:has(.d68-home-investor-grid) .d68-home-title h2,.d68-home-industries .d68-home-title h2{font-size:30px!important}}
 @media(max-width:620px){.d68-home-industries{padding:52px 0 44px!important}.d68-home-industry-grid,.d68-home-investor-grid{grid-template-columns:1fr!important;gap:16px!important}.d68-home-industry-card{min-height:0!important}.d68-home-industry-card>div{height:110px!important}.d68-home-investor-card{min-height:0!important;padding:22px!important}.d68-home-investor-card h3{min-height:0!important}.d68-home-container.d68-home-section:has(.d68-home-investor-grid){padding-top:50px!important;padding-bottom:52px!important}.d68-home-container.d68-home-section:has(.d68-home-investor-grid) .d68-home-title--row{align-items:flex-start!important}.d68-static-hero__inner{padding-top:52px!important;padding-bottom:46px!important}.d68-static-hero h1{font-size:32px!important}.d68-static-hero p{font-size:15.5px!important}}
+
+/* Deals68 public UI polish — 2026-07 */
+*, *::before, *::after{box-sizing:border-box}
+html,body,#root{max-width:100%;overflow-x:hidden}
+
+/* Business images should fill their approved media frames. */
+.d68-home-business-card__media,
+.d68-business-card__media,
+.d68-detail-hero-media,
+.d68-detail-sim-media,
+.d68-detail-thumbs button{background-color:#EEF6FA}
+.d68-home-business-card__media img,
+.d68-business-card__media img,
+.d68-detail-hero-media img,
+.d68-detail-sim-media img,
+.d68-detail-thumbs img{display:block;width:100%!important;height:100%!important;object-fit:cover!important;object-position:center!important}
+.d68-detail-hero-media{aspect-ratio:16/9;min-height:320px;overflow:hidden}
+.d68-business-card__media{overflow:hidden}
+
+/* Home hero stats: align left and sit lower from the slider controls/dots. */
+.d68-home-hero-stats{margin-top:30px!important;margin-left:0!important;align-self:flex-start;justify-content:flex-start}
+
+/* Home promotion banner spacing. */
+.d68-promo-banner.d68-home-container{padding-top:50px!important;padding-bottom:50px!important}
+.d68-promo-banner__link{display:block;width:100%;overflow:hidden;border-radius:18px}
+.d68-promo-banner__link img{display:block;width:100%;height:auto}
+
+/* Featured investor cards: no always-active CTA, no heavy white block feeling. */
+.d68-home-container.d68-home-section:has(.d68-home-investor-grid){background:transparent!important}
+.d68-home-investor-grid{min-width:0;width:100%}
+.d68-home-investor-card{background:transparent!important;box-shadow:none!important;min-width:0}
+.d68-home-investor-card:hover{background:#fff!important;box-shadow:0 14px 34px rgba(15,42,74,.08)!important}
+.d68-home-investor-card a{background:transparent!important;color:#1596cc!important;border:1px solid #D9E7F2!important;box-shadow:none!important}
+.d68-home-investor-card a:hover{background:#F2B51D!important;color:#0F2A4A!important;border-color:#F2B51D!important}
+
+/* Hide horizontal transaction menu on business listing. */
+.d68-businesses-page .d68-txbar{display:none!important}
+
+/* FAQ sections: plain white, no boxed backgrounds/borders for Q&A body. */
+.d68-onsite-faq,
+.d68-onsite-faq-list{background:#fff!important;border:0!important;box-shadow:none!important}
+.d68-onsite-faq-item,
+.d68-onsite-faq-item[open],
+.d68-onsite-faq-item summary,
+.d68-onsite-faq-item p{background:#fff!important;border:0!important;box-shadow:none!important}
+.d68-onsite-faq-item{border-bottom:1px solid #EEF2F6!important;border-radius:0!important}
+.d68-onsite-faq-item:last-child{border-bottom:0!important}
+
+/* Register CTA hover state. */
+.d68-register-page .d68-auth-submit:hover:not(:disabled),
+.d68-register-page .d68-auth-submit:focus-visible:not(:disabled){background:#F2B51D!important;color:#0F2A4A!important;border-color:#F2B51D!important;box-shadow:0 10px 24px rgba(242,181,29,.28)!important}
+
+/* Static pages: center hero/title on desktop and mobile. */
+.d68-static-hero__inner,
+.d68-static-title{text-align:center!important;margin-left:auto!important;margin-right:auto!important}
+.d68-static-title{max-width:760px}
+
+/* Consistent mobile horizontal rhythm. */
+@media(max-width:700px){
+  .d68-home-container,
+  .d68-businesses-title,
+  .d68-investors-title,
+  .d68-list-cols,
+  .d68-detail-shell,
+  .d68-id-wrap,
+  .d68-static-container,
+  .d68-register-card,
+  .d68-admin-wrap{width:100%!important;max-width:100%!important;padding-left:16px!important;padding-right:16px!important;margin-left:auto!important;margin-right:auto!important}
+
+  .d68-home-section,
+  .d68-home-deals,
+  .d68-home-investor-grid,
+  .d68-home-role-grid,
+  .d68-grid-view,
+  .d68-business-list-view,
+  .d68-investor-list,
+  .d68-detail-cols,
+  .d68-id-layout{width:100%!important;max-width:100%!important;min-width:0!important;margin-left:0!important;margin-right:0!important}
+
+  .d68-home-title--row,
+  .d68-detail-section-head{width:100%;align-items:flex-start!important}
+
+  .d68-home-deals,
+  .d68-home-investor-grid,
+  .d68-grid-view{grid-template-columns:minmax(0,1fr)!important}
+
+  .d68-home-business-card,
+  .d68-home-investor-card,
+  .d68-business-card,
+  .d68-investor-card,
+  .d68-detail-card,
+  .d68-detail-image-card,
+  .d68-id-section--card{width:100%!important;max-width:100%!important;min-width:0!important}
+
+  .d68-detail-hero-media{min-height:220px;aspect-ratio:16/10}
+  .d68-detail-thumbs{max-width:100%;overflow-x:auto}
+  .d68-promo-banner.d68-home-container{padding-top:50px!important;padding-bottom:50px!important}
+  .d68-home-hero-stats{margin-top:30px!important;width:100%;max-width:100%}
+}

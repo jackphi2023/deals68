@@ -241,7 +241,7 @@ export default function BusinessDetail({ lang }: { lang: Lang }) {
     navigator.clipboard?.writeText(url).then(() => setMsg(T(lang, 'Đã copy liên kết hồ sơ.', 'Profile link copied.'))).catch(() => undefined);
   }
 
-  if (loading) return <main className="d68-business-detail-page"><div className="d68-detail-shell"><div className="d68-detail-loading">{T(lang, 'Đang tải hồ sơ đã duyệt...', 'Loading approved profile...')}</div></div></main>;
+  if (loading) return <main className="d68-business-detail-page"><div className="d68-detail-shell"><div className="d68-detail-loading">{T(lang, 'Đang tải…', 'Loading…')}</div></div></main>;
   if (error || !business) return <main className="d68-business-detail-page"><div className="d68-detail-shell d68-detail-shell--narrow"><div className="d68-detail-empty"><h1>{T(lang, 'Không hiển thị được hồ sơ', 'Profile unavailable')}</h1><p>{error}</p><Link to="/businesses">← {T(lang, 'Quay lại danh sách', 'Back to businesses')}</Link></div></div></main>;
 
   return <main className="d68-business-detail-page">
