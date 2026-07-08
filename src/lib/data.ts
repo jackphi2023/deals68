@@ -79,32 +79,78 @@ function safeLikeTerm(value: any) {
 
 const COUNTRY_NAME_TO_ISO: Record<string, string> = {
   'vietnam': 'VN', 'việt nam': 'VN', 'viet nam': 'VN', 'singapore': 'SG',
-  'united states': 'US', 'usa': 'US', 'us': 'US', 'mỹ': 'US', 'canada': 'CA',
-  'south korea': 'KR', 'korea': 'KR', 'hàn quốc': 'KR', 'germany': 'DE', 'đức': 'DE',
-  'japan': 'JP', 'nhật bản': 'JP', 'australia': 'AU', 'úc': 'AU', 'hong kong': 'HK', 'uae': 'AE'
+  'united states': 'US', 'usa': 'US', 'us': 'US', 'mỹ': 'US', 'america': 'US',
+  'canada': 'CA', 'south korea': 'KR', 'korea': 'KR', 'hàn quốc': 'KR',
+  'germany': 'DE', 'đức': 'DE', 'japan': 'JP', 'nhật bản': 'JP',
+  'india': 'IN', 'ấn độ': 'IN', 'an do': 'IN', 'china': 'CN', 'trung quốc': 'CN',
+  'australia': 'AU', 'úc': 'AU', 'hong kong': 'HK', 'uae': 'AE',
+  'united kingdom': 'GB', 'uk': 'GB', 'brazil': 'BR'
 };
 function normalizeCountryIso(value: any) {
-  const raw = String(value || '').trim(); if (!raw) return ''; const upper = raw.toUpperCase();
-  if (/^[A-Z]{2}$/.test(upper)) return upper; return COUNTRY_NAME_TO_ISO[raw.toLowerCase()] || upper.slice(0, 2);
+  const raw = String(value || '').trim();
+  if (!raw) return '';
+  const upper = raw.toUpperCase();
+  if (/^[A-Z]{2}$/.test(upper)) return upper;
+  return COUNTRY_NAME_TO_ISO[raw.toLowerCase()] || '';
 }
 function criteriaCountryValues(criteria: any): any[] {
   if (!criteria || typeof criteria !== 'object') return [];
-  const keys = ['targetCountries','target_countries','preferredCountries','preferred_countries','investmentCountries','investment_countries','countries','markets'];
+  const keys = ['targetCountries','target_countries','targetCountriesCache','target_countries_cache','preferredCountries','preferred_countries','investmentCountries','investment_countries','countries','markets'];
   return keys.flatMap((key) => { const v = criteria[key]; if (Array.isArray(v)) return v; if (typeof v === 'string') return v.split(/[;,]/); return []; });
 }
-export function investorTargetCountries(row: any): string[] {
-  const values = [...criteriaCountryValues(row?.criteria), row?.country_iso2, row?.country, 'VN'];
-  const unique = Array.from(new Set(values.map(normalizeCountryIso).filter(Boolean)));
+function criteriaGeoValues(criteria: any): any[] {
+  if (!criteria || typeof criteria !== 'object') return [];
+  const keys = ['targetGeographies','target_geographies','geographies','geo','targetRegions','target_regions','preferredGeographies','preferred_geographies'];
+  return keys.flatMap((key) => { const v = criteria[key]; if (Array.isArray(v)) return v; if (typeof v === 'string') return v.split(/[;,]/); return []; });
+}
+function uniqueCountryList(values: string[]) {
+  const unique = Array.from(new Set(values.map((x) => String(x || '').trim().toUpperCase()).filter(Boolean)));
   return unique.includes('VN') ? ['VN', ...unique.filter((x) => x !== 'VN')] : unique;
 }
+function extractInvestorGeoText(row: any) {
+  const text = `${row?.desc_vi || ''}\n${row?.desc_en || ''}`;
+  const patterns = [/Khu vực quan tâm:\s*([^.\n]+)/i, /Địa lý quan tâm:\s*([^.\n]+)/i, /Target geographies:\s*([^.\n]+)/i, /Target markets:\s*([^.\n]+)/i, /Preferred markets:\s*([^.\n]+)/i];
+  for (const pattern of patterns) {
+    const m = text.match(pattern);
+    if (m?.[1]) return String(m[1]).split(/[;,]/).map((x) => x.trim()).filter(Boolean);
+  }
+  return [];
+}
+export function investorTargetCountries(row: any): string[] {
+  const explicit = criteriaCountryValues(row?.criteria).map(normalizeCountryIso).filter(Boolean);
+  if (explicit.length) return uniqueCountryList(explicit);
+
+  const countries: string[] = [];
+  [...criteriaGeoValues(row?.criteria), ...extractInvestorGeoText(row)].forEach((raw) => {
+    const n = String(raw || '').trim().toLowerCase();
+    if (!n) return;
+    if (n.includes('global') || n.includes('toàn cầu') || n.includes('toan cau')) countries.push('VN','US','SG','JP','KR','IN','CA','DE','AU','HK');
+    if (n.includes('southeast asia') || n.includes('south east asia') || n === 'sea' || n.includes('đông nam á') || n.includes('dong nam a')) countries.push('VN','SG','ID','TH','MY','PH');
+    if (n.includes('asia') || n.includes('châu á') || n.includes('chau a')) countries.push('VN','SG','JP','KR','IN','CN','HK','AE');
+    if (n.includes('europe') || n.includes('châu âu') || n.includes('chau au')) countries.push('DE','GB');
+    if (n.includes('america') || n.includes('americas') || n.includes('châu mỹ') || n.includes('chau my')) countries.push('US','CA','BR');
+    const direct = normalizeCountryIso(raw);
+    if (direct) countries.push(direct);
+  });
+  if (countries.length) return uniqueCountryList(countries);
+
+  const hq = normalizeCountryIso(row?.country_iso2 || row?.country);
+  return hq ? [hq] : [];
+}
 function investorTargetRegions(row: any): string[] {
-  const map: Record<string, string> = { VN:'asia', SG:'asia', KR:'asia', JP:'asia', HK:'asia', US:'americas', CA:'americas', DE:'europe', AU:'oceania', AE:'mideast' };
+  const map: Record<string, string> = { VN:'asia', SG:'asia', KR:'asia', JP:'asia', HK:'asia', IN:'asia', CN:'asia', AE:'mideast', US:'americas', CA:'americas', BR:'americas', DE:'europe', GB:'europe', AU:'oceania' };
   return Array.from(new Set(investorTargetCountries(row).map((iso) => map[iso]).filter(Boolean)));
 }
 function applyInvestorTargetFilter(rows: any[], filters: any) {
   let out = rows;
-  if (filters.country) { const iso = normalizeCountryIso(filters.country); out = out.filter((row) => investorTargetCountries(row).includes(iso)); }
-  if (filters.region) { const region = String(filters.region || '').toLowerCase(); out = out.filter((row) => investorTargetRegions(row).some((r) => r.includes(region))); }
+  if (filters.country) {
+    const iso = normalizeCountryIso(filters.country);
+    out = out.filter((row) => investorTargetCountries(row).includes(iso));
+  }
+  if (filters.region) {
+    const region = String(filters.region || '').toLowerCase();
+    out = out.filter((row) => investorTargetRegions(row).some((r) => r.includes(region)));
+  }
   return out;
 }
 
