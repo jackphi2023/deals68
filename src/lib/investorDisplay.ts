@@ -1,7 +1,5 @@
-
 import type { Lang } from './i18n';
 import { investorTargetCountries } from './data';
-export { investorTargetCountries };
 import { formatMoneyForLang, labelCountry, labelIndustry, labelInvestorType, labelStage, T } from './labels';
 
 type AnyRow = Record<string, any>;
@@ -26,7 +24,9 @@ export function investorPublicTitle(row: AnyRow, lang: Lang) {
   const targets = investorTargetCountries(row).slice(0, 2).map((x) => labelCountry(x, lang));
   const sectorText = industries.join(', ') || T(lang, 'đa lĩnh vực', 'multiple sectors');
   const targetText = targets.length ? ` (${targets.join(', ')})` : '';
-  return lang === 'en' ? `${type} interested in ${sectorText}${targetText}` : `${type} quan tâm ${sectorText}${targetText}`;
+  return lang === 'en'
+    ? `${type} interested in ${sectorText}${targetText}`
+    : `${type} quan tâm ${sectorText}${targetText}`;
 }
 
 export function investorPublicDescription(row: AnyRow, lang: Lang) {

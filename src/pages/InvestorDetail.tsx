@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { getInvestorByCode, getMyBusiness } from '../lib/data';
+import { getInvestorByCode, getMyBusiness, investorTargetCountries } from '../lib/data';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { toLocalizedPath } from '../lib/i18nRoutes';
 import { sendBusinessProposalToInvestor } from '../lib/proposals';
 import { formatMoneyForLang, labelCountry, labelDealType, labelIndustry, labelInvestorType, labelRegion, labelStage, T } from '../lib/labels';
+import { investorPublicDescription, investorPublicTitle, investorTicketLabel } from '../lib/investorDisplay';
 import type { Lang } from '../lib/i18n';
 
 type ContactAccess = { connected?: boolean; name?: string; email?: string; phone?: string; website?: string } | null;
@@ -26,7 +27,7 @@ function criteriaList(inv: any, lang: Lang): string[] {
   const criteria = inv?.criteria && typeof inv.criteria === 'object' ? inv.criteria : {};
   const out: string[] = [];
   const deals = arr(inv?.deal_types || criteria.dealTypes);
-  const markets = arr(criteria.preferredCountries || inv?.country_iso2 || inv?.country);
+  const markets = investorTargetCountries(inv);
   const sectors = arr(inv?.industries || criteria.sectors);
   if (deals.length) out.push(`${T(lang, 'Ưu tiên giao dịch', 'Preferred transactions')}: ${deals.map((x) => labelDealType(x, lang, true)).join(', ')}`);
   if (markets.length) out.push(`${T(lang, 'Địa lý quan tâm', 'Target geographies')}: ${markets.map((x) => labelCountry(x, lang)).join(', ')}`);
@@ -126,13 +127,12 @@ export default function InvestorDetail({ lang }: { lang: Lang }) {
     return () => { live = false; };
   }, [profile?.id, profile?.role, inv?.id]);
 
-  const title = inv ? T(lang, inv.title_vi || inv.code || 'Nhà đầu tư', inv.title_en || inv.title_vi || inv.code || 'Investor') : '';
-  const desc = inv ? T(lang, inv.desc_vi || 'Hồ sơ nhà đầu tư ẩn danh đang được cập nhật.', inv.desc_en || inv.desc_vi || 'Anonymous investor profile is being updated.') : '';
+  const title = inv ? investorPublicTitle(inv, lang) : '';
+  const desc = inv ? investorPublicDescription(inv, lang) : '';
   const industries = useMemo(() => arr(inv?.industries), [inv]);
   const criteria = useMemo(() => criteriaList(inv, lang), [inv, lang]);
   const markets = useMemo(() => {
-    const fromCriteria = arr(inv?.criteria?.preferredCountries);
-    return fromCriteria.length ? fromCriteria : [inv?.country_iso2 || inv?.country || 'Global'];
+    return investorTargetCountries(inv);
   }, [inv]);
   const connected = !!contact?.connected;
 
@@ -170,12 +170,12 @@ export default function InvestorDetail({ lang }: { lang: Lang }) {
           <div className="d68-id-badges"><span>{labelInvestorType(inv.type, lang)}</span><span>📍 {labelCountry(inv.country_iso2 || inv.country, lang)}</span></div>
           <h1>{title}</h1><p>{desc}</p>
           <div className="d68-id-facts d68-id-facts--top">
-            <Fact k={T(lang, 'Quốc gia', 'Country')} v={labelCountry(inv.country_iso2 || inv.country, lang)} />
+            <Fact k={T(lang, 'Quốc gia trụ sở', 'HQ country')} v={labelCountry(inv.country_iso2 || inv.country, lang)} />
             <Fact k={T(lang, 'Loại nhà đầu tư', 'Investor type')} v={labelInvestorType(inv.type, lang)} />
             <Fact k={T(lang, 'Khu vực', 'Region')} v={labelRegion(inv.region, lang)} />
             <Fact k={T(lang, 'Giai đoạn đầu tư', 'Investment stage')} v={labelStage(inv.stage, lang)} />
-            <Fact k={T(lang, 'Khoản đầu tư / Ticket size', 'Ticket size')} v={ticket(lang, inv.ticket_min, inv.ticket_max)} />
-            <Fact k={T(lang, 'Khu vực quan tâm', 'Target geographies')} v={markets.map((x) => labelCountry(x, lang)).join(', ')} />
+            {investorTicketLabel(lang, inv) ? <Fact k={T(lang, 'Khoản đầu tư / Ticket size', 'Ticket size')} v={investorTicketLabel(lang, inv)} /> : null}
+            <Fact k={T(lang, 'Thị trường quan tâm đầu tư', 'Target investment markets')} v={markets.map((x) => labelCountry(x, lang)).join(', ')} />
           </div>
         </article>
         <section className="d68-id-section d68-id-section--card"><h2>{T(lang, 'Tiêu chí đầu tư', 'Investment criteria')}</h2><ul className="d68-id-bullets">{criteria.length ? criteria.map((x, i) => <li key={i}>{x}</li>) : <li>{T(lang, 'Chưa có tiêu chí chi tiết được Admin duyệt public.', 'No detailed Admin-approved criteria yet.')}</li>}</ul></section>
