@@ -77,6 +77,37 @@ function safeLikeTerm(value: any) {
   return String(value || '').trim().replace(/[,()%]/g, ' ');
 }
 
+const COUNTRY_NAME_TO_ISO: Record<string, string> = {
+  'vietnam': 'VN', 'việt nam': 'VN', 'viet nam': 'VN', 'singapore': 'SG',
+  'united states': 'US', 'usa': 'US', 'us': 'US', 'mỹ': 'US', 'canada': 'CA',
+  'south korea': 'KR', 'korea': 'KR', 'hàn quốc': 'KR', 'germany': 'DE', 'đức': 'DE',
+  'japan': 'JP', 'nhật bản': 'JP', 'australia': 'AU', 'úc': 'AU', 'hong kong': 'HK', 'uae': 'AE'
+};
+function normalizeCountryIso(value: any) {
+  const raw = String(value || '').trim(); if (!raw) return ''; const upper = raw.toUpperCase();
+  if (/^[A-Z]{2}$/.test(upper)) return upper; return COUNTRY_NAME_TO_ISO[raw.toLowerCase()] || upper.slice(0, 2);
+}
+function criteriaCountryValues(criteria: any): any[] {
+  if (!criteria || typeof criteria !== 'object') return [];
+  const keys = ['targetCountries','target_countries','preferredCountries','preferred_countries','investmentCountries','investment_countries','countries','markets'];
+  return keys.flatMap((key) => { const v = criteria[key]; if (Array.isArray(v)) return v; if (typeof v === 'string') return v.split(/[;,]/); return []; });
+}
+export function investorTargetCountries(row: any): string[] {
+  const values = [...criteriaCountryValues(row?.criteria), row?.country_iso2, row?.country, 'VN'];
+  const unique = Array.from(new Set(values.map(normalizeCountryIso).filter(Boolean)));
+  return unique.includes('VN') ? ['VN', ...unique.filter((x) => x !== 'VN')] : unique;
+}
+function investorTargetRegions(row: any): string[] {
+  const map: Record<string, string> = { VN:'asia', SG:'asia', KR:'asia', JP:'asia', HK:'asia', US:'americas', CA:'americas', DE:'europe', AU:'oceania', AE:'mideast' };
+  return Array.from(new Set(investorTargetCountries(row).map((iso) => map[iso]).filter(Boolean)));
+}
+function applyInvestorTargetFilter(rows: any[], filters: any) {
+  let out = rows;
+  if (filters.country) { const iso = normalizeCountryIso(filters.country); out = out.filter((row) => investorTargetCountries(row).includes(iso)); }
+  if (filters.region) { const region = String(filters.region || '').toLowerCase(); out = out.filter((row) => investorTargetRegions(row).some((r) => r.includes(region))); }
+  return out;
+}
+
 function dealTypeSearchTerms(raw: any) {
   const v = String(raw || '').toLowerCase();
   if (!v) return [];
@@ -191,51 +222,42 @@ export async function listInvestors(filters: any = {}): Promise<any[]> {
   let q: any = supabase.from('investors').select(investorPublicSelect as string);
   if (!filters.includeHidden) q = q.eq('visible', true).eq('status', 'active');
   if (filters.type) q = q.eq('type', filters.type);
-  if (filters.country) q = q.eq('country_iso2', filters.country);
-  if (filters.region) q = q.ilike('region', `%${safeLikeTerm(filters.region)}%`);
+  // country/region filters mean target investment markets, not investor office location.
   if (filters.industry) q = q.contains('industries', [filters.industry]);
-  if (filters.dealType) {
-    const value = String(filters.dealType);
-    q = q.or(`deal_types.cs.{${value}},deal_types.cs.{"${value}"}`);
-  }
+  if (filters.dealType) { const value = String(filters.dealType); q = q.or(`deal_types.cs.{${value}},deal_types.cs.{"${value}"}`); }
   if (filters.stage) q = q.ilike('stage', `%${safeLikeTerm(filters.stage)}%`);
   if (filters.minTicket) q = q.gte('ticket_max', Number(filters.minTicket));
   if (filters.maxTicket) q = q.lte('ticket_min', Number(filters.maxTicket));
-  if (filters.search || filters.q) {
-    const keyword = safeLikeTerm(filters.search || filters.q);
-    if (keyword) q = q.or(`code.ilike.%${keyword}%,title_vi.ilike.%${keyword}%,title_en.ilike.%${keyword}%,desc_vi.ilike.%${keyword}%,desc_en.ilike.%${keyword}%,type.ilike.%${keyword}%,country.ilike.%${keyword}%`);
-  }
+  if (filters.search || filters.q) { const keyword = safeLikeTerm(filters.search || filters.q); if (keyword) q = q.or(`code.ilike.%${keyword}%,title_vi.ilike.%${keyword}%,title_en.ilike.%${keyword}%,desc_vi.ilike.%${keyword}%,desc_en.ilike.%${keyword}%,type.ilike.%${keyword}%,country.ilike.%${keyword}%`); }
   const sort = filters.sort || 'ranking';
   if (sort === 'ticket') q = q.order('ticket_max', { ascending: false, nullsFirst: false });
   else if (sort === 'newest') q = q.order('created_at', { ascending: false });
   else if (sort === 'verified') q = q.order('verified', { ascending: false }).order('admin_priority', { ascending: false }).order('created_at', { ascending: false });
   else q = q.order('admin_priority', { ascending: false }).order('verified', { ascending: false }).order('created_at', { ascending: false });
-  q = applyPagination(q, { ...filters, limit: filters.limit || 24 });
+  const needsClientTargetFilter = !!(filters.country || filters.region);
+  q = applyPagination(q, needsClientTargetFilter ? { ...filters, limit: filters.rawLimit || 1000, offset: 0 } : { ...filters, limit: filters.limit || 24 });
   const { data, error } = await q;
   if (error) throw error;
-  return (data || []) as any[];
+  const rows = needsClientTargetFilter ? applyInvestorTargetFilter((data || []) as any[], filters) : ((data || []) as any[]);
+  if (!needsClientTargetFilter) return rows;
+  const offset = Math.max(0, Number(filters.offset || 0)); const limit = Number(filters.limit || 24);
+  return rows.slice(offset, offset + limit);
 }
 
 export async function countInvestors(filters: any = {}): Promise<number> {
+  if (filters.country || filters.region) {
+    const rows = await listInvestors({ ...filters, limit: 1000, offset: 0, rawLimit: 1000 });
+    return rows.length;
+  }
   let q: any = supabase.from('investors').select('id', { count: 'exact', head: true });
   if (!filters.includeHidden) q = q.eq('visible', true).eq('status', 'active');
   if (filters.type) q = q.eq('type', filters.type);
-  if (filters.country) q = q.eq('country_iso2', filters.country);
-  if (filters.region) q = q.ilike('region', `%${safeLikeTerm(filters.region)}%`);
   if (filters.industry) q = q.contains('industries', [filters.industry]);
-  if (filters.dealType) {
-    const value = String(filters.dealType);
-    q = q.or(`deal_types.cs.{${value}},deal_types.cs.{"${value}"}`);
-  }
+  if (filters.dealType) { const value = String(filters.dealType); q = q.or(`deal_types.cs.{${value}},deal_types.cs.{"${value}"}`); }
   if (filters.stage) q = q.ilike('stage', `%${safeLikeTerm(filters.stage)}%`);
   if (filters.minTicket) q = q.gte('ticket_max', Number(filters.minTicket));
-  if (filters.search || filters.q) {
-    const keyword = safeLikeTerm(filters.search || filters.q);
-    if (keyword) q = q.or(`code.ilike.%${keyword}%,title_vi.ilike.%${keyword}%,title_en.ilike.%${keyword}%,desc_vi.ilike.%${keyword}%,desc_en.ilike.%${keyword}%,type.ilike.%${keyword}%,country.ilike.%${keyword}%`);
-  }
-  const { count, error } = await q;
-  if (error) throw error;
-  return count || 0;
+  if (filters.search || filters.q) { const keyword = safeLikeTerm(filters.search || filters.q); if (keyword) q = q.or(`code.ilike.%${keyword}%,title_vi.ilike.%${keyword}%,title_en.ilike.%${keyword}%,desc_vi.ilike.%${keyword}%,desc_en.ilike.%${keyword}%,type.ilike.%${keyword}%,country.ilike.%${keyword}%`); }
+  const { count, error } = await q; if (error) throw error; return count || 0;
 }
 
 export async function getInvestorByOwner(ownerId: string) {

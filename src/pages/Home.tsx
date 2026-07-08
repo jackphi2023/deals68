@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { countBusinesses, countInvestors, listBusinesses, listInvestors } from '../lib/data';
+import { countBusinesses, countInvestors, listBusinesses, listInvestors, investorTargetCountries } from '../lib/data';
 import { getPublicDealValueSummary, type PublicDealValueSummary } from '../lib/publicMetrics';
 import { toLocalizedPath } from '../lib/i18nRoutes';
 import { formatMoneyForLang, labelIndustry, labelInvestorType, labelCountry, T } from '../lib/labels';
@@ -33,6 +33,10 @@ function buildPath(base: string, lang: Lang, params: Record<string, string>) {
   return `${localizedBase}${qs.toString() ? `?${qs.toString()}` : ''}`;
 }
 
+function arrHome(value: any): string[] { if (Array.isArray(value)) return value.filter(Boolean).map(String); if (!value) return []; return String(value).split(/[;,]/).map((x) => x.trim()).filter(Boolean); }
+function homeInvestorTicket(lang: Lang, i: any) { const min = Number(i.ticket_min || 0), max = Number(i.ticket_max || 0); if (!min && !max) return T(lang, 'Đang cập nhật', 'Updating'); if (min && max) return `${formatMoneyForLang(min, 'USD', lang)} – ${formatMoneyForLang(max, 'USD', lang)}`; return max ? `≤ ${formatMoneyForLang(max, 'USD', lang)}` : `≥ ${formatMoneyForLang(min, 'USD', lang)}`; }
+function homeInvestorIndustries(lang: Lang, i: any) { const values = arrHome(i.industries).slice(0, 3).map((x) => labelIndustry(x, lang)); return values.join(', ') || T(lang, 'Đang cập nhật', 'Updating'); }
+function shuffleHome<T>(items: T[]) { return [...items].sort(() => Math.random() - 0.5); }
 function dealValueText(lang: Lang, value: PublicDealValueSummary | null, loading: boolean) {
   if (!value) return loading ? '…' : T(lang, 'Đang cập nhật', 'Pending');
   if (lang === 'en') {
@@ -69,12 +73,14 @@ export default function Home({ lang }: { lang: Lang }) {
         countInvestors().catch(() => null),
         getPublicDealValueSummary().catch(() => null),
         listBusinesses({ limit: 6, sort: 'featured' }).catch(() => []),
-        listInvestors({ limit: 4 }).catch(() => [])
+        listInvestors({ limit: 80 }).catch(() => [])
       ]);
       if (!live) return;
       setBizCount(bc); setInvCount(ic); setDealValue(dv);
       setDeals((bs || []).map((b: any) => normalizeDeal(b, lang)).filter((d) => d.slug));
-      setInvestors(invs || []);
+      const adminFeatured = (invs || []).filter((i: any) => i.admin_priority === true);
+      const investorPool = adminFeatured.length ? adminFeatured : (invs || []);
+      setInvestors(shuffleHome(investorPool).slice(0, 4));
       setLoading(false);
     })();
     return () => { live = false; };
@@ -129,8 +135,7 @@ export default function Home({ lang }: { lang: Lang }) {
         <div className="d68-home-container d68-home-hero__inner">
           <div className="d68-home-eyebrow"><span />{T(lang, 'Kết nối thương vụ, khai mở lộc phát', 'Connecting Deals, Unlocking Prosperity')}</div>
           <h1 className="d68-home-hero__title"><span>{T(lang, 'Nơi Doanh nghiệp gặp gỡ', 'Where Businesses Meet')}</span><strong>{T(lang, 'Nhà đầu tư', 'Investors')}</strong></h1>
-          <p className="d68-home-hero__desc">{T(lang, 'Deals68 hiển thị hồ sơ ẩn danh với dữ liệu thật từ database, và chỉ mở thông tin nhạy cảm sau khi kết nối được duyệt.', 'Deals68 displays anonymous profiles with live database-backed data, unlocking sensitive information only after an approved connection.')}</p>
-          <div className="d68-home-hero-stats">
+<div className="d68-home-hero-stats">
             <div><b>{bizCount ?? (loading ? '…' : deals.length)}</b><span>{T(lang, 'Doanh nghiệp đang chào', 'Active business listings')}</span></div>
             <div><b>{invCount ?? (loading ? '…' : investors.length)}</b><span>{T(lang, 'Nhà đầu tư hoạt động', 'Active investors')}</span></div>
             <div><b>{dealValueLabel}</b><span>{T(lang, 'Tổng giá trị thương vụ', 'Total deal value')}</span></div>
@@ -159,7 +164,7 @@ export default function Home({ lang }: { lang: Lang }) {
 
       <section className="d68-home-container d68-home-valuation"><div className="d68-home-valuation__box"><div><span>{T(lang, 'Miễn phí trong Beta', 'Free during Beta')}</span><h2>{T(lang, 'Định giá sơ bộ doanh nghiệp của bạn', 'Estimate your business valuation')}</h2><p>{T(lang, 'Nhập một vài chỉ số để nhận khoảng định giá tham khảo trước khi đăng hồ sơ gọi vốn hoặc chuyển nhượng.', 'Enter a few metrics to get a reference valuation range before listing to raise capital or transfer.')}</p></div><Link to={nav('/valuation')}>{T(lang, 'Định giá ngay', 'Value my business')} →</Link></div></section>
 
-      <section className="d68-home-container d68-home-section"><div className="d68-home-title d68-home-title--row"><div><span className="d68-home-badge d68-home-badge--blue">◆ {T(lang, 'Nhà đầu tư tiêu biểu', 'Featured investors')}</span><h2>{T(lang, 'Nhà đầu tư đang tìm thương vụ', 'Investors looking for deals')}</h2></div><Link to={nav('/investors')}>{T(lang, 'Xem tất cả', 'View all')} →</Link></div>{loading ? <div className="d68-home-investor-grid">{Array.from({ length: 4 }).map((_, i) => <div key={i} className="d68-home-investor-card" aria-hidden="true" />)}</div> : investors.length ? <div className="d68-home-investor-grid">{investors.map((i) => <article key={i.id || i.code} className="d68-home-investor-card"><div className="d68-home-investor-card__icon">💼</div><h3>{T(lang, i.title_vi || i.title_en || i.code, i.title_en || i.title_vi || i.code)}</h3><p>{labelInvestorType(i.type, lang)} · {labelCountry(i.country || i.country_iso2 || 'Global', lang)}</p><Link to={nav(`/investors/${i.code}`)}>{T(lang, 'Xem chi tiết', 'View detail')} →</Link></article>)}</div> : <div className="d68-home-empty">{T(lang, 'Chưa có nhà đầu tư đang hiển thị.', 'No active investor listings yet.')}</div>}</section>
+      <section className="d68-home-container d68-home-section"><div className="d68-home-title d68-home-title--row"><div><span className="d68-home-badge d68-home-badge--blue">◆ {T(lang, 'Nhà đầu tư tiêu biểu', 'Featured investors')}</span><h2>{T(lang, 'Nhà đầu tư đang tìm thương vụ', 'Investors looking for deals')}</h2></div><Link to={nav('/investors')}>{T(lang, 'Xem tất cả', 'View all')} →</Link></div>{loading ? <div className="d68-home-investor-grid">{Array.from({ length: 4 }).map((_, i) => <div key={i} className="d68-home-investor-card" aria-hidden="true" />)}</div> : investors.length ? <div className="d68-home-investor-grid">{investors.map((i) => <article key={i.id || i.code} className="d68-home-investor-card"><div className="d68-home-investor-card__icon">💼</div><h3>{T(lang, i.title_vi || i.title_en || i.code, i.title_en || i.title_vi || i.code)}</h3><p>{labelInvestorType(i.type, lang)} · {investorTargetCountries(i).slice(0, 3).map((c) => labelCountry(c, lang)).join(', ')}</p><div className="d68-home-investor-card__meta"><span><b>{T(lang, 'Khoản đầu tư', 'Ticket')}:</b> {homeInvestorTicket(lang, i)}</span><span><b>{T(lang, 'Ngành', 'Industries')}:</b> {homeInvestorIndustries(lang, i)}</span></div><Link to={nav(`/investors/${i.code}`)}>{T(lang, 'Xem chi tiết', 'View detail')} →</Link></article>)}</div> : <div className="d68-home-empty">{T(lang, 'Chưa có nhà đầu tư đang hiển thị.', 'No active investor listings yet.')}</div>}</section>
 
       <section className="d68-home-how"><div className="d68-home-container"><div className="d68-home-title d68-home-title--center"><h2 style={{ color: '#0F2A4A' }}>{T(lang, 'Cách hoạt động', 'How it works')}</h2><p>{T(lang, 'Ba bước để bắt đầu một thương vụ trên Deals68.', 'Three steps to start a deal on Deals68.')}</p></div><div className="d68-home-steps">{steps.map((s) => <div key={s.n}><b>{s.n}</b><h3>{s.title}</h3><p>{s.desc}</p></div>)}</div></div></section>
 </main>

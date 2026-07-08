@@ -25,6 +25,10 @@ function todayIso() {
   return new Date().toISOString().slice(0, 10);
 }
 
+function bannerSlotKey(row: SiteBanner) {
+  return `${row.placement}:${Number(row.sort_order || 1)}`;
+}
+
 export function bannerMatchesLang(row: SiteBanner, lang: Lang) {
   return row.lang_mode === 'both' || row.lang_mode === lang;
 }
@@ -49,7 +53,15 @@ export async function listSiteBanners(placement: BannerPlacement, lang: Lang, ad
 
   const { data, error } = await q;
   if (error) throw error;
-  return ((data || []) as SiteBanner[]).filter((row) => admin || bannerMatchesLang(row, lang));
+  const filtered = ((data || []) as SiteBanner[]).filter((row) => admin || bannerMatchesLang(row, lang));
+  if (admin) return filtered;
+  const seen = new Set<string>();
+  return filtered.filter((row) => {
+    const key = bannerSlotKey(row);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 
 export async function uploadSiteBannerImage(file: File, placement: BannerPlacement) {
