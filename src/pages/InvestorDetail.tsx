@@ -35,7 +35,6 @@ function criteriaList(inv: any, lang: Lang): string[] {
   if (criteria.investment_appetite) out.push(`${T(lang, 'Khẩu vị đầu tư', 'Investment appetite')}: ${criteria.investment_appetite}`);
   if (criteria.riskAppetite) out.push(`${T(lang, 'Khẩu vị rủi ro', 'Risk appetite')}: ${criteria.riskAppetite}`);
   if (criteria.returnExpectation) out.push(`${T(lang, 'Kỳ vọng lợi nhuận', 'Return expectation')}: ${criteria.returnExpectation}`);
-  if (inv?.activity_level) out.push(`${T(lang, 'Mức độ hoạt động gần đây', 'Recent activity')}: ${inv.activity_level}`);
   return out;
 }
 function proposalHistory(inv: any): string[] {
@@ -168,7 +167,7 @@ export default function InvestorDetail({ lang }: { lang: Lang }) {
     <div className="d68-id-layout">
       <div className="d68-id-main">
         <article className="d68-id-hero d68-id-section--card">
-          <div className="d68-id-badges"><span>{labelInvestorType(inv.type, lang)}</span><span>📍 {labelCountry(inv.country_iso2 || inv.country, lang)}</span>{inv.activity_level ? <span className="gold">● {inv.activity_level}</span> : null}</div>
+          <div className="d68-id-badges"><span>{labelInvestorType(inv.type, lang)}</span><span>📍 {labelCountry(inv.country_iso2 || inv.country, lang)}</span></div>
           <h1>{title}</h1><p>{desc}</p>
           <div className="d68-id-facts d68-id-facts--top">
             <Fact k={T(lang, 'Quốc gia', 'Country')} v={labelCountry(inv.country_iso2 || inv.country, lang)} />
