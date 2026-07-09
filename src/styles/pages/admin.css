@@ -33,3 +33,11 @@
 .d68-admin-quota-actions input{max-width:120px}
 @media(max-width:900px){.d68-admin-business-filters{grid-template-columns:1fr}.d68-admin-detail-tabs{flex-direction:column}.d68-admin-detail-tabs button{width:100%}}
 
+/* Admin business list Public button white text */
+.d68-admin-btn.blue.d68-admin-public-btn,
+.d68-admin-btn.blue.d68-admin-public-btn:visited,
+.d68-admin-btn.blue.d68-admin-public-btn:hover,
+.d68-admin-btn.blue.d68-admin-public-btn:focus{
+  color:#fff!important;
+}
+

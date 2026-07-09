@@ -24,7 +24,9 @@ function cleanText(value: any) {
 export function proposalQuotaTotal(business: any) {
   const base = businessProposalQuotaForPlan(business?.plan);
   const explicit = Number(business?.quota_total || 0);
-  return explicit > 0 ? Math.max(explicit, base) : base;
+  // quota_total is an Admin override. Allow lower or higher than plan defaults.
+  // Empty/0/invalid values still fall back to the plan default for legacy rows.
+  return Number.isFinite(explicit) && explicit > 0 ? explicit : base;
 }
 
 export function proposalStatusLabel(status: any, lang: Lang = 'vi') {
