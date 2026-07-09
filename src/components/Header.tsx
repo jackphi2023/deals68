@@ -35,7 +35,6 @@ function menuForRole(role: string | undefined, lang: Lang) {
     { label: T(lang, 'Invoices / Thanh toán', 'Invoices / Billing'), to: '/dashboard/investor/privacy' },
     { label: T(lang, 'Inbox / Tin nhắn', 'Inbox / Messages'), to: '/messages' },
     { label: T(lang, 'Notifications', 'Notifications'), to: '/notifications' },
-    { label: T(lang, 'Settings', 'Settings'), to: '/dashboard/investor/security' },
   ];
   return [
     { label: T(lang, 'Dashboard', 'Dashboard'), to: '/dashboard/business' },
@@ -44,9 +43,6 @@ function menuForRole(role: string | undefined, lang: Lang) {
     { label: T(lang, 'Nhà đầu tư quan tâm', 'Investor interests'), to: '/dashboard/business/proposals' },
     { label: T(lang, 'Yêu cầu tài liệu', 'Data requests'), to: '/dashboard/business/data-requests' },
     { label: T(lang, 'Invoices / Thanh toán', 'Invoices / Billing'), to: '/dashboard/business/payments' },
-    { label: T(lang, 'Inbox / Tin nhắn', 'Inbox / Messages'), to: '/messages' },
-    { label: T(lang, 'Notifications', 'Notifications'), to: '/notifications' },
-    { label: T(lang, 'Settings', 'Settings'), to: '/dashboard/business/profile' },
   ];
 }
 

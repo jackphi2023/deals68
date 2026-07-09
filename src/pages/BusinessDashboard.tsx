@@ -15,6 +15,8 @@ import { supabase } from '../lib/supabase';
 import { DEFAULT_VALUATION_CONFIG, getActiveValuationConfig, valuate, valuationInputFromBusiness, formatValuationMoney, valuationVerdictMessage, VALUATION_DISCLAIMER_VI, VALUATION_DISCLAIMER_EN } from '../lib/valuationEngine';
 import { businessQualityPublicExplanation, normalizeQualityBreakdown, qualityItemLabel, qualityItemNote } from '../lib/businessQuality';
 import { proposalQuotaTotal } from '../lib/proposals';
+import { calculatePricing, lookupPromo, type BusinessPlan } from '../lib/pricing';
+import { businessProposalQuotaForPlan } from '../lib/businessPlans';
 
 type Lang = 'vi' | 'en';
 type Tab = 'overview' | 'profile' | 'documents' | 'images' | 'interests' | 'requests' | 'services';
@@ -49,6 +51,7 @@ const tabMap: Record<string, Tab> = {
 const INDUSTRY_VI = ['Nông nghiệp','Ô tô & Phụ tùng','Làm đẹp & Chăm sóc cá nhân','Xây dựng & Vật liệu','Hóa chất','Giáo dục & Đào tạo','Năng lượng & Tiện ích','Giải trí & Nghỉ dưỡng','Tài chính','Thực phẩm & Đồ uống (F&B)','Y tế & Chăm sóc sức khỏe','Khách sạn & Resort','CNTT & Phần mềm','Sản xuất','Truyền thông & Quảng cáo','Bất động sản','Bán lẻ','Dịch vụ (B2B/B2C)','Logistics & Vận tải','Du lịch','Thương mại điện tử','Dệt may & Thời trang','Thủy sản & Xuất khẩu'];
 const DEAL_TYPE_VI = ['Gọi vốn','Bán cổ phần','M&A / Chuyển nhượng','Vay vốn','JV / Đối tác','Chuyển nhượng tài sản'];
 const DOC_ACCEPT = '.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+const STATIC_VIETQR_URL = '/assets/vietqr-vcb.png';
 
 function resolveTab(pathname: string): Tab {
   const suffix = pathname.replace('/dashboard/business','').replace(/^\//,'').split('/')[0];
@@ -200,6 +203,21 @@ function userFacingNote(row: any) {
 
 function displayPlan(lang: Lang, plan: any) {
   return String(plan || '').toLowerCase().includes('featured') ? T(lang, 'Ưu tiên', 'Priority') : T(lang, 'Thường', 'Standard');
+}
+
+function billingMoney(v: any, cur: any) {
+  const n = Number(v || 0);
+  const c = String(cur || 'VND').toUpperCase();
+  return c === 'USD' ? `$${Math.round(n).toLocaleString('en-US')}` : `${Math.round(n).toLocaleString('vi-VN')} ₫`;
+}
+function paymentStatusText(lang: Lang, status: any) {
+  const s = String(status || 'pending').toLowerCase();
+  if (s === 'confirmed' || s === 'paid' || s === 'active') return T(lang, 'Đã xác nhận', 'Confirmed');
+  if (s === 'rejected' || s === 'cancelled') return T(lang, 'Không duyệt', 'Rejected');
+  return T(lang, 'Chờ xác nhận', 'Pending');
+}
+function paymentPayload(row: any) {
+  return row?.payload && typeof row.payload === 'object' ? row.payload : {};
 }
 
 
@@ -400,7 +418,7 @@ export default function BusinessDashboard() {
     if (profile) load();
   }, [profile?.id, loading]);
 
-  if (loading) return <main className="d68-dashboard-page"><div className="d68-dashboard-wrap"><div className="d68-dashboard-card">Loading...</div></div></main>;
+  if (loading) return <main className="d68-dashboard-page d68-business-dashboard-page"><div className="d68-dashboard-wrap"><div className="d68-dashboard-card">Loading...</div></div></main>;
   if (!profile) return <Navigate to="/login?next=/dashboard/business" replace />;
   if (profile.role !== 'business' && profile.role !== 'admin') return <main className="d68-dashboard-page"><div className="d68-dashboard-wrap"><div className="d68-dashboard-card"><h2>Business access only</h2><p>Role hiện tại: {profile.role}</p><Link to="/">Back home</Link></div></div></main>;
   if (!b) return <main className="d68-dashboard-page"><div className="d68-dashboard-wrap"><div className="d68-dashboard-card" style={{ textAlign: 'center' }}><h2>{T(lang, 'Chưa có hồ sơ doanh nghiệp', 'Business profile not found')}</h2><p>{T(lang, 'Tài khoản này chưa có hồ sơ DN hoặc đang chờ Admin kích hoạt.', 'This account has no business profile yet or is pending Admin activation.')}</p><Link className="d68-dashboard-btn" to="/register/business">{T(lang, 'Tạo hồ sơ DN', 'Create business profile')}</Link></div></div></main>;
@@ -529,9 +547,102 @@ export default function BusinessDashboard() {
       {tab === 'images' ? <Images lang={lang} images={images} imageChange={imageChange} deleteImage={deleteImage} renameImage={renameImage} suggestHero={suggestHero} /> : null}
       {tab === 'interests' ? <><ProposalRows lang={lang} rows={proposals} empty={T(lang,'Chưa gửi hồ sơ DN tới nhà đầu tư nào.','No business profile proposals sent yet.')} /><Rows title={T(lang,'Nhà đầu tư quan tâm','Investor interests')} rows={interests} empty={T(lang,'Chưa có nhà đầu tư quan tâm.','No investor interests yet.')} actions={(row: any) => <><button onClick={() => acceptInterest(row)} className="d68-dashboard-btn green">Accept</button><button onClick={() => rejectInterest(row)} className="d68-dashboard-btn red">Reject</button></>} /></> : null}
       {tab === 'requests' ? <Rows title={T(lang,'Yêu cầu dữ liệu','Data requests')} rows={requests} empty={T(lang,'Chưa có yêu cầu dữ liệu.','No data requests yet.')} actions={(row: any) => <button onClick={() => fulfillRequest(row)} className="d68-dashboard-btn green">Fulfilled</button>} /> : null}
-      {tab === 'services' ? <div className="d68-dashboard-card"><h2>{T(lang,'Dịch vụ & Phí','Services & Billing')}</h2><p>{T(lang,'Đơn thanh toán gần đây','Recent payment orders')}: {payments.length}</p>{payments.map((p) => <div key={p.id} className="d68-dashboard-row"><div style={{ flex: 1 }}><b>{p.title || p.id}</b><div className="d68-dashboard-mini">{p.status} · {new Date(p.created_at).toLocaleString()}</div></div></div>)}<Link to="/pricing" className="d68-dashboard-btn gold">Renew / Upgrade →</Link></div> : null}
+      {tab === 'services' ? <BusinessBillingPanel lang={lang} b={b} payments={payments} profile={profile} setMsg={setMsg} setErr={setErr} onReload={load} /> : null}
     </section></div>
   </div></main>;
+}
+
+
+function BusinessBillingPanel({ lang, b, payments, profile, setMsg, setErr, onReload }: any) {
+  const [open, setOpen] = useState(false);
+  const [plan, setPlan] = useState<BusinessPlan>(String(b?.plan || '').includes('featured') ? 'featured' : 'standard');
+  const [weeks, setWeeks] = useState<number>(16);
+  const [promoCode, setPromoCode] = useState('');
+  const [promoPct, setPromoPct] = useState(0);
+  const [promoMsg, setPromoMsg] = useState('');
+  const [promoLoading, setPromoLoading] = useState(false);
+  const [paymentAck, setPaymentAck] = useState(false);
+  const [orderBusy, setOrderBusy] = useState(false);
+  const [qrSrc, setQrSrc] = useState('');
+
+  const country = String(b?.country_iso2 || 'VN').toUpperCase();
+  const price = calculatePricing({ role: 'business', country, termWeeks: weeks, businessPlan: plan, promoCode }, promoPct);
+  const quotaAdd = businessProposalQuotaForPlan(plan);
+  const orderCode = `DEALS68-UPGRADE-${String(b?.public_code || b?.slug || b?.id || 'BUSINESS').replace(/[^a-zA-Z0-9]/g, '').slice(0, 18)}`.toUpperCase();
+  const qrAmountParam = price.currency === 'VND' ? `amount=${Math.round(price.total)}&` : '';
+  const qrUrl = `https://img.vietqr.io/image/VCB-0011004000713-compact2.png?${qrAmountParam}addInfo=${encodeURIComponent(orderCode)}&accountName=${encodeURIComponent('Tieu Vo Dinh Phi')}`;
+  useEffect(() => { setQrSrc(qrUrl); }, [qrUrl]);
+
+  async function applyPromo() {
+    setPromoLoading(true); setPromoMsg('');
+    const res = await lookupPromo(promoCode, 'business').catch(() => ({ discountPct: 0 }));
+    setPromoLoading(false);
+    const pct = Number(res.discountPct || 0);
+    setPromoPct(pct);
+    setPromoMsg(pct ? T(lang, 'Mã hợp lệ, đã cập nhật số tiền giảm giá', 'Valid code, discount amount updated') : T(lang, 'Mã không hợp lệ', 'Invalid code'));
+  }
+
+  async function createUpgradeOrder() {
+    if (!paymentAck) { setErr(T(lang, 'Vui lòng xác nhận đã chuyển khoản đúng số tiền và nội dung.', 'Please confirm the payment transfer details.')); return; }
+    setOrderBusy(true); setErr('');
+    const payload = {
+      orderType: 'business_service_upgrade',
+      businessPlan: plan,
+      proposalQuota: quotaAdd,
+      termWeeks: weeks,
+      amount: price.total,
+      currency: price.currency,
+      promoCode: promoCode.trim().toUpperCase() || null,
+      promoDiscountPct: promoPct,
+      bankContent: orderCode,
+      pricing: price
+    };
+    const { error } = await supabase.from('payment_orders').insert({
+      business_id: b.id,
+      profile_id: profile?.id || null,
+      created_by: profile?.id || null,
+      status: 'pending',
+      title: `${T(lang, 'Mua/Nâng cấp Gói dịch vụ', 'Buy/Upgrade service package')} - ${displayPlan(lang, plan)} - ${billingMoney(price.total, price.currency)}`,
+      payload,
+      visibility: 'private',
+      sort_order: 0
+    });
+    setOrderBusy(false);
+    if (error) { setErr(error.message); return; }
+    setMsg(T(lang, 'Đã ghi nhận thanh toán. Admin/SePay sẽ xác nhận để cập nhật gói hiển thị và cộng thêm lượt gửi Hồ sơ doanh nghiệp.', 'Payment recorded. Admin/SePay confirmation will update the listing plan and add business profile sends.'));
+    setOpen(false); setPaymentAck(false);
+    await onReload?.();
+  }
+
+  return <div className="d68-dashboard-card d68-dashboard-billing">
+    <div className="d68-dashboard-row-head"><div><h2>{T(lang,'Thanh toán / Invoice','Payments / Invoices')}</h2><p>{T(lang,'Lịch sử thanh toán của doanh nghiệp và mua thêm/nâng cấp gói hiển thị.', 'Business payment history and service package upgrade.')}</p></div><button type="button" className="d68-dashboard-btn gold" onClick={() => setOpen((v) => !v)}>{T(lang,'Mua/Nâng cấp Gói dịch vụ','Buy/Upgrade service package')}</button></div>
+    <div className="d68-billing-history">
+      {payments.length ? payments.map((p: any) => {
+        const payload = paymentPayload(p);
+        const amount = payload.amount ?? payload.pricing?.total;
+        const currency = payload.currency ?? payload.pricing?.currency ?? 'VND';
+        return <div key={p.id} className="d68-dashboard-row d68-billing-row"><div style={{ flex: 1 }}><b>{p.title || T(lang,'Đơn thanh toán','Payment order')}</b><div className="d68-dashboard-mini">{paymentStatusText(lang, p.status)} · {new Date(p.created_at).toLocaleString()} · {amount ? billingMoney(amount, currency) : T(lang,'Đang cập nhật','Pending')}</div>{payload.bankContent ? <div className="d68-dashboard-mini">{T(lang,'Nội dung CK','Transfer note')}: {payload.bankContent}</div> : null}</div><span className={`d68-dashboard-badge ${String(p.status).toLowerCase() === 'confirmed' ? 'green' : 'gold'}`}>{paymentStatusText(lang, p.status)}</span></div>;
+      }) : <div className="d68-dashboard-empty">{T(lang,'Chưa có lịch sử thanh toán.','No payment history yet.')}</div>}
+    </div>
+    {open ? <div className="d68-dashboard-upgrade-box">
+      <h3>{T(lang,'Gói dịch vụ và Thanh toán','Service package and Payment')}</h3>
+      <div className="d68-bizreg-options">
+        {[
+          { key: 'standard' as BusinessPlan, title: T(lang,'Gói Thường','Regular package'), desc: T(lang, `Hiển thị tại danh sách và gửi Hồ sơ doanh nghiệp tới tối đa ${businessProposalQuotaForPlan('standard')} nhà đầu tư`, `Display in the listing and send your business profile to up to ${businessProposalQuotaForPlan('standard')} investors`) },
+          { key: 'featured' as BusinessPlan, title: T(lang,'Gói Ưu tiên ★','Priority package ★'), desc: T(lang, `Hiển thị tại danh sách/trang chủ và gửi Hồ sơ doanh nghiệp tới tối đa ${businessProposalQuotaForPlan('featured')} nhà đầu tư`, `Display in the listing/homepage and send your business profile to up to ${businessProposalQuotaForPlan('featured')} investors`) }
+        ].map((item) => <button key={item.key} type="button" className={plan === item.key ? 'active' : ''} onClick={() => setPlan(item.key)}><h3>{item.title}</h3><p>{item.desc}</p><span>{businessProposalQuotaForPlan(item.key)} {T(lang,'lượt gửi Hồ sơ doanh nghiệp','business profile sends')}</span>{item.key === 'featured' ? <em>+30% {T(lang, 'so với gói Thường', 'vs Standard')}</em> : null}</button>)}
+      </div>
+      <div className="d68-bizreg-paygrid">
+        <div className="d68-bizreg-payleft"><label className="d68-bizreg-label">{T(lang,'Kỳ hạn','Term')} <small>({T(lang,'tuần','weeks')})</small></label><div className="d68-bizreg-terms">{[4,8,12,16,24].map((t) => { const tmp = calculatePricing({ role:'business', country, termWeeks:t, businessPlan:plan, promoCode }, promoPct); return <button type="button" key={t} className={weeks === t ? 'active' : ''} onClick={() => setWeeks(t)}><b>{t}</b>{tmp.termDiscountPct ? <span>-{tmp.termDiscountPct}%</span> : null}</button>; })}</div><label className="d68-bizreg-label">{T(lang,'Mã khuyến mãi/giới thiệu','Promo/referral code')}</label><div className="d68-bizreg-promo"><input value={promoCode} onChange={(e) => setPromoCode(e.target.value.toUpperCase())} placeholder="DEALS68"/><button type="button" disabled={promoLoading} onClick={applyPromo}>{promoLoading ? '...' : T(lang,'Áp dụng','Apply')}</button></div>{promoMsg ? <p className={promoPct ? 'd68-bizreg-promo-ok' : 'd68-bizreg-promo-warn'}>{promoMsg}</p> : null}</div>
+        <aside className="d68-bizreg-summary"><span>{T(lang,'Tạm tính','Estimate')}</span><div><span>{T(lang,'Phí dịch vụ','Service fee')}</span><b>{billingMoney(price.subtotal, price.currency)}</b></div><div className={price.termDiscountPct ? 'good' : ''}><span>{T(lang,'Chiết khấu kỳ hạn','Term discount')}</span><b>{price.termDiscountPct ? `-${billingMoney(price.termDiscount, price.currency)} (${price.termDiscountPct}%)` : T(lang,'Không','None')}</b></div><div className={price.promoDiscountPct ? 'good' : ''}><span>{T(lang,'Giảm giá','Promo discount')}</span><b>{price.promoDiscountPct ? `-${billingMoney(price.promoDiscount, price.currency)} (${price.promoDiscountPct}%)` : T(lang,'Không','None')}</b></div><div className="good"><span>{T(lang,'Cộng thêm lượt gửi','Additional sends')}</span><b>{quotaAdd}</b></div><strong>{T(lang,'Tổng thanh toán','Total due')}<b>{billingMoney(price.total, price.currency)}</b></strong></aside>
+      </div>
+      <div className="d68-bizreg-payment-methods d68-bizreg-payment-methods--primary"><button type="button" className="active"><span>💵</span>{T(lang,'Chuyển khoản QR','QR bank transfer')}</button></div>
+      <div className="d68-bizreg-qrbox"><a href={qrSrc || qrUrl} target="_blank" rel="noreferrer"><img src={qrSrc || qrUrl} alt="QR Vietcombank" onError={() => setQrSrc(STATIC_VIETQR_URL)} /></a><div><p>{T(lang,'Người nhận:','Recipient:')} <b>Tieu Vo Dinh Phi</b></p><p>{T(lang,'Số TK:','Account no.:')} <b>0011004000713</b></p><p>{T(lang,'Nội dung:','Transfer note:')} <b>{orderCode}</b></p><p>{T(lang,'Số tiền:','Amount:')} <b>{billingMoney(price.total, price.currency)}</b></p></div><label><input type="checkbox" checked={paymentAck} onChange={(e) => setPaymentAck(e.target.checked)} /> {T(lang,'Tôi đã chuyển khoản đúng số tiền và nội dung ở trên','I have transferred the exact amount with the transfer note above')}</label></div>
+      <div className="d68-bizreg-payment-methods d68-bizreg-payment-methods--secondary"><button type="button" disabled><span>💳</span>Sepay ({T(lang,'Thẻ nội địa / tín dụng','Debit / credit card')}) · {T(lang,'Sắp ra mắt','Coming soon')}</button><button type="button" disabled><span>💳</span>Stripe / Paypal · {T(lang,'Sắp ra mắt','Coming soon')}</button></div>
+      <div style={{ display:'flex', justifyContent:'flex-end', marginTop: 14 }}><button type="button" disabled={orderBusy} className="d68-dashboard-btn gold" onClick={createUpgradeOrder}>{orderBusy ? T(lang,'Đang ghi nhận...','Recording...') : T(lang,'Tôi đã thanh toán','I have paid')}</button></div>
+      <p className="d68-dashboard-mini">{T(lang,'Sau khi Admin/SePay xác nhận thanh toán, hệ thống sẽ cập nhật Gói hiển thị và cộng thêm lượt gửi Hồ sơ doanh nghiệp tương ứng.', 'After Admin/SePay confirms payment, the system updates the listing plan and adds the corresponding business profile sends.')}</p>
+    </div> : null}
+  </div>;
 }
 
 function ProfileForm({ lang, b, saveProfile }: any) {

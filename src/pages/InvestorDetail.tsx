@@ -174,7 +174,7 @@ export default function InvestorDetail({ lang }: { lang: Lang }) {
             <Fact k={T(lang, 'Loại nhà đầu tư', 'Investor type')} v={labelInvestorType(inv.type, lang)} />
             <Fact k={T(lang, 'Khu vực', 'Region')} v={labelRegion(inv.region, lang)} />
             <Fact k={T(lang, 'Giai đoạn đầu tư', 'Investment stage')} v={labelStage(inv.stage, lang)} />
-            {investorTicketLabel(lang, inv) ? <Fact k={T(lang, 'Khoản đầu tư / Ticket size', 'Ticket size')} v={investorTicketLabel(lang, inv)} /> : null}
+            {investorTicketLabel(lang, inv) ? <Fact k={T(lang, 'Quy mô đầu tư', 'Investment size')} v={investorTicketLabel(lang, inv)} /> : null}
             <Fact k={T(lang, 'Thị trường quan tâm đầu tư', 'Target investment markets')} v={markets.map((x) => labelCountry(x, lang)).join(', ')} />
           </div>
         </article>
@@ -184,7 +184,7 @@ export default function InvestorDetail({ lang }: { lang: Lang }) {
         <section className="d68-id-section d68-id-section--card"><h2>{T(lang, 'Thông tin liên hệ', 'Contact information')}</h2><p className="d68-id-muted">{T(lang, 'Chỉ Doanh nghiệp đã kết nối với Nhà đầu tư mới được xem.', 'Only businesses connected with this investor can view contact details.')}</p><div className="d68-id-contact-list"><ContactRow label={T(lang, 'Người liên hệ', 'Contact person')} value={contact?.name} unlocked={connected && !!contact?.name} /><ContactRow label="Email" value={contact?.email} unlocked={connected && !!contact?.email} /><ContactRow label={T(lang, 'Website', 'Website')} value={contact?.website} unlocked={connected && !!contact?.website} href={contact?.website} /></div></section>
       </div>
       <aside className="d68-id-side d68-id-side--sticky">
-        <div className="d68-id-cta"><span>{T(lang, 'Gửi Hồ sơ Doanh nghiệp', 'Send business profile')}</span><p>{T(lang, 'Gửi hồ sơ doanh nghiệp của bạn tới nhà đầu tư này để bắt đầu kết nối.', 'Send your business profile to this investor to start the connection workflow.')}</p><button onClick={sendProposal} disabled={proposalBusy || !!sentProposal}>{sentProposal ? T(lang, 'Đã gửi hồ sơ DN', 'Profile sent') : proposalBusy ? T(lang, 'Đang gửi...', 'Sending...') : T(lang, 'Gửi hồ sơ DN', 'Send business profile')}</button><small>{sentProposal ? T(lang, 'Đã gửi. Theo dõi tại Dashboard DN → Proposal.', 'Sent. Track it in Business Dashboard → Proposals.') : T(lang, 'Proposal còn lại được kiểm tra trong Dashboard Business.', 'Remaining proposal quota is checked in the Business Dashboard.')}</small></div>
+        <div className="d68-id-cta"><span>{T(lang, 'Gửi Hồ sơ Doanh nghiệp', 'Send business profile')}</span><p>{T(lang, 'Gửi hồ sơ doanh nghiệp của bạn tới nhà đầu tư này để bắt đầu kết nối.', 'Send your business profile to this investor to start the connection workflow.')}</p><button onClick={sendProposal} disabled={proposalBusy || !!sentProposal}>{sentProposal ? T(lang, 'Đã gửi hồ sơ DN', 'Profile sent') : proposalBusy ? T(lang, 'Đang gửi...', 'Sending...') : T(lang, 'Gửi hồ sơ DN', 'Send business profile')}</button><small>{sentProposal ? T(lang, 'Đã gửi. Theo dõi tại Dashboard DN → Proposal.', 'Sent. Track it in Business Dashboard → Proposals.') : T(lang, 'Hạn mức gửi còn lại xem tại Dashboard Doanh nghiệp.', 'Remaining send quota is available in the Business Dashboard.')}</small></div>
         <div className="d68-id-access"><h3>{T(lang, 'Ai được xem gì', 'Who can see what')}</h3><p>👤 {T(lang, 'Khách: chỉ xem teaser public.', 'Guests: public teaser only.')}</p><p>🏢 {T(lang, 'Business đã đăng nhập/trả phí: xem tiêu chí và gửi proposal.', 'Logged-in/paid businesses: view criteria and send proposals.')}</p><p>✅ {T(lang, 'Sau khi kết nối/duyệt: mở thông tin liên hệ theo cài đặt.', 'After approval/connection: contact details unlock according to settings.')}</p></div>
         {msg ? <div className="d68-id-msg">{msg}</div> : null}
       </aside>
@@ -194,6 +194,6 @@ export default function InvestorDetail({ lang }: { lang: Lang }) {
 
 function Fact({ k, v }: { k: string; v: string }) { return <div className="d68-id-fact"><span>{k}</span><b>{v || '—'}</b></div>; }
 function ContactRow({ label, value, unlocked, href }: { label: string; value?: string; unlocked: boolean; href?: string }) {
-  const display = unlocked ? (href ? <a href={href.startsWith('http') ? href : `https://${href}`} target="_blank" rel="noreferrer">{value}</a> : value) : '🔒';
+  const display = unlocked ? (href ? <a href={href.startsWith('http') ? href : `https://${href}`} target="_blank" rel="noreferrer">{value}</a> : value) : '';
   return <div className={`d68-id-contact-row${unlocked ? ' unlocked' : ''}`}><span>{unlocked ? '✅' : '🔒'}</span><b>{label}</b><em>{display}</em></div>;
 }

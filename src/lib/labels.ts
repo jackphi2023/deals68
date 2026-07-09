@@ -36,13 +36,13 @@ const investorTypeMap: { keys: string[]; vi: string; en: string }[] = [
 
 const dealMap: { keys: string[]; vi: string; en: string; investorVi: string; investorEn: string }[] = [
   { keys: ['fund', 'raise', 'fundraise', 'primary', 'equity', 'invest', 'goi von', 'dau tu'], vi: 'Gọi vốn', en: 'Fundraise', investorVi: 'Đầu tư', investorEn: 'Investment' },
-  { keys: ['loan', 'debt', 'credit', 'vay'], vi: 'Vay vốn', en: 'Debt financing', investorVi: 'Cho vay', investorEn: 'Lending' },
+  { keys: ['loan', 'lending', 'debt', 'credit', 'vay', 'cho vay'], vi: 'Vay vốn', en: 'Debt financing', investorVi: 'Cho vay', investorEn: 'Lending' },
   { keys: ['ma', 'm a', 'sale', 'acquisition', 'transfer', 'asset', 'ban', 'chuyen nhuong'], vi: 'M&A / Chuyển nhượng', en: 'M&A / Sale', investorVi: 'M&A', investorEn: 'M&A' },
   { keys: ['jv', 'joint', 'partner', 'partnership', 'lien doanh', 'doi tac'], vi: 'Đối tác / Liên doanh', en: 'Partnership / JV', investorVi: 'Đối tác / Liên doanh', investorEn: 'Partnership / JV' },
 ];
 
 const stageMap: { keys: string[]; vi: string; en: string }[] = [
-  { keys: ['seed'], vi: 'Seed', en: 'Seed' },
+  { keys: ['seed', 'early stage', 'early-stage', 'early_stage'], vi: 'DN nhỏ/Startup', en: 'Seed / Early stage' },
   { keys: ['series a'], vi: 'Series A', en: 'Series A' },
   { keys: ['growth'], vi: 'Tăng trưởng', en: 'Growth' },
   { keys: ['mature'], vi: 'Ổn định / Trưởng thành', en: 'Mature' },

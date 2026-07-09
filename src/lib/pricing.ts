@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { BUSINESS_FEATURED_PROPOSAL_QUOTA, BUSINESS_STANDARD_PROPOSAL_QUOTA } from './businessPlans';
 
 export type PricingRole = 'business' | 'investor' | 'advisor' | 'affiliate';
 export type BusinessPlan = 'standard' | 'featured';
@@ -72,7 +73,7 @@ export function calculatePricing(input: PricingInput, promoDiscountPct = 0): Pri
   const safePromoPct = Math.max(0, Math.min(100, Number(promoDiscountPct || 0)));
   const promoDiscount = Math.round(afterTerm * safePromoPct / 100);
   const total = Math.max(0, afterTerm - promoDiscount);
-  const proposalQuota = role === 'business' && businessPlan === 'featured' ? 200 : role === 'business' ? 100 : 0;
+  const proposalQuota = role === 'business' && businessPlan === 'featured' ? BUSINESS_FEATURED_PROPOSAL_QUOTA : role === 'business' ? BUSINESS_STANDARD_PROPOSAL_QUOTA : 0;
   return {
     role,
     country,
@@ -91,7 +92,7 @@ export function calculatePricing(input: PricingInput, promoDiscountPct = 0): Pri
     proposalQuota,
     planLabel: role === 'business' && businessPlan === 'featured' ? 'Featured' : 'Standard',
     notes: [
-      role === 'business' && businessPlan === 'featured' ? 'Featured visibility, 200 proposal quota, higher ranking.' : role === 'business' ? 'Standard visibility, 100 proposal quota.' : 'Membership access is activated after payment/admin approval.',
+      role === 'business' && businessPlan === 'featured' ? `Featured visibility, ${BUSINESS_FEATURED_PROPOSAL_QUOTA} proposal quota, higher ranking.` : role === 'business' ? `Standard visibility, ${BUSINESS_STANDARD_PROPOSAL_QUOTA} proposal quota.` : 'Membership access is activated after payment/admin approval.',
       'Country pricing matches Pricing page: Vietnam in VND, other countries in USD.',
       'Payment automation is in Beta; manual admin confirmation remains available.'
     ]

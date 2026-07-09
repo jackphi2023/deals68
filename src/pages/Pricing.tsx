@@ -71,10 +71,11 @@ export default function Pricing({ lang }: { lang: Lang }) {
     const code = promo.trim().toUpperCase();
     setPromoLoading(true);
     setPromoMsg('');
-    const res = await lookupPromo(code, role as PricingRole).catch((e: any) => ({ discountPct: 0, message: e?.message || 'Could not check promo.' }));
+    const res = await lookupPromo(code, role as PricingRole).catch(() => ({ discountPct: 0 }));
     setPromoLoading(false);
-    setPromoPct(Number(res.discountPct || 0));
-    setPromoMsg(res.message || (res.discountPct ? `${code} applied` : T(lang, 'Mã không hợp lệ.', 'Invalid code.')));
+    const discountPct = Number(res.discountPct || 0);
+    setPromoPct(discountPct);
+    setPromoMsg(discountPct ? T(lang, 'Mã hợp lệ, đã cập nhật số tiền giảm giá', 'Valid code, discount amount updated') : T(lang, 'Mã không hợp lệ', 'Invalid code'));
   }
   function checkout() {
     localStorage.setItem('d68_checkout_intent', JSON.stringify({

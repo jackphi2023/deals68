@@ -10,7 +10,7 @@ import { PromotionBanner } from '../components/SiteBanners';
 import { investorPublicDescription, investorPublicTitle, investorTicketLabel } from '../lib/investorDisplay';
 import { industryOptions } from '../lib/industryTaxonomy';
 
-const PAGE_SIZE = 12;
+const PAGE_SIZE = 20;
 const investorTypes = ['VC', 'PE', 'Institutional', 'Corporate/Strategic', 'Individual/Angel', 'Family Office', 'Lender/Debt'];
 const regions = ['asia', 'americas', 'europe', 'oceania', 'mideast'];
 const countries = ['VN', 'SG', 'US', 'CA', 'KR', 'DE', 'AU', 'JP', 'HK'];
@@ -80,7 +80,7 @@ function InvestorCard({ inv, lang, onProposal, proposalState, quotaExceeded, bus
         <p>{investorPublicDescription(inv.raw, lang)}</p>
 
         <div className="d68-investor-card__meta">
-          {ticket ? <span><b>{T(lang, 'Khoản đầu tư', 'Ticket')}:</b> {ticket}</span> : null}
+          {ticket ? <span><b>{T(lang, 'Quy mô đầu tư', 'Investment size')}:</b> {ticket}</span> : null}
           {inv.industries.length ? <span><b>{T(lang, 'Ngành', 'Industries')}:</b> {inv.industries.map((x) => labelIndustry(x, lang)).join(', ')}</span> : null}
           {inv.dealTypes.length ? <span><b>{T(lang, 'Loại giao dịch', 'Deal type')}:</b> {inv.dealTypes.map((x) => labelDealType(x, lang, true)).join(', ')}</span> : null}
           {inv.stage && inv.stage !== 'Any' ? <span><b>{T(lang, 'Giai đoạn', 'Stage')}:</b> {labelStage(inv.stage, lang)}</span> : null}
@@ -205,6 +205,9 @@ export default function Investors({ lang }: { lang: Lang }) {
   }, [profile?.id, profile?.role, items.length]);
 
   const pages = useMemo(() => total === null ? null : Math.max(1, Math.ceil(total / PAGE_SIZE)), [total]);
+  const resultStart = total === 0 || (!loading && !items.length) ? 0 : (page - 1) * PAGE_SIZE + 1;
+  const resultEnd = total === null ? (page - 1) * PAGE_SIZE + items.length : Math.min((page - 1) * PAGE_SIZE + items.length, total);
+  const resultRangeText = total !== null ? `${T(lang, 'Hiển thị', 'Showing')} ${resultStart}-${resultEnd}/${total} ${T(lang, 'hồ sơ', 'profiles')}` : `${T(lang, 'Hiển thị', 'Showing')} ${items.length} ${T(lang, 'hồ sơ', 'profiles')}`;
   const quotaTotal = proposalQuotaTotal(myBusiness);
   const quotaUsed = Object.keys(sentMap).length;
   const quotaExceeded = !!myBusiness && quotaUsed >= quotaTotal;
@@ -287,7 +290,7 @@ export default function Investors({ lang }: { lang: Lang }) {
 
         <div className="d68-investors-results">
           <div className="d68-investors-toolbar">
-            <span>{loading ? T(lang, 'Đang tải dữ liệu thật...', 'Loading live data...') : `${items.length}${total !== null ? ` / ${total}` : ''} ${T(lang, 'hồ sơ', 'profiles')}`}</span>
+            <span>{loading ? T(lang, 'Đang tải dữ liệu thật...', 'Loading live data...') : resultRangeText}</span>
             {myBusiness ? <span>{`${T(lang, 'Proposal đã gửi', 'Proposals sent')}: ${quotaUsed}/${quotaTotal}`}</span> : null}
           </div>
 
@@ -303,9 +306,9 @@ export default function Investors({ lang }: { lang: Lang }) {
           {!loading && !error && !items.length ? <div className="d68-investors-empty"><b>{T(lang, 'Chưa có nhà đầu tư phù hợp.', 'No matching investor profiles.')}</b></div> : null}
 
           <div className="d68-investors-pages">
-            <button disabled={page <= 1 || loading} onClick={() => setPage((p) => Math.max(1, p - 1))}>←</button>
+            <button disabled={page <= 1 || loading} onClick={() => setPage((p) => Math.max(1, p - 1))}>{T(lang, '< Trang trước', '< Previous')}</button>
             <span>{page}{pages ? ` / ${pages}` : ''}</span>
-            <button disabled={loading || (pages !== null && page >= pages)} onClick={() => setPage((p) => p + 1)}>→</button>
+            <button disabled={loading || (pages !== null && page >= pages)} onClick={() => setPage((p) => p + 1)}>{T(lang, 'Trang tiếp >', 'Next >')}</button>
           </div>
 
           <PromotionBanner placement="listing_promotion" lang={lang} className="d68-listing-promo" />

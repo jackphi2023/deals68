@@ -6,6 +6,7 @@ import { supabase } from '../lib/supabase';
 import { proposalStatusLabel, updateProposalStatus, type ProposalStatus } from '../lib/proposals';
 import { AdminBannerManager } from '../components/SiteBanners';
 import { industryOptions, industryKeyFromLabel } from '../lib/industryTaxonomy';
+import { businessProposalQuotaForPlan } from '../lib/businessPlans';
 
 type AdminTab = 'overview' | 'payments' | 'proposals' | 'banners' | 'businesses' | 'business_review' | 'assets' | 'investors' | 'promos' | 'requests' | 'leads' | 'logs' | 'settings';
 
@@ -169,7 +170,22 @@ export default function Admin() {
     const { error: payErr } = await supabase.from('payment_orders').update({ status, updated_at: new Date().toISOString() }).eq('id', row.id);
     if (!payErr && status === 'confirmed') {
       if (row.profile_id || row.created_by) await supabase.from('profiles').update({ status: 'active', dashboard_login_enabled: true }).eq('id', row.profile_id || row.created_by);
-      if (row.business_id) await supabase.from('businesses').update({ status: 'pending_admin_review', visible: false }).eq('id', row.business_id);
+      if (row.business_id) {
+        const payload = row.payload && typeof row.payload === 'object' ? row.payload : {};
+        const isUpgradeOrder = payload.orderType === 'business_service_upgrade';
+        if (isUpgradeOrder) {
+          const targetPlan = payload.businessPlan === 'featured' ? 'featured' : 'standard';
+          const quotaAdd = Number(payload.proposalQuota || businessProposalQuotaForPlan(targetPlan));
+          const { data: currentBiz } = await supabase.from('businesses').select('quota_total,plan').eq('id', row.business_id).maybeSingle();
+          await supabase.from('businesses').update({
+            plan: targetPlan,
+            quota_total: Math.max(0, Number(currentBiz?.quota_total || 0)) + quotaAdd,
+            updated_at: new Date().toISOString()
+          }).eq('id', row.business_id);
+        } else {
+          await supabase.from('businesses').update({ status: 'pending_admin_review', visible: false }).eq('id', row.business_id);
+        }
+      }
       if (row.investor_id) await supabase.from('investors').update({ status: 'pending_admin_review', visible: false }).eq('id', row.investor_id);
       await logAction('confirm_payment_open_dashboard', 'payment_order', row.id, { profile_id: row.profile_id, business_id: row.business_id, investor_id: row.investor_id });
     }

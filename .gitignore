@@ -11,3 +11,5 @@ yarn-error.log*
 playwright-report/
 test-results/
 reports/deals68/
+*.tsbuildinfo
+src/contexts.tmp

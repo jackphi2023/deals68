@@ -40,8 +40,7 @@ export function investorPublicDescription(row: AnyRow, lang: Lang) {
       `An anonymous ${labelInvestorType(row?.type, lang).toLowerCase()} profile interested in ${industries.join(', ') || 'multiple sectors'}.`,
       targets.length ? `Target investment markets: ${targets.join('; ')}.` : '',
       stage ? `Preferred stage: ${stage}.` : '',
-      ticket ? `Indicative ticket size: ${ticket}.` : '',
-      'Name, organization and contact details are kept private for admin verification and are only shared after an approved connection.'
+      ticket ? `Indicative ticket size: ${ticket}.` : ''
     ].filter(Boolean).join(' ');
   }
 
@@ -49,7 +48,6 @@ export function investorPublicDescription(row: AnyRow, lang: Lang) {
     `Hồ sơ ${labelInvestorType(row?.type, lang).toLowerCase()} ẩn danh quan tâm ${industries.join(', ') || 'đa lĩnh vực'}.`,
     targets.length ? `Thị trường quan tâm đầu tư: ${targets.join('; ')}.` : '',
     stage ? `Giai đoạn ưu tiên: ${stage}.` : '',
-    ticket ? `Quy mô ticket tham khảo: ${ticket}.` : '',
-    'Tên, tổ chức và thông tin liên hệ chỉ lưu cho admin xác thực và chỉ mở sau khi kết nối được duyệt.'
+    ticket ? `Quy mô ticket tham khảo: ${ticket}.` : ''
   ].filter(Boolean).join(' ');
 }
