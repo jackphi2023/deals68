@@ -33,8 +33,6 @@ function menuForRole(role: string | undefined, lang: Lang) {
     { label: T(lang, 'DN đã quan tâm / đã lưu', 'Saved businesses'), to: '/dashboard/investor/saved' },
     { label: T(lang, 'Yêu cầu tài liệu', 'Data requests'), to: '/dashboard/investor/alerts' },
     { label: T(lang, 'Invoices / Thanh toán', 'Invoices / Billing'), to: '/dashboard/investor/privacy' },
-    { label: T(lang, 'Inbox / Tin nhắn', 'Inbox / Messages'), to: '/messages' },
-    { label: T(lang, 'Notifications', 'Notifications'), to: '/notifications' },
   ];
   return [
     { label: T(lang, 'Dashboard', 'Dashboard'), to: '/dashboard/business' },

@@ -1,5 +1,5 @@
 /* ============================================================
-   Deals68 - Release cleanup overrides v6
+   Deals68 - Release cleanup overrides v9
    Imported last. Keep this file small, explicit, and route-safe.
    ============================================================ */
 :root{
@@ -136,3 +136,195 @@ img,svg,video,canvas{max-width:100%}
   .d68-register-page{padding-left:0!important;padding-right:0!important}
   .d68-register-card{border-radius:0!important;box-shadow:none!important}
 }
+
+
+/* ============================================================
+   v9 hero polish + dashboard menu icon polish
+   ============================================================ */
+.d68-home-hero{
+  min-height:clamp(360px,46vw,560px)!important;
+  height:clamp(360px,46vw,560px)!important;
+}
+.d68-home-hero__inner{
+  height:100%!important;
+  min-height:0!important;
+  justify-content:flex-end!important;
+  padding-top:46px!important;
+  padding-bottom:36px!important;
+}
+.d68-hero-slider,.d68-hero-slide{
+  height:100%!important;
+  min-height:100%!important;
+}
+.d68-hero-slide img{
+  width:100%!important;
+  height:100%!important;
+  object-fit:cover!important;
+  object-position:center center!important;
+}
+.d68-home-hero__title{
+  margin:0!important;
+  max-width:720px!important;
+  font-size:clamp(38px,4.3vw,64px)!important;
+  line-height:.98!important;
+  letter-spacing:-1.9px!important;
+}
+.d68-home-hero__title span{
+  color:var(--d68-sky)!important;
+  text-shadow:0 2px 14px rgba(0,0,0,.22);
+}
+.d68-home-hero__title strong{
+  color:var(--d68-gold)!important;
+  text-shadow:0 2px 14px rgba(0,0,0,.24);
+}
+.d68-home-hero-stats{
+  width:auto!important;
+  max-width:100%!important;
+  display:flex!important;
+  flex-wrap:wrap!important;
+  justify-content:flex-start!important;
+  align-items:flex-end!important;
+  gap:12px!important;
+  margin-top:116px!important;
+  margin-left:0!important;
+  padding-bottom:0!important;
+}
+.d68-home-hero-stats>div{
+  flex:0 0 auto!important;
+  width:auto!important;
+  min-width:138px!important;
+  min-height:62px!important;
+  border-radius:11px!important;
+  padding:10px 15px 9px!important;
+  background:rgba(15,23,42,.55)!important;
+  border:1px solid rgba(255,255,255,.32)!important;
+  box-shadow:0 12px 24px rgba(0,0,0,.22)!important;
+  backdrop-filter:blur(7px)!important;
+}
+.d68-home-hero-stats b{
+  display:block!important;
+  color:#fff!important;
+  font-size:16px!important;
+  line-height:1.05!important;
+  font-weight:950!important;
+  letter-spacing:.2px!important;
+}
+.d68-home-hero-stats span{
+  display:block!important;
+  margin-top:5px!important;
+  color:#fff!important;
+  opacity:.96!important;
+  font-size:8px!important;
+  line-height:1.15!important;
+  font-weight:900!important;
+  letter-spacing:.35px!important;
+  text-transform:uppercase!important;
+}
+.d68-home-industry-card>div svg{
+  width:60px!important;
+  height:60px!important;
+}
+/* Promotion banner spacing: reduce large white gaps above/below homepage banner. */
+.d68-promo-banner.d68-home-container{
+  padding-top:50px!important;
+  padding-bottom:50px!important;
+  margin-top:0!important;
+  margin-bottom:0!important;
+}
+.d68-home-section--roles{
+  padding-bottom:50px!important;
+}
+.d68-promo-banner.d68-home-container + .d68-home-section,
+.d68-promo-banner.d68-home-container + .d68-home-container{
+  padding-top:50px!important;
+}
+@media(max-width:700px){
+  .d68-promo-banner.d68-home-container{
+    padding-top:36px!important;
+    padding-bottom:36px!important;
+  }
+  .d68-home-section--roles{
+    padding-bottom:36px!important;
+  }
+  .d68-promo-banner.d68-home-container + .d68-home-section,
+  .d68-promo-banner.d68-home-container + .d68-home-container{
+    padding-top:36px!important;
+  }
+}
+
+.d68-home-investor-card__icon{
+  width:44px!important;
+  height:44px!important;
+  min-width:44px!important;
+  border-radius:999px!important;
+  font-size:20px!important;
+  line-height:1!important;
+}
+.d68-dashboard-side a{
+  border-radius:12px!important;
+}
+.d68-dashboard-side a .d68-dashboard-nav-icon{
+  width:32px!important;
+  height:32px!important;
+  min-width:32px!important;
+  border-radius:10px!important;
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  border:1px solid currentColor!important;
+  background:transparent!important;
+  transition:background .16s,color .16s,border-color .16s!important;
+}
+.d68-dashboard-side a .d68-dashboard-nav-icon svg{
+  width:17px!important;
+  height:17px!important;
+}
+.d68-dashboard-side a:hover,
+.d68-dashboard-side a.active{
+  background:var(--d68-blue)!important;
+  color:#fff!important;
+}
+.d68-dashboard-side a:hover .d68-dashboard-nav-icon,
+.d68-dashboard-side a.active .d68-dashboard-nav-icon{
+  color:#fff!important;
+  border-color:#fff!important;
+  background:transparent!important;
+}
+
+@media(max-width:700px){
+  .d68-home-hero{
+    min-height:calc(100svh - 96px)!important;
+    height:calc(100svh - 96px)!important;
+  }
+  .d68-home-hero__inner{
+    height:100%!important;
+    min-height:0!important;
+    padding-top:42px!important;
+    padding-bottom:36px!important;
+  }
+  .d68-home-hero__title{
+    max-width:calc(100vw - 38px)!important;
+    font-size:clamp(34px,9vw,44px)!important;
+    line-height:1.04!important;
+  }
+  .d68-home-hero-stats{
+    display:grid!important;
+    grid-template-columns:repeat(3,minmax(0,1fr))!important;
+    gap:8px!important;
+    width:100%!important;
+    margin-top:auto!important;
+  }
+  .d68-home-hero-stats>div{
+    min-width:0!important;
+    width:100%!important;
+    min-height:58px!important;
+    padding:10px 10px 8px!important;
+  }
+  .d68-home-hero-stats b{
+    font-size:16px!important;
+  }
+  .d68-home-hero-stats span{
+    font-size:7.5px!important;
+  }
+}
+

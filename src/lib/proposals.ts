@@ -22,7 +22,9 @@ function cleanText(value: any) {
 }
 
 export function proposalQuotaTotal(business: any) {
-  return businessProposalQuotaForPlan(business?.plan);
+  const base = businessProposalQuotaForPlan(business?.plan);
+  const explicit = Number(business?.quota_total || 0);
+  return explicit > 0 ? Math.max(explicit, base) : base;
 }
 
 export function proposalStatusLabel(status: any, lang: Lang = 'vi') {

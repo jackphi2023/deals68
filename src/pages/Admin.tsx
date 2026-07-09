@@ -167,8 +167,9 @@ export default function Admin() {
     try { await supabase.from('audit_logs').insert({ actor_id: profile.id, action, entity_type, entity_id, detail }); } catch { /* non-blocking */ }
   }
   async function markPayment(row: Row, status: string) {
+    const wasConfirmed = String(row.status || '').toLowerCase() === 'confirmed';
     const { error: payErr } = await supabase.from('payment_orders').update({ status, updated_at: new Date().toISOString() }).eq('id', row.id);
-    if (!payErr && status === 'confirmed') {
+    if (!payErr && status === 'confirmed' && !wasConfirmed) {
       if (row.profile_id || row.created_by) await supabase.from('profiles').update({ status: 'active', dashboard_login_enabled: true }).eq('id', row.profile_id || row.created_by);
       if (row.business_id) {
         const payload = row.payload && typeof row.payload === 'object' ? row.payload : {};
