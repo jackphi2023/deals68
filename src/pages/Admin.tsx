@@ -131,6 +131,62 @@ function businessNeedsReview(b: Row, files: Row[] = [], images: Row[] = []) {
     || businessReviewSections(b, files, images).length > 0;
 }
 
+function dateMs(value: any) {
+  const ms = new Date(value || 0).getTime();
+  return Number.isFinite(ms) ? ms : 0;
+}
+function businessPrivateTitle(b: Row) {
+  return String(b.company_name_private || b.title_vi || b.title_en || b.public_code || b.slug || b.id || 'Business').trim();
+}
+function businessPrimaryIndustry(b: Row) {
+  const src = sourceOf(b);
+  return String(src.industry || b.industry || '').split(';')[0].trim() || 'Đang cập nhật';
+}
+function businessPlanLabel(b: Row) {
+  const plan = String(b.plan || 'standard').toLowerCase();
+  if (plan.includes('featured') || plan.includes('priority') || plan.includes('ưu')) return 'Ưu tiên';
+  return 'Thường';
+}
+function hasPendingPaymentForBusiness(b: Row, payments: Row[] = []) {
+  return payments.some((p) => String(p.business_id || '') === String(b.id) && ['pending','payment_pending','new'].includes(String(p.status || '').toLowerCase()));
+}
+function businessActivityMs(b: Row, files: Row[] = [], images: Row[] = [], payments: Row[] = []) {
+  const assetTimes = [
+    ...files.filter((x) => String(x.business_id) === String(b.id)).map((x) => dateMs(x.updated_at || x.created_at)),
+    ...images.filter((x) => String(x.business_id) === String(b.id)).map((x) => dateMs(x.updated_at || x.created_at)),
+    ...payments.filter((x) => String(x.business_id) === String(b.id)).map((x) => dateMs(x.updated_at || x.created_at)),
+  ];
+  return Math.max(dateMs(b.pending_submitted_at), dateMs(b.updated_at), dateMs(b.created_at), ...assetTimes, 0);
+}
+function businessAdminStatusLabel(b: Row, files: Row[] = [], images: Row[] = [], payments: Row[] = []) {
+  if (hasPendingPaymentForBusiness(b, payments)) return { label: 'Chờ thanh toán', cls: 'warn' };
+  if (!b.public_snapshot_json || String(b.status || '') === 'pending_admin_review' || String(b.moderation_status || '') === 'pending_admin_review') return { label: 'Mới/chờ duyệt', cls: 'warn' };
+  if (businessReviewSections(b, files, images).length || b.pending_changes_json) return { label: 'Có thay đổi', cls: 'warn' };
+  if (b.visible && String(b.status || '') === 'active') return { label: 'Đang hiển thị', cls: 'ok' };
+  if (!b.visible || String(b.status || '') === 'hidden') return { label: 'Đang ẩn', cls: 'err' };
+  return { label: String(b.status || 'Đang cập nhật'), cls: 'blue' };
+}
+function businessMatchesAdminStatus(b: Row, filter: string, payments: Row[] = [], files: Row[] = [], images: Row[] = []) {
+  if (!filter) return true;
+  if (filter === 'new_pending') return !b.public_snapshot_json || String(b.status || '') === 'pending_admin_review' || String(b.moderation_status || '') === 'pending_admin_review';
+  if (filter === 'updated_pending') return !!b.pending_changes_json || businessReviewSections(b, files, images).length > 0;
+  if (filter === 'visible') return !!b.visible && String(b.status || '') === 'active';
+  if (filter === 'hidden') return !b.visible || String(b.status || '') === 'hidden';
+  if (filter === 'payment_pending') return hasPendingPaymentForBusiness(b, payments);
+  return true;
+}
+function businessReviewWarningText(b: Row, files: Row[] = [], images: Row[] = []) {
+  const sections = businessReviewSections(b, files, images);
+  return sections.length ? `Doanh nghiệp vừa sửa ${sections.join(', ')}, cần kiểm tra và duyệt.` : '';
+}
+function paymentAmountLabel(row: Row) {
+  const payload = objectOf(row.payload);
+  const price = objectOf(payload.price);
+  const amount = price.total ?? payload.total ?? payload.amount ?? row.amount ?? '';
+  const currency = price.currency || payload.currency || row.currency || '';
+  return `${amount || '—'} ${currency || ''}`.trim();
+}
+
 export default function Admin() {
   const { profile, loading, signOut } = useAuth();
   const location = useLocation();
@@ -155,6 +211,8 @@ export default function Admin() {
   const [investorTypeFilter, setInvestorTypeFilter] = useState('');
   const [investorCountryFilter, setInvestorCountryFilter] = useState('');
   const [investorIndustryFilter, setInvestorIndustryFilter] = useState('');
+  const [businessStatusFilter, setBusinessStatusFilter] = useState('');
+  const [businessIndustryFilter, setBusinessIndustryFilter] = useState('');
 
   useEffect(() => setTab(resolveTab(location.pathname)), [location.pathname]);
 
@@ -200,7 +258,22 @@ export default function Admin() {
 
   const pendingBusinesses = businesses.filter((b) => businessNeedsReview(b, businessFiles, businessImages));
   const pendingInvestors = investors.filter(investorNeedsReview);
-  const filteredBusinesses = businesses.filter((b) => !search.trim() || [b.title_vi, b.title_en, b.company_name_private, b.public_code, b.industry, b.status].some((v) => String(v || '').toLowerCase().includes(search.toLowerCase())));
+  const businessPathParts = location.pathname.replace(/^\/+|\/+$/g, '').split('/');
+  const selectedBusinessKey = businessPathParts[0] === 'admin' && businessPathParts[1] === 'businesses' && businessPathParts[2] ? decodeURIComponent(businessPathParts[2]) : '';
+  const selectedBusiness = selectedBusinessKey
+    ? businesses.find((b) => [b.id, b.public_code, b.slug].map((x) => String(x || '')).includes(selectedBusinessKey))
+    : null;
+  const businessIndustryOptions = Array.from(new Set(businesses.map((b) => businessPrimaryIndustry(b)).filter(Boolean))).sort((a, b) => a.localeCompare(b, 'vi'));
+  const filteredBusinesses = businesses
+    .filter((b) => {
+      const src = sourceOf(b);
+      const keyword = search.trim().toLowerCase();
+      if (keyword && ![b.title_vi, b.title_en, b.company_name_private, b.public_code, b.slug, src.industry, b.industry, src.city, b.city, b.status, b.plan].some((v) => String(v || '').toLowerCase().includes(keyword))) return false;
+      if (businessIndustryFilter && businessPrimaryIndustry(b) !== businessIndustryFilter) return false;
+      if (!businessMatchesAdminStatus(b, businessStatusFilter, payments, businessFiles, businessImages)) return false;
+      return true;
+    })
+    .sort((a, b) => businessActivityMs(b, businessFiles, businessImages, payments) - businessActivityMs(a, businessFiles, businessImages, payments));
   const filteredInvestors = investors
     .filter((i) => {
       const keyword = search.trim().toLowerCase();
@@ -248,6 +321,18 @@ export default function Admin() {
     const { error: err } = await supabase.from('businesses').update({ visible: nextVisible, status: nextVisible ? 'active' : 'hidden' }).eq('id', b.id);
     if (!err) await logAction(nextVisible ? 'show_business' : 'hide_business', 'business', b.id, { public_code: b.public_code });
     setError(err?.message || ''); setMsg(err ? '' : 'Business visibility updated.'); load();
+  }
+  async function updateBusinessQuota(b: Row, nextQuota: number) {
+    const quota = Math.max(0, Math.floor(Number(nextQuota || 0)));
+    const { error: err } = await supabase.from('businesses').update({ quota_total: quota, updated_at: new Date().toISOString() }).eq('id', b.id);
+    if (!err) await logAction('set_business_proposal_quota', 'business', b.id, { public_code: b.public_code, quota_total: quota });
+    setError(err?.message || '');
+    setMsg(err ? '' : `Đã cập nhật quota proposal cho ${b.public_code || b.company_name_private || 'business'}: ${quota}.`);
+    load();
+  }
+  async function adjustBusinessQuota(b: Row, delta: number) {
+    const current = Number(b.quota_total || 0);
+    await updateBusinessQuota(b, current + Number(delta || 0));
   }
   async function approveBusiness(e: FormEvent, b: Row) {
     e.preventDefault(); const fd = new FormData(e.currentTarget as HTMLFormElement);
@@ -346,7 +431,11 @@ export default function Admin() {
       {tab === 'proposals' && <ProposalList proposals={proposals} markProposal={markProposal} />}
       {tab === 'banners' && <AdminBannerManager />}
       {tab === 'business_review' && <BusinessReviewList rows={pendingBusinesses} approveBusiness={approveBusiness} toggleBusiness={toggleBusiness} businessFiles={businessFiles} businessImages={businessImages} />}
-      {tab === 'businesses' && <BusinessReviewList rows={filteredBusinesses} approveBusiness={approveBusiness} toggleBusiness={toggleBusiness} businessFiles={businessFiles} businessImages={businessImages} />}
+      {tab === 'businesses' && (selectedBusinessKey
+        ? (selectedBusiness
+          ? <BusinessAdminDetail b={selectedBusiness} payments={payments} profiles={profiles} approveBusiness={approveBusiness} toggleBusiness={toggleBusiness} markPayment={markPayment} updateBusinessQuota={updateBusinessQuota} adjustBusinessQuota={adjustBusinessQuota} businessFiles={businessFiles} businessImages={businessImages} />
+          : <Card><h3>Không tìm thấy doanh nghiệp</h3><p className="d68-admin-subtle">ID/Mã/slug: {selectedBusinessKey}</p><Link to="/admin/businesses" className="d68-admin-btn blue">← Quay lại danh sách</Link></Card>)
+        : <BusinessAdminList rows={filteredBusinesses} allRows={businesses} pendingRows={pendingBusinesses} search={search} setSearch={setSearch} businessStatusFilter={businessStatusFilter} setBusinessStatusFilter={setBusinessStatusFilter} businessIndustryFilter={businessIndustryFilter} setBusinessIndustryFilter={setBusinessIndustryFilter} businessIndustryOptions={businessIndustryOptions} businessFiles={businessFiles} businessImages={businessImages} payments={payments} />)}
       {tab === 'assets' && <div>{filteredBusinesses.map((b) => <AssetEditor key={b.id} b={b} />)}</div>}
       {tab === 'investors' && <>
         <Card>
@@ -383,6 +472,106 @@ function Metric({ label, value, color = '#0F2A4A' }: { label: string; value: str
 function Overview({ businesses, investors, profiles, payments, pendingBusinesses, pendingInvestors, leads }: any) { return <><div className="d68-admin-grid4"><Metric label="Businesses" value={String(businesses.length)} color="#1596cc"/><Metric label="Investors" value={String(investors.length)} color="#B8860B"/><Metric label="Pending DN" value={String(pendingBusinesses.length)} color="#DC2626"/><Metric label="Leads" value={String(leads || 0)} color="#16A34A"/></div><Card><h3>Baseline workflow test</h3><ol className="d68-admin-steps"><li>User đăng ký Business/Investor → tạo profile + listing ẩn + payment_order pending.</li><li>Admin xác nhận payment → mở dashboard_login_enabled cho user.</li><li>Business tự sửa dashboard → pending_changes_json, public snapshot cũ vẫn giữ.</li><li>Admin duyệt snapshot → visible=true, status=active, public_snapshot_json cập nhật.</li><li>Investor tự sửa profile → lưu vào privacy.pending_profile_changes, public profile cũ không đổi; Admin duyệt mới public.</li></ol><p>Profiles: {profiles.length} · Payments: {payments.length} · Pending investors: {pendingInvestors.length}</p></Card></>; }
 function ProposalList({ proposals, markProposal }: any) { return <Card><h3>Proposal Business → Investor</h3><div className="d68-admin-table-wrap"><table className="d68-admin-table"><thead><tr><th>Thời gian</th><th>Doanh nghiệp</th><th>Nhà đầu tư</th><th>Trạng thái</th><th>Action</th></tr></thead><tbody>{proposals.map((row: Row) => { const st = proposalStatusLabel(row.status, 'vi'); const b = row.businesses || {}; const i = row.investors || {}; return <tr key={row.id}><td>{new Date(row.sent_at || row.updated_at || Date.now()).toLocaleString('vi-VN')}</td><td>{b.slug ? <a href={`/businesses/${b.slug}`} target="_blank" rel="noreferrer"><b>{b.company_name_private || b.title_vi || b.title_en || b.public_code || row.business_id}</b></a> : <b>{b.company_name_private || b.title_vi || b.title_en || row.business_id}</b>}<br/><span className="d68-admin-badge warn">{b.public_code || 'Business'}</span></td><td>{i.code ? <a href={`/investors/${i.code}`} target="_blank" rel="noreferrer"><b>{i.private_name || i.title_vi || i.title_en || i.code}</b></a> : <b>{i.private_name || i.title_vi || i.title_en || row.investor_id}</b>}<br/><span>{i.private_email || i.code || 'Investor'}</span></td><td><span className={`d68-admin-badge ${st.cls === 'green' ? 'ok' : st.cls === 'red' ? 'err' : 'warn'}`}>{st.label}</span></td><td><div className="d68-admin-actions"><button className="d68-admin-btn green" onClick={() => markProposal(row, 'approved')}>Duyệt</button><button className="d68-admin-btn red" onClick={() => markProposal(row, 'declined')}>Từ chối</button><button className="d68-admin-btn blue" onClick={() => markProposal(row, 'connected')}>Connected</button></div></td></tr>; })}</tbody></table></div>{!proposals.length ? <Empty text="No proposals."/> : null}</Card>; }
 function Payments({ payments, profiles, markPayment }: any) { return <Card><h3>Thanh toán / mở dashboard</h3>{payments.length ? <div className="d68-admin-table-wrap"><table className="d68-admin-table"><thead><tr><th>Order</th><th>Status</th><th>Profile</th><th>Amount</th><th>Action</th></tr></thead><tbody>{payments.map((p: Row) => { const prof = profiles.find((x: Row) => x.id === (p.profile_id || p.created_by)); const amount = p.payload?.price?.total || p.payload?.total || ''; const cur = p.payload?.price?.currency || p.payload?.currency || ''; return <tr key={p.id}><td><b>{p.title || p.id}</b><br/><span className="d68-admin-badge warn">{new Date(p.created_at).toLocaleString()}</span></td><td>{p.status}</td><td>{prof?.email || p.profile_id || p.created_by || '—'}<br/>{prof?.role}</td><td>{amount} {cur}</td><td><button className="d68-admin-btn green" onClick={() => markPayment(p, 'confirmed')}>Xác nhận thanh toán & mở dashboard</button> <button className="d68-admin-btn red" onClick={() => markPayment(p, 'rejected')}>Từ chối</button></td></tr>; })}</tbody></table></div> : <Empty text="No payment orders."/>}</Card>; }
+
+function BusinessAdminList({ rows, allRows, pendingRows, search, setSearch, businessStatusFilter, setBusinessStatusFilter, businessIndustryFilter, setBusinessIndustryFilter, businessIndustryOptions, businessFiles, businessImages, payments }: any) {
+  return <>
+    <Card>
+      <div className="d68-admin-row-head">
+        <div>
+          <h3>Quản trị Doanh nghiệp</h3>
+          <div className="d68-admin-subtle">Sắp xếp DN mới cập nhật/cần duyệt lên đầu · Kết quả {rows.length}/{allRows.length}</div>
+        </div>
+        {pendingRows.length ? <span className="d68-admin-badge warn">⚠️ {pendingRows.length} DN cần duyệt</span> : <span className="d68-admin-badge ok">Không có DN cần duyệt</span>}
+      </div>
+      <div className="d68-admin-business-filters">
+        <label>Tên DN / mã / lĩnh vực<input className="d68-admin-input" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Tìm tên DN, mã D68, lĩnh vực, địa phương..." /></label>
+        <label>Lĩnh vực<select className="d68-admin-input" value={businessIndustryFilter} onChange={(e) => setBusinessIndustryFilter(e.target.value)}><option value="">Tất cả lĩnh vực</option>{businessIndustryOptions.map((x: string) => <option key={x} value={x}>{x}</option>)}</select></label>
+        <label>Tình trạng<select className="d68-admin-input" value={businessStatusFilter} onChange={(e) => setBusinessStatusFilter(e.target.value)}><option value="">Tất cả</option><option value="new_pending">Mới chờ duyệt</option><option value="updated_pending">Có thay đổi chờ duyệt</option><option value="visible">Đang hiển thị</option><option value="hidden">Đang ẩn</option><option value="payment_pending">Chờ thanh toán</option></select></label>
+      </div>
+    </Card>
+    <Card>
+      <div className="d68-admin-table-wrap"><table className="d68-admin-table d68-admin-business-table">
+        <thead><tr><th>Tên DN</th><th>Lĩnh vực</th><th>Địa phương</th><th>Gói dịch vụ</th><th>Tình trạng</th><th>Cảnh báo</th><th>Cập nhật</th><th>Thao tác</th></tr></thead>
+        <tbody>{rows.map((b: Row) => {
+          const src = sourceOf(b);
+          const st = businessAdminStatusLabel(b, businessFiles, businessImages, payments);
+          const warn = businessReviewWarningText(b, businessFiles, businessImages);
+          return <tr key={b.id}>
+            <td><b>{businessPrivateTitle(b)}</b><br/><span className="d68-admin-badge warn">{b.public_code || b.slug || 'Business'}</span></td>
+            <td>{businessPrimaryIndustry(b)}</td>
+            <td>{src.city || b.city || src.country_iso2 || b.country_iso2 || '—'}</td>
+            <td>{businessPlanLabel(b)}<br/><span className="d68-admin-subtle">Quota {Number(b.quota_used || 0)}/{Number(b.quota_total || 0)}</span></td>
+            <td><span className={`d68-admin-badge ${st.cls}`}>{st.label}</span></td>
+            <td>{warn ? <span className="d68-admin-badge warn">{warn}</span> : <span className="d68-admin-subtle">—</span>}</td>
+            <td>{new Date(businessActivityMs(b, businessFiles, businessImages, payments)).toLocaleString('vi-VN')}</td>
+            <td><div className="d68-admin-actions"><Link to={`/admin/businesses/${b.id}`} className="d68-admin-btn blue">Xem chi tiết DN</Link>{b.slug ? <a href={`/businesses/${b.slug}`} target="_blank" rel="noreferrer" className="d68-admin-btn">Public ↗</a> : null}</div></td>
+          </tr>;
+        })}</tbody>
+      </table></div>
+      {!rows.length ? <Empty text="Không có doanh nghiệp phù hợp bộ lọc."/> : null}
+    </Card>
+  </>;
+}
+function BusinessQuotaManager({ b, updateBusinessQuota, adjustBusinessQuota }: any) {
+  const [quota, setQuota] = useState(Number(b.quota_total || 0));
+  useEffect(() => { setQuota(Number(b.quota_total || 0)); }, [b.id, b.quota_total]);
+  return <div className="d68-admin-quota-box">
+    <div><b>Quota gửi proposal</b><span>Đã dùng {Number(b.quota_used || 0)} / Tổng quota {Number(b.quota_total || 0)}</span></div>
+    <div className="d68-admin-quota-actions">
+      <button type="button" className="d68-admin-btn" onClick={() => adjustBusinessQuota(b, -1)}>-1</button>
+      <button type="button" className="d68-admin-btn" onClick={() => adjustBusinessQuota(b, 1)}>+1</button>
+      <button type="button" className="d68-admin-btn" onClick={() => adjustBusinessQuota(b, 6)}>+6</button>
+      <input className="d68-admin-input" type="number" min="0" value={quota} onChange={(e) => setQuota(Number(e.target.value || 0))} />
+      <button type="button" className="d68-admin-btn green" onClick={() => updateBusinessQuota(b, quota)}>Lưu quota</button>
+    </div>
+    <p className="d68-admin-subtle">Dùng khi Business có mã giảm giá 100% hoặc cần quota thủ công, ví dụ đặt 6 proposal thay vì 50/80 mặc định.</p>
+  </div>;
+}
+function BusinessPaymentPanel({ b, payments, profiles, markPayment, updateBusinessQuota, adjustBusinessQuota }: any) {
+  const rows = payments.filter((p: Row) => String(p.business_id || '') === String(b.id));
+  return <div className="d68-admin-detail-stack">
+    <Card>
+      <div className="d68-admin-grid4">
+        <Metric label="Gói dịch vụ" value={businessPlanLabel(b)} color="#1596cc"/>
+        <Metric label="Quota proposal" value={`${Number(b.quota_used || 0)} / ${Number(b.quota_total || 0)}`} color="#B8860B"/>
+        <Metric label="Trạng thái" value={businessAdminStatusLabel(b, [], [], payments).label} color="#0F2A4A"/>
+        <Metric label="Public" value={b.visible ? 'Đang hiển thị' : 'Đang ẩn'} color={b.visible ? '#16A34A' : '#DC2626'}/>
+      </div>
+      <BusinessQuotaManager b={b} updateBusinessQuota={updateBusinessQuota} adjustBusinessQuota={adjustBusinessQuota} />
+    </Card>
+    <Card>
+      <h3>Lịch sử thanh toán</h3>
+      {rows.length ? <div className="d68-admin-table-wrap"><table className="d68-admin-table"><thead><tr><th>Order</th><th>Status</th><th>Profile</th><th>Amount</th><th>Cập nhật</th><th>Action</th></tr></thead><tbody>{rows.map((p: Row) => { const prof = profiles.find((x: Row) => x.id === (p.profile_id || p.created_by)); return <tr key={p.id}><td><b>{p.title || p.id}</b><br/><span className="d68-admin-subtle">{p.payload?.orderType || p.payload?.businessPlan || 'payment'}</span></td><td><span className={`d68-admin-badge ${String(p.status).toLowerCase() === 'confirmed' ? 'ok' : 'warn'}`}>{p.status}</span></td><td>{prof?.email || p.profile_id || p.created_by || '—'}</td><td>{paymentAmountLabel(p)}</td><td>{new Date(p.updated_at || p.created_at || Date.now()).toLocaleString('vi-VN')}</td><td><div className="d68-admin-actions"><button className="d68-admin-btn green" onClick={() => markPayment(p, 'confirmed')}>Xác nhận</button><button className="d68-admin-btn red" onClick={() => markPayment(p, 'rejected')}>Từ chối</button></div></td></tr>; })}</tbody></table></div> : <Empty text="Business này chưa có payment order."/>}
+    </Card>
+  </div>;
+}
+function BusinessAdminDetail({ b, payments, profiles, approveBusiness, toggleBusiness, markPayment, updateBusinessQuota, adjustBusinessQuota, businessFiles, businessImages }: any) {
+  const [detailTab, setDetailTab] = useState<'payments' | 'info' | 'assets'>('info');
+  const sections = businessReviewSections(b, businessFiles, businessImages);
+  const status = businessAdminStatusLabel(b, businessFiles, businessImages, payments);
+  return <div className="d68-admin-business-detail">
+    <Card>
+      <div className="d68-admin-row-head">
+        <div>
+          <Link to="/admin/businesses" className="d68-admin-subtle">← Quay lại danh sách business</Link>
+          <h2>{businessPrivateTitle(b)}</h2>
+          <div className="d68-admin-subtle">{b.public_code || 'D68'} · {businessPrimaryIndustry(b)} · {sourceOf(b).city || b.city || '—'} · public v{b.public_version || 0}</div>
+        </div>
+        <span className={`d68-admin-badge ${status.cls}`}>{status.label}</span>
+      </div>
+      {sections.length ? <div className="d68-admin-notice warn">Doanh nghiệp vừa sửa {sections.join(', ')}, cần kiểm tra và duyệt.</div> : null}
+      <div className="d68-admin-detail-tabs">
+        <button className={detailTab === 'payments' ? 'active' : ''} onClick={() => setDetailTab('payments')}>Thanh toán & Quota</button>
+        <button className={detailTab === 'info' ? 'active' : ''} onClick={() => setDetailTab('info')}>Thông tin</button>
+        <button className={detailTab === 'assets' ? 'active' : ''} onClick={() => setDetailTab('assets')}>Hình ảnh & Files</button>
+      </div>
+    </Card>
+    {detailTab === 'payments' ? <BusinessPaymentPanel b={b} payments={payments} profiles={profiles} markPayment={markPayment} updateBusinessQuota={updateBusinessQuota} adjustBusinessQuota={adjustBusinessQuota} /> : null}
+    {detailTab === 'info' ? <BusinessPublicEditor b={b} onApprove={approveBusiness} onToggle={toggleBusiness} businessFiles={businessFiles} businessImages={businessImages} /> : null}
+    {detailTab === 'assets' ? <AssetEditor b={b} /> : null}
+  </div>;
+}
+
 function BusinessReviewList({ rows, approveBusiness, toggleBusiness, businessFiles = [], businessImages = [] }: any) {
   return <div>{rows.length ? rows.map((b: Row) => <BusinessPublicEditor key={b.id} b={b} onApprove={approveBusiness} onToggle={toggleBusiness} businessFiles={businessFiles} businessImages={businessImages} />) : <Empty text="No business pending review."/>}</div>;
 }

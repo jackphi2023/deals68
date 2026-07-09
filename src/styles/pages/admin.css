@@ -15,3 +15,21 @@
 .d68-admin-loginbox b{font-size:12px;text-transform:uppercase;letter-spacing:.4px;color:#B8860B}
 .d68-admin-loginbox code{background:#fff;border:1px solid #FDE68A;border-radius:6px;padding:2px 6px;color:#0F2A4A;font-weight:800}
 
+/* Admin Business Management v1 */
+.d68-admin-business-filters{display:grid;grid-template-columns:1.2fr .8fr .8fr;gap:12px;margin-top:14px}
+.d68-admin-business-filters label{display:flex;flex-direction:column;gap:6px;font-weight:800;color:#334155;font-size:12.5px}
+.d68-admin-business-table td{vertical-align:top}
+.d68-admin-business-table .d68-admin-badge{white-space:normal;line-height:1.35}
+.d68-admin-business-detail h2{margin:6px 0 4px;font-size:28px;letter-spacing:-.6px}
+.d68-admin-detail-tabs{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}
+.d68-admin-detail-tabs button{border:1px solid #D5E0ED;background:#fff;color:#0F2A4A;border-radius:12px;padding:10px 14px;font-weight:900;cursor:pointer}
+.d68-admin-detail-tabs button.active{background:#0F2A4A;color:#fff;border-color:#0F2A4A}
+.d68-admin-detail-stack{display:flex;flex-direction:column;gap:16px}
+.d68-admin-quota-box{margin-top:16px;padding:16px;border:1px solid #E7EDF3;background:#F7FAFC;border-radius:14px;display:flex;flex-direction:column;gap:12px}
+.d68-admin-quota-box>div:first-child{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.d68-admin-quota-box b{color:#0F2A4A}
+.d68-admin-quota-box span{color:#64748B;font-weight:800}
+.d68-admin-quota-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.d68-admin-quota-actions input{max-width:120px}
+@media(max-width:900px){.d68-admin-business-filters{grid-template-columns:1fr}.d68-admin-detail-tabs{flex-direction:column}.d68-admin-detail-tabs button{width:100%}}
+
