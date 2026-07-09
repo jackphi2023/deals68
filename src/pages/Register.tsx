@@ -23,6 +23,7 @@ import {
   locationKeyFromLabel
 } from '../lib/labels';
 import { DEFAULT_VALUATION_CONFIG, getActiveValuationConfig, valuate, formatValuationMoney, valuationVerdictMessage, VALUATION_DISCLAIMER_VI, VALUATION_DISCLAIMER_EN } from '../lib/valuationEngine';
+import { BUSINESS_FEATURED_PROPOSAL_QUOTA, BUSINESS_STANDARD_PROPOSAL_QUOTA, businessProposalQuotaForPlan } from '../lib/businessPlans';
 
 const countryIso: Record<string, string> = Object.fromEntries(countryOptions.map((c) => [c.vi, c.iso2]).concat(countryOptions.map((c) => [c.en, c.iso2])));
 const MAX_BUSINESS_IMAGES = 5;
@@ -349,7 +350,7 @@ try {
           bench_verdict: benchmarkResult?.verdict || null,
           bench_config_version: benchmarkResult?.configVersion || null,
           bench_calculated_at: benchmarkResult ? new Date().toISOString() : null,
-          quota_total: plan === 'featured' ? 200 : 100,
+          quota_total: businessProposalQuotaForPlan(plan),
           highlights_vi: highlights,
           highlights_en: '',
           investment_reason_vi: reason,
@@ -440,8 +441,8 @@ try {
     <h2>{T(lang, 'Gói dịch vụ và Thanh toán', 'Service package and Payment')}</h2>
     <div className="d68-bizreg-options">
       {isBusiness ? ([
-        { key: 'standard' as BusinessPlan, title: T(lang, 'Gói Thường', 'Regular package'), desc: T(lang, 'Hiển thị tại danh sách & tiếp cận tối đa 100 nhà đầu tư', 'Display in the listing and reach up to 100 investors'), badge: T(lang, 'Gửi hồ sơ doanh nghiệp đến 100 nhà đầu tư', 'Send your business profile to 100 investors') },
-        { key: 'featured' as BusinessPlan, title: T(lang, 'Gói Ưu tiên ★', 'Priority package ★'), desc: T(lang, 'Hiển thị tại danh sách/trang chủ & tiếp cận tối đa 200 nhà đầu tư', 'Display in the listing/homepage and reach up to 200 investors'), badge: T(lang, 'Gửi hồ sơ doanh nghiệp đến 200 nhà đầu tư', 'Send your business profile to 200 investors') }
+        { key: 'standard' as BusinessPlan, title: T(lang, 'Gói Thường', 'Regular package'), desc: T(lang, `Hiển thị tại danh sách và gửi Hồ sơ doanh nghiệp tới tối đa ${BUSINESS_STANDARD_PROPOSAL_QUOTA} nhà đầu tư`, `Display in the listing and send your business profile to up to ${BUSINESS_STANDARD_PROPOSAL_QUOTA} investors`), badge: T(lang, `${BUSINESS_STANDARD_PROPOSAL_QUOTA} lượt gửi Hồ sơ doanh nghiệp`, `${BUSINESS_STANDARD_PROPOSAL_QUOTA} business profile sends`) },
+        { key: 'featured' as BusinessPlan, title: T(lang, 'Gói Ưu tiên ★', 'Priority package ★'), desc: T(lang, `Hiển thị tại danh sách/trang chủ và gửi Hồ sơ doanh nghiệp tới tối đa ${BUSINESS_FEATURED_PROPOSAL_QUOTA} nhà đầu tư`, `Display in the listing/homepage and send your business profile to up to ${BUSINESS_FEATURED_PROPOSAL_QUOTA} investors`), badge: T(lang, `${BUSINESS_FEATURED_PROPOSAL_QUOTA} lượt gửi Hồ sơ doanh nghiệp`, `${BUSINESS_FEATURED_PROPOSAL_QUOTA} business profile sends`) }
       ].map((item) => <button key={item.key} type="button" className={plan === item.key ? 'active' : ''} onClick={() => setPlan(item.key)}>
         <h3>{item.title}</h3><p>{item.desc}</p><span>{item.badge}</span>{item.key === 'featured' ? <em>+30% {T(lang, 'so với gói Thường', 'vs Standard')}</em> : null}
       </button>)) : (<>
@@ -469,7 +470,6 @@ try {
       <h1>{isBusiness ? T(lang, 'Đăng hồ sơ gọi vốn / bán doanh nghiệp', 'List your fundraise / business sale') : isInvestor ? T(lang, 'Tạo hồ sơ Nhà đầu tư', 'Create your Investor profile') : T(lang, 'Tạo tài khoản Deals68', 'Create your Deals68 account')}</h1>
       <p>{isBusiness ? T(lang, 'Hồ sơ doanh nghiệp luôn ẩn danh tên/thương hiệu và chỉ hiển thị với Nhà đầu tư quan tâm', 'Business profiles always anonymize names/brands and are shown to interested investors') : T(lang, 'Thông tin liên hệ riêng tư không hiển thị công khai. Chỉ doanh nghiệp kết nối mới xem được', 'Private contact details are not displayed publicly. Only connected businesses can view them')}</p>
     </div>
-    {intent.createdAt ? <div className="d68-auth-banner">✓ {T(lang, 'Đã lấy gói từ Bảng giá:', 'Plan carried over from Pricing:')} {pricingSummary} <Link to={toLocalizedPath('/pricing', lang)}>{T(lang, 'Đổi lựa chọn', 'Change')}</Link></div> : null}
     <form onSubmit={submit} className="d68-register-form">
       <section className="d68-register-section d68-register-section--account">
         <h2>{T(lang, 'Thông tin tài khoản', 'Account information')}</h2>

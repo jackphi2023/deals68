@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import type { Lang } from './i18n';
+import { businessProposalQuotaForPlan } from './businessPlans';
 
 export type ProposalStatus = 'sent' | 'approved' | 'declined' | 'request_data' | 'connected';
 export type ProposalSendReason = 'duplicate' | 'quota_exceeded' | 'missing_profile' | 'error';
@@ -21,10 +22,7 @@ function cleanText(value: any) {
 }
 
 export function proposalQuotaTotal(business: any) {
-  const explicit = Number(business?.quota_total || 0);
-  if (explicit > 0) return explicit;
-  const plan = cleanText(business?.plan).toLowerCase();
-  return plan.includes('featured') ? 200 : 100;
+  return businessProposalQuotaForPlan(business?.plan);
 }
 
 export function proposalStatusLabel(status: any, lang: Lang = 'vi') {
@@ -64,12 +62,12 @@ export async function listBusinessProposalStatuses(businessId: string) {
 }
 
 async function countBusinessProposals(businessId: string) {
-  const { count, error } = await supabase
+  const { data, error } = await supabase
     .from('proposals')
-    .select('id', { count: 'exact', head: true })
+    .select('investor_id,status')
     .eq('business_id', businessId);
   if (error) throw error;
-  return count || 0;
+  return new Set((data || []).map((row: any) => String(row.investor_id || '').trim()).filter(Boolean)).size;
 }
 
 async function fetchProposalByIdOrPair(id: any, businessId: string, investorId: string) {
@@ -103,7 +101,7 @@ export async function sendBusinessProposalToInvestor(input: {
   ]);
 
   const quotaTotal = proposalQuotaTotal(input.business);
-  const quotaUsed = Number(input.business?.quota_used ?? sentCount ?? 0);
+  const quotaUsed = Number(sentCount || 0);
   const remainingQuota = Math.max(0, quotaTotal - quotaUsed);
 
   if (existing) {
