@@ -191,6 +191,10 @@ export default function Businesses({ lang }: { lang: Lang }) {
   const toggle = (list: string[], set: (next: string[]) => void, key: string) =>
     set(list.includes(key) ? list.filter((x) => x !== key) : [key]);
   const clearAll = () => { setTx('all'); setQuery(''); setCities([]); setIndustries([]); setRevenueBand(''); setQuality70(false); setFeaturedOnly(false); setPage(1); };
+  const goPage = (nextPage: number) => {
+    setPage(Math.max(1, nextPage));
+    if (typeof window !== 'undefined') requestAnimationFrame(() => window.scrollTo({ top: 0, left: 0, behavior: 'smooth' }));
+  };
 
   const txDefs: { key: Tx; vi: string; en: string }[] = [
     { key: 'all', vi: 'Tất cả giao dịch', en: 'All transactions' },
@@ -252,7 +256,7 @@ export default function Businesses({ lang }: { lang: Lang }) {
           <div className={view === 'grid' ? 'd68-grid-view' : 'd68-business-list-view'}>{loading ? Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />) : rows.map((d, i) => <DealCard key={d.id} d={d} lang={lang} view={view} tintIndex={i} />)}</div>
           {!loading && !error && !rows.length ? <div className="d68-list-empty"><b>{T(lang, 'Chưa có hồ sơ phù hợp bộ lọc hiện tại.', 'No profiles match the current filters.')}</b><p>{T(lang, 'Thử xóa bớt bộ lọc hoặc quay lại sau — hồ sơ mới hiển thị ngay khi được Admin duyệt.', 'Try clearing filters or check back soon — new profiles appear as soon as Admin approves them.')}</p><button onClick={clearAll}>{T(lang, 'Xóa toàn bộ bộ lọc', 'Clear all filters')}</button></div> : null}
 
-          {pageCount > 1 ? <div className="d68-pagination" style={{ justifyContent: 'center', marginTop: 24 }}><button disabled={page <= 1 || loading} onClick={() => setPage((p) => Math.max(1, p - 1))}>{T(lang, '< Trang trước', '< Previous')}</button>{Array.from({ length: pageCount }).map((_, i) => <button key={i} aria-current={page === i + 1} onClick={() => setPage(i + 1)}>{i + 1}</button>)}<button disabled={loading || page >= pageCount} onClick={() => setPage((p) => p + 1)}>{T(lang, 'Trang tiếp >', 'Next >')}</button></div> : null}
+          {pageCount > 1 ? <div className="d68-pagination" style={{ justifyContent: 'center', marginTop: 24 }}><button disabled={page <= 1 || loading} onClick={() => goPage(page - 1)}>{T(lang, '< Trang trước', '< Previous')}</button>{Array.from({ length: pageCount }).map((_, i) => <button key={i} aria-current={page === i + 1} onClick={() => goPage(i + 1)}>{i + 1}</button>)}<button disabled={loading || page >= pageCount} onClick={() => goPage(page + 1)}>{T(lang, 'Trang tiếp >', 'Next >')}</button></div> : null}
           <PromotionBanner placement="listing_promotion" lang={lang} className="d68-listing-promo" />
         </section>
       </div>

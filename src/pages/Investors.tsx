@@ -224,6 +224,11 @@ export default function Investors({ lang }: { lang: Lang }) {
     setPage(1);
   }
 
+  function goPage(nextPage: number) {
+    setPage(Math.max(1, nextPage));
+    if (typeof window !== 'undefined') requestAnimationFrame(() => window.scrollTo({ top: 0, left: 0, behavior: 'smooth' }));
+  }
+
   async function proposal(inv: Investor) {
     if (!profile) {
       navigate(toLocalizedPath('/register/business', lang));
@@ -306,9 +311,9 @@ export default function Investors({ lang }: { lang: Lang }) {
           {!loading && !error && !items.length ? <div className="d68-investors-empty"><b>{T(lang, 'Chưa có nhà đầu tư phù hợp.', 'No matching investor profiles.')}</b></div> : null}
 
           <div className="d68-investors-pages">
-            <button disabled={page <= 1 || loading} onClick={() => setPage((p) => Math.max(1, p - 1))}>{T(lang, '< Trang trước', '< Previous')}</button>
+            <button disabled={page <= 1 || loading} onClick={() => goPage(page - 1)}>{T(lang, '< Trang trước', '< Previous')}</button>
             <span>{page}{pages ? ` / ${pages}` : ''}</span>
-            <button disabled={loading || (pages !== null && page >= pages)} onClick={() => setPage((p) => p + 1)}>{T(lang, 'Trang tiếp >', 'Next >')}</button>
+            <button disabled={loading || (pages !== null && page >= pages)} onClick={() => goPage(page + 1)}>{T(lang, 'Trang tiếp >', 'Next >')}</button>
           </div>
 
           <PromotionBanner placement="listing_promotion" lang={lang} className="d68-listing-promo" />

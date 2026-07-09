@@ -21,6 +21,7 @@ import { businessProposalQuotaForPlan } from '../lib/businessPlans';
 type Lang = 'vi' | 'en';
 type Tab = 'overview' | 'profile' | 'documents' | 'images' | 'interests' | 'requests' | 'services';
 const T = (lang: Lang, vi: string, en: string) => lang === 'en' ? en : vi;
+const businessUpdateSuccessMsg = (lang: Lang) => T(lang, 'Bạn đã cập nhật thành công, đội ngũ Deals68 sẽ duyệt, ẩn thông tin tên/thương hiệu nếu có để hiển thị', 'Updated successfully. The Deals68 team will review and hide any name/brand information before publishing.');
 
 const tabs = [
   { id: 'overview' as Tab, Icon: LayoutDashboard, vi: 'Tổng quan', en: 'Overview', href: '/dashboard/business' },
@@ -469,7 +470,7 @@ export default function BusinessDashboard() {
     const patch: any = { pending_changes_json: pending, pending_submitted_at: new Date().toISOString(), pending_submitted_by: profile.id, moderation_status: 'pending_admin_review' };
     if (!hasPublicSnapshot) { patch.status = 'pending_admin_review'; patch.visible = false; }
     const { error } = await supabase.from('businesses').update(patch).eq('id', b.id);
-    setMsg(error ? '' : T(lang, 'Đã lưu thay đổi. Public vẫn giữ bản Admin duyệt trước đó; thay đổi mới đang chờ duyệt.', 'Saved. Public profile keeps the last Admin-approved snapshot; new changes are pending review.'));
+    setMsg(error ? '' : businessUpdateSuccessMsg(lang));
     setErr(error ? error.message : '');
     await load();
   }
@@ -481,7 +482,7 @@ export default function BusinessDashboard() {
     try {
       await uploadBusinessFile(b.id, profile.id, file, newDocCategory, 'locked', newDocName || file.name);
       setNewDocName('');
-      setMsg(T(lang, 'File đã tải lên ở trạng thái khóa/chờ Admin duyệt.', 'File uploaded as locked/pending Admin review.'));
+      setMsg(businessUpdateSuccessMsg(lang));
       await load();
     } catch (e: any) { setErr(e?.message || 'Upload failed.'); }
     finally { setBusy(false); e.target.value = ''; }
@@ -493,7 +494,7 @@ export default function BusinessDashboard() {
     setBusy(true);
     try {
       await uploadBusinessImage(b.id, profile.id, file, file.name);
-      setMsg(T(lang, 'Ảnh đã tải lên. Ảnh chỉ public sau khi Admin duyệt/làm mờ thông tin nhạy cảm.', 'Image uploaded. It becomes public only after Admin review/sanitization.'));
+      setMsg(businessUpdateSuccessMsg(lang));
       await load();
     } catch (e: any) { setErr(e?.message || 'Upload failed.'); }
     finally { setBusy(false); e.target.value = ''; }
@@ -504,7 +505,7 @@ export default function BusinessDashboard() {
     if (!safeName) return;
     try {
       await updateBusinessFile(row.id, { display_name: safeName, admin_note: 'User renamed file display name; Admin review remains required.' });
-      setMsg(T(lang, 'Đã lưu tên hiển thị của tài liệu.', 'Document display name saved.'));
+      setMsg(businessUpdateSuccessMsg(lang));
       await load();
     } catch (e: any) { setErr(e?.message || 'Update failed.'); }
   }
@@ -524,12 +525,12 @@ export default function BusinessDashboard() {
   async function renameImage(row: any) {
     const title = prompt(T(lang, 'Tên ảnh mới', 'New image title'), row.title || '');
     if (title === null) return;
-    try { await updateBusinessImage(row.id, { title, admin_note: 'User renamed image; Admin must approve display_title/public visibility.' }); setMsg(T(lang, 'Đã cập nhật tên ảnh.', 'Image title updated.')); await load(); }
+    try { await updateBusinessImage(row.id, { title, admin_note: 'User renamed image; Admin must approve display_title/public visibility.' }); setMsg(businessUpdateSuccessMsg(lang)); await load(); }
     catch (e: any) { setErr(e?.message || 'Update failed.'); }
   }
 
   async function suggestHero(row: any) {
-    try { await updateBusinessImage(row.id, { admin_note: 'User suggests this as hero image' }); setMsg(T(lang, 'Đã ghi nhận ảnh đề xuất. Admin sẽ chọn ảnh public/hero sau kiểm duyệt.', 'Hero suggestion saved. Admin will choose public/hero image after review.')); await load(); }
+    try { await updateBusinessImage(row.id, { admin_note: 'User suggests this as hero image' }); setMsg(businessUpdateSuccessMsg(lang)); await load(); }
     catch (e: any) { setErr(e?.message || 'Update failed.'); }
   }
 
@@ -539,8 +540,8 @@ export default function BusinessDashboard() {
 
   return <main className="d68-dashboard-page d68-business-dashboard-page"><div className="d68-dashboard-wrap">
     <header className="d68-dashboard-head"><div><div className="d68-dashboard-kicker">Business Dashboard</div><h1>{title}</h1></div><div className="d68-dashboard-actions"><button className="d68-dashboard-btn light" onClick={() => setLang(lang === 'vi' ? 'en' : 'vi')}>{lang.toUpperCase()}</button><span className="d68-dashboard-badge blue">{planLabel}</span><span className={`d68-dashboard-badge ${status.cls}`}>{status.label}</span><button className="d68-dashboard-btn light" style={{ background: '#475569', color: '#fff', borderColor: '#334155' }} onClick={() => signOut().then(() => navigate('/'))}>{T(lang,'Thoát','Exit')}</button></div></header>
-    {msg ? <div className="d68-dashboard-notice ok">{msg}</div> : null}{err ? <div className="d68-dashboard-notice err">{err}</div> : null}{busy ? <div className="d68-dashboard-notice warn">{T(lang,'Đang tải dữ liệu...','Loading data...')}</div> : null}{hasPending ? <div className="d68-dashboard-notice warn">{T(lang,'Có thay đổi đang chờ Admin duyệt. Public profile vẫn dùng bản snapshot đã duyệt gần nhất.', 'Changes are pending Admin review. Public profile still uses the latest approved snapshot.')}</div> : null}
-    <div className="d68-dashboard-cols"><nav className="d68-dashboard-side">{tabs.map((t) => <Link key={t.id} to={t.href} onClick={() => setTab(t.id)} className={tab === t.id ? 'active' : ''}><span className="d68-dashboard-nav-icon"><t.Icon size={17} strokeWidth={2.2} /></span><span>{T(lang,t.vi,t.en)}</span></Link>)}<div className="d68-dashboard-side__note">{T(lang,'Cần hỗ trợ hoàn thiện hồ sơ, định giá và tài liệu làm việc với Nhà đầu tư? Hãy tham khảo:', 'Need help preparing your profile, valuation and investor materials? Please refer to:')}<br/><a href="https://vietcapitalpartners.com" target="_blank" rel="noreferrer">vietcapitalpartners.com ↗</a><br/>Hotline: 0909.584.075</div></nav><section>
+    {msg ? <div className="d68-dashboard-notice ok d68-business-update-alert">{msg}</div> : null}{err ? <div className="d68-dashboard-notice err">{err}</div> : null}{busy ? <div className="d68-dashboard-notice warn">{T(lang,'Đang tải dữ liệu...','Loading data...')}</div> : null}{hasPending ? <div className="d68-dashboard-notice ok d68-business-update-alert">{businessUpdateSuccessMsg(lang)}</div> : null}
+    <div className="d68-dashboard-cols"><nav className="d68-dashboard-side">{tabs.map((t) => <Link key={t.id} to={t.href} onClick={() => setTab(t.id)} className={tab === t.id ? 'active' : ''}><span className="d68-dashboard-nav-icon"><t.Icon size={17} strokeWidth={2.2} /></span><span>{T(lang,t.vi,t.en)}</span></Link>)}{b.slug ? <a className="d68-dashboard-public-link" href={`/businesses/${b.slug}`} target="_blank" rel="noreferrer">{T(lang, 'Xem hồ sơ công khai', 'View public profile')} &gt;</a> : null}<div className="d68-dashboard-side__note">{T(lang,'Cần hỗ trợ hoàn thiện hồ sơ, định giá và tài liệu làm việc với Nhà đầu tư? Hãy tham khảo:', 'Need help preparing your profile, valuation and investor materials? Please refer to:')}<br/><a href="https://vietcapitalpartners.com" target="_blank" rel="noreferrer">vietcapitalpartners.com ↗</a><br/>Hotline: 0909.584.075</div></nav><section>
       {tab === 'overview' ? <><ValuationOverviewBox lang={lang} result={industryBenchmark} /><div className="d68-dashboard-scorecard"><div className="d68-dashboard-scorecard__ring" style={{ background: `conic-gradient(${score === null ? '#CBD5E1' : band.cls === 'green' ? '#16A34A' : band.cls === 'blue' ? '#1596cc' : '#B8860B'} ${Math.max(0, Math.min(100, score ?? 0)) * 3.6}deg, #EEF2F6 0deg)` }}><div><b>{score === null ? '—' : score}</b><span>/100</span></div></div><section><div><h2>Business Quality Score</h2><span className={`d68-dashboard-badge ${band.cls}`}>{score === null ? T(lang,'Đang cập nhật','Pending') : T(lang, band.labelVi, band.labelEn)}</span></div><p>{businessQualityPublicExplanation(lang)}</p></section></div><div className="d68-quality-list d68-dashboard-card"><div className="d68-quality-list__head"><BarChart3 size={18}/><h2>{T(lang,'Điểm theo nhóm tiêu chí','Score by criterion')}</h2></div>{qualityBreakdown.items.map((item) => <div key={item.key} className={`d68-quality-item ${item.score >= item.max * 0.7 ? 'ok' : 'missing'}`}><b>{qualityItemLabel(item, lang)}</b><span>{item.score}/{item.max} · {qualityItemNote(item, lang)}</span></div>)}</div><div className="d68-quality-list d68-dashboard-card"><div className="d68-quality-list__head"><BarChart3 size={18}/><h2>{T(lang,'Hồ sơ/tài liệu đạt yêu cầu','Required profile materials')}</h2></div>{qualityItems.map((item) => <div key={item.label} className={`d68-quality-item ${item.ok ? 'ok' : 'missing'}`}><b>{item.ok ? '✓' : '×'} {item.label}</b><span>{item.detail}</span></div>)}</div><div className="d68-dashboard-grid4" style={{ marginBottom: 18 }}>{metric(T(lang,'Trạng thái','Status'), status.label, status.cls)}{metric(T(lang,'Gói hiển thị','Listing plan'), planLabel)}{metric(T(lang,'Đã gửi Hồ sơ / Được duyệt','Proposals sent / approved'), `${sentProposalCount} / ${approvedProposalCount}`, approvedProposalCount ? 'green' : 'blue', T(lang,'Số lượt gửi Hồ sơ DN và số nhà đầu tư đã được duyệt/kết nối.', 'Business profile sends and investors approved/connected.'))}{metric(T(lang,'Nhà đầu tư quan tâm','Investor attention'), String(investorAttentionCount), investorAttentionCount ? 'green' : 'gold', T(lang,`Lưu hồ sơ: ${savedBusinesses.length} · Quan tâm: ${interests.length} · Yêu cầu data: ${requests.length}`, `Saved: ${savedBusinesses.length} · Interest: ${interests.length} · Data requests: ${requests.length}`))}</div><div className="d68-dashboard-card"><h2>{T(lang,'Hạn mức proposal','Proposal quota')}</h2><div className="d68-dashboard-progress"><span style={{ width: `${Math.min(100, Math.round((sentProposalCount / Math.max(1, quotaTotal)) * 100))}%` }} /></div><p><b>{sentProposalCount} / {quotaTotal}</b> · {T(lang, `đã dùng, còn lại ${remainingProposalQuota} lượt`, `used, ${remainingProposalQuota} sends remaining`)}</p><Link to="/investors" className="d68-dashboard-btn gold">{T(lang,'Tìm Nhà đầu tư','Find investors')} →</Link></div></> : null}
       {tab === 'profile' ? <ProfileForm lang={lang} b={b} saveProfile={saveProfile} /> : null}
       {tab === 'documents' ? <Documents lang={lang} files={files} deleteFile={deleteFile} renameFile={renameFile} fileChange={fileChange} newDocName={newDocName} setNewDocName={setNewDocName} newDocCategory={newDocCategory} setNewDocCategory={setNewDocCategory} /> : null}

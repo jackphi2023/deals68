@@ -328,3 +328,47 @@ img,svg,video,canvas{max-width:100%}
   }
 }
 
+
+/* Business Dashboard v15 isolated UI polish */
+.d68-business-dashboard-page .d68-dashboard-side a:hover,
+.d68-business-dashboard-page .d68-dashboard-side a.active{
+  background:var(--d68-blue)!important;
+  color:#fff!important;
+}
+.d68-business-dashboard-page .d68-dashboard-side a:hover .d68-dashboard-nav-icon,
+.d68-business-dashboard-page .d68-dashboard-side a.active .d68-dashboard-nav-icon{
+  color:#fff!important;
+  border-color:#fff!important;
+  background:transparent!important;
+}
+.d68-business-dashboard-page .d68-dashboard-side a:hover .d68-dashboard-nav-icon svg,
+.d68-business-dashboard-page .d68-dashboard-side a.active .d68-dashboard-nav-icon svg{
+  color:#fff!important;
+  stroke:#fff!important;
+}
+.d68-business-dashboard-page .d68-dashboard-public-link{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  min-height:42px!important;
+  margin:14px 0 12px!important;
+  padding:10px 12px!important;
+  border-radius:12px!important;
+  background:#0F2A4A!important;
+  color:#fff!important;
+  text-decoration:none!important;
+  font-weight:900!important;
+  font-size:13px!important;
+  box-shadow:0 12px 24px rgba(15,42,74,.16)!important;
+}
+.d68-business-dashboard-page .d68-dashboard-public-link:hover{
+  background:#143B66!important;
+  color:#fff!important;
+}
+.d68-business-dashboard-page .d68-business-update-alert,
+.d68-business-dashboard-page .d68-dashboard-notice.ok.d68-business-update-alert{
+  background:#E9F9EF!important;
+  border:1px solid #BBF0CE!important;
+  color:#166534!important;
+}
+

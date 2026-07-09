@@ -79,7 +79,7 @@ export function BusinessOnsiteContent({ lang }: { lang: Lang }) {
     <section className="d68-onsite d68-businesses-onsite">
       <div className="d68-onsite-card d68-onsite-intro">
         <div className="d68-onsite-head">
-          <span>{T(lang, 'Deals68 Market Guide', 'Deals68 Market Guide')}</span>
+          <span>{T(lang, 'Đầu tư, Mua bán Doanh nghiệp tại Deals68', 'Investing and Business M&A at Deals68')}</span>
           <h2>{T(lang, 'Khám phá doanh nghiệp đang chào bán tại Việt Nam', 'Explore businesses for sale and investment in Vietnam')}</h2>
         </div>
         <p>
