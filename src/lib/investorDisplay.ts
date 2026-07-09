@@ -10,6 +10,16 @@ function arr(value: any): string[] {
   return String(value).split(/[;,\n]/).map((x) => x.trim()).filter(Boolean);
 }
 
+function cleanPublicText(value: any) {
+  return String(value || '')
+    .replace(/Tên, tổ chức và thông tin liên hệ chỉ lưu cho admin xác thực và chỉ mở sau khi kết nối được duyệt\./gi, '')
+    .replace(/Name, organization and contact details are kept private for admin verification and are only shared after an approved connection\./gi, '')
+    .replace(/\s+\n/g, '\n')
+    .replace(/\n\s+/g, '\n')
+    .replace(/[ \t]{2,}/g, ' ')
+    .trim();
+}
+
 export function investorTicketLabel(lang: Lang, row: AnyRow) {
   const min = Number(row?.ticket_min ?? row?.ticketMin ?? 0);
   const max = Number(row?.ticket_max ?? row?.ticketMax ?? 0);
@@ -30,6 +40,9 @@ export function investorPublicTitle(row: AnyRow, lang: Lang) {
 }
 
 export function investorPublicDescription(row: AnyRow, lang: Lang) {
+  const edited = cleanPublicText(lang === 'en' ? row?.desc_en || row?.desc_vi : row?.desc_vi || row?.desc_en);
+  if (edited) return edited;
+
   const industries = arr(row?.industries || row?.criteria?.sectors).slice(0, 4).map((x) => labelIndustry(x, lang));
   const targets = investorTargetCountries(row).slice(0, 6).map((x) => labelCountry(x, lang));
   const stage = labelStage(row?.stage || row?.criteria?.stage, lang);
@@ -48,6 +61,6 @@ export function investorPublicDescription(row: AnyRow, lang: Lang) {
     `Hồ sơ ${labelInvestorType(row?.type, lang).toLowerCase()} ẩn danh quan tâm ${industries.join(', ') || 'đa lĩnh vực'}.`,
     targets.length ? `Thị trường quan tâm đầu tư: ${targets.join('; ')}.` : '',
     stage ? `Giai đoạn ưu tiên: ${stage}.` : '',
-    ticket ? `Quy mô ticket tham khảo: ${ticket}.` : ''
+    ticket ? `Quy mô đầu tư tham khảo: ${ticket}.` : ''
   ].filter(Boolean).join(' ');
 }
