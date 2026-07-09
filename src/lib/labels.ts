@@ -29,7 +29,7 @@ const investorTypeMap: { keys: string[]; vi: string; en: string }[] = [
   { keys: ['pe', 'private equity'], vi: 'Quỹ đầu tư tư nhân', en: 'PE' },
   { keys: ['institutional'], vi: 'Nhà đầu tư tổ chức', en: 'Institutional' },
   { keys: ['corporate', 'strategic'], vi: 'Doanh nghiệp chiến lược', en: 'Corporate / Strategic' },
-  { keys: ['individual', 'angel'], vi: 'Nhà đầu tư cá nhân / Angel', en: 'Individual / Angel' },
+  { keys: ['individual', 'angel', 'nha dau tu ca nhan'], vi: 'Nhà đầu tư cá nhân', en: 'Individual / Angel' },
   { keys: ['family office'], vi: 'Family Office', en: 'Family Office' },
   { keys: ['lender', 'debt', 'credit'], vi: 'Bên cho vay / Tín dụng', en: 'Lender / Debt' },
 ];
