@@ -63,7 +63,6 @@ export function BusinessFaq({ lang }: { lang: Lang }) {
             <summary>{T(lang, item.qVi, item.qEn)}</summary>
             <p>
               {T(lang, item.aVi, item.aEn)}
-              {idx === 4 ? <> <a href="https://www.vietcapitalpartners.com" target="_blank" rel="noreferrer">vietcapitalpartners.com</a></> : null}
             </p>
           </details>
         ))}

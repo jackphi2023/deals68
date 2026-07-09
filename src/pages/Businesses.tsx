@@ -33,6 +33,18 @@ function normalizeGroup(raw?: string | null): Tx {
 }
 const TX_DB: Record<Exclude<Tx, 'all'>, string> = { sale: 'sale', invest: 'fundrais', loan: 'loan', jv: 'partner' };
 
+function scrollListingToTop(selector: string) {
+  if (typeof window === 'undefined') return;
+  const el = document.querySelector(selector);
+  const top = el instanceof HTMLElement ? Math.max(0, el.getBoundingClientRect().top + window.scrollY - 92) : 0;
+  window.scrollTo({ top, left: 0, behavior: 'auto' });
+  document.documentElement.scrollTop = top;
+  document.body.scrollTop = top;
+  document.querySelectorAll('.d68-filter-scroll,.d68-investors-sidebar,.d68-list-cols,.d68-investors-results').forEach((node) => {
+    if (node instanceof HTMLElement) node.scrollTop = 0;
+  });
+}
+
 function txFromQuery(raw: string | null): Tx {
   const v = String(raw || '').toLowerCase();
   if (!v) return 'all';
@@ -193,8 +205,13 @@ export default function Businesses({ lang }: { lang: Lang }) {
   const clearAll = () => { setTx('all'); setQuery(''); setCities([]); setIndustries([]); setRevenueBand(''); setQuality70(false); setFeaturedOnly(false); setPage(1); };
   const goPage = (nextPage: number) => {
     setPage(Math.max(1, nextPage));
-    if (typeof window !== 'undefined') requestAnimationFrame(() => window.scrollTo({ top: 0, left: 0, behavior: 'smooth' }));
+    scrollListingToTop('.d68-businesses-page');
+    setTimeout(() => scrollListingToTop('.d68-businesses-page'), 0);
   };
+
+  useEffect(() => {
+    scrollListingToTop('.d68-businesses-page');
+  }, [page]);
 
   const txDefs: { key: Tx; vi: string; en: string }[] = [
     { key: 'all', vi: 'Tất cả giao dịch', en: 'All transactions' },
