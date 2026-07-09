@@ -41,3 +41,22 @@
   color:#fff!important;
 }
 
+/* Admin labels, upload-plan warning, investor target tags and pagination */
+.d68-admin-field{display:flex;flex-direction:column;gap:6px;font-weight:800;color:#334155;font-size:12.5px}
+.d68-admin-field>span{color:#0F2A4A;font-weight:900}
+.d68-admin-field small{color:#64748B;font-weight:600;line-height:1.4}
+.d68-admin-targetbox{border:1px solid #DDE7F0;background:#F8FBFE;border-radius:12px;padding:12px;margin:10px 0 14px}
+.d68-admin-targetbox>b{display:block;margin-bottom:8px;color:#0F2A4A}
+.d68-admin-taglist{display:flex;gap:7px;flex-wrap:wrap}
+.d68-admin-taglist span{display:inline-flex;align-items:center;border-radius:999px;background:#EAF6FC;color:#0B6F98;border:1px solid #BFE6F5;padding:5px 9px;font-size:12px;font-weight:900}
+.d68-admin-taglist em{font-size:12.5px;color:#94A3B8}
+.d68-admin-pagination{display:flex;gap:10px;align-items:center;justify-content:center;margin:18px 0 4px}
+.d68-admin-pagination span{font-weight:900;color:#0F2A4A}
+.d68-admin-pagination button:disabled{opacity:.45;cursor:not-allowed}
+.d68-admin-upload-plan{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.d68-admin-upload-plan>div{border:1px solid #E2E8F0;background:#fff;border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:8px}
+.d68-admin-upload-plan b{color:#0F2A4A}
+.d68-admin-upload-plan span{display:flex;flex-direction:column;border-top:1px solid #F1F5F9;padding-top:7px;color:#334155;font-weight:800}
+.d68-admin-upload-plan small{font-weight:600;color:#64748B}
+@media(max-width:700px){.d68-admin-upload-plan{grid-template-columns:1fr}.d68-admin-pagination{flex-direction:column}}
+

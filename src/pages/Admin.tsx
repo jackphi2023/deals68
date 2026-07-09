@@ -202,6 +202,42 @@ function paymentAmountLabel(row: Row) {
   return `${amount || '—'} ${currency || ''}`.trim();
 }
 
+const INVESTOR_PAGE_SIZE = 30;
+
+function countryLabelAdmin(raw: any) {
+  const value = String(raw || '').trim();
+  if (!value) return '—';
+  const upper = value.toUpperCase();
+  const match = investorCountryFilterOptions.find(([code, label]) => code === upper || label.toLowerCase() === value.toLowerCase());
+  return match ? match[1] : value;
+}
+function investorOfficeCountryCodeAdmin(i: Row) {
+  return String(i.country_iso2 || i.country || '').trim().toUpperCase();
+}
+function investorOfficeCountryLabelAdmin(i: Row) {
+  return countryLabelAdmin(i.country_iso2 || i.country);
+}
+function investorTargetCountryLabelsAdmin(i: Row) {
+  return investorTargetCountriesAdmin(i).map(countryLabelAdmin);
+}
+function businessUploadPlan(b: Row) {
+  const pending = objectOf(b.pending_changes_json);
+  const pendingFinancial = objectOf(pending.financial_input);
+  const currentFinancial = objectOf(b.financial_input);
+  return objectOf(pendingFinancial.upload_plan || currentFinancial.upload_plan);
+}
+function uploadPlanArray(plan: any, key: 'images' | 'files') {
+  const value = objectOf(plan)[key];
+  return Array.isArray(value) ? value : [];
+}
+function adminBytes(size: any) {
+  const n = Number(size || 0);
+  if (!Number.isFinite(n) || n <= 0) return '';
+  if (n >= 1048576) return `${(n / 1048576).toFixed(1)} MB`;
+  if (n >= 1024) return `${Math.round(n / 1024)} KB`;
+  return `${n} B`;
+}
+
 export default function Admin() {
   const { profile, loading, signOut } = useAuth();
   const location = useLocation();
@@ -224,8 +260,10 @@ export default function Admin() {
   const [search, setSearch] = useState('');
   const [investorVisibilityFilter, setInvestorVisibilityFilter] = useState('');
   const [investorTypeFilter, setInvestorTypeFilter] = useState('');
+  const [investorOfficeCountryFilter, setInvestorOfficeCountryFilter] = useState('');
   const [investorCountryFilter, setInvestorCountryFilter] = useState('');
   const [investorIndustryFilter, setInvestorIndustryFilter] = useState('');
+  const [investorPage, setInvestorPage] = useState(1);
   const [businessStatusFilter, setBusinessStatusFilter] = useState('');
   const [businessIndustryFilter, setBusinessIndustryFilter] = useState('');
 
@@ -279,6 +317,7 @@ export default function Admin() {
     ? businesses.find((b) => [b.id, b.public_code, b.slug].map((x) => String(x || '')).includes(selectedBusinessKey))
     : null;
   const businessIndustryOptions = Array.from(new Set(businesses.map((b) => businessPrimaryIndustry(b)).filter(Boolean))).sort((a, b) => a.localeCompare(b, 'vi'));
+  const investorOfficeCountryOptions = Array.from(new Set(investors.map((i) => investorOfficeCountryCodeAdmin(i)).filter(Boolean))).sort((a, b) => countryLabelAdmin(a).localeCompare(countryLabelAdmin(b), 'vi'));
   const filteredBusinesses = businesses
     .filter((b) => {
       const src = sourceOf(b);
@@ -296,11 +335,15 @@ export default function Admin() {
       if (investorVisibilityFilter === 'visible' && !i.visible) return false;
       if (investorVisibilityFilter === 'hidden' && i.visible) return false;
       if (investorTypeFilter && i.type !== investorTypeFilter) return false;
+      if (investorOfficeCountryFilter && investorOfficeCountryCodeAdmin(i) !== investorOfficeCountryFilter) return false;
       if (investorCountryFilter && !investorTargetCountriesAdmin(i).includes(investorCountryFilter)) return false;
       if (investorIndustryFilter && !investorIndustryMatchesAdmin(i, investorIndustryFilter)) return false;
       return true;
     })
     .sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
+  const investorPageCount = Math.max(1, Math.ceil(filteredInvestors.length / INVESTOR_PAGE_SIZE));
+  const safeInvestorPage = Math.min(Math.max(1, investorPage), investorPageCount);
+  const paginatedInvestors = filteredInvestors.slice((safeInvestorPage - 1) * INVESTOR_PAGE_SIZE, safeInvestorPage * INVESTOR_PAGE_SIZE);
 
   async function logAction(action: string, entity_type: string, entity_id: string, detail: any = {}) {
     try { await supabase.from('audit_logs').insert({ actor_id: profile.id, action, entity_type, entity_id, detail }); } catch { /* non-blocking */ }
@@ -362,12 +405,16 @@ export default function Admin() {
     const fd = new FormData(e.currentTarget as HTMLFormElement);
     const industries = arrFromText(fd.get('industries'));
     const dealTypes = arrFromText(fd.get('deal_types'));
+    const targetCountries = arrFromText(fd.get('target_countries')).map((x) => x.toUpperCase());
     const pending = i.privacy?.pending_profile_changes && typeof i.privacy.pending_profile_changes === 'object' ? i.privacy.pending_profile_changes : {};
     const mergedCriteria = {
       ...(i.criteria && typeof i.criteria === 'object' ? i.criteria : {}),
       ...(mode === 'approve' && pending.criteria && typeof pending.criteria === 'object' ? pending.criteria : {}),
       sectors: industries,
-      dealTypes
+      dealTypes,
+      targetCountries,
+      preferredCountries: targetCountries,
+      targetCountriesCache: targetCountries
     };
     const patch: any = {
       title_en: text(fd.get('title_en')),
@@ -440,7 +487,7 @@ export default function Admin() {
     <div className="d68-admin-wrap"><div className="d68-admin-cols"><nav className="d68-admin-side">{tabs.map((item) => <Link key={item.id} to={item.href} onClick={() => setTab(item.id)} className={tab === item.id ? 'active' : ''}>{item.icon} {item.label}</Link>)}</nav><main>
       <div className="d68-admin-title"><div><h1>Deals68 Admin</h1><p>Admin duyệt thanh toán, public snapshot, ảnh/file, profile investor và lead tĩnh.</p></div><button onClick={load} className="d68-admin-btn">{busy ? 'Loading...' : 'Refresh'}</button></div>
       {msg ? <div className="d68-admin-notice ok">{msg}</div> : null}{error ? <div className="d68-admin-notice err">{error}</div> : null}
-      <input className="d68-admin-input d68-admin-search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search businesses/investors/profiles..." />
+      <input className="d68-admin-input d68-admin-search" value={search} onChange={(e) => { setSearch(e.target.value); setInvestorPage(1); }} placeholder="Search businesses/investors/profiles..." />
       {tab === 'overview' && <Overview businesses={businesses} investors={investors} profiles={profiles} payments={payments} pendingBusinesses={pendingBusinesses} pendingInvestors={pendingInvestors} leads={contactMessages.length + partnerLeads.length}/>} 
       {tab === 'payments' && <Payments payments={payments} profiles={profiles} markPayment={markPayment} />}
       {tab === 'proposals' && <ProposalList proposals={proposals} markProposal={markProposal} />}
@@ -457,19 +504,20 @@ export default function Admin() {
           <div className="d68-admin-row-head">
             <div>
               <h3>Quản trị Nhà đầu tư</h3>
-              <div className="d68-admin-subtle">Sắp xếp mới tạo lên đầu · Kết quả {filteredInvestors.length}/{investors.length}</div>
+              <div className="d68-admin-subtle">Sắp xếp mới tạo lên đầu · Hiển thị {paginatedInvestors.length}/{filteredInvestors.length} kết quả · 30/trang</div>
             </div>
             {pendingInvestors.length ? <span className="d68-admin-badge warn">⚠️ {pendingInvestors.length} cần duyệt</span> : <span className="d68-admin-badge ok">Không có hồ sơ cần duyệt</span>}
           </div>
           {pendingInvestors.length ? <div className="d68-admin-notice warn">Có {pendingInvestors.length} tài khoản Investor mới tạo hoặc mới cập nhật thông tin cần Admin kiểm tra/duyệt.</div> : null}
           <div className="d68-admin-form4">
-            <label>Trạng thái<select value={investorVisibilityFilter} onChange={(e) => setInvestorVisibilityFilter(e.target.value)} className="d68-admin-input"><option value="">Tất cả</option><option value="visible">Hiển thị</option><option value="hidden">Ẩn</option></select></label>
-            <label>Loại nhà đầu tư<select value={investorTypeFilter} onChange={(e) => setInvestorTypeFilter(e.target.value)} className="d68-admin-input"><option value="">Tất cả</option>{investorTypeFilterOptions.map((x) => <option key={x.value} value={x.value}>{x.label}</option>)}</select></label>
-            <label>Quốc gia đầu tư<select value={investorCountryFilter} onChange={(e) => setInvestorCountryFilter(e.target.value)} className="d68-admin-input"><option value="">Tất cả</option>{investorCountryFilterOptions.map(([code, label]) => <option key={code} value={code}>{label}</option>)}</select></label>
-            <label>Ngành quan tâm<select value={investorIndustryFilter} onChange={(e) => setInvestorIndustryFilter(e.target.value)} className="d68-admin-input"><option value="">Tất cả</option>{industryOptions.map((x) => <option key={x.key} value={x.key}>{x.vi}</option>)}</select></label>
+            <label>Trạng thái<select value={investorVisibilityFilter} onChange={(e) => { setInvestorVisibilityFilter(e.target.value); setInvestorPage(1); }} className="d68-admin-input"><option value="">Tất cả</option><option value="visible">Hiển thị</option><option value="hidden">Ẩn</option></select></label>
+            <label>Quốc gia trụ sở<select value={investorOfficeCountryFilter} onChange={(e) => { setInvestorOfficeCountryFilter(e.target.value); setInvestorPage(1); }} className="d68-admin-input"><option value="">Tất cả quốc gia</option>{investorOfficeCountryOptions.map((code) => <option key={code} value={code}>{countryLabelAdmin(code)}</option>)}</select></label>
+            <label>Khu vực/Thị trường quan tâm đầu tư<select value={investorCountryFilter} onChange={(e) => { setInvestorCountryFilter(e.target.value); setInvestorPage(1); }} className="d68-admin-input"><option value="">Tất cả thị trường</option>{investorCountryFilterOptions.map(([code, label]) => <option key={code} value={code}>{label}</option>)}</select></label>
+            <label>Ngành quan tâm<select value={investorIndustryFilter} onChange={(e) => { setInvestorIndustryFilter(e.target.value); setInvestorPage(1); }} className="d68-admin-input"><option value="">Tất cả</option>{industryOptions.map((x) => <option key={x.key} value={x.key}>{x.vi}</option>)}</select></label>
           </div>
         </Card>
-        <div>{filteredInvestors.map((i) => <InvestorEditor key={i.id} i={i} profiles={profiles} onSave={saveInvestor} onToggle={toggleInvestor} />)}</div>
+        <div>{paginatedInvestors.map((i) => <InvestorEditor key={i.id} i={i} profiles={profiles} onSave={saveInvestor} onToggle={toggleInvestor} />)}</div>
+        <AdminPagination page={safeInvestorPage} pageCount={investorPageCount} onPage={setInvestorPage} />
         {!filteredInvestors.length ? <Empty text="Không có nhà đầu tư phù hợp bộ lọc."/> : null}
       </>}
       {tab === 'promos' && <Promos promos={promos} createPromo={createPromo} />}
@@ -484,6 +532,14 @@ export default function Admin() {
 function Card({ children }: { children: React.ReactNode }) { return <div className="d68-admin-card">{children}</div>; }
 function Empty({ text }: { text: string }) { return <div className="d68-admin-empty">{text}</div>; }
 function Metric({ label, value, color = '#0F2A4A' }: { label: string; value: string; color?: string }) { return <Card><div className="d68-admin-metric-label">{label}</div><div className="d68-admin-metric-value" style={{ color }}>{value}</div></Card>; }
+function AdminPagination({ page, pageCount, onPage }: { page: number; pageCount: number; onPage: (page: number) => void }) {
+  if (pageCount <= 1) return null;
+  return <div className="d68-admin-pagination">
+    <button className="d68-admin-btn light" disabled={page <= 1} onClick={() => onPage(Math.max(1, page - 1))}>&lt; Trang trước</button>
+    <span>{page} / {pageCount}</span>
+    <button className="d68-admin-btn light" disabled={page >= pageCount} onClick={() => onPage(Math.min(pageCount, page + 1))}>Trang tiếp &gt;</button>
+  </div>;
+}
 function Overview({ businesses, investors, profiles, payments, pendingBusinesses, pendingInvestors, leads }: any) { return <><div className="d68-admin-grid4"><Metric label="Businesses" value={String(businesses.length)} color="#1596cc"/><Metric label="Investors" value={String(investors.length)} color="#B8860B"/><Metric label="Pending DN" value={String(pendingBusinesses.length)} color="#DC2626"/><Metric label="Leads" value={String(leads || 0)} color="#16A34A"/></div><Card><h3>Baseline workflow test</h3><ol className="d68-admin-steps"><li>User đăng ký Business/Investor → tạo profile + listing ẩn + payment_order pending.</li><li>Admin xác nhận payment → mở dashboard_login_enabled cho user.</li><li>Business tự sửa dashboard → pending_changes_json, public snapshot cũ vẫn giữ.</li><li>Admin duyệt snapshot → visible=true, status=active, public_snapshot_json cập nhật.</li><li>Investor tự sửa profile → lưu vào privacy.pending_profile_changes, public profile cũ không đổi; Admin duyệt mới public.</li></ol><p>Profiles: {profiles.length} · Payments: {payments.length} · Pending investors: {pendingInvestors.length}</p></Card></>; }
 function ProposalList({ proposals, markProposal }: any) { return <Card><h3>Proposal Business → Investor</h3><div className="d68-admin-table-wrap"><table className="d68-admin-table"><thead><tr><th>Thời gian</th><th>Doanh nghiệp</th><th>Nhà đầu tư</th><th>Trạng thái</th><th>Action</th></tr></thead><tbody>{proposals.map((row: Row) => { const st = proposalStatusLabel(row.status, 'vi'); const b = row.businesses || {}; const i = row.investors || {}; return <tr key={row.id}><td>{new Date(row.sent_at || row.updated_at || Date.now()).toLocaleString('vi-VN')}</td><td>{b.slug ? <a href={`/businesses/${b.slug}`} target="_blank" rel="noreferrer"><b>{b.company_name_private || b.title_vi || b.title_en || b.public_code || row.business_id}</b></a> : <b>{b.company_name_private || b.title_vi || b.title_en || row.business_id}</b>}<br/><span className="d68-admin-badge warn">{b.public_code || 'Business'}</span></td><td>{i.code ? <a href={`/investors/${i.code}`} target="_blank" rel="noreferrer"><b>{i.private_name || i.title_vi || i.title_en || i.code}</b></a> : <b>{i.private_name || i.title_vi || i.title_en || row.investor_id}</b>}<br/><span>{i.private_email || i.code || 'Investor'}</span></td><td><span className={`d68-admin-badge ${st.cls === 'green' ? 'ok' : st.cls === 'red' ? 'err' : 'warn'}`}>{st.label}</span></td><td><div className="d68-admin-actions"><button className="d68-admin-btn green" onClick={() => markProposal(row, 'approved')}>Duyệt</button><button className="d68-admin-btn red" onClick={() => markProposal(row, 'declined')}>Từ chối</button><button className="d68-admin-btn blue" onClick={() => markProposal(row, 'connected')}>Connected</button></div></td></tr>; })}</tbody></table></div>{!proposals.length ? <Empty text="No proposals."/> : null}</Card>; }
 function Payments({ payments, profiles, markPayment }: any) { return <Card><h3>Thanh toán / mở dashboard</h3>{payments.length ? <div className="d68-admin-table-wrap"><table className="d68-admin-table"><thead><tr><th>Order</th><th>Status</th><th>Profile</th><th>Amount</th><th>Action</th></tr></thead><tbody>{payments.map((p: Row) => { const prof = profiles.find((x: Row) => x.id === (p.profile_id || p.created_by)); const amount = p.payload?.price?.total || p.payload?.total || ''; const cur = p.payload?.price?.currency || p.payload?.currency || ''; return <tr key={p.id}><td><b>{p.title || p.id}</b><br/><span className="d68-admin-badge warn">{new Date(p.created_at).toLocaleString()}</span></td><td>{p.status}</td><td>{prof?.email || p.profile_id || p.created_by || '—'}<br/>{prof?.role}</td><td>{amount} {cur}</td><td><button className="d68-admin-btn green" onClick={() => markPayment(p, 'confirmed')}>Xác nhận thanh toán & mở dashboard</button> <button className="d68-admin-btn red" onClick={() => markPayment(p, 'rejected')}>Từ chối</button></td></tr>; })}</tbody></table></div> : <Empty text="No payment orders."/>}</Card>; }
@@ -616,8 +672,8 @@ function BusinessPublicEditor({ b, onApprove, onToggle, businessFiles = [], busi
     {pendingFiles.length || pendingImages.length ? <details className="d68-admin-source" open><summary>Tài sản cần duyệt: {pendingFiles.length} file · {pendingImages.length} ảnh</summary><pre>{JSON.stringify({ files: pendingFiles.map((x: Row) => ({ id: x.id, file_name: x.file_name, display_name: x.display_name, public_visible: x.public_visible, privacy_level: x.privacy_level, admin_note: x.admin_note })), images: pendingImages.map((x: Row) => ({ id: x.id, title: x.title, display_title: x.display_title, public_visible: x.public_visible, is_sanitized: x.is_sanitized, admin_note: x.admin_note })) }, null, 2)}</pre><p className="d68-admin-subtle">Duyệt/đổi tên/làm sạch ảnh-file tại tab “Hình ảnh & Files” hoặc “Ảnh/File DN”. Sau khi Admin lưu một thay đổi, tài sản được đánh dấu đã kiểm tra và cảnh báo sẽ tắt nếu không còn pending khác.</p></details> : null}
     {hasPending ? <details className="d68-admin-source" open><summary>Thay đổi doanh nghiệp vừa gửi</summary><pre>{JSON.stringify(pending, null, 2)}</pre></details> : <details className="d68-admin-source"><summary>Xem dữ liệu nguồn</summary><pre>{JSON.stringify(src, null, 2)}</pre></details>}
     <div className="d68-admin-form4">
-      <input name="title_vi" defaultValue={reviewValue('title_vi') || 'Hồ sơ doanh nghiệp ẩn danh'} placeholder="Tên ẩn danh VI" required className="d68-admin-input"/>
-      <input name="title_en" defaultValue={reviewValue('title_en') || autoEn(String(reviewValue('title_vi') || ''))} placeholder="Anonymous title EN" className="d68-admin-input"/>
+      <label className="d68-admin-field"><span>Tiêu đề ẩn danh (hiển thị public, VN)</span><input name="title_vi" defaultValue={reviewValue('title_vi') || 'Hồ sơ doanh nghiệp ẩn danh'} placeholder="Tên ẩn danh VI" required className="d68-admin-input"/></label>
+      <label className="d68-admin-field"><span>Tiêu đề ẩn danh (hiển thị public, EN)</span><input name="title_en" defaultValue={reviewValue('title_en') || autoEn(String(reviewValue('title_vi') || ''))} placeholder="Anonymous title EN" className="d68-admin-input"/></label>
       <input name="industry" defaultValue={reviewValue('industry')} placeholder="Industry" className="d68-admin-input"/>
       <input name="deal_type" defaultValue={reviewValue('deal_type')} placeholder="Deal type" className="d68-admin-input"/>
       <input name="city" defaultValue={reviewValue('city')} placeholder="City" className="d68-admin-input"/>
@@ -632,18 +688,103 @@ function BusinessPublicEditor({ b, onApprove, onToggle, businessFiles = [], busi
       <label className="d68-admin-check"><input name="quality_score_manual_override" type="checkbox" defaultChecked={!!b.quality_score_manual_override}/> Giữ điểm Admin nhập</label>
       <input name="data_confidence" type="number" defaultValue={reviewValue('data_confidence', b.data_confidence ?? 0)} placeholder="Data confidence" className="d68-admin-input"/>
       <input name="hero_image_url" defaultValue={reviewValue('hero_image_url') || reviewValue('image_url')} placeholder="Approved hero image URL" className="d68-admin-input d68-admin-span2"/>
-      <textarea name="description_vi" defaultValue={reviewValue('description_vi')} placeholder="Mô tả public VI" className="d68-admin-input textarea d68-admin-span2"/>
-      <textarea name="description_en" defaultValue={reviewValue('description_en') || autoEn(String(reviewValue('description_vi') || ''))} placeholder="Description EN" className="d68-admin-input textarea d68-admin-span2"/>
-      <textarea name="highlights_vi" defaultValue={reviewLines('highlights_vi')} placeholder="Điểm nổi bật VI" className="d68-admin-input textarea d68-admin-span2"/>
-      <textarea name="highlights_en" defaultValue={reviewLines('highlights_en') || autoEn(reviewLines('highlights_vi'))} placeholder="Highlights EN" className="d68-admin-input textarea d68-admin-span2"/>
+      <label className="d68-admin-field d68-admin-span2"><span>Mô tả/Giới thiệu (hiển thị public, VN)</span><textarea name="description_vi" defaultValue={reviewValue('description_vi')} placeholder="Mô tả public VI" className="d68-admin-input textarea"/></label>
+      <label className="d68-admin-field d68-admin-span2"><span>Mô tả/Giới thiệu (hiển thị public, EN)</span><textarea name="description_en" defaultValue={reviewValue('description_en') || autoEn(String(reviewValue('description_vi') || ''))} placeholder="Description EN" className="d68-admin-input textarea"/></label>
+      <label className="d68-admin-field d68-admin-span2"><span>Điểm nổi bật (hiển thị public, VN)</span><textarea name="highlights_vi" defaultValue={reviewLines('highlights_vi')} placeholder="Mỗi dòng là một điểm nổi bật public" className="d68-admin-input textarea"/></label>
+      <label className="d68-admin-field d68-admin-span2"><span>Điểm nổi bật (hiển thị public, EN)</span><textarea name="highlights_en" defaultValue={reviewLines('highlights_en') || autoEn(reviewLines('highlights_vi'))} placeholder="Each line is one public highlight" className="d68-admin-input textarea"/></label>
       <textarea name="investment_reason_vi" defaultValue={reviewValue('investment_reason_vi')} placeholder="Lý do giao dịch VI" className="d68-admin-input textarea d68-admin-span2"/>
       <textarea name="investment_reason_en" defaultValue={reviewValue('investment_reason_en') || autoEn(String(reviewValue('investment_reason_vi') || ''))} placeholder="Reason EN" className="d68-admin-input textarea d68-admin-span2"/>
     </div>
     <div className="d68-admin-actions"><button className="d68-admin-btn green">Duyệt & hiển thị public snapshot</button><button type="button" onClick={() => onToggle(b)} className={`d68-admin-btn ${b.visible ? 'red' : ''}`}>{b.visible ? 'Ẩn public' : 'Bật visible'}</button>{b.slug ? <Link to={`/businesses/${b.slug}`} className="d68-admin-btn blue">Public ↗</Link> : null}{(pendingFiles.length || pendingImages.length) ? <Link to="/admin/assets" className="d68-admin-btn blue">Duyệt ảnh/file ↗</Link> : null}</div>
   </form></Card>;
 }
-function InvestorEditor({ i, profiles, onSave, onToggle }: any) { const pending = i.privacy?.pending_profile_changes; const needsReview = investorNeedsReview(i); const src = pending || i; const loginProfile = (profiles || []).find((p: Row) => p.id === i.owner_id || p.username === i.username || p.email === i.private_email) || {}; const loginUsername = loginProfile.username || i.username || loginProfile.email || i.private_email || '—'; const loginPassword = loginProfile.initial_password || '—'; return <Card><form onSubmit={(e) => onSave(e, i, pending ? 'approve' : 'save')}><div className="d68-admin-row-head"><div><b>{i.code} · {i.private_name || i.title_vi || i.title_en}</b><div className="d68-admin-subtle">{i.status} · {i.visible ? 'visible' : 'not public'} · {pending ? 'has pending dashboard changes' : 'no pending changes'}</div></div><span className={`d68-admin-badge ${i.visible ? 'ok' : 'warn'}`}>{i.visible ? 'visible' : 'not public'}</span>{needsReview ? <span className="d68-admin-badge warn">Cần duyệt</span> : null}</div>{needsReview ? <div className="d68-admin-notice warn">Tài khoản Investor mới tạo hoặc mới cập nhật thông tin cần Admin duyệt trước khi public.</div> : null}<div className="d68-admin-loginbox"><b>Login Investor</b><span>Username: <code>{loginUsername}</code></span><span>Password: <code>{loginPassword}</code></span><span>Email: <code>{loginProfile.email || i.private_email || '—'}</code></span></div>{pending ? <details className="d68-admin-source" open><summary>Pending changes from Investor Dashboard</summary><pre>{JSON.stringify(pending, null, 2)}</pre></details> : null}<div className="d68-admin-form4"><input name="title_vi" defaultValue={src.title_vi || ''} placeholder="Title VI" className="d68-admin-input"/><input name="title_en" defaultValue={src.title_en || ''} placeholder="Title EN" className="d68-admin-input"/><input name="type" defaultValue={src.type || ''} placeholder="Type" className="d68-admin-input"/><input name="country" defaultValue={src.country || ''} placeholder="Country" className="d68-admin-input"/><input name="country_iso2" defaultValue={src.country_iso2 || i.country_iso2 || ''} placeholder="ISO2" className="d68-admin-input"/><input name="region" defaultValue={src.region || i.region || ''} placeholder="Region" className="d68-admin-input"/><input name="ticket_min" type="number" defaultValue={src.ticket_min || 0} placeholder="Ticket min" className="d68-admin-input"/><input name="ticket_max" type="number" defaultValue={src.ticket_max || 0} placeholder="Ticket max" className="d68-admin-input"/><input name="stage" defaultValue={src.stage || ''} placeholder="Stage" className="d68-admin-input"/><input name="industries" defaultValue={arrFromText(src.industries).join(', ')} placeholder="Industries" className="d68-admin-input"/><input name="deal_types" defaultValue={arrFromText(src.deal_types).join(', ')} placeholder="Deal types" className="d68-admin-input"/><label className="d68-admin-check"><input name="verified" type="checkbox" defaultChecked={!!i.verified}/> Verified</label><label className="d68-admin-check"><input name="admin_priority" type="checkbox" defaultChecked={!!i.admin_priority}/> Priority</label><label className="d68-admin-check"><input name="visible" type="checkbox" defaultChecked={!!i.visible}/> Visible</label><input name="private_name" defaultValue={i.private_name || ''} placeholder="Private name" className="d68-admin-input"/><input name="private_email" defaultValue={i.private_email || i.privacy?.email || ''} placeholder="Private email" className="d68-admin-input"/><input name="private_phone" defaultValue={i.private_phone || i.privacy?.phone || ''} placeholder="Private phone" className="d68-admin-input"/><input name="private_website" defaultValue={i.private_website || i.privacy?.website || ''} placeholder="Private website" className="d68-admin-input"/><textarea name="desc_vi" defaultValue={src.desc_vi || ''} placeholder="Desc VI" className="d68-admin-input textarea d68-admin-span2"/><textarea name="desc_en" defaultValue={src.desc_en || ''} placeholder="Desc EN" className="d68-admin-input textarea d68-admin-span2"/></div><div className="d68-admin-actions"><button className="d68-admin-btn green">{pending ? 'Duyệt thay đổi & public' : 'Lưu investor'}</button><button type="button" onClick={() => onToggle(i)} className={`d68-admin-btn ${i.visible ? 'red' : ''}`}>{i.visible ? 'Ẩn public' : 'Bật visible'}</button>{i.code ? <Link to={`/investors/${i.code}`} className="d68-admin-btn blue">Public ↗</Link> : null}</div></form></Card>; }
-function AssetEditor({ b }: { b: Row }) { const [files, setFiles] = useState<Row[]>([]); const [images, setImages] = useState<Row[]>([]); const [msg, setMsg] = useState(''); async function loadAssets() { const [f, im] = await Promise.all([getBusinessFiles(b.id).catch(() => []), getBusinessImages(b.id).catch(() => [])]); setFiles(f); setImages(im); } useEffect(() => { loadAssets(); }, [b.id]); async function saveImage(img: Row, patch: Row) { try { await updateBusinessImage(img.id, { ...patch, admin_note: reviewedAssetNote('image') }); setMsg('Image updated.'); loadAssets(); } catch (e: any) { setMsg(e?.message || 'Image update failed.'); } } async function saveFile(file: Row, patch: Row) { try { await updateBusinessFile(file.id, { ...patch, admin_note: reviewedAssetNote('file') }); setMsg('File updated.'); loadAssets(); } catch (e: any) { setMsg(e?.message || 'File update failed.'); } } return <Card><h3>{b.public_code || b.slug} · Ảnh/File duyệt public</h3>{msg ? <div className="d68-admin-notice ok">{msg}</div> : null}<div className="d68-admin-asset-grid"><div><h4>Ảnh</h4>{images.length ? images.map((img) => <div key={img.id} className="d68-admin-asset-row"><img src={img.public_url} alt=""/><div><input defaultValue={img.display_title || img.title || ''} onBlur={(e) => saveImage(img, { display_title: e.target.value })} placeholder="Tên ảnh public" className="d68-admin-input"/><label className="d68-admin-check"><input type="checkbox" defaultChecked={!!img.is_sanitized} onChange={(e) => saveImage(img, { is_sanitized: e.target.checked })}/> Đã làm mờ logo/tên DN</label><label className="d68-admin-check"><input type="checkbox" defaultChecked={!!img.public_visible} onChange={(e) => saveImage(img, { public_visible: e.target.checked })}/> Cho hiển thị public</label><label className="d68-admin-check"><input type="checkbox" defaultChecked={!!img.is_hero} onChange={(e) => saveImage(img, { is_hero: e.target.checked })}/> Ảnh hero</label></div></div>) : <Empty text="No images."/>}</div><div><h4>Files</h4>{files.length ? files.map((f) => <div key={f.id} className="d68-admin-card"><input defaultValue={f.display_name || f.file_name || ''} onBlur={(e) => saveFile(f, { display_name: e.target.value })} className="d68-admin-input"/><label className="d68-admin-check"><input type="checkbox" defaultChecked={!!f.public_visible} onChange={(e) => saveFile(f, { public_visible: e.target.checked })}/> Public visible</label><select defaultValue={f.privacy_level || 'locked'} onChange={(e) => saveFile(f, { privacy_level: e.target.value })} className="d68-admin-input"><option value="locked">locked</option><option value="public">public</option></select></div>) : <Empty text="No files."/>}</div></div></Card>; }
+function InvestorEditor({ i, profiles, onSave, onToggle }: any) {
+  const pending = i.privacy?.pending_profile_changes;
+  const needsReview = investorNeedsReview(i);
+  const src = pending || i;
+  const criteria = objectOf(src.criteria || i.criteria);
+  const targetCountries = investorTargetCountriesAdmin({ ...i, criteria });
+  const targetCountryText = targetCountries.join(', ');
+  const targetLabels = targetCountries.map(countryLabelAdmin);
+  const loginProfile = (profiles || []).find((p: Row) => p.id === i.owner_id || p.username === i.username || p.email === i.private_email) || {};
+  const loginUsername = loginProfile.username || i.username || loginProfile.email || i.private_email || '—';
+  const loginPassword = loginProfile.initial_password || '—';
+  return <Card><form onSubmit={(e) => onSave(e, i, pending ? 'approve' : 'save')}>
+    <div className="d68-admin-row-head">
+      <div>
+        <b>{i.code} · {i.private_name || i.title_vi || i.title_en}</b>
+        <div className="d68-admin-subtle">{i.status} · {i.visible ? 'visible' : 'not public'} · Trụ sở: {investorOfficeCountryLabelAdmin(i)} · {pending ? 'has pending dashboard changes' : 'no pending changes'}</div>
+      </div>
+      <span className={`d68-admin-badge ${i.visible ? 'ok' : 'warn'}`}>{i.visible ? 'visible' : 'not public'}</span>
+      {needsReview ? <span className="d68-admin-badge warn">Cần duyệt</span> : null}
+    </div>
+    {needsReview ? <div className="d68-admin-notice warn">Tài khoản Investor mới tạo hoặc mới cập nhật thông tin cần Admin duyệt trước khi public.</div> : null}
+    <div className="d68-admin-loginbox"><b>Login Investor</b><span>Username: <code>{loginUsername}</code></span><span>Password: <code>{loginPassword}</code></span><span>Email: <code>{loginProfile.email || i.private_email || '—'}</code></span></div>
+    <div className="d68-admin-targetbox">
+      <b>Khu vực/Thị trường quan tâm đầu tư</b>
+      <div className="d68-admin-taglist">{targetLabels.length ? targetLabels.map((label, idx) => <span key={`${label}-${idx}`}>{label}</span>) : <em>Chưa chọn thị trường</em>}</div>
+    </div>
+    {pending ? <details className="d68-admin-source" open><summary>Pending changes from Investor Dashboard</summary><pre>{JSON.stringify(pending, null, 2)}</pre></details> : null}
+    <div className="d68-admin-form4">
+      <input name="title_vi" defaultValue={src.title_vi || ''} placeholder="Title VI" className="d68-admin-input"/>
+      <input name="title_en" defaultValue={src.title_en || ''} placeholder="Title EN" className="d68-admin-input"/>
+      <input name="type" defaultValue={src.type || ''} placeholder="Loại nhà đầu tư" className="d68-admin-input"/>
+      <input name="country" defaultValue={src.country || ''} placeholder="Quốc gia trụ sở" className="d68-admin-input"/>
+      <input name="country_iso2" defaultValue={src.country_iso2 || i.country_iso2 || ''} placeholder="Mã quốc gia trụ sở ISO2" className="d68-admin-input"/>
+      <input name="region" defaultValue={src.region || i.region || ''} placeholder="Region" className="d68-admin-input"/>
+      <input name="ticket_min" type="number" defaultValue={src.ticket_min || 0} placeholder="Ticket min" className="d68-admin-input"/>
+      <input name="ticket_max" type="number" defaultValue={src.ticket_max || 0} placeholder="Ticket max" className="d68-admin-input"/>
+      <input name="stage" defaultValue={src.stage || ''} placeholder="Stage" className="d68-admin-input"/>
+      <input name="industries" defaultValue={arrFromText(src.industries).join(', ')} placeholder="Industries" className="d68-admin-input"/>
+      <input name="deal_types" defaultValue={arrFromText(src.deal_types).join(', ')} placeholder="Deal types" className="d68-admin-input"/>
+      <label className="d68-admin-field d68-admin-span2"><span>Khu vực/Thị trường quan tâm đầu tư (mã quốc gia, cách nhau bằng dấu phẩy)</span><input name="target_countries" defaultValue={targetCountryText} placeholder="VD: VN, US, SG, JP" className="d68-admin-input"/><small>Hiển thị thành tag phía trên; lưu vào criteria.targetCountries/preferredCountries.</small></label>
+      <label className="d68-admin-check"><input name="verified" type="checkbox" defaultChecked={!!i.verified}/> Verified</label>
+      <label className="d68-admin-check"><input name="admin_priority" type="checkbox" defaultChecked={!!i.admin_priority}/> Priority</label>
+      <label className="d68-admin-check"><input name="visible" type="checkbox" defaultChecked={!!i.visible}/> Visible</label>
+      <input name="private_name" defaultValue={i.private_name || ''} placeholder="Private name" className="d68-admin-input"/>
+      <input name="private_email" defaultValue={i.private_email || i.privacy?.email || ''} placeholder="Private email" className="d68-admin-input"/>
+      <input name="private_phone" defaultValue={i.private_phone || i.privacy?.phone || ''} placeholder="Private phone" className="d68-admin-input"/>
+      <input name="private_website" defaultValue={i.private_website || i.privacy?.website || ''} placeholder="Private website" className="d68-admin-input"/>
+      <textarea name="desc_vi" defaultValue={src.desc_vi || ''} placeholder="Desc VI" className="d68-admin-input textarea d68-admin-span2"/>
+      <textarea name="desc_en" defaultValue={src.desc_en || ''} placeholder="Desc EN" className="d68-admin-input textarea d68-admin-span2"/>
+    </div>
+    <div className="d68-admin-actions"><button className="d68-admin-btn green">{pending ? 'Duyệt thay đổi & public' : 'Lưu investor'}</button><button type="button" onClick={() => onToggle(i)} className={`d68-admin-btn ${i.visible ? 'red' : ''}`}>{i.visible ? 'Ẩn public' : 'Bật visible'}</button>{i.code ? <Link to={`/investors/${i.code}`} className="d68-admin-btn blue">Public ↗</Link> : null}</div>
+  </form></Card>;
+}
+function AssetEditor({ b }: { b: Row }) {
+  const [files, setFiles] = useState<Row[]>([]);
+  const [images, setImages] = useState<Row[]>([]);
+  const [msg, setMsg] = useState('');
+  const plan = businessUploadPlan(b);
+  const plannedImages = uploadPlanArray(plan, 'images');
+  const plannedFiles = uploadPlanArray(plan, 'files');
+  const missingPlannedUploads = (!!plannedImages.length && !images.length) || (!!plannedFiles.length && !files.length);
+  async function loadAssets() {
+    const [f, im] = await Promise.all([getBusinessFiles(b.id).catch(() => []), getBusinessImages(b.id).catch(() => [])]);
+    setFiles(f); setImages(im);
+  }
+  useEffect(() => { loadAssets(); }, [b.id]);
+  async function saveImage(img: Row, patch: Row) {
+    try { await updateBusinessImage(img.id, { ...patch, admin_note: reviewedAssetNote('image') }); setMsg('Image updated.'); loadAssets(); }
+    catch (e: any) { setMsg(e?.message || 'Image update failed.'); }
+  }
+  async function saveFile(file: Row, patch: Row) {
+    try { await updateBusinessFile(file.id, { ...patch, admin_note: reviewedAssetNote('file') }); setMsg('File updated.'); loadAssets(); }
+    catch (e: any) { setMsg(e?.message || 'File update failed.'); }
+  }
+  return <Card><h3>{b.public_code || b.slug} · Ảnh/File duyệt public</h3>
+    {msg ? <div className="d68-admin-notice ok">{msg}</div> : null}
+    {missingPlannedUploads ? <div className="d68-admin-notice warn"><b>DN đã chọn ảnh/file lúc đăng ký nhưng chưa thấy file trong hệ thống.</b><br/>Có thể upload bị bỏ qua vì tài khoản đang chờ OTP/session. Admin cần yêu cầu DN vào Dashboard upload lại tại tab Tài liệu/Ảnh, hoặc Admin upload thủ công nếu có file gốc.</div> : null}
+    {(plannedImages.length || plannedFiles.length) ? <details className="d68-admin-source" open={missingPlannedUploads}><summary>File/ảnh DN đã chọn lúc đăng ký</summary><div className="d68-admin-upload-plan">
+      {plannedImages.length ? <div><b>Ảnh đã chọn</b>{plannedImages.map((x: Row, idx: number) => <span key={`pi-${idx}`}>{x.display_name || x.file_name || 'Ảnh'} <small>{x.file_name || ''} {adminBytes(x.size_bytes)}</small></span>)}</div> : null}
+      {plannedFiles.length ? <div><b>File đã chọn</b>{plannedFiles.map((x: Row, idx: number) => <span key={`pf-${idx}`}>{x.display_name || x.file_name || 'File'} <small>{x.file_name || ''} {adminBytes(x.size_bytes)}</small></span>)}</div> : null}
+    </div></details> : null}
+    <div className="d68-admin-asset-grid">
+      <div><h4>Ảnh hiện có trong hệ thống</h4>{images.length ? images.map((img) => <div key={img.id} className="d68-admin-asset-row"><img src={img.public_url} alt=""/><div><input defaultValue={img.display_title || img.title || ''} onBlur={(e) => saveImage(img, { display_title: e.target.value })} placeholder="Tên ảnh public" className="d68-admin-input"/><label className="d68-admin-check"><input type="checkbox" defaultChecked={!!img.is_sanitized} onChange={(e) => saveImage(img, { is_sanitized: e.target.checked })}/> Đã làm mờ logo/tên DN</label><label className="d68-admin-check"><input type="checkbox" defaultChecked={!!img.public_visible} onChange={(e) => saveImage(img, { public_visible: e.target.checked })}/> Cho hiển thị public</label><label className="d68-admin-check"><input type="checkbox" defaultChecked={!!img.is_hero} onChange={(e) => saveImage(img, { is_hero: e.target.checked })}/> Ảnh hero</label></div></div>) : <Empty text="Chưa có ảnh nào được upload thành công."/>}</div>
+      <div><h4>Files hiện có trong hệ thống</h4>{files.length ? files.map((f) => <div key={f.id} className="d68-admin-card"><input defaultValue={f.display_name || f.file_name || ''} onBlur={(e) => saveFile(f, { display_name: e.target.value })} className="d68-admin-input"/><label className="d68-admin-check"><input type="checkbox" defaultChecked={!!f.public_visible} onChange={(e) => saveFile(f, { public_visible: e.target.checked })}/> Public visible</label><select defaultValue={f.privacy_level || 'locked'} onChange={(e) => saveFile(f, { privacy_level: e.target.value })} className="d68-admin-input"><option value="locked">locked</option><option value="public">public</option></select></div>) : <Empty text="Chưa có file nào được upload thành công."/>}</div>
+    </div>
+  </Card>;
+}
 function Promos({ promos, createPromo }: any) { return <Card><h3>Mã khuyến mãi</h3><form onSubmit={createPromo} className="d68-admin-form4 d68-admin-form-gap"><input required name="code" placeholder="CODE" className="d68-admin-input"/><input name="description" placeholder="Description" className="d68-admin-input"/><select name="role" className="d68-admin-input"><option value="business">business</option><option value="investor">investor</option><option value="advisor">advisor</option><option value="affiliate">affiliate</option></select><input name="discount_pct" type="number" placeholder="%" className="d68-admin-input"/><input name="quota_total" type="number" placeholder="Quota" className="d68-admin-input"/><input name="starts_at" type="datetime-local" className="d68-admin-input"/><input name="ends_at" type="datetime-local" className="d68-admin-input"/><button className="d68-admin-btn green">Tạo mã</button></form>{promos.map((p: Row) => <div key={p.id} className="d68-admin-card"><b>{p.code}</b> · {p.discount_pct}% · {p.role} · {p.active ? 'active' : 'inactive'}</div>)}</Card>; }
 function Requests({ requests, markRequest }: any) { return <Card><h3>Yêu cầu data</h3>{requests.length ? requests.map((r: Row) => <div key={r.id} className="d68-admin-card"><b>{r.businesses?.public_code || r.business_id}</b> ← {r.investors?.code || r.investor_id}<p>{r.note}</p><span>{r.status}</span><div className="d68-admin-actions"><button className="d68-admin-btn blue" onClick={() => markRequest(r, 'forwarded')}>Forwarded</button><button className="d68-admin-btn green" onClick={() => markRequest(r, 'fulfilled')}>Fulfilled</button><button className="d68-admin-btn red" onClick={() => markRequest(r, 'rejected')}>Rejected</button></div></div>) : <Empty text="No data requests."/>}</Card>; }
 function Leads({ contactMessages, partnerLeads, markLead }: any) { return <div><Card><h3>Contact messages</h3>{contactMessages.length ? contactMessages.map((m: Row) => <div key={m.id} className="d68-admin-card"><b>{m.name}</b> · <a href={`mailto:${m.email}`}>{m.email}</a><p>{m.message}</p><span className="d68-admin-badge warn">{m.status}</span><div className="d68-admin-actions"><button className="d68-admin-btn green" onClick={() => markLead('contact_messages', m, 'handled')}>Handled</button><button className="d68-admin-btn blue" onClick={() => markLead('contact_messages', m, 'follow_up')}>Follow up</button></div></div>) : <Empty text="No contact messages."/>}</Card><Card><h3>Market Partner leads</h3>{partnerLeads.length ? partnerLeads.map((l: Row) => <div key={l.id} className="d68-admin-card"><b>{l.full_name}</b> · <a href={`mailto:${l.email}`}>{l.email}</a> · {l.country}<p>{l.phone}</p><p>{l.intro}</p><span className="d68-admin-badge warn">{l.status}</span><div className="d68-admin-actions"><button className="d68-admin-btn green" onClick={() => markLead('partner_leads', l, 'approved')}>Approved</button><button className="d68-admin-btn blue" onClick={() => markLead('partner_leads', l, 'follow_up')}>Follow up</button><button className="d68-admin-btn red" onClick={() => markLead('partner_leads', l, 'rejected')}>Rejected</button></div></div>) : <Empty text="No partner leads."/>}</Card></div>; }
