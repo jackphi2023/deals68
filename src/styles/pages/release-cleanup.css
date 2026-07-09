@@ -372,3 +372,126 @@ img,svg,video,canvas{max-width:100%}
   color:#166534!important;
 }
 
+/* Front-end UI polish v11 */
+.d68-home-hero-stats{
+  background:transparent!important;
+  border:0!important;
+  box-shadow:none!important;
+  backdrop-filter:none!important;
+}
+.d68-home-hero-stats>div{
+  background:rgba(15,23,42,.62)!important;
+}
+
+/* Home valuation should be white; investor band carries the blue background. */
+.d68-home-valuation__box{
+  background:#fff!important;
+  border:1px solid var(--d68-line,#E7EDF3)!important;
+  box-shadow:0 14px 34px rgba(15,42,74,.08)!important;
+}
+.d68-home-valuation__box:after{display:none!important}
+.d68-home-valuation__box span{
+  background:#FEF3D3!important;
+  color:#B8860B!important;
+}
+.d68-home-valuation__box h2{color:var(--d68-blue,#0F2A4A)!important}
+.d68-home-valuation__box p{color:var(--d68-muted,#64748B)!important}
+.d68-home-valuation__box a{
+  background:var(--d68-gold,#F2B51D)!important;
+  color:var(--d68-blue,#0F2A4A)!important;
+}
+
+.d68-home-investor-band{
+  background:linear-gradient(135deg,#0F2A4A 0%,#14315A 100%)!important;
+  border-radius:24px!important;
+  padding:54px 32px!important;
+  margin-bottom:64px!important;
+}
+.d68-home-investor-band .d68-home-title h2{color:#fff!important}
+.d68-home-investor-band .d68-home-title a{color:#F2B51D!important}
+.d68-home-investor-band .d68-home-badge--blue{
+  background:rgba(255,255,255,.12)!important;
+  color:#DDF4FE!important;
+}
+.d68-home-investor-card{
+  background:#fff!important;
+  border:1px solid #E7EDF3!important;
+  box-shadow:0 10px 24px rgba(6,20,40,.12)!important;
+}
+.d68-home-investor-card__meta{
+  margin-bottom:16px!important;
+}
+.d68-home-investor-card a{
+  margin-top:14px!important;
+  padding-top:12px!important;
+  padding-bottom:12px!important;
+}
+
+/* Business detail mobile hero overflow guard. */
+.d68-detail-image-card,
+.d68-detail-hero-media{
+  max-width:100%!important;
+}
+@media(max-width:700px){
+  .d68-home-hero__inner{
+    justify-content:center!important;
+    align-items:flex-start!important;
+    padding-top:32px!important;
+    padding-bottom:32px!important;
+  }
+  .d68-home-hero__title{
+    max-width:calc(100vw - 32px)!important;
+    font-size:clamp(24px,6.8vw,30px)!important;
+    line-height:1.05!important;
+    letter-spacing:-.7px!important;
+  }
+  .d68-home-hero__title span{
+    white-space:nowrap!important;
+  }
+  .d68-home-hero__title strong{
+    margin-top:5px!important;
+  }
+  .d68-home-hero-stats{
+    margin-top:28px!important;
+  }
+  .d68-home-investor-band{
+    border-radius:0!important;
+    padding:42px 16px!important;
+    margin-left:calc(var(--d68-mobile-pad) * -1)!important;
+    margin-right:calc(var(--d68-mobile-pad) * -1)!important;
+    width:calc(100% + var(--d68-mobile-pad) * 2)!important;
+  }
+  .d68-detail-image-card{
+    overflow:hidden!important;
+    padding:8px!important;
+  }
+  .d68-detail-hero-media{
+    width:100%!important;
+    height:auto!important;
+    min-height:0!important;
+    aspect-ratio:16/10!important;
+    max-height:70vh!important;
+  }
+  .d68-detail-hero-media img{
+    width:100%!important;
+    height:100%!important;
+    object-fit:cover!important;
+  }
+}
+
+/* Business Dashboard overview metric cards equal height. */
+.d68-business-dashboard-page .d68-dashboard-grid4{
+  align-items:stretch!important;
+}
+.d68-business-dashboard-page .d68-dashboard-grid4>.d68-dashboard-card,
+.d68-business-dashboard-page .d68-dashboard-metric-card{
+  height:100%!important;
+  min-height:122px!important;
+  display:flex!important;
+  flex-direction:column!important;
+}
+.d68-business-dashboard-page .d68-dashboard-metric-card h2{
+  width:max-content;
+  max-width:100%;
+}
+

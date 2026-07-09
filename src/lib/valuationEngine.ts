@@ -219,8 +219,8 @@ export function valuationVerdictMessage(lang: Lang, r: ValuationResult | null) {
   if (!r?.self || !r.verdict) return T(lang, 'Định giá tham chiếu đã tính từ dữ liệu doanh thu, ngành, quốc gia, biên EBITDA và tăng trưởng.', 'The benchmark is calculated from revenue, industry, country, EBITDA margin and growth.');
   if (r.verdict === 'low_of') return T(lang, 'Có thể đang định giá thấp hơn tham chiếu — dễ hút nhà đầu tư nhưng có thể thiệt cho doanh nghiệp.', 'Your implied valuation may be below benchmark — attractive to investors but potentially unfavorable to the business.');
   if (r.verdict === 'in_range') return T(lang, 'Định giá đang nằm trong khoảng tham chiếu ngành/quốc gia.', 'Your implied valuation is within the industry/country benchmark range.');
-  return T(lang, `Đang cao hơn tham chiếu khoảng ${r.pctAbove || 0}% — cân nhắc điều chỉnh offer hoặc bổ sung dữ liệu chứng minh.`, `Around ${r.pctAbove || 0}% above benchmark — consider adjusting the offer or adding supporting data.`);
+  return T(lang, `Đang cao hơn tham chiếu khoảng ${r.pctAbove || 0}% — cân nhắc điều chỉnh mức chào hoặc bổ sung dữ liệu chứng minh.`, `Around ${r.pctAbove || 0}% above benchmark — consider adjusting the terms or adding supporting data.`);
 }
 
-export const VALUATION_DISCLAIMER_VI = 'Đây là mức định giá tham chiếu do hệ thống ước tính theo dữ liệu bạn cung cấp và mặt bằng ngành. Doanh nghiệp cần tính toán định giá chi tiết và chuyên sâu thì liên hệ với chúng tôi để được hỗ trợ.';
-export const VALUATION_DISCLAIMER_EN = 'This is an indicative valuation benchmark estimated from your inputs and industry averages. Businesses that need detailed, in-depth valuation support can contact us for assistance.';
+export const VALUATION_DISCLAIMER_VI = 'Doanh nghiệp cần tính toán định giá chi tiết và chuyên sâu thì liên hệ với chúng tôi để được hỗ trợ.';
+export const VALUATION_DISCLAIMER_EN = 'Businesses that need detailed, in-depth valuation support can contact us for assistance.';

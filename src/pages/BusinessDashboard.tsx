@@ -338,7 +338,7 @@ function ValuationOverviewBox({ lang, result }: any) {
     <div>
       <span>{T(lang, 'Giá trị doanh nghiệp tự định giá', 'Implied self valuation')}</span>
       <strong>{result?.self ? formatValuationMoney(result.self, currency, lang) : T(lang, 'Chưa đủ dữ liệu', 'Not enough data')}</strong>
-      <small>{T(lang, 'Suy từ số tiền chào và tỷ lệ cổ phần.', 'Derived from offer amount and offered stake.')}</small>
+      <small>{T(lang, 'Suy từ số tiền đề xuất và tỷ lệ cổ phần.', 'Derived from proposed amount and stake percentage.')}</small>
     </div>
     <div>
       <span>{T(lang, 'Tham chiếu ngành', 'Industry benchmark')}</span>
