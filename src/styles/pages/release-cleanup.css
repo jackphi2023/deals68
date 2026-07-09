@@ -495,3 +495,70 @@ img,svg,video,canvas{max-width:100%}
   max-width:100%;
 }
 
+/* Front-end UI polish v12: homepage reference correction */
+.d68-home-valuation{
+  background:#fff!important;
+}
+.d68-home-valuation__box{
+  position:relative!important;
+  overflow:hidden!important;
+  background:linear-gradient(120deg,#2CA9D7 0%,#279FCC 100%)!important;
+  border:0!important;
+  border-radius:22px!important;
+  box-shadow:none!important;
+  color:#fff!important;
+}
+.d68-home-valuation__box:after{
+  content:""!important;
+  display:block!important;
+  position:absolute!important;
+  right:-52px!important;
+  bottom:-86px!important;
+  width:280px!important;
+  height:280px!important;
+  border-radius:999px!important;
+  background:rgba(242,181,29,.24)!important;
+  pointer-events:none!important;
+}
+.d68-home-valuation__box>*{
+  position:relative!important;
+  z-index:1!important;
+}
+.d68-home-valuation__box span{
+  background:rgba(255,255,255,.18)!important;
+  color:#fff!important;
+}
+.d68-home-valuation__box h2{
+  color:#fff!important;
+}
+.d68-home-valuation__box p{
+  color:rgba(255,255,255,.92)!important;
+}
+.d68-home-valuation__box a{
+  background:var(--d68-gold,#F2B51D)!important;
+  color:var(--d68-blue,#0F2A4A)!important;
+  box-shadow:none!important;
+}
+
+.d68-home-investor-band{
+  background:linear-gradient(135deg,#1BADEA 0%,#1596CC 100%)!important;
+}
+.d68-home-investor-band .d68-home-badge--blue{
+  background:rgba(255,255,255,.20)!important;
+  color:#fff!important;
+}
+.d68-home-investor-band .d68-home-title h2,
+.d68-home-investor-band .d68-home-title p{
+  color:#fff!important;
+}
+.d68-home-investor-band .d68-home-title a{
+  color:#fff!important;
+  background:rgba(255,255,255,.16)!important;
+  border:1px solid rgba(255,255,255,.24)!important;
+  border-radius:999px!important;
+  padding:8px 13px!important;
+}
+.d68-home-investor-card{
+  background:#fff!important;
+}
+

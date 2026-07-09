@@ -22,7 +22,7 @@ import {
   getLocationOptionsForCountry,
   locationKeyFromLabel
 } from '../lib/labels';
-import { DEFAULT_VALUATION_CONFIG, getActiveValuationConfig, valuate, formatValuationMoney, valuationVerdictMessage, VALUATION_DISCLAIMER_VI, VALUATION_DISCLAIMER_EN } from '../lib/valuationEngine';
+import { DEFAULT_VALUATION_CONFIG, getActiveValuationConfig, valuate, formatValuationMoney, valuationVerdictMessage } from '../lib/valuationEngine';
 import { BUSINESS_FEATURED_PROPOSAL_QUOTA, BUSINESS_STANDARD_PROPOSAL_QUOTA, businessProposalQuotaForPlan } from '../lib/businessPlans';
 
 const countryIso: Record<string, string> = Object.fromEntries(countryOptions.map((c) => [c.vi, c.iso2]).concat(countryOptions.map((c) => [c.en, c.iso2])));
@@ -531,7 +531,7 @@ try {
               <div><dt>{T(lang, 'Định giá tham chiếu', 'Benchmark valuation')}</dt><dd>{valuationCheck.benchLow && valuationCheck.benchHigh ? `${formatValuationMoney(valuationCheck.benchLow, currentCurrency, lang)} – ${formatValuationMoney(valuationCheck.benchHigh, currentCurrency, lang)}` : '—'}</dd></div>
               <div><dt>EV/Revenue</dt><dd>{valuationCheck.adjR ? `${valuationCheck.adjR.toFixed(2)}×` : '—'}</dd></div>
               <div><dt>EV/EBITDA</dt><dd>{valuationCheck.adjE ? `${valuationCheck.adjE.toFixed(2)}×` : '—'}</dd></div>
-            </dl><small>{T(lang, VALUATION_DISCLAIMER_VI, VALUATION_DISCLAIMER_EN)}</small>
+            </dl>
           </div>
         </section>
 
