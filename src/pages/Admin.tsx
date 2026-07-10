@@ -428,6 +428,37 @@ export default function Admin() {
     const current = Number(b.quota_total || 0);
     await updateBusinessQuota(b, current + Number(delta || 0));
   }
+  async function setBusinessHomepage(b: Row, checked: boolean) {
+    const { error: err } = await supabase
+      .from('businesses')
+      .update({
+        show_on_homepage: checked,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', b.id);
+
+    if (!err) {
+      await logAction(
+        checked ? 'show_business_on_homepage' : 'remove_business_from_homepage',
+        'business',
+        b.id,
+        {
+          public_code: b.public_code,
+          show_on_homepage: checked,
+        },
+      );
+    }
+
+    setError(err?.message || '');
+    setMsg(
+      err
+        ? ''
+        : checked
+          ? 'Đã chọn Business hiển thị tại Homepage.'
+          : 'Đã bỏ Business khỏi nhóm được ưu tiên tại Homepage.',
+    );
+    load();
+  }
   async function approveBusiness(e: FormEvent, b: Row) {
     e.preventDefault();
     const fd = new FormData(e.currentTarget as HTMLFormElement);
@@ -449,6 +480,7 @@ export default function Admin() {
         text(fd.get('investment_reason_en')) ||
         autoEn(text(fd.get('investment_reason_vi'))),
       industry: text(fd.get('industry')),
+      industry_key: industryKeyFromLabel(text(fd.get('industry'))),
       deal_type: text(fd.get('deal_type')),
       city: text(fd.get('city')),
       country_iso2: text(fd.get('country_iso2')) || 'VN',
@@ -600,7 +632,7 @@ export default function Admin() {
       {tab === 'business_review' && <BusinessReviewList rows={pendingBusinesses} approveBusiness={approveBusiness} toggleBusiness={toggleBusiness} businessFiles={businessFiles} businessImages={businessImages} />}
       {tab === 'businesses' && (selectedBusinessKey
         ? (selectedBusiness
-          ? <BusinessAdminDetail b={selectedBusiness} payments={payments} profiles={profiles} approveBusiness={approveBusiness} toggleBusiness={toggleBusiness} markPayment={markPayment} updateBusinessQuota={updateBusinessQuota} adjustBusinessQuota={adjustBusinessQuota} businessFiles={businessFiles} businessImages={businessImages} />
+          ? <BusinessAdminDetail b={selectedBusiness} payments={payments} profiles={profiles} approveBusiness={approveBusiness} toggleBusiness={toggleBusiness} setBusinessHomepage={setBusinessHomepage} markPayment={markPayment} updateBusinessQuota={updateBusinessQuota} adjustBusinessQuota={adjustBusinessQuota} businessFiles={businessFiles} businessImages={businessImages} />
           : <Card><h3>Không tìm thấy doanh nghiệp</h3><p className="d68-admin-subtle">ID/Mã/slug: {selectedBusinessKey}</p><Link to="/admin/businesses" className="d68-admin-btn blue">← Quay lại danh sách</Link></Card>)
         : <BusinessAdminList rows={filteredBusinesses} allRows={businesses} pendingRows={pendingBusinesses} search={search} setSearch={setSearch} businessStatusFilter={businessStatusFilter} setBusinessStatusFilter={setBusinessStatusFilter} businessIndustryFilter={businessIndustryFilter} setBusinessIndustryFilter={setBusinessIndustryFilter} businessIndustryOptions={businessIndustryOptions} businessFiles={businessFiles} businessImages={businessImages} payments={payments} />)}
       {tab === 'assets' && <div>{filteredBusinesses.map((b) => <AssetEditor key={b.id} b={b} />)}</div>}
@@ -676,7 +708,7 @@ function BusinessAdminList({ rows, allRows, pendingRows, search, setSearch, busi
             <td><b>{businessPrivateTitle(b)}</b><br/><span className="d68-admin-badge warn">{b.public_code || b.slug || 'Business'}</span></td>
             <td>{businessPrimaryIndustry(b)}</td>
             <td>{src.city || b.city || src.country_iso2 || b.country_iso2 || '—'}</td>
-            <td>{businessPlanLabel(b)}<br/><span className="d68-admin-subtle">Quota {Number(b.quota_used || 0)}/{Number(b.quota_total || 0)}</span></td>
+            <td>{businessPlanLabel(b)}<br/><span className="d68-admin-subtle">Quota {Number(b.quota_used || 0)}/{Number(b.quota_total || 0)}</span>{b.show_on_homepage ? <><br/><span className="d68-admin-badge ok">Homepage</span></> : null}</td>
             <td><span className={`d68-admin-badge ${st.cls}`}>{st.label}</span></td>
             <td>{warn ? <span className="d68-admin-badge warn">{warn}</span> : <span className="d68-admin-subtle">—</span>}</td>
             <td>{new Date(businessActivityMs(b, businessFiles, businessImages, payments)).toLocaleString('vi-VN')}</td>
@@ -721,7 +753,7 @@ function BusinessPaymentPanel({ b, payments, profiles, markPayment, updateBusine
     </Card>
   </div>;
 }
-function BusinessAdminDetail({ b, payments, profiles, approveBusiness, toggleBusiness, markPayment, updateBusinessQuota, adjustBusinessQuota, businessFiles, businessImages }: any) {
+function BusinessAdminDetail({ b, payments, profiles, approveBusiness, toggleBusiness, setBusinessHomepage, markPayment, updateBusinessQuota, adjustBusinessQuota, businessFiles, businessImages }: any) {
   const [detailTab, setDetailTab] = useState<'payments' | 'info' | 'assets'>('info');
   const sections = businessReviewSections(b, businessFiles, businessImages);
   const status = businessAdminStatusLabel(b, businessFiles, businessImages, payments);
@@ -734,6 +766,21 @@ function BusinessAdminDetail({ b, payments, profiles, approveBusiness, toggleBus
           <div className="d68-admin-subtle">{b.public_code || 'D68'} · {businessPrimaryIndustry(b)} · {sourceOf(b).city || b.city || '—'} · public v{b.public_version || 0}</div>
         </div>
         <span className={`d68-admin-badge ${status.cls}`}>{status.label}</span>
+      </div>
+      <div className="d68-admin-notice">
+        <label className="d68-admin-check">
+          <input
+            type="checkbox"
+            checked={!!b.show_on_homepage}
+            onChange={(e) => setBusinessHomepage(b, e.target.checked)}
+          />
+          <b>Hiển thị Homepage</b>
+        </label>
+        <span className="d68-admin-subtle">
+          Business mới mặc định không được chọn. Nếu chọn trên 6 Business,
+          Homepage lấy ngẫu nhiên 6; nếu chọn dưới 6, hệ thống bổ sung
+          Business public khác cho đủ 6.
+        </span>
       </div>
       {sections.length ? <div className="d68-admin-notice warn">Doanh nghiệp vừa sửa {sections.join(', ')}, cần kiểm tra và duyệt.</div> : null}
       <div className="d68-admin-detail-tabs">

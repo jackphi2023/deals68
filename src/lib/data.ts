@@ -7,7 +7,7 @@ type BusinessAssetRow = Record<string, any>;
 type BusinessDetailAssets = { files: BusinessAssetRow[]; images: BusinessAssetRow[] };
 
 const businessPublicSelect = [
-  'id','public_code','slug','title_vi','title_en','description_vi','description_en','country_iso2','city','industry','deal_type','plan','revenue_2025','revenue_currency','ebitda_margin','ask_amount','ask_currency','stake_pct','highlights_vi','highlights_en','investment_reason_vi','investment_reason_en','data_confidence','quality_score','valuation_reasonableness','visible','status','quota_total','quota_used','image_url','created_at','updated_at','public_snapshot_json','public_version','last_approved_at','moderation_status','hero_image_url'
+  'id','public_code','slug','title_vi','title_en','description_vi','description_en','country_iso2','city','industry','industry_key','deal_type','plan','revenue_2025','revenue_currency','ebitda_margin','ask_amount','ask_currency','stake_pct','highlights_vi','highlights_en','investment_reason_vi','investment_reason_en','data_confidence','quality_score','valuation_reasonableness','visible','status','quota_total','quota_used','image_url','created_at','updated_at','public_snapshot_json','public_version','last_approved_at','moderation_status','hero_image_url'
 ].join(',');
 
 const investorPublicSelect = [
@@ -58,6 +58,11 @@ export function getPublicBusinessView(row: any) {
     investment_reason_vi: firstValue(s.investment_reason_vi, row.investment_reason_vi),
     investment_reason_en: firstValue(s.investment_reason_en, row.investment_reason_en, s.investment_reason_vi, row.investment_reason_vi),
     industry: firstValue(s.industry, row.industry, 'Đang cập nhật'),
+    industry_key: firstValue(
+      s.industry_key,
+      row.industry_key,
+      industryKeyFromLabel(firstValue(s.industry, row.industry)),
+    ),
     deal_type: firstValue(s.deal_type, row.deal_type, 'Đang cập nhật'),
     city: firstValue(s.city, row.city, row.country_iso2, 'Việt Nam'),
     country_iso2: firstValue(s.country_iso2, row.country_iso2, 'VN'),
@@ -185,7 +190,11 @@ function dealTypeSearchTerms(raw: any) {
 
 function applyBusinessPublicFilters(q: any, filters: any) {
   if (!filters.includeHidden) q = q.eq('visible', true).eq('status', 'active').not('public_snapshot_json', 'is', null);
-  if (filters.industry) q = q.ilike('industry', `%${safeLikeTerm(filters.industry)}%`);
+  if (filters.industry) {
+    const industryKey = industryKeyFromLabel(filters.industry);
+    if (industryKey) q = q.eq('industry_key', industryKey);
+    else q = q.ilike('industry', `%${safeLikeTerm(filters.industry)}%`);
+  }
   if (filters.country) q = q.eq('country_iso2', filters.country);
   if (filters.dealType) {
     const terms = dealTypeSearchTerms(filters.dealType);
@@ -209,8 +218,8 @@ function applyBusinessPublicFilters(q: any, filters: any) {
   return q;
 }
 
-export async function listBusinessFacets(filters: any = {}): Promise<{ city: string; industry: string; deal_type: string; plan: string; quality_score: number | null }[]> {
-  let q: any = supabase.from('businesses').select('city, industry, deal_type, plan, quality_score');
+export async function listBusinessFacets(filters: any = {}): Promise<{ city: string; industry: string; industry_key: string; deal_type: string; plan: string; quality_score: number | null }[]> {
+  let q: any = supabase.from('businesses').select('city, industry, industry_key, deal_type, plan, quality_score');
   q = applyBusinessPublicFilters(q, { search: filters.search, country: filters.country });
   const { data, error } = await q.limit(1000);
   if (error) throw error;
@@ -230,6 +239,67 @@ export async function listBusinesses(filters: any = {}): Promise<any[]> {
   const { data, error } = await q;
   if (error) throw error;
   return ((data || []) as any[]).map(getPublicBusinessView);
+}
+
+
+export async function listHomepageBusinesses(limit = 6): Promise<any[]> {
+  const safeLimit = Math.max(
+    1,
+    Math.min(24, Math.floor(Number(limit) || 6)),
+  );
+
+  const { data: ranked, error: rankError } = await supabase.rpc(
+    'get_homepage_business_ids',
+    { max_rows: safeLimit },
+  );
+
+  if (rankError || !Array.isArray(ranked) || !ranked.length) {
+    return listBusinesses({ limit: safeLimit, sort: 'featured' });
+  }
+
+  const orderedRanked = [...ranked]
+    .sort(
+      (a: any, b: any) =>
+        Number(a.display_order || 0) - Number(b.display_order || 0),
+    )
+    .filter((row: any) => row.business_id);
+
+  const ids = orderedRanked.map((row: any) => row.business_id);
+  let query: any = supabase
+    .from('businesses')
+    .select(businessPublicSelect as string)
+    .in('id', ids);
+
+  query = applyBusinessPublicFilters(query, {});
+  const { data, error } = await query;
+
+  if (error) {
+    return listBusinesses({ limit: safeLimit, sort: 'featured' });
+  }
+
+  const byId = new Map(
+    ((data || []) as any[]).map((row) => [
+      String(row.id),
+      getPublicBusinessView(row),
+    ]),
+  );
+
+  const ordered = orderedRanked
+    .map((row: any) => byId.get(String(row.business_id)))
+    .filter(Boolean);
+
+  if (ordered.length >= safeLimit) return ordered.slice(0, safeLimit);
+
+  const fallback = await listBusinesses({
+    limit: safeLimit * 3,
+    sort: 'featured',
+  });
+  const used = new Set(ordered.map((row: any) => String(row.id)));
+
+  return [
+    ...ordered,
+    ...fallback.filter((row: any) => !used.has(String(row.id))),
+  ].slice(0, safeLimit);
 }
 
 export async function countBusinesses(filters: any = {}): Promise<number> {

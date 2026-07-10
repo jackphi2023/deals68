@@ -20,6 +20,8 @@ const login = read('src/pages/Login.tsx');
 const businessDashboard = read('src/pages/BusinessDashboard.tsx');
 const dataLib = read('src/lib/data.ts');
 const pendingUploads = read('src/lib/pendingBusinessUploads.ts');
+const home = read('src/pages/Home.tsx');
+const businessesPage = read('src/pages/Businesses.tsx');
 const app = read('src/App.tsx');
 const businessDetail = read('src/pages/BusinessDetail.tsx');
 const investorDetail = read('src/pages/InvestorDetail.tsx');
@@ -84,6 +86,25 @@ ok(
     && /BusinessPendingComparison/.test(admin)
     && /expected_pending_submitted_at/.test(admin),
   'Admin sees old/new and uses transactional RPC'
+);
+
+ok(
+  'homepage businesses use Admin editorial selection',
+  /listHomepageBusinesses\(6\)/.test(home)
+    && /get_homepage_business_ids/.test(dataLib)
+    && /show_on_homepage/.test(admin)
+    && /Hiển thị Homepage/.test(admin),
+  'Admin selection is independent from plan; RPC fills or randomizes up to 6'
+);
+
+ok(
+  'business industry links and filters use canonical taxonomy keys',
+  /\{ industry: it\.key \}/.test(home)
+    && /key:\s*'it_software'/.test(home)
+    && /industryKeyFromLabel\(rawIndustry\)/.test(businessesPage)
+    && /industryKeyFromLabel\(f\.industry_key \|\| f\.industry\)/.test(businessesPage)
+    && /\.eq\('industry_key', industryKey\)/.test(dataLib),
+  'Homepage URLs, facet counts and Supabase filters use the same 23-industry keys'
 );
 
 ok(

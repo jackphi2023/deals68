@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { countBusinesses, countInvestors, listBusinesses, listInvestors, investorTargetCountries } from '../lib/data';
+import { countBusinesses, countInvestors, listHomepageBusinesses, listInvestors, investorTargetCountries } from '../lib/data';
 import { getPublicDealValueSummary, type PublicDealValueSummary } from '../lib/publicMetrics';
 import { toLocalizedPath } from '../lib/i18nRoutes';
 import { formatMoneyForLang, labelIndustry, labelInvestorType, labelCountry, T } from '../lib/labels';
@@ -96,7 +96,7 @@ export default function Home({ lang }: { lang: Lang }) {
         countBusinesses().catch(() => null),
         countInvestors().catch(() => null),
         getPublicDealValueSummary().catch(() => null),
-        listBusinesses({ limit: 6, sort: 'featured' }).catch(() => []),
+        listHomepageBusinesses(6).catch(() => []),
         listInvestors({ limit: 80 }).catch(() => [])
       ]);
       if (!live) return;
@@ -133,14 +133,14 @@ export default function Home({ lang }: { lang: Lang }) {
   ];
 
   const industries = [
-    { icon: 'finance', vi: 'Tài chính', en: 'Finance', noteVi: 'Fintech, tín dụng, bảo hiểm', noteEn: 'Fintech, credit and insurance' },
-    { icon: 'healthcare', vi: 'Y tế & Sức khỏe', en: 'Healthcare', noteVi: 'Phòng khám, nha khoa, chăm sóc sức khỏe', noteEn: 'Clinics, dental and healthcare' },
-    { icon: 'technology', vi: 'Công nghệ', en: 'Technology', noteVi: 'SaaS, AI, phần mềm, tự động hóa', noteEn: 'SaaS, AI, software, automation' },
-    { icon: 'food', vi: 'F&B', en: 'F&B', noteVi: 'Nhà hàng, chuỗi, nhượng quyền', noteEn: 'Restaurants, chains, franchises' },
-    { icon: 'real_estate', vi: 'Bất động sản', en: 'Real Estate', noteVi: 'Tòa nhà, khách sạn, bất động sản vận hành', noteEn: 'Buildings, hotels and operating real estate' },
-    { icon: 'education', vi: 'Giáo dục', en: 'Education', noteVi: 'Trường học, trung tâm đào tạo, EdTech', noteEn: 'Schools, training centers and EdTech' },
-    { icon: 'seafood', vi: 'Thủy sản & Xuất khẩu', en: 'Seafood & Export', noteVi: 'Xuất khẩu, chế biến, kho lạnh', noteEn: 'Export, processing, cold storage' },
-    { icon: 'manufacturing', vi: 'Sản xuất & Kho vận', en: 'Manufacturing & Logistics', noteVi: 'Nhà máy, logistics, tài sản vận hành', noteEn: 'Factories, logistics, operating assets' }
+    { key: 'finance', icon: 'finance', vi: 'Tài chính', en: 'Finance', noteVi: 'Fintech, tín dụng, bảo hiểm', noteEn: 'Fintech, credit and insurance' },
+    { key: 'healthcare', icon: 'healthcare', vi: 'Y tế & Chăm sóc sức khỏe', en: 'Health Care', noteVi: 'Phòng khám, nha khoa, chăm sóc sức khỏe', noteEn: 'Clinics, dental and healthcare' },
+    { key: 'it_software', icon: 'technology', vi: 'CNTT & Phần mềm', en: 'IT & Software / Technology', noteVi: 'SaaS, AI, phần mềm, tự động hóa', noteEn: 'SaaS, AI, software and automation' },
+    { key: 'food_beverage', icon: 'food', vi: 'Thực phẩm & Đồ uống (F&B)', en: 'Food & Beverage', noteVi: 'Nhà hàng, chuỗi, nhượng quyền', noteEn: 'Restaurants, chains and franchises' },
+    { key: 'real_estate', icon: 'real_estate', vi: 'Bất động sản', en: 'Real Estate', noteVi: 'Tòa nhà, khách sạn, bất động sản vận hành', noteEn: 'Buildings, hotels and operating real estate' },
+    { key: 'education_training', icon: 'education', vi: 'Giáo dục & Đào tạo', en: 'Education & Training', noteVi: 'Trường học, trung tâm đào tạo, EdTech', noteEn: 'Schools, training centres and EdTech' },
+    { key: 'seafood_export', icon: 'seafood', vi: 'Thủy sản & Xuất khẩu', en: 'Seafood & Export', noteVi: 'Xuất khẩu, chế biến, kho lạnh', noteEn: 'Export, processing and cold storage' },
+    { key: 'manufacturing', icon: 'manufacturing', vi: 'Sản xuất', en: 'Manufacturing', noteVi: 'Nhà máy, công nghiệp, tài sản vận hành', noteEn: 'Factories, industrial and operating assets' }
   ];
 
   const steps = [
@@ -182,7 +182,7 @@ export default function Home({ lang }: { lang: Lang }) {
       <section className="d68-home-industries">
         <div className="d68-home-container">
           <div className="d68-home-title d68-home-title--center"><h2>{T(lang, 'Ngành nổi bật', 'Featured industries')}</h2><p>{T(lang, 'Khám phá cơ hội theo từng ngành trọng điểm trên Deals68.', 'Explore opportunities across key industries on Deals68.')}</p></div>
-          <div className="d68-home-industry-grid">{industries.map((it) => <Link key={it.vi} to={buildPath('/businesses', lang, { industry: T(lang, it.vi, it.en) })} className="d68-home-industry-card"><div><IndustryLineIcon type={it.icon} /></div><section><strong>{T(lang, it.vi, it.en)}</strong><p>{T(lang, it.noteVi, it.noteEn)}</p></section></Link>)}</div>
+          <div className="d68-home-industry-grid">{industries.map((it) => <Link key={it.vi} to={buildPath('/businesses', lang, { industry: it.key })} className="d68-home-industry-card"><div><IndustryLineIcon type={it.icon} /></div><section><strong>{T(lang, it.vi, it.en)}</strong><p>{T(lang, it.noteVi, it.noteEn)}</p></section></Link>)}</div>
         </div>
       </section>
 
