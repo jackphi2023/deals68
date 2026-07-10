@@ -425,12 +425,58 @@ export async function approveBusinessPublicSnapshot(businessId: string, snapshot
   return data;
 }
 
-export async function uploadBusinessFile(businessId: string, ownerId: string, file: File, category = 'financials', privacy = 'locked', displayName = '') {
+function isDuplicateStorageUploadError(error: any) {
+  const message = String(error?.message || error || '').toLowerCase();
+  const status = Number(error?.statusCode || error?.status || 0);
+  return status === 409 || message.includes('already exists') || message.includes('duplicate');
+}
+
+export async function uploadBusinessFile(
+  businessId: string,
+  ownerId: string,
+  file: File,
+  category = 'financials',
+  privacy = 'locked',
+  displayName = '',
+  clientUploadId = '',
+) {
   const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-  const path = `${businessId}/${Date.now()}-${safeName}`;
-  const { error: upErr } = await supabase.storage.from('business-files-private').upload(path, file, { upsert: false });
-  if (upErr) throw upErr;
-  const { data, error } = await supabase.from('business_files').insert({ business_id: businessId, owner_id: ownerId, file_name: file.name, display_name: displayName || file.name, file_path: path, file_type: file.type, size_bytes: file.size, category, privacy_level: privacy, public_visible: false }).select().single();
+  const stableId = String(clientUploadId || '').replace(/[^a-zA-Z0-9_-]/g, '');
+  const path = stableId
+    ? `${businessId}/signup/${stableId}-${safeName}`
+    : `${businessId}/${Date.now()}-${safeName}`;
+
+  const { error: upErr } = await supabase.storage
+    .from('business-files-private')
+    .upload(path, file, { upsert: false });
+
+  if (upErr && !(stableId && isDuplicateStorageUploadError(upErr))) {
+    throw upErr;
+  }
+
+  const payload = {
+    business_id: businessId,
+    owner_id: ownerId,
+    file_name: file.name,
+    display_name: displayName || file.name,
+    file_path: path,
+    file_type: file.type,
+    size_bytes: file.size,
+    category,
+    privacy_level: privacy,
+    public_visible: false,
+    client_upload_id: stableId || null,
+  };
+
+  const query = stableId
+    ? supabase
+        .from('business_files')
+        .upsert(payload, { onConflict: 'client_upload_id' })
+        .select()
+        .single()
+    : supabase.from('business_files').insert(payload).select().single();
+
+  const { data, error } = await query;
   if (error) throw error;
   return data;
 }
@@ -448,13 +494,53 @@ export async function deleteBusinessFile(row: any) {
   if (error) throw error;
 }
 
-export async function uploadBusinessImage(businessId: string, ownerId: string, file: File, title = '') {
+export async function uploadBusinessImage(
+  businessId: string,
+  ownerId: string,
+  file: File,
+  title = '',
+  clientUploadId = '',
+) {
   const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-  const path = `${businessId}/${Date.now()}-${safeName}`;
-  const { error: upErr } = await supabase.storage.from('business-images-public').upload(path, file, { upsert: false });
-  if (upErr) throw upErr;
-  const { data: pub } = supabase.storage.from('business-images-public').getPublicUrl(path);
-  const { data, error } = await supabase.from('business_images').insert({ business_id: businessId, owner_id: ownerId, title, display_title: title, image_path: path, public_url: pub.publicUrl, public_visible: false, is_sanitized: false, is_hero: false }).select().single();
+  const stableId = String(clientUploadId || '').replace(/[^a-zA-Z0-9_-]/g, '');
+  const path = stableId
+    ? `${businessId}/signup/${stableId}-${safeName}`
+    : `${businessId}/${Date.now()}-${safeName}`;
+
+  const { error: upErr } = await supabase.storage
+    .from('business-images-public')
+    .upload(path, file, { upsert: false });
+
+  if (upErr && !(stableId && isDuplicateStorageUploadError(upErr))) {
+    throw upErr;
+  }
+
+  const { data: pub } = supabase.storage
+    .from('business-images-public')
+    .getPublicUrl(path);
+
+  const payload = {
+    business_id: businessId,
+    owner_id: ownerId,
+    title,
+    display_title: title,
+    image_path: path,
+    public_url: pub.publicUrl,
+    public_visible: false,
+    is_sanitized: false,
+    is_hero: false,
+    client_upload_id: stableId || null,
+  };
+
+  const query = stableId
+    ? supabase
+        .from('business_images')
+        .upsert(payload, { onConflict: 'client_upload_id' })
+        .select()
+        .single()
+    : supabase.from('business_images').insert(payload).select().single();
+
+  const { data, error } = await query;
   if (error) throw error;
   return data;
 }

@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-do
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { toLocalizedPath } from '../lib/i18nRoutes';
+import { resumePendingBusinessSignupUploads } from '../lib/pendingBusinessUploads';
 import type { Lang } from '../lib/i18n';
 
 const T = (lang: Lang, vi: string, en: string) => lang === 'en' ? en : vi;
@@ -105,7 +106,32 @@ export default function Login({ lang = 'vi' }: { lang?: Lang }) {
       setErr(T(lang, 'Mã OTP không đúng hoặc đã hết hạn. Anh/Chị có thể bấm Gửi lại mã.', 'The OTP is incorrect or expired. You can resend a new code.'));
       return;
     }
-    const row = data.user?.id ? await activateDashboardAfterOtp(data.user.id).catch(() => null) : null;
+    const row = data.user?.id
+      ? await activateDashboardAfterOtp(data.user.id).catch(() => null)
+      : null;
+
+    if (data.user?.id) {
+      setInfo(T(
+        lang,
+        'OTP hợp lệ. Hệ thống đang hoàn tất upload ảnh/file đã chọn lúc đăng ký...',
+        'OTP verified. The system is completing the image/file uploads selected during registration...',
+      ));
+
+      const uploadResult = await resumePendingBusinessSignupUploads(data.user.id)
+        .catch((uploadError: any) => ({
+          attempted: 0,
+          uploadedImages: 0,
+          uploadedFiles: 0,
+          remaining: 0,
+          errors: [uploadError?.message || 'Upload resume failed'],
+        }));
+
+      window.sessionStorage.setItem(
+        'd68_signup_upload_notice',
+        JSON.stringify(uploadResult),
+      );
+    }
+
     setLoading(false);
     navigate(next || dashboardForRole(row?.role || role), { replace: true });
   }

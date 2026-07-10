@@ -2,6 +2,10 @@ import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { createSignupBundle, uploadBusinessFile, uploadBusinessImage } from '../lib/data';
+import {
+  queuePendingBusinessSignupAssets,
+  resumePendingBusinessSignupUploads,
+} from '../lib/pendingBusinessUploads';
 import { supabase } from '../lib/supabase';
 import { slugify } from '../lib/format';
 import { calculatePricing, lookupPromo, normaliseRole, roleLabel, type BusinessPlan, type PricingRole } from '../lib/pricing';
@@ -404,18 +408,50 @@ try {
       });
 
       let uploadNote = '';
-      const { data: sessionData } = await supabase.auth.getSession().catch(() => ({ data: { session: null } } as any));
-      if (isBusiness && bundle?.business_id && (businessImages.length || businessDocs.length)) {
-        if (sessionData?.session) {
-          const upload = await uploadPendingBusinessAssets(bundle.business_id, sr.user.id);
-          uploadNote = upload.errors.length
-            ? T(lang, ` Đã tạo hồ sơ; upload thành công ${upload.imageCount} ảnh và ${upload.fileCount} file. Một số file cần Admin kiểm tra lại: ${upload.errors.join('; ')}`, ` Profile created; uploaded ${upload.imageCount} images and ${upload.fileCount} files. Some files need Admin review: ${upload.errors.join('; ')}`)
-            : T(lang, ` Đã upload ${upload.imageCount} ảnh và ${upload.fileCount} file hồ sơ.`, ` Uploaded ${upload.imageCount} images and ${upload.fileCount} profile files.`);
-        } else {
-          uploadNote = T(lang, ' Sau khi xác thực OTP và vào Dashboard, Anh/Chị có thể upload lại ảnh/file tại tab Tài liệu/Ảnh.', ' After OTP verification and dashboard login, you can upload images/files again in the Documents/Images tabs.');
+
+      if (
+        isBusiness &&
+        bundle?.business_id &&
+        (businessImages.length || businessDocs.length)
+      ) {
+        try {
+          const queuedCount = await queuePendingBusinessSignupAssets({
+            userId: sr.user.id,
+            businessId: bundle.business_id,
+            images: businessImages,
+            files: businessDocs,
+          });
+
+          const { data: sessionData } = await supabase.auth.getSession();
+
+          if (sessionData?.session) {
+            const upload = await resumePendingBusinessSignupUploads(sr.user.id);
+            uploadNote = upload.errors.length
+              ? T(
+                  lang,
+                  ` Đã upload ${upload.uploadedImages} ảnh và ${upload.uploadedFiles} file; còn ${upload.remaining} file chờ thử lại.`,
+                  ` Uploaded ${upload.uploadedImages} images and ${upload.uploadedFiles} files; ${upload.remaining} item(s) remain for retry.`,
+                )
+              : T(
+                  lang,
+                  ` Đã upload ${upload.uploadedImages} ảnh và ${upload.uploadedFiles} file hồ sơ.`,
+                  ` Uploaded ${upload.uploadedImages} images and ${upload.uploadedFiles} profile files.`,
+                );
+          } else {
+            uploadNote = T(
+              lang,
+              ` ${queuedCount} ảnh/file đã được lưu tạm an toàn trên trình duyệt. Vui lòng xác thực OTP trên cùng thiết bị và trình duyệt; hệ thống sẽ tự upload trước khi vào Dashboard.`,
+              ` ${queuedCount} image/file item(s) were safely queued in this browser. Verify OTP on the same device and browser; the system will upload them automatically before opening the Dashboard.`,
+            );
+          }
+        } catch (uploadError: any) {
+          uploadNote = T(
+            lang,
+            ` Tài khoản đã tạo nhưng trình duyệt không thể giữ ảnh/file chờ OTP: ${uploadError?.message || 'unknown error'}. Vui lòng upload lại trong Dashboard.`,
+            ` Account created, but the browser could not preserve files before OTP: ${uploadError?.message || 'unknown error'}. Please upload them again in the Dashboard.`,
+          );
         }
       }
-
       setMsgType('ok');
       const successBase = isInvestor
         ? T(lang, 'Anh/Chị đã tạo tài khoản Nhà đầu tư thành công. Hệ thống đã gửi mã OTP đến email. Sau vài giây, hệ thống sẽ chuyển sang trang đăng nhập để xác thực OTP.', 'Your investor account has been created successfully. An OTP has been sent to your email. The system will redirect to login for OTP verification shortly.')
@@ -490,7 +526,11 @@ try {
             <Field label={T(lang, 'Ngành', 'Industry')}><select value={industry} onChange={(e) => setIndustry(e.target.value)}>{industryOptions.map((x) => <option key={x.key} value={x.vi}>{T(lang, x.vi, x.en)}</option>)}</select></Field>
             <Field label={T(lang, 'Tỉnh/Thành phố', 'Province/City')}><select value={city} onChange={(e) => setCity(e.target.value)}>{locationChoices.length ? locationChoices.map((x) => <option key={x.key} value={T(lang, x.vi, x.en)}>{T(lang, x.vi, x.en)}</option>) : <option value={city}>{city || T(lang, 'Khác / nhập tự do', 'Other / free text')}</option>}</select><small>{countryCode === 'VN' ? T(lang, 'Chọn 1 trong 34 đơn vị Tỉnh/Thành phố sau sáp nhập.', 'Choose one of Vietnam’s 34 province/city units.') : T(lang, 'Quốc gia khác: dùng danh mục vùng/bang có sẵn; có thể mở rộng sau.', 'Other countries: uses available state/region list; can be expanded later.')}</small></Field>
             <Field label={T(lang, 'Loại giao dịch', 'Deal type')}><select value={dealType} onChange={(e) => setDealType(e.target.value)}>{businessDealOptions.map((x) => <option key={x.vi}>{T(lang, x.vi, x.en)}</option>)}</select></Field>
-            <Field label={T(lang, 'Doanh thu tháng', 'Monthly revenue')} hint={T(lang, 'Nếu không nhập doanh thu năm, hệ thống sẽ nhân 12.', 'If annual revenue is blank, the system annualizes monthly revenue × 12.')}><input inputMode="numeric" value={revenueMonth} onChange={(e) => setRevenueMonth(formatNumberTyping(e.target.value))} /></Field>
+            <Field label={T(
+              lang,
+              `Doanh thu tháng (${countryCode === 'VN' ? 'VNĐ' : currentCurrency})`,
+              `Monthly revenue (${currentCurrency})`,
+            )} hint={T(lang, 'Nếu không nhập doanh thu năm, hệ thống sẽ nhân 12.', 'If annual revenue is blank, the system annualizes monthly revenue × 12.')}><input inputMode="numeric" value={revenueMonth} onChange={(e) => setRevenueMonth(formatNumberTyping(e.target.value))} /></Field>
             <Field label={T(lang, 'Doanh thu năm gần nhất', 'Latest annual revenue')} hint={T(lang, `Nhập số tuyệt đối theo ${currentCurrency}`, `Enter absolute amount in ${currentCurrency}`)}><input inputMode="numeric" value={revenue} onChange={(e) => setRevenue(formatNumberTyping(e.target.value))} /></Field>
             <Field label={T(lang, 'Tỷ suất lợi nhuận/EBITDA (%)', 'EBITDA margin (%)')}><input inputMode="decimal" value={ebitda} onChange={(e) => setEbitda(formatNumberTyping(e.target.value, true))} /></Field>
             <Field label={T(lang, 'Tăng trưởng năm (%)', 'Annual growth (%)')}><input inputMode="decimal" value={growthPct} onChange={(e) => setGrowthPct(formatNumberTyping(e.target.value, true))} /></Field>

@@ -306,6 +306,42 @@ export default function Admin() {
   }
   useEffect(() => { if (profile?.role === 'admin') load(); }, [profile?.role]);
 
+  useEffect(() => {
+    if (profile?.role !== 'admin') return;
+
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === 'visible') load();
+    };
+
+    window.addEventListener('focus', refreshWhenVisible);
+    document.addEventListener('visibilitychange', refreshWhenVisible);
+
+    const channel = supabase
+      .channel('deals68-admin-business-flow')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'businesses' },
+        () => load(),
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'business_files' },
+        () => load(),
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'business_images' },
+        () => load(),
+      )
+      .subscribe();
+
+    return () => {
+      window.removeEventListener('focus', refreshWhenVisible);
+      document.removeEventListener('visibilitychange', refreshWhenVisible);
+      supabase.removeChannel(channel);
+    };
+  }, [profile?.role]);
+
   if (loading) return <section className="d68-admin-page"><div className="d68-admin-wrap"><div className="d68-admin-card">Loading admin...</div></div></section>;
   if (profile?.role !== 'admin') return <Navigate to="/login?next=/admin" replace />;
 
@@ -393,12 +429,81 @@ export default function Admin() {
     await updateBusinessQuota(b, current + Number(delta || 0));
   }
   async function approveBusiness(e: FormEvent, b: Row) {
-    e.preventDefault(); const fd = new FormData(e.currentTarget as HTMLFormElement);
-    const snapshot = { title_vi: text(fd.get('title_vi')), title_en: text(fd.get('title_en')) || autoEn(text(fd.get('title_vi'))), description_vi: text(fd.get('description_vi')), description_en: text(fd.get('description_en')) || autoEn(text(fd.get('description_vi'))), highlights_vi: text(fd.get('highlights_vi')), highlights_en: text(fd.get('highlights_en')) || autoEn(text(fd.get('highlights_vi'))), investment_reason_vi: text(fd.get('investment_reason_vi')), investment_reason_en: text(fd.get('investment_reason_en')) || autoEn(text(fd.get('investment_reason_vi'))), industry: text(fd.get('industry')), deal_type: text(fd.get('deal_type')), city: text(fd.get('city')), country_iso2: text(fd.get('country_iso2')) || 'VN', revenue_2025: Number(fd.get('revenue_2025') || 0), revenue_currency: text(fd.get('revenue_currency')) || 'VND', ebitda_margin: Number(fd.get('ebitda_margin') || 0), ask_amount: Number(fd.get('ask_amount') || 0), ask_currency: text(fd.get('ask_currency')) || text(fd.get('revenue_currency')) || 'VND', stake_pct: Number(fd.get('stake_pct') || 0), quality_score: Number(fd.get('quality_score') || 0), data_confidence: Number(fd.get('data_confidence') || 0), hero_image_url: text(fd.get('hero_image_url')), image_url: text(fd.get('hero_image_url')), approved_at: new Date().toISOString() };
-    const patch = { public_snapshot_json: snapshot, title_vi: snapshot.title_vi, title_en: snapshot.title_en, description_vi: snapshot.description_vi, description_en: snapshot.description_en, highlights_vi: snapshot.highlights_vi, highlights_en: snapshot.highlights_en, investment_reason_vi: snapshot.investment_reason_vi, investment_reason_en: snapshot.investment_reason_en, industry: snapshot.industry, deal_type: snapshot.deal_type, city: snapshot.city, country_iso2: snapshot.country_iso2, revenue_2025: snapshot.revenue_2025, revenue_currency: snapshot.revenue_currency, ebitda_margin: snapshot.ebitda_margin, ask_amount: snapshot.ask_amount, ask_currency: snapshot.ask_currency, stake_pct: snapshot.stake_pct, quality_score: Math.max(0, Math.min(100, snapshot.quality_score)), quality_score_manual_override: fd.get('quality_score_manual_override') === 'on', data_confidence: snapshot.data_confidence, hero_image_url: snapshot.hero_image_url || null, image_url: snapshot.image_url || null, visible: true, status: 'active', pending_changes_json: null, pending_submitted_at: null, pending_submitted_by: null, moderation_status: 'approved', last_approved_at: new Date().toISOString(), last_approved_by: profile.id, public_version: Number(b.public_version || 0) + 1 };
-    const { error: err } = await supabase.from('businesses').update(patch).eq('id', b.id);
-    if (!err) await logAction('approve_business_public_snapshot', 'business', b.id, { public_code: b.public_code, snapshot });
-    setError(err?.message || ''); setMsg(err ? '' : 'Đã duyệt snapshot public ẩn danh.'); load();
+    e.preventDefault();
+    const fd = new FormData(e.currentTarget as HTMLFormElement);
+
+    const adminSnapshot = {
+      title_vi: text(fd.get('title_vi')),
+      title_en:
+        text(fd.get('title_en')) || autoEn(text(fd.get('title_vi'))),
+      description_vi: text(fd.get('description_vi')),
+      description_en:
+        text(fd.get('description_en')) ||
+        autoEn(text(fd.get('description_vi'))),
+      highlights_vi: text(fd.get('highlights_vi')),
+      highlights_en:
+        text(fd.get('highlights_en')) ||
+        autoEn(text(fd.get('highlights_vi'))),
+      investment_reason_vi: text(fd.get('investment_reason_vi')),
+      investment_reason_en:
+        text(fd.get('investment_reason_en')) ||
+        autoEn(text(fd.get('investment_reason_vi'))),
+      industry: text(fd.get('industry')),
+      deal_type: text(fd.get('deal_type')),
+      city: text(fd.get('city')),
+      country_iso2: text(fd.get('country_iso2')) || 'VN',
+      revenue_month: Number(fd.get('revenue_month') || 0),
+      revenue_2025: Number(fd.get('revenue_2025') || 0),
+      revenue_currency: text(fd.get('revenue_currency')) || 'VND',
+      ebitda_margin: Number(fd.get('ebitda_margin') || 0),
+      growth_pct: Number(fd.get('growth_pct') || 0),
+      ask_amount: Number(fd.get('ask_amount') || 0),
+      ask_currency:
+        text(fd.get('ask_currency')) ||
+        text(fd.get('revenue_currency')) ||
+        'VND',
+      stake_pct: Number(fd.get('stake_pct') || 0),
+      offer_amount: Number(fd.get('ask_amount') || 0),
+      offer_stake_pct: Number(fd.get('stake_pct') || 0),
+      quality_score: Number(fd.get('quality_score') || 0),
+      quality_score_manual_override:
+        fd.get('quality_score_manual_override') === 'on',
+      data_confidence: Number(fd.get('data_confidence') || 0),
+      hero_image_url: text(fd.get('hero_image_url')),
+      image_url: text(fd.get('hero_image_url')),
+      approved_at: new Date().toISOString(),
+    };
+
+    const { error: err } = await supabase.rpc(
+      'approve_business_pending_changes',
+      {
+        business_uuid: b.id,
+        admin_snapshot: adminSnapshot,
+        expected_pending_submitted_at:
+          b.pending_submitted_at || null,
+      },
+    );
+
+    if (!err) {
+      await logAction(
+        'approve_business_pending_changes',
+        'business',
+        b.id,
+        {
+          public_code: b.public_code,
+          pending_submitted_at: b.pending_submitted_at || null,
+          admin_snapshot: adminSnapshot,
+        },
+      );
+    }
+
+    setError(err?.message || '');
+    setMsg(
+      err
+        ? ''
+        : 'Đã duyệt toàn bộ thay đổi Business, cập nhật Dashboard và public snapshot.',
+    );
+    load();
   }
   async function saveInvestor(e: FormEvent, i: Row, mode: 'save' | 'approve' = 'save') {
     e.preventDefault();
@@ -646,6 +751,86 @@ function BusinessAdminDetail({ b, payments, profiles, approveBusiness, toggleBus
 function BusinessReviewList({ rows, approveBusiness, toggleBusiness, businessFiles = [], businessImages = [] }: any) {
   return <div>{rows.length ? rows.map((b: Row) => <BusinessPublicEditor key={b.id} b={b} onApprove={approveBusiness} onToggle={toggleBusiness} businessFiles={businessFiles} businessImages={businessImages} />) : <Empty text="No business pending review."/>}</div>;
 }
+
+function adminCompareValue(value: any, key: string) {
+  if (value === null || value === undefined || value === '') return '—';
+
+  if (
+    [
+      'revenue_month',
+      'revenue_2025',
+      'ask_amount',
+      'offer_amount',
+      'self_valuation',
+    ].includes(key)
+  ) {
+    const number = Number(value || 0);
+    return Number.isFinite(number)
+      ? number.toLocaleString('vi-VN')
+      : String(value);
+  }
+
+  if (typeof value === 'object') {
+    return JSON.stringify(value, null, 2);
+  }
+
+  return String(value);
+}
+
+function BusinessPendingComparison({ b }: { b: Row }) {
+  const pending = objectOf(b.pending_changes_json);
+  const current = { ...b, ...publicOf(b) };
+
+  const fields = [
+    ['company_name_private', 'Tên doanh nghiệp thật'],
+    ['industry', 'Ngành'],
+    ['deal_type', 'Loại giao dịch'],
+    ['city', 'Tỉnh/Thành phố'],
+    ['description_vi', 'Tổng quan doanh nghiệp'],
+    ['revenue_month', 'Doanh thu tháng'],
+    ['revenue_2025', 'Doanh thu năm'],
+    ['ebitda_margin', 'EBITDA (%)'],
+    ['growth_pct', 'Tăng trưởng năm (%)'],
+    ['ask_amount', 'Nhu cầu vốn/Giá chào'],
+    ['stake_pct', 'Tỷ lệ cổ phần (%)'],
+    ['highlights_vi', 'Điểm nổi bật'],
+    ['investment_reason_vi', 'Lý do gọi vốn/chuyển nhượng'],
+  ] as const;
+
+  const changedRows = fields.filter(([key]) => {
+    if (!hasOwn(pending, key)) return false;
+    return JSON.stringify(pending[key]) !== JSON.stringify(current[key]);
+  });
+
+  if (!changedRows.length) return null;
+
+  return (
+    <div className="d68-admin-table-wrap">
+      <table className="d68-admin-table">
+        <thead>
+          <tr>
+            <th>Trường Business sửa</th>
+            <th>Dữ liệu đang public/đã duyệt</th>
+            <th>Dữ liệu Business đề xuất</th>
+          </tr>
+        </thead>
+        <tbody>
+          {changedRows.map(([key, label]) => (
+            <tr key={key}>
+              <td><b>{label}</b></td>
+              <td><pre>{adminCompareValue(current[key], key)}</pre></td>
+              <td>
+                <span className="d68-admin-badge warn">Đã thay đổi</span>
+                <pre>{adminCompareValue(pending[key], key)}</pre>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 function BusinessPublicEditor({ b, onApprove, onToggle, businessFiles = [], businessImages = [] }: any) {
   const pending = objectOf(b.pending_changes_json);
   const hasPending = Object.keys(pending).length > 0;
@@ -662,12 +847,16 @@ function BusinessPublicEditor({ b, onApprove, onToggle, businessFiles = [], busi
   const warningText = sections.length
     ? `Doanh nghiệp vừa sửa ${sections.join(', ')}, cần kiểm tra và duyệt.`
     : 'Doanh nghiệp cần Admin kiểm tra và duyệt trước khi public.';
-  return <Card><form onSubmit={(e) => onApprove(e, b)}>
+  return <Card><form
+    key={`${b.id}:${b.updated_at || ''}:${b.pending_submitted_at || ''}`}
+    onSubmit={(e) => onApprove(e, b)}
+  >
     <div className="d68-admin-row-head">
       <div><b>{b.public_code || 'D68'} · {b.company_name_private || src.company_name_private || 'Private name pending'}</b><div className="d68-admin-subtle">{b.status || 'pending'} · public v{b.public_version || 0} · {b.public_snapshot_json ? 'has snapshot' : 'no snapshot'} · {b.pending_submitted_at ? `pending ${new Date(b.pending_submitted_at).toLocaleString('vi-VN')}` : 'no pending text'}</div></div>
       <span className={`d68-admin-badge ${b.visible ? 'ok' : 'warn'}`}>{b.visible ? 'visible' : 'not public'}</span>
     </div>
     <div className="d68-admin-notice warn">{warningText}</div>
+    {hasPending ? <BusinessPendingComparison b={b} /> : null}
     {sections.length ? <div className="d68-admin-actions">{sections.map((label) => <span key={label} className="d68-admin-badge warn">{label}</span>)}</div> : null}
     {pendingFiles.length || pendingImages.length ? <details className="d68-admin-source" open><summary>Tài sản cần duyệt: {pendingFiles.length} file · {pendingImages.length} ảnh</summary><pre>{JSON.stringify({ files: pendingFiles.map((x: Row) => ({ id: x.id, file_name: x.file_name, display_name: x.display_name, public_visible: x.public_visible, privacy_level: x.privacy_level, admin_note: x.admin_note })), images: pendingImages.map((x: Row) => ({ id: x.id, title: x.title, display_title: x.display_title, public_visible: x.public_visible, is_sanitized: x.is_sanitized, admin_note: x.admin_note })) }, null, 2)}</pre><p className="d68-admin-subtle">Duyệt/đổi tên/làm sạch ảnh-file tại tab “Hình ảnh & Files” hoặc “Ảnh/File DN”. Sau khi Admin lưu một thay đổi, tài sản được đánh dấu đã kiểm tra và cảnh báo sẽ tắt nếu không còn pending khác.</p></details> : null}
     {hasPending ? <details className="d68-admin-source" open><summary>Thay đổi doanh nghiệp vừa gửi</summary><pre>{JSON.stringify(pending, null, 2)}</pre></details> : <details className="d68-admin-source"><summary>Xem dữ liệu nguồn</summary><pre>{JSON.stringify(src, null, 2)}</pre></details>}
@@ -678,9 +867,11 @@ function BusinessPublicEditor({ b, onApprove, onToggle, businessFiles = [], busi
       <input name="deal_type" defaultValue={reviewValue('deal_type')} placeholder="Deal type" className="d68-admin-input"/>
       <input name="city" defaultValue={reviewValue('city')} placeholder="City" className="d68-admin-input"/>
       <input name="country_iso2" defaultValue={reviewValue('country_iso2', 'VN')} placeholder="Country ISO2" className="d68-admin-input"/>
+      <input name="revenue_month" type="number" defaultValue={reviewValue('revenue_month', 0)} placeholder="Doanh thu tháng" className="d68-admin-input"/>
       <input name="revenue_2025" type="number" defaultValue={reviewValue('revenue_2025', 0)} placeholder="Revenue" className="d68-admin-input"/>
       <select name="revenue_currency" defaultValue={reviewValue('revenue_currency', 'VND')} className="d68-admin-input"><option>VND</option><option>USD</option></select>
       <input name="ebitda_margin" type="number" defaultValue={reviewValue('ebitda_margin', 0)} placeholder="EBITDA %" className="d68-admin-input"/>
+      <input name="growth_pct" type="number" defaultValue={reviewValue('growth_pct', 0)} placeholder="Tăng trưởng năm %" className="d68-admin-input"/>
       <input name="ask_amount" type="number" defaultValue={reviewValue('ask_amount', 0)} placeholder="Ask amount" className="d68-admin-input"/>
       <select name="ask_currency" defaultValue={reviewValue('ask_currency') || reviewValue('revenue_currency', 'VND')} className="d68-admin-input"><option>VND</option><option>USD</option></select>
       <input name="stake_pct" type="number" defaultValue={reviewValue('stake_pct', 0)} placeholder="Stake %" className="d68-admin-input"/>
