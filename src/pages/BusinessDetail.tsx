@@ -8,6 +8,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { formatMoneyForLang, labelIndustry, labelLocation } from '../lib/labels';
 import type { Lang } from '../lib/i18n';
 import { BusinessFaq } from '../components/BusinessFaq';
+import { applySeo, DEFAULT_SOCIAL_IMAGE } from '../lib/seo';
 import { businessQualityPublicExplanation, normalizeQualityBreakdown, qualityBand, qualityItemLabel, qualityItemNote, qualityPublicCriteria } from '../lib/businessQuality';
 
 const T = (lang: Lang, vi: string, en: string) => (lang === 'en' ? en : vi);
@@ -172,6 +173,61 @@ export default function BusinessDetail({ lang }: { lang: Lang }) {
   }, [images, business, title]);
 
   const activeHero = heroImages[activeImage] || heroImages[0];
+
+  useEffect(() => {
+    if (loading) return;
+
+    const canonicalPath =
+      lang === 'en'
+        ? `/en/businesses/${encodeURIComponent(slug)}`
+        : `/businesses/${encodeURIComponent(slug)}`;
+
+    if (!business) {
+      applySeo({
+        lang,
+        pageName: T(
+          lang,
+          'Không tìm thấy hồ sơ doanh nghiệp',
+          'Business Profile Not Found',
+        ),
+        description:
+          error ||
+          T(
+            lang,
+            'Hồ sơ doanh nghiệp không tồn tại hoặc chưa được Admin duyệt công khai.',
+            'The business profile does not exist or is not approved for public display.',
+          ),
+        canonicalPath,
+        image: DEFAULT_SOCIAL_IMAGE,
+        type: 'article',
+        noindex: true,
+      });
+      return;
+    }
+
+    applySeo({
+      lang,
+      pageName: title,
+      description,
+      canonicalPath,
+      image:
+        activeHero?.url ||
+        business.hero_image_url ||
+        business.image_url ||
+        DEFAULT_SOCIAL_IMAGE,
+      type: 'article',
+      noindex: false,
+    });
+  }, [
+    activeHero?.url,
+    business,
+    description,
+    error,
+    lang,
+    loading,
+    slug,
+    title,
+  ]);
   const dealTypeLabel = business ? dealLabel(lang, business.deal_type) : '';
   const ask = business ? money(lang, business.ask_amount, business.ask_currency || business.revenue_currency || 'VND') : '';
   const revenue = business ? money(lang, business.revenue_2025, business.revenue_currency || 'VND') : '';

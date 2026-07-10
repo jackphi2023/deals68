@@ -57,8 +57,7 @@ img,svg,video,canvas{max-width:100%}
 .d68-promo-banner__link{display:block;width:100%;overflow:hidden;border-radius:18px}
 .d68-promo-banner__link img{display:block;width:100%;height:auto}
 .d68-home-role-card,.d68-home-business-card,.d68-home-investor-card,.d68-home-industry-card{min-width:0}
-.d68-home-investor-card:first-child a,.d68-home-investor-card a{background:transparent!important;color:#1596cc!important;border:1px solid #D9E7F2!important;box-shadow:none!important}
-.d68-home-investor-card:first-child a:hover,.d68-home-investor-card a:hover{background:var(--d68-gold)!important;color:var(--d68-blue)!important;border-color:var(--d68-gold)!important}
+/* Homepage Investor CTA is scoped in home.css. */
 
 /* Business list */
 .d68-businesses-page .d68-txbar{display:none!important}
@@ -195,7 +194,14 @@ img,svg,video,canvas{max-width:100%}
   margin-top:116px!important;
   margin-left:0!important;
   padding-bottom:0!important;
+  background:transparent!important;
+  border:0!important;
+  border-radius:0!important;
+  box-shadow:none!important;
+  overflow:visible!important;
+  backdrop-filter:none!important;
 }
+/* Homepage hero stats shared-panel reset. */
 .d68-home-hero-stats>div{
   flex:0 0 auto!important;
   width:auto!important;
@@ -203,7 +209,7 @@ img,svg,video,canvas{max-width:100%}
   min-height:62px!important;
   border-radius:11px!important;
   padding:10px 15px 9px!important;
-  background:rgba(15,23,42,.55)!important;
+  background:rgba(255,255,255,.15)!important;
   border:1px solid rgba(255,255,255,.32)!important;
   box-shadow:0 12px 24px rgba(0,0,0,.22)!important;
   backdrop-filter:blur(7px)!important;
@@ -386,10 +392,10 @@ img,svg,video,canvas{max-width:100%}
 }
 @media(max-width:700px){
   .d68-home-hero__inner{
-    justify-content:center!important;
+    justify-content:flex-start!important;
     align-items:flex-start!important;
     padding-top:32px!important;
-    padding-bottom:32px!important;
+    padding-bottom:56px!important;
   }
   .d68-home-hero__title{
     max-width:calc(100vw - 32px)!important;
@@ -404,14 +410,19 @@ img,svg,video,canvas{max-width:100%}
     margin-top:5px!important;
   }
   .d68-home-hero-stats{
-    margin-top:28px!important;
+    margin-top:auto!important;
+    background:transparent!important;
+    border:0!important;
+    border-radius:0!important;
+    box-shadow:none!important;
+    overflow:visible!important;
   }
   .d68-home-investor-band{
     border-radius:0!important;
-    padding:42px 16px!important;
-    margin-left:calc(var(--d68-mobile-pad) * -1)!important;
-    margin-right:calc(var(--d68-mobile-pad) * -1)!important;
-    width:calc(100% + var(--d68-mobile-pad) * 2)!important;
+    padding:38px 16px 48px!important;
+    margin-left:auto!important;
+    margin-right:auto!important;
+    width:100%!important;
   }
   .d68-detail-image-card{
     overflow:hidden!important;

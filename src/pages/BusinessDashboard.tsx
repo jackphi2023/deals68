@@ -17,6 +17,7 @@ import { businessQualityPublicExplanation, normalizeQualityBreakdown, qualityIte
 import { proposalQuotaTotal } from '../lib/proposals';
 import { calculatePricing, lookupPromo, type BusinessPlan } from '../lib/pricing';
 import { businessProposalQuotaForPlan } from '../lib/businessPlans';
+import { resumePendingBusinessSignupUploads } from '../lib/pendingBusinessUploads';
 
 type Lang = 'vi' | 'en';
 type Tab = 'overview' | 'profile' | 'documents' | 'images' | 'interests' | 'requests' | 'services';
@@ -147,8 +148,37 @@ function fileMatches(file: any, categories: string[], extensions: string[] = [])
 function financialInputOf(b: any) {
   const direct = b?.financial_input && typeof b.financial_input === 'object' ? b.financial_input : {};
   const pending = b?.pending_changes_json?.financial_input && typeof b.pending_changes_json.financial_input === 'object' ? b.pending_changes_json.financial_input : {};
-  return { ...pending, ...direct };
+  return { ...direct, ...pending };
 }
+function businessOwnerView(b: any) {
+  const pending =
+    b?.pending_changes_json &&
+    typeof b.pending_changes_json === 'object' &&
+    !Array.isArray(b.pending_changes_json)
+      ? b.pending_changes_json
+      : {};
+
+  return {
+    ...b,
+    ...pending,
+    id: b?.id,
+    owner_id: b?.owner_id,
+    public_code: b?.public_code,
+    slug: b?.slug,
+    visible: b?.visible,
+    status: b?.status,
+    public_snapshot_json: b?.public_snapshot_json,
+    public_version: b?.public_version,
+    pending_changes_json: b?.pending_changes_json,
+    pending_submitted_at: b?.pending_submitted_at,
+    updated_at: b?.updated_at,
+    financial_input: {
+      ...(b?.financial_input || {}),
+      ...(pending?.financial_input || {}),
+    },
+  };
+}
+
 
 function buildQualityItems(lang: Lang, b: any, files: any[], images: any[]) {
   const financialInput = financialInputOf(b);
@@ -383,6 +413,25 @@ export default function BusinessDashboard() {
     if (!profile) return;
     setBusy(true); setErr('');
     try {
+      const uploadResult = await resumePendingBusinessSignupUploads(profile.id)
+        .catch(() => null);
+
+      if (uploadResult?.attempted) {
+        setMsg(
+          uploadResult.errors.length
+            ? T(
+                lang,
+                `Đã upload ${uploadResult.uploadedImages} ảnh và ${uploadResult.uploadedFiles} file; còn ${uploadResult.remaining} file chờ thử lại.`,
+                `Uploaded ${uploadResult.uploadedImages} images and ${uploadResult.uploadedFiles} files; ${uploadResult.remaining} item(s) remain for retry.`,
+              )
+            : T(
+                lang,
+                `Đã hoàn tất upload ${uploadResult.uploadedImages} ảnh và ${uploadResult.uploadedFiles} file từ bước đăng ký.`,
+                `Completed upload of ${uploadResult.uploadedImages} images and ${uploadResult.uploadedFiles} files from registration.`,
+              ),
+        );
+      }
+
       const biz = await getMyBusiness(profile.id);
       setB(biz);
       if (biz) {
@@ -419,6 +468,57 @@ export default function BusinessDashboard() {
     if (profile) load();
   }, [profile?.id, loading]);
 
+  useEffect(() => {
+    if (!profile?.id || !b?.id) return;
+
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === 'visible') load();
+    };
+
+    window.addEventListener('focus', refreshWhenVisible);
+    document.addEventListener('visibilitychange', refreshWhenVisible);
+
+    const channel = supabase
+      .channel(`business-dashboard-${b.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'businesses',
+          filter: `id=eq.${b.id}`,
+        },
+        () => load(),
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'business_files',
+          filter: `business_id=eq.${b.id}`,
+        },
+        () => load(),
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'business_images',
+          filter: `business_id=eq.${b.id}`,
+        },
+        () => load(),
+      )
+      .subscribe();
+
+    return () => {
+      window.removeEventListener('focus', refreshWhenVisible);
+      document.removeEventListener('visibilitychange', refreshWhenVisible);
+      supabase.removeChannel(channel);
+    };
+  }, [profile?.id, b?.id]);
+
   if (loading) return <main className="d68-dashboard-page d68-business-dashboard-page"><div className="d68-dashboard-wrap"><div className="d68-dashboard-card">Loading...</div></div></main>;
   if (!profile) return <Navigate to="/login?next=/dashboard/business" replace />;
   if (profile.role !== 'business' && profile.role !== 'admin') return <main className="d68-dashboard-page d68-business-dashboard-page"><div className="d68-dashboard-wrap"><div className="d68-dashboard-card"><h2>Business access only</h2><p>Role hiện tại: {profile.role}</p><Link to="/">Back home</Link></div></div></main>;
@@ -428,18 +528,19 @@ export default function BusinessDashboard() {
   const band = qBand(score ?? 0);
   const hasPublicSnapshot = !!b.public_snapshot_json;
   const hasPending = !!b.pending_changes_json || b.moderation_status === 'pending_admin_review';
+  const ownerView = businessOwnerView(b);
   const planLabel = displayPlan(lang, b.plan);
   const status = displayStatus(lang, b, hasPublicSnapshot);
-  const title = b.company_name_private || b.title_vi || b.title_en || b.public_code || 'Business profile';
+  const title = ownerView.company_name_private || ownerView.title_vi || ownerView.title_en || ownerView.public_code || 'Business profile';
   const quotaTotal = proposalQuotaTotal(b);
   const sentProposalCount = uniqueProposalInvestorCount(proposals);
   const remainingProposalQuota = Math.max(0, quotaTotal - sentProposalCount);
   const approvedProposalCount = uniqueProposalInvestorCount(proposals, ['approved', 'connected', 'fulfilled']);
   const investorAttentionCount = savedBusinesses.length + interests.length + requests.length + approvedProposalCount;
-  const qualityItems = buildQualityItems(lang, b, files, images);
+  const qualityItems = buildQualityItems(lang, ownerView, files, images);
   const qualityBreakdown = normalizeQualityBreakdown(b.quality_breakdown_json, score);
-  const dashboardBenchmark = valuate(valuationInputFromBusiness(b), valuationConfig);
-  const businessValuation = dashboardBenchmark?.self ? { value: dashboardBenchmark.self, currency: dashboardBenchmark.currency } : estimateEnterpriseValue(b);
+  const dashboardBenchmark = valuate(valuationInputFromBusiness(ownerView), valuationConfig);
+  const businessValuation = dashboardBenchmark?.self ? { value: dashboardBenchmark.self, currency: dashboardBenchmark.currency } : estimateEnterpriseValue(ownerView);
   const industryBenchmark = dashboardBenchmark;
 
   async function saveProfile(e: FormEvent) {
@@ -465,7 +566,7 @@ export default function BusinessDashboard() {
       offer_amount: Number(fd.get('ask_amount') || 0),
       offer_stake_pct: Number(fd.get('stake_pct') || 0),
       data_confidence: Number(fd.get('data_confidence') || 0),
-      financial_input: financialInputOf(b)
+      financial_input: financialInputOf(ownerView)
     };
     const patch: any = { pending_changes_json: pending, pending_submitted_at: new Date().toISOString(), pending_submitted_by: profile.id, moderation_status: 'pending_admin_review' };
     if (!hasPublicSnapshot) { patch.status = 'pending_admin_review'; patch.visible = false; }
@@ -543,7 +644,14 @@ export default function BusinessDashboard() {
     {msg ? <div className="d68-dashboard-notice ok d68-business-update-alert">{msg}</div> : null}{err ? <div className="d68-dashboard-notice err">{err}</div> : null}{busy ? <div className="d68-dashboard-notice warn">{T(lang,'Đang tải dữ liệu...','Loading data...')}</div> : null}{hasPending ? <div className="d68-dashboard-notice ok d68-business-update-alert">{businessUpdateSuccessMsg(lang)}</div> : null}
     <div className="d68-dashboard-cols"><nav className="d68-dashboard-side">{tabs.map((t) => <Link key={t.id} to={t.href} onClick={() => setTab(t.id)} className={tab === t.id ? 'active' : ''}><span className="d68-dashboard-nav-icon"><t.Icon size={17} strokeWidth={2.2} /></span><span>{T(lang,t.vi,t.en)}</span></Link>)}{b.slug ? <a className="d68-dashboard-public-link" href={`/businesses/${b.slug}`} target="_blank" rel="noreferrer">{T(lang, 'Xem hồ sơ công khai', 'View public profile')} &gt;</a> : null}<div className="d68-dashboard-side__note">{T(lang,'Cần hỗ trợ hoàn thiện hồ sơ, định giá và tài liệu làm việc với Nhà đầu tư? Hãy tham khảo:', 'Need help preparing your profile, valuation and investor materials? Please refer to:')}<br/><a href="https://vietcapitalpartners.com" target="_blank" rel="noreferrer">vietcapitalpartners.com ↗</a><br/>Hotline: 0909.584.075</div></nav><section>
       {tab === 'overview' ? <><ValuationOverviewBox lang={lang} result={industryBenchmark} /><div className="d68-dashboard-scorecard"><div className="d68-dashboard-scorecard__ring" style={{ background: `conic-gradient(${score === null ? '#CBD5E1' : band.cls === 'green' ? '#16A34A' : band.cls === 'blue' ? '#1596cc' : '#B8860B'} ${Math.max(0, Math.min(100, score ?? 0)) * 3.6}deg, #EEF2F6 0deg)` }}><div><b>{score === null ? '—' : score}</b><span>/100</span></div></div><section><div><h2>Business Quality Score</h2><span className={`d68-dashboard-badge ${band.cls}`}>{score === null ? T(lang,'Đang cập nhật','Pending') : T(lang, band.labelVi, band.labelEn)}</span></div><p>{businessQualityPublicExplanation(lang)}</p></section></div><div className="d68-quality-list d68-dashboard-card"><div className="d68-quality-list__head"><BarChart3 size={18}/><h2>{T(lang,'Điểm theo nhóm tiêu chí','Score by criterion')}</h2></div>{qualityBreakdown.items.map((item) => <div key={item.key} className={`d68-quality-item ${item.score >= item.max * 0.7 ? 'ok' : 'missing'}`}><b>{qualityItemLabel(item, lang)}</b><span>{item.score}/{item.max} · {qualityItemNote(item, lang)}</span></div>)}</div><div className="d68-quality-list d68-dashboard-card"><div className="d68-quality-list__head"><BarChart3 size={18}/><h2>{T(lang,'Hồ sơ/tài liệu đạt yêu cầu','Required profile materials')}</h2></div>{qualityItems.map((item) => <div key={item.label} className={`d68-quality-item ${item.ok ? 'ok' : 'missing'}`}><b>{item.ok ? '✓' : '×'} {item.label}</b><span>{item.detail}</span></div>)}</div><div className="d68-dashboard-grid4" style={{ marginBottom: 18 }}>{metric(T(lang,'Trạng thái','Status'), status.label, status.cls)}{metric(T(lang,'Gói hiển thị','Listing plan'), planLabel)}{metric(T(lang,'Đã gửi Hồ sơ / Được duyệt','Proposals sent / approved'), `${sentProposalCount} / ${approvedProposalCount}`, approvedProposalCount ? 'green' : 'blue', T(lang,'Số lượt gửi Hồ sơ DN và số nhà đầu tư đã được duyệt/kết nối.', 'Business profile sends and investors approved/connected.'))}{metric(T(lang,'Nhà đầu tư quan tâm','Investor attention'), String(investorAttentionCount), investorAttentionCount ? 'green' : 'gold', T(lang,`Lưu hồ sơ: ${savedBusinesses.length} · Quan tâm: ${interests.length} · Yêu cầu data: ${requests.length}`, `Saved: ${savedBusinesses.length} · Interest: ${interests.length} · Data requests: ${requests.length}`))}</div><div className="d68-dashboard-card"><h2>{T(lang,'Hạn mức proposal','Proposal quota')}</h2><div className="d68-dashboard-progress"><span style={{ width: `${Math.min(100, Math.round((sentProposalCount / Math.max(1, quotaTotal)) * 100))}%` }} /></div><p><b>{sentProposalCount} / {quotaTotal}</b> · {T(lang, `đã dùng, còn lại ${remainingProposalQuota} lượt`, `used, ${remainingProposalQuota} sends remaining`)}</p><Link to="/investors" className="d68-dashboard-btn gold">{T(lang,'Tìm Nhà đầu tư','Find investors')} →</Link></div></> : null}
-      {tab === 'profile' ? <ProfileForm lang={lang} b={b} saveProfile={saveProfile} /> : null}
+      {tab === 'profile' ? (
+        <ProfileForm
+          key={`${b.id}:${b.updated_at || ''}:${b.pending_submitted_at || ''}`}
+          lang={lang}
+          b={ownerView}
+          saveProfile={saveProfile}
+        />
+      ) : null}
       {tab === 'documents' ? <Documents lang={lang} files={files} deleteFile={deleteFile} renameFile={renameFile} fileChange={fileChange} newDocName={newDocName} setNewDocName={setNewDocName} newDocCategory={newDocCategory} setNewDocCategory={setNewDocCategory} /> : null}
       {tab === 'images' ? <Images lang={lang} images={images} imageChange={imageChange} deleteImage={deleteImage} renameImage={renameImage} suggestHero={suggestHero} /> : null}
       {tab === 'interests' ? <><ProposalRows lang={lang} rows={proposals} empty={T(lang,'Chưa gửi hồ sơ DN tới nhà đầu tư nào.','No business profile proposals sent yet.')} /><Rows title={T(lang,'Nhà đầu tư quan tâm','Investor interests')} rows={interests} empty={T(lang,'Chưa có nhà đầu tư quan tâm.','No investor interests yet.')} actions={(row: any) => <><button onClick={() => acceptInterest(row)} className="d68-dashboard-btn green">Accept</button><button onClick={() => rejectInterest(row)} className="d68-dashboard-btn red">Reject</button></>} /></> : null}

@@ -7,6 +7,7 @@ import { formatMoneyForLang, labelDealType, labelIndustry, labelCountry, T } fro
 import type { Lang } from '../lib/i18n';
 import { BusinessOnsiteContent } from '../components/BusinessFaq';
 import { PromotionBanner } from '../components/SiteBanners';
+import { industryKeyFromLabel } from '../lib/industryTaxonomy';
 
 const PAGE_SIZE = 20;
 type Tx = 'all' | 'sale' | 'invest' | 'loan' | 'jv';
@@ -127,7 +128,7 @@ export default function Businesses({ lang }: { lang: Lang }) {
   const nav = (path: string) => toLocalizedPath(path, lang);
 
   const [rows, setRows] = useState<Deal[]>([]);
-  const [facets, setFacets] = useState<{ city: string; industry: string; deal_type: string; plan: string; quality_score: number | null }[]>([]);
+  const [facets, setFacets] = useState<{ city: string; industry: string; industry_key: string; deal_type: string; plan: string; quality_score: number | null }[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [total, setTotal] = useState<number | null>(null);
@@ -145,7 +146,9 @@ export default function Businesses({ lang }: { lang: Lang }) {
   useEffect(() => {
     const p = new URLSearchParams(location.search);
     setQuery(p.get('search') || p.get('q') || '');
-    setIndustries(p.get('industry') ? [p.get('industry') as string] : []);
+    const rawIndustry = p.get('industry') || '';
+    const industryKey = industryKeyFromLabel(rawIndustry);
+    setIndustries(rawIndustry ? [industryKey || rawIndustry] : []);
     setCities(p.get('city') ? [p.get('city') as string] : []);
     setTx(txFromQuery(p.get('dealType')));
     setPage(1);
@@ -192,8 +195,12 @@ export default function Businesses({ lang }: { lang: Lang }) {
   }, [facets]);
   const industryFacets = useMemo(() => {
     const m = new Map<string, number>();
-    facets.forEach((f) => String(f.industry || '').split(';').map((x) => x.trim()).filter(Boolean).forEach((k) => m.set(k, (m.get(k) || 0) + 1)));
-    return [...m.entries()].sort((a, b) => b[1] - a[1]).slice(0, 10);
+    facets.forEach((f) => {
+      const key = industryKeyFromLabel(f.industry_key || f.industry);
+      if (!key) return;
+      m.set(key, (m.get(key) || 0) + 1);
+    });
+    return [...m.entries()].sort((a, b) => b[1] - a[1]).slice(0, 23);
   }, [facets]);
 
   const pageCount = Math.max(1, Math.ceil((total || rows.length || 1) / PAGE_SIZE));

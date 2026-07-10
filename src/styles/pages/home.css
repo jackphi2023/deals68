@@ -176,3 +176,81 @@
     padding:38px 16px 48px!important;
   }
 }
+
+/* Deals68 Home UI consolidated final */
+.d68-home-page{
+  background:#fff;
+}
+.d68-home-page .d68-home-container.d68-home-valuation{
+  background:#fff!important;
+}
+.d68-home-page .d68-home-valuation__box>a,
+.d68-home-page .d68-home-valuation__box>a:visited{
+  color:#fff!important;
+  text-decoration:none!important;
+}
+.d68-home-page .d68-home-valuation__box>a:hover,
+.d68-home-page .d68-home-valuation__box>a:focus-visible{
+  color:#fff!important;
+  filter:brightness(.96);
+}
+.d68-home-page .d68-home-container.d68-home-investor-band{
+  background:#fff!important;
+}
+.d68-home-page .d68-home-investor-card{
+  background:#FFFEF8!important;
+  border-color:#F2E8C8!important;
+}
+.d68-home-page .d68-home-investor-card>a,
+.d68-home-page .d68-home-investor-card>a:visited{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  min-height:44px!important;
+  margin-top:14px!important;
+  padding:11px 14px!important;
+  border:1px solid #E8DCA8!important;
+  border-radius:10px!important;
+  background:#fff!important;
+  color:#0F2A4A!important;
+  font-weight:800!important;
+  text-decoration:none!important;
+  transition:
+    background .18s ease,
+    border-color .18s ease,
+    color .18s ease,
+    transform .18s ease!important;
+}
+.d68-home-page .d68-home-investor-card:hover>a,
+.d68-home-page .d68-home-investor-card>a:hover,
+.d68-home-page .d68-home-investor-card>a:focus-visible{
+  background:#F2B51D!important;
+  border-color:#F2B51D!important;
+  color:#0F2A4A!important;
+  transform:translateY(-1px);
+}
+@media(max-width:700px){
+  .d68-home-page .d68-home-container.d68-home-valuation{
+    padding-left:16px!important;
+    padding-right:16px!important;
+  }
+  .d68-home-page .d68-home-valuation__box{
+    width:100%!important;
+    max-width:100%!important;
+  }
+  .d68-home-page .d68-home-valuation__box>a{
+    width:100%!important;
+    min-width:0!important;
+  }
+  .d68-home-page .d68-home-container.d68-home-investor-band{
+    width:100%!important;
+    max-width:100%!important;
+    margin-left:auto!important;
+    margin-right:auto!important;
+    padding-left:16px!important;
+    padding-right:16px!important;
+  }
+  .d68-home-page .d68-home-investor-grid{
+    grid-template-columns:minmax(0,1fr)!important;
+  }
+}

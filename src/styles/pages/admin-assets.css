@@ -1,0 +1,174 @@
+/* Deals68 Admin assets — isolated route-scoped UI */
+.d68-admin-head__title{
+  border-left:0!important;
+  padding-left:0!important;
+  color:#fff!important;
+  font-size:15px!important;
+  letter-spacing:.7px!important;
+}
+.d68-admin-page .d68-admin-assets{
+  min-width:0;
+  overflow:visible;
+}
+.d68-admin-page .d68-admin-assets h3,
+.d68-admin-page .d68-admin-assets h4{
+  margin-top:0;
+  color:#0F2A4A;
+}
+.d68-admin-page .d68-admin-assets__plan{
+  display:flex;
+  flex-direction:column;
+  gap:7px;
+  margin-top:10px;
+}
+.d68-admin-page .d68-admin-assets__plan span{
+  border:1px solid #E2E8F0;
+  border-radius:9px;
+  background:#fff;
+  padding:8px 10px;
+  color:#334155;
+  overflow-wrap:anywhere;
+}
+.d68-admin-page .d68-admin-assets__upload-grid,
+.d68-admin-page .d68-admin-assets__review-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:16px;
+}
+.d68-admin-page .d68-admin-assets__upload-grid{
+  margin:18px 0 22px;
+}
+.d68-admin-page .d68-admin-assets__upload-grid>section{
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+  min-width:0;
+  padding:18px;
+  border:1px solid #DDE7F0;
+  border-radius:14px;
+  background:#F8FBFE;
+}
+.d68-admin-page .d68-admin-assets__upload-grid .d68-admin-btn{
+  align-self:flex-start;
+}
+.d68-admin-page .d68-admin-assets__review-grid>section{
+  min-width:0;
+}
+.d68-admin-page .d68-admin-assets__image{
+  display:grid;
+  grid-template-columns:180px minmax(0,1fr);
+  gap:14px;
+  margin-bottom:14px;
+  padding:12px;
+  border:1px solid #E2E8F0;
+  border-radius:14px;
+  background:#fff;
+}
+.d68-admin-page .d68-admin-assets__image.is-hero{
+  border-color:#F2B51D;
+  box-shadow:0 0 0 3px rgba(242,181,29,.14);
+}
+.d68-admin-page .d68-admin-assets__preview{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  min-width:0;
+}
+.d68-admin-page .d68-admin-assets__preview img{
+  width:100%;
+  aspect-ratio:16/10;
+  object-fit:cover;
+  border-radius:10px;
+  background:#EEF2F6;
+}
+.d68-admin-page .d68-admin-assets__controls{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  min-width:0;
+}
+.d68-admin-page .d68-admin-assets__file{
+  display:flex;
+  flex-direction:column;
+  gap:11px;
+  margin-bottom:14px;
+  padding:14px;
+  border:1px solid #E2E8F0;
+  border-radius:14px;
+  background:#fff;
+}
+.d68-admin-page .d68-admin-assets__file-head{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:12px;
+}
+.d68-admin-page .d68-admin-assets__file-head>div{
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+  min-width:0;
+}
+.d68-admin-page .d68-admin-assets__file-head b,
+.d68-admin-page .d68-admin-assets__file-head small{
+  overflow-wrap:anywhere;
+}
+.d68-admin-page .d68-admin-assets__file-head small{
+  color:#64748B;
+}
+.d68-admin-page .d68-admin-assets__approve{
+  position:sticky;
+  bottom:12px;
+  z-index:8;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:16px;
+  margin-top:20px;
+  padding:14px 16px;
+  border:1px solid #B7DEC4;
+  border-radius:14px;
+  background:rgba(240,253,244,.96);
+  box-shadow:0 14px 34px rgba(15,42,74,.14);
+  backdrop-filter:blur(8px);
+}
+.d68-admin-page .d68-admin-assets__approve>div{
+  display:flex;
+  flex-direction:column;
+  gap:3px;
+}
+.d68-admin-page .d68-admin-assets__approve span{
+  color:#64748B;
+  font-size:12.5px;
+}
+.d68-admin-page .d68-admin-assets .d68-admin-btn:disabled{
+  opacity:.55;
+  cursor:not-allowed;
+}
+.d68-admin-page input[data-admin-number="formatted"]{
+  font-variant-numeric:tabular-nums;
+}
+@media(max-width:900px){
+  .d68-admin-page .d68-admin-assets__upload-grid,
+  .d68-admin-page .d68-admin-assets__review-grid{
+    grid-template-columns:1fr;
+  }
+  .d68-admin-page .d68-admin-assets__image{
+    grid-template-columns:140px minmax(0,1fr);
+  }
+}
+@media(max-width:700px){
+  .d68-admin-page .d68-admin-assets__image{
+    grid-template-columns:1fr;
+  }
+  .d68-admin-page .d68-admin-assets__file-head,
+  .d68-admin-page .d68-admin-assets__approve{
+    align-items:stretch;
+    flex-direction:column;
+  }
+  .d68-admin-page .d68-admin-assets__file-head .d68-admin-btn,
+  .d68-admin-page .d68-admin-assets__upload-grid .d68-admin-btn,
+  .d68-admin-page .d68-admin-assets__approve .d68-admin-btn{
+    width:100%;
+  }
+}

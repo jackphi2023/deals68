@@ -8,6 +8,7 @@ import { sendBusinessProposalToInvestor } from '../lib/proposals';
 import { formatMoneyForLang, labelCountry, labelDealType, labelIndustry, labelInvestorType, labelRegion, labelStage, T } from '../lib/labels';
 import { investorPublicDescription, investorPublicTitle, investorTicketLabel } from '../lib/investorDisplay';
 import type { Lang } from '../lib/i18n';
+import { applySeo, DEFAULT_SOCIAL_IMAGE } from '../lib/seo';
 
 type ContactAccess = { connected?: boolean; name?: string; email?: string; phone?: string; website?: string } | null;
 
@@ -129,6 +130,48 @@ export default function InvestorDetail({ lang }: { lang: Lang }) {
 
   const title = inv ? investorPublicTitle(inv, lang) : '';
   const desc = inv ? investorPublicDescription(inv, lang) : '';
+
+  useEffect(() => {
+    if (loading) return;
+
+    const canonicalPath =
+      lang === 'en'
+        ? `/en/investors/${encodeURIComponent(code)}`
+        : `/investors/${encodeURIComponent(code)}`;
+
+    if (!inv) {
+      applySeo({
+        lang,
+        pageName: T(
+          lang,
+          'Không tìm thấy hồ sơ Nhà đầu tư',
+          'Investor Profile Not Found',
+        ),
+        description:
+          error ||
+          T(
+            lang,
+            'Hồ sơ Nhà đầu tư không tồn tại hoặc chưa được duyệt công khai.',
+            'The investor profile does not exist or is not approved for public display.',
+          ),
+        canonicalPath,
+        image: DEFAULT_SOCIAL_IMAGE,
+        type: 'article',
+        noindex: true,
+      });
+      return;
+    }
+
+    applySeo({
+      lang,
+      pageName: title,
+      description: desc,
+      canonicalPath,
+      image: DEFAULT_SOCIAL_IMAGE,
+      type: 'article',
+      noindex: false,
+    });
+  }, [code, desc, error, inv, lang, loading, title]);
   const industries = useMemo(() => arr(inv?.industries), [inv]);
   const criteria = useMemo(() => criteriaList(inv, lang), [inv, lang]);
   const markets = useMemo(() => {
