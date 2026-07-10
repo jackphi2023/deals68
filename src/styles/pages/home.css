@@ -9,3 +9,170 @@
 
 /* Post-deploy banner/hero fix v2 */
 .d68-home-hero{height:660px;min-height:660px;background:#0F2A4A;display:flex;align-items:center}.d68-home-hero:after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(6,20,40,.72) 0%,rgba(6,20,40,.42) 44%,rgba(6,20,40,.18) 100%);z-index:1;pointer-events:none}.d68-hero-slider{position:absolute;inset:0;z-index:0;background:#0F2A4A;overflow:hidden}.d68-hero-slide{position:absolute;inset:0;opacity:0;transition:opacity .7s ease;display:block}.d68-hero-slide.is-active{opacity:1}.d68-hero-slide img{width:100%;height:100%;object-fit:cover;display:block}.d68-hero-dots{position:absolute;left:50%;bottom:24px;transform:translateX(-50%);z-index:4;display:flex;gap:10px}.d68-hero-dots button{width:11px;height:11px;border-radius:50%;border:1px solid rgba(255,255,255,.75);background:rgba(255,255,255,.35);padding:0;cursor:pointer}.d68-hero-dots button.active{background:#F2B51D;border-color:#F2B51D;box-shadow:0 0 0 4px rgba(242,181,29,.18)}.d68-home-hero__orb{display:none}.d68-home-hero__inner{position:relative;z-index:2;padding-top:0;padding-bottom:0}.d68-home-hero__title span{color:#1BADEA}.d68-home-hero__desc,.d68-home-search{display:none!important}.d68-home-hero-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;max-width:920px;margin-top:34px;border:1px solid rgba(255,255,255,.16);border-radius:16px;overflow:hidden;background:rgba(255,255,255,.12);box-shadow:0 20px 50px rgba(6,20,40,.28)}.d68-home-hero-stats>div{background:rgba(20,49,90,.50);padding:24px 24px;display:flex;flex-direction:column;gap:6px;backdrop-filter:blur(5px)}.d68-home-hero-stats b{font-size:32px;font-weight:900;color:#fff;letter-spacing:-1px;line-height:1}.d68-home-hero-stats span{font-size:13.5px;color:rgba(255,255,255,.80);font-weight:650}.d68-promo-banner{max-width:1200px;margin:42px auto 72px;padding:0 24px}.d68-promo-banner__link{display:block;border-radius:8px;overflow:hidden;text-decoration:none}.d68-promo-banner img{width:100%;height:550px;object-fit:cover;display:block;border-radius:8px}.d68-home-promo{margin-top:0;margin-bottom:72px;padding:0 24px}.d68-listing-promo{grid-column:1/-1;margin-top:34px;margin-bottom:34px;padding:0}.d68-home-investor-card__meta{border-top:1px solid #EEF2F6;margin-top:12px;padding-top:10px;display:flex;flex-direction:column;gap:6px;color:#475569;font-size:12.5px;line-height:1.35}.d68-home-investor-card__meta b{color:#0F2A4A}@media(max-width:760px){.d68-home-hero{height:640px;min-height:640px}.d68-home-hero__title{font-size:34px}.d68-home-hero-stats{grid-template-columns:1fr;margin-top:24px}.d68-home-hero-stats>div{padding:16px 18px}.d68-promo-banner img{height:auto;object-fit:contain}.d68-promo-banner{margin:28px auto 48px;padding:0 18px}}
+
+/* Deals68 Home RC1 final layout */
+.d68-home-stats__grid{
+  background:transparent!important;
+  box-shadow:none!important;
+}
+.d68-home-stats__grid div{
+  background:#14315A!important;
+  border:1px solid rgba(255,255,255,.08)!important;
+}
+.d68-home-container.d68-home-valuation{
+  width:100%!important;
+  max-width:1200px!important;
+  margin:0 auto!important;
+  padding:46px 24px 34px!important;
+  background:transparent!important;
+  border:0!important;
+  box-shadow:none!important;
+}
+.d68-home-valuation__box{
+  width:100%!important;
+  max-width:none!important;
+  min-height:245px!important;
+  margin:0!important;
+  padding:50px 56px!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:space-between!important;
+  gap:32px!important;
+  position:relative!important;
+  overflow:hidden!important;
+  border-radius:22px!important;
+  background:linear-gradient(120deg,#2CA9D7 0%,#279FCC 100%)!important;
+  border:0!important;
+  box-shadow:none!important;
+  color:#fff!important;
+}
+.d68-home-valuation__box:after{
+  content:""!important;
+  display:block!important;
+  position:absolute!important;
+  right:-58px!important;
+  bottom:-88px!important;
+  width:300px!important;
+  height:300px!important;
+  border-radius:999px!important;
+  background:rgba(242,181,29,.22)!important;
+  pointer-events:none!important;
+}
+.d68-home-valuation__box>*{
+  position:relative!important;
+  z-index:1!important;
+}
+.d68-home-valuation__box h2{
+  color:#fff!important;
+  font-size:34px!important;
+  line-height:1.14!important;
+  letter-spacing:-.8px!important;
+}
+.d68-home-valuation__box p{
+  color:rgba(255,255,255,.92)!important;
+  max-width:690px!important;
+}
+.d68-home-valuation__box span{
+  background:rgba(255,255,255,.18)!important;
+  color:#fff!important;
+}
+.d68-home-valuation__box a{
+  flex:0 0 auto!important;
+  min-width:190px!important;
+  justify-content:center!important;
+  background:var(--d68-gold,#F2B51D)!important;
+  color:var(--d68-blue,#0F2A4A)!important;
+  box-shadow:none!important;
+}
+.d68-home-container.d68-home-section.d68-home-investor-band,
+.d68-home-container.d68-home-section:has(.d68-home-investor-grid){
+  width:100%!important;
+  max-width:1200px!important;
+  margin:0 auto 64px!important;
+  padding:54px 24px 64px!important;
+  background:transparent!important;
+  border:0!important;
+  border-radius:0!important;
+  box-shadow:none!important;
+}
+.d68-home-investor-band .d68-home-title h2,
+.d68-home-section:has(.d68-home-investor-grid) .d68-home-title h2{
+  color:var(--d68-blue,#0F2A4A)!important;
+}
+.d68-home-investor-band .d68-home-title>a,
+.d68-home-section:has(.d68-home-investor-grid) .d68-home-title>a{
+  color:#1596CC!important;
+  background:transparent!important;
+  border:0!important;
+  border-radius:0!important;
+  padding:0!important;
+}
+.d68-home-investor-band .d68-home-badge--blue,
+.d68-home-section:has(.d68-home-investor-grid) .d68-home-badge--blue{
+  display:inline-flex!important;
+  align-items:center!important;
+  width:max-content!important;
+  max-width:100%!important;
+  background:#1596CC!important;
+  color:#fff!important;
+  border:1px solid rgba(21,150,204,.18)!important;
+  box-shadow:0 8px 18px rgba(21,150,204,.14)!important;
+  opacity:1!important;
+  text-shadow:none!important;
+}
+.d68-home-investor-band .d68-home-badge--blue *,
+.d68-home-section:has(.d68-home-investor-grid) .d68-home-badge--blue *{
+  color:#fff!important;
+  opacity:1!important;
+}
+.d68-home-investor-band .d68-home-investor-card,
+.d68-home-section:has(.d68-home-investor-grid) .d68-home-investor-card{
+  background:#fff!important;
+  border:1px solid #E7EDF3!important;
+  box-shadow:0 10px 24px rgba(15,42,74,.08)!important;
+}
+.d68-home-investor-card__meta{
+  margin-bottom:16px!important;
+}
+.d68-home-investor-card a{
+  margin-top:14px!important;
+  padding-top:12px!important;
+  padding-bottom:12px!important;
+}
+@media(max-width:700px){
+  .d68-home-hero__inner{
+    justify-content:center!important;
+    align-items:flex-start!important;
+    padding-top:32px!important;
+    padding-bottom:32px!important;
+  }
+  .d68-home-hero__title{
+    max-width:calc(100vw - 32px)!important;
+    font-size:clamp(24px,6.8vw,30px)!important;
+    line-height:1.05!important;
+    letter-spacing:-.7px!important;
+  }
+  .d68-home-hero__title span{
+    white-space:nowrap!important;
+  }
+  .d68-home-container.d68-home-valuation{
+    padding:28px 16px 22px!important;
+  }
+  .d68-home-valuation__box{
+    min-height:0!important;
+    padding:28px 22px!important;
+    flex-direction:column!important;
+    align-items:flex-start!important;
+  }
+  .d68-home-valuation__box h2{
+    font-size:26px!important;
+  }
+  .d68-home-valuation__box a{
+    min-width:0!important;
+    width:100%!important;
+  }
+  .d68-home-container.d68-home-section.d68-home-investor-band,
+  .d68-home-container.d68-home-section:has(.d68-home-investor-grid){
+    padding:38px 16px 48px!important;
+  }
+}
