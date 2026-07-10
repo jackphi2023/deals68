@@ -48,7 +48,11 @@ export default function Valuation({ lang }: { lang: Lang }) {
     <section className="d68-val-wrap"><div className="d68-val-cols"><article className="d68-val-card"><h2>{T(lang, 'Thông tin doanh nghiệp', 'Business details')}</h2><p className="d68-val-card-note">{T(lang, 'Chỉ nhập số liệu tổng quan; không cần đưa tên doanh nghiệp, thương hiệu, nợ vay, số tiền chào hoặc tỷ lệ cổ phần.', 'Enter high-level figures only; no company name, brand, debt, offer amount or stake is required.')}</p><div className="d68-val-form">
       <label>{T(lang, 'Quốc gia', 'Country')}<select value={country} onChange={(e) => setCountry(e.target.value)}>{countryOptions.map((c) => <option key={c.iso2} value={c.iso2}>{T(lang, c.vi, c.en)}</option>)}</select></label>
       <label>{T(lang, 'Ngành hàng / lĩnh vực', 'Industry / sector')}<select value={industryKey} onChange={(e) => setIndustryKey(e.target.value)}>{industryOptions.map((i) => <option key={i.key} value={i.key}>{T(lang, i.vi, i.en)}</option>)}</select></label>
-      <label>{T(lang, 'Doanh thu năm gần nhất', 'Latest annual revenue')}<input inputMode="numeric" value={revenueYear} onChange={(e) => setRevenueYear(formatNumberTyping(e.target.value))}/><small>{currency === 'VND' ? T(lang, 'VNĐ', 'VND') : 'USD'}</small></label>
+      <label>{T(
+        lang,
+        `Doanh thu năm gần nhất (${currency === 'VND' ? 'VNĐ' : 'USD'})`,
+        `Latest annual revenue (${currency})`,
+      )}<input inputMode="numeric" value={revenueYear} onChange={(e) => setRevenueYear(formatNumberTyping(e.target.value))}/></label>
       <label>{T(lang, 'Biên lợi nhuận EBITDA (%)', 'EBITDA margin (%)')}<input inputMode="decimal" value={margin} onChange={(e) => setMargin(formatNumberTyping(e.target.value, true))}/></label>
       <label>{T(lang, 'Tăng trưởng doanh thu (%)', 'Revenue growth (%)')}<input inputMode="decimal" value={growth} onChange={(e) => setGrowth(formatNumberTyping(e.target.value, true))}/></label>
     </div></article>
@@ -57,8 +61,6 @@ export default function Valuation({ lang }: { lang: Lang }) {
       <span>{T(lang, 'Định giá tham chiếu', 'Valuation benchmark')}</span>
       {result ? <>
         <h2>{formatValuationMoney(result.low, result.currency, lang)} – {formatValuationMoney(result.high, result.currency, lang)}</h2>
-        <div className="d68-val-band"><i/><b/><em/></div>
-        <p>{disclaimer}</p>
         <div>
           <Row a={T(lang, 'Thấp', 'Low')} b={formatValuationMoney(result.low, result.currency, lang)}/>
           <Row a={T(lang, 'Trung bình', 'Midpoint')} b={formatValuationMoney(result.mid, result.currency, lang)}/>

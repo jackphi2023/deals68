@@ -1,7 +1,9 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { Link, Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { getBusinessFiles, getBusinessImages, updateBusinessFile, updateBusinessImage } from '../lib/data';
+import { AdminBusinessAssets } from '../components/admin/AdminBusinessAssets';
+import { AdminNumberInput } from '../components/admin/AdminNumberInput';
+import { parseFormattedNumber } from '../lib/numberFormat';
 import { supabase } from '../lib/supabase';
 import { proposalStatusLabel, updateProposalStatus, type ProposalStatus } from '../lib/proposals';
 import { AdminBannerManager } from '../components/SiteBanners';
@@ -123,9 +125,7 @@ function isPendingBusinessImage(row: Row) {
   // New images remain pending until Admin reviews/sanitizes or intentionally hides/rejects them.
   return state.userSubmitted || row.public_visible !== true || row.is_sanitized !== true;
 }
-function reviewedAssetNote(kind: 'image' | 'file') {
-  return `Admin reviewed ${kind} at ${new Date().toISOString()}`;
-}
+
 function businessReviewSections(b: Row, files: Row[] = [], images: Row[] = []) {
   const pending = objectOf(b.pending_changes_json);
   const approved = objectOf(b.public_snapshot_json);
@@ -220,26 +220,10 @@ function investorOfficeCountryLabelAdmin(i: Row) {
 function investorTargetCountryLabelsAdmin(i: Row) {
   return investorTargetCountriesAdmin(i).map(countryLabelAdmin);
 }
-function businessUploadPlan(b: Row) {
-  const pending = objectOf(b.pending_changes_json);
-  const pendingFinancial = objectOf(pending.financial_input);
-  const currentFinancial = objectOf(b.financial_input);
-  return objectOf(pendingFinancial.upload_plan || currentFinancial.upload_plan);
-}
-function uploadPlanArray(plan: any, key: 'images' | 'files') {
-  const value = objectOf(plan)[key];
-  return Array.isArray(value) ? value : [];
-}
-function adminBytes(size: any) {
-  const n = Number(size || 0);
-  if (!Number.isFinite(n) || n <= 0) return '';
-  if (n >= 1048576) return `${(n / 1048576).toFixed(1)} MB`;
-  if (n >= 1024) return `${Math.round(n / 1024)} KB`;
-  return `${n} B`;
-}
+
 
 export default function Admin() {
-  const { profile, loading, signOut } = useAuth();
+  const { profile, loading } = useAuth();
   const location = useLocation();
   const [tab, setTab] = useState<AdminTab>(() => resolveTab(location.pathname));
   const [businesses, setBusinesses] = useState<Row[]>([]);
@@ -484,23 +468,23 @@ export default function Admin() {
       deal_type: text(fd.get('deal_type')),
       city: text(fd.get('city')),
       country_iso2: text(fd.get('country_iso2')) || 'VN',
-      revenue_month: Number(fd.get('revenue_month') || 0),
-      revenue_2025: Number(fd.get('revenue_2025') || 0),
+      revenue_month: parseFormattedNumber(fd.get('revenue_month')),
+      revenue_2025: parseFormattedNumber(fd.get('revenue_2025')),
       revenue_currency: text(fd.get('revenue_currency')) || 'VND',
-      ebitda_margin: Number(fd.get('ebitda_margin') || 0),
-      growth_pct: Number(fd.get('growth_pct') || 0),
-      ask_amount: Number(fd.get('ask_amount') || 0),
+      ebitda_margin: parseFormattedNumber(fd.get('ebitda_margin'), true),
+      growth_pct: parseFormattedNumber(fd.get('growth_pct'), true),
+      ask_amount: parseFormattedNumber(fd.get('ask_amount')),
       ask_currency:
         text(fd.get('ask_currency')) ||
         text(fd.get('revenue_currency')) ||
         'VND',
-      stake_pct: Number(fd.get('stake_pct') || 0),
-      offer_amount: Number(fd.get('ask_amount') || 0),
-      offer_stake_pct: Number(fd.get('stake_pct') || 0),
-      quality_score: Number(fd.get('quality_score') || 0),
+      stake_pct: parseFormattedNumber(fd.get('stake_pct'), true),
+      offer_amount: parseFormattedNumber(fd.get('ask_amount')),
+      offer_stake_pct: parseFormattedNumber(fd.get('stake_pct'), true),
+      quality_score: parseFormattedNumber(fd.get('quality_score')),
       quality_score_manual_override:
         fd.get('quality_score_manual_override') === 'on',
-      data_confidence: Number(fd.get('data_confidence') || 0),
+      data_confidence: parseFormattedNumber(fd.get('data_confidence')),
       hero_image_url: text(fd.get('hero_image_url')),
       image_url: text(fd.get('hero_image_url')),
       approved_at: new Date().toISOString(),
@@ -565,8 +549,8 @@ export default function Admin() {
       industries,
       deal_types: dealTypes,
       stage: text(fd.get('stage')),
-      ticket_min: Number(fd.get('ticket_min') || 0),
-      ticket_max: Number(fd.get('ticket_max') || 0),
+      ticket_min: parseFormattedNumber(fd.get('ticket_min')),
+      ticket_max: parseFormattedNumber(fd.get('ticket_max')),
       criteria: mergedCriteria,
       verified: fd.get('verified') === 'on',
       admin_priority: fd.get('admin_priority') === 'on',
@@ -620,7 +604,7 @@ export default function Admin() {
   }
 
   return <section className="d68-admin-page">
-    <header className="d68-admin-head"><div className="d68-admin-head__inner"><Link to="/"><img src="/assets/logo-nav.svg" alt="Deals68" /></Link><b>Admin Panel</b><span>👤 {profile.email || 'admin'}</span><button onClick={() => signOut()}>Thoát</button></div></header>
+    <header className="d68-admin-head"><div className="d68-admin-head__inner"><b className="d68-admin-head__title">Admin Panel</b></div></header>
     <div className="d68-admin-wrap"><div className="d68-admin-cols"><nav className="d68-admin-side">{tabs.map((item) => <Link key={item.id} to={item.href} onClick={() => setTab(item.id)} className={tab === item.id ? 'active' : ''}>{item.icon} {item.label}</Link>)}</nav><main>
       <div className="d68-admin-title"><div><h1>Deals68 Admin</h1><p>Admin duyệt thanh toán, public snapshot, ảnh/file, profile investor và lead tĩnh.</p></div><button onClick={load} className="d68-admin-btn">{busy ? 'Loading...' : 'Refresh'}</button></div>
       {msg ? <div className="d68-admin-notice ok">{msg}</div> : null}{error ? <div className="d68-admin-notice err">{error}</div> : null}
@@ -632,10 +616,10 @@ export default function Admin() {
       {tab === 'business_review' && <BusinessReviewList rows={pendingBusinesses} approveBusiness={approveBusiness} toggleBusiness={toggleBusiness} businessFiles={businessFiles} businessImages={businessImages} />}
       {tab === 'businesses' && (selectedBusinessKey
         ? (selectedBusiness
-          ? <BusinessAdminDetail b={selectedBusiness} payments={payments} profiles={profiles} approveBusiness={approveBusiness} toggleBusiness={toggleBusiness} setBusinessHomepage={setBusinessHomepage} markPayment={markPayment} updateBusinessQuota={updateBusinessQuota} adjustBusinessQuota={adjustBusinessQuota} businessFiles={businessFiles} businessImages={businessImages} />
+          ? <BusinessAdminDetail b={selectedBusiness} payments={payments} profiles={profiles} approveBusiness={approveBusiness} toggleBusiness={toggleBusiness} setBusinessHomepage={setBusinessHomepage} markPayment={markPayment} updateBusinessQuota={updateBusinessQuota} adjustBusinessQuota={adjustBusinessQuota} businessFiles={businessFiles} businessImages={businessImages} adminId={profile.id} onAssetsApproved={load} />
           : <Card><h3>Không tìm thấy doanh nghiệp</h3><p className="d68-admin-subtle">ID/Mã/slug: {selectedBusinessKey}</p><Link to="/admin/businesses" className="d68-admin-btn blue">← Quay lại danh sách</Link></Card>)
         : <BusinessAdminList rows={filteredBusinesses} allRows={businesses} pendingRows={pendingBusinesses} search={search} setSearch={setSearch} businessStatusFilter={businessStatusFilter} setBusinessStatusFilter={setBusinessStatusFilter} businessIndustryFilter={businessIndustryFilter} setBusinessIndustryFilter={setBusinessIndustryFilter} businessIndustryOptions={businessIndustryOptions} businessFiles={businessFiles} businessImages={businessImages} payments={payments} />)}
-      {tab === 'assets' && <div>{filteredBusinesses.map((b) => <AssetEditor key={b.id} b={b} />)}</div>}
+      {tab === 'assets' && <div>{filteredBusinesses.map((b) => <AssetEditor key={b.id} b={b} adminId={profile.id} onRefresh={load} />)}</div>}
       {tab === 'investors' && <>
         <Card>
           <div className="d68-admin-row-head">
@@ -649,7 +633,7 @@ export default function Admin() {
           <div className="d68-admin-form4">
             <label>Trạng thái<select value={investorVisibilityFilter} onChange={(e) => { setInvestorVisibilityFilter(e.target.value); setInvestorPage(1); }} className="d68-admin-input"><option value="">Tất cả</option><option value="visible">Hiển thị</option><option value="hidden">Ẩn</option></select></label>
             <label>Quốc gia trụ sở<select value={investorOfficeCountryFilter} onChange={(e) => { setInvestorOfficeCountryFilter(e.target.value); setInvestorPage(1); }} className="d68-admin-input"><option value="">Tất cả quốc gia</option>{investorOfficeCountryOptions.map((code) => <option key={code} value={code}>{countryLabelAdmin(code)}</option>)}</select></label>
-            <label>Khu vực/Thị trường quan tâm đầu tư<select value={investorCountryFilter} onChange={(e) => { setInvestorCountryFilter(e.target.value); setInvestorPage(1); }} className="d68-admin-input"><option value="">Tất cả thị trường</option>{investorCountryFilterOptions.map(([code, label]) => <option key={code} value={code}>{label}</option>)}</select></label>
+            <label>Thị trường quan tâm<select value={investorCountryFilter} onChange={(e) => { setInvestorCountryFilter(e.target.value); setInvestorPage(1); }} className="d68-admin-input"><option value="">Tất cả thị trường</option>{investorCountryFilterOptions.map(([code, label]) => <option key={code} value={code}>{label}</option>)}</select></label>
             <label>Ngành quan tâm<select value={investorIndustryFilter} onChange={(e) => { setInvestorIndustryFilter(e.target.value); setInvestorPage(1); }} className="d68-admin-input"><option value="">Tất cả</option>{industryOptions.map((x) => <option key={x.key} value={x.key}>{x.vi}</option>)}</select></label>
           </div>
         </Card>
@@ -753,7 +737,7 @@ function BusinessPaymentPanel({ b, payments, profiles, markPayment, updateBusine
     </Card>
   </div>;
 }
-function BusinessAdminDetail({ b, payments, profiles, approveBusiness, toggleBusiness, setBusinessHomepage, markPayment, updateBusinessQuota, adjustBusinessQuota, businessFiles, businessImages }: any) {
+function BusinessAdminDetail({ b, payments, profiles, approveBusiness, toggleBusiness, setBusinessHomepage, markPayment, updateBusinessQuota, adjustBusinessQuota, businessFiles, businessImages, adminId, onAssetsApproved }: any) {
   const [detailTab, setDetailTab] = useState<'payments' | 'info' | 'assets'>('info');
   const sections = businessReviewSections(b, businessFiles, businessImages);
   const status = businessAdminStatusLabel(b, businessFiles, businessImages, payments);
@@ -791,7 +775,7 @@ function BusinessAdminDetail({ b, payments, profiles, approveBusiness, toggleBus
     </Card>
     {detailTab === 'payments' ? <BusinessPaymentPanel b={b} payments={payments} profiles={profiles} markPayment={markPayment} updateBusinessQuota={updateBusinessQuota} adjustBusinessQuota={adjustBusinessQuota} /> : null}
     {detailTab === 'info' ? <BusinessPublicEditor b={b} onApprove={approveBusiness} onToggle={toggleBusiness} businessFiles={businessFiles} businessImages={businessImages} /> : null}
-    {detailTab === 'assets' ? <AssetEditor b={b} /> : null}
+    {detailTab === 'assets' ? <AssetEditor b={b} adminId={adminId} onRefresh={onAssetsApproved} /> : null}
   </div>;
 }
 
@@ -914,17 +898,17 @@ function BusinessPublicEditor({ b, onApprove, onToggle, businessFiles = [], busi
       <input name="deal_type" defaultValue={reviewValue('deal_type')} placeholder="Deal type" className="d68-admin-input"/>
       <input name="city" defaultValue={reviewValue('city')} placeholder="City" className="d68-admin-input"/>
       <input name="country_iso2" defaultValue={reviewValue('country_iso2', 'VN')} placeholder="Country ISO2" className="d68-admin-input"/>
-      <input name="revenue_month" type="number" defaultValue={reviewValue('revenue_month', 0)} placeholder="Doanh thu tháng" className="d68-admin-input"/>
-      <input name="revenue_2025" type="number" defaultValue={reviewValue('revenue_2025', 0)} placeholder="Revenue" className="d68-admin-input"/>
+      <AdminNumberInput name="revenue_month" value={reviewValue('revenue_month', 0)} placeholder="Doanh thu tháng"/>
+      <AdminNumberInput name="revenue_2025" value={reviewValue('revenue_2025', 0)} placeholder="Doanh thu năm"/>
       <select name="revenue_currency" defaultValue={reviewValue('revenue_currency', 'VND')} className="d68-admin-input"><option>VND</option><option>USD</option></select>
-      <input name="ebitda_margin" type="number" defaultValue={reviewValue('ebitda_margin', 0)} placeholder="EBITDA %" className="d68-admin-input"/>
-      <input name="growth_pct" type="number" defaultValue={reviewValue('growth_pct', 0)} placeholder="Tăng trưởng năm %" className="d68-admin-input"/>
-      <input name="ask_amount" type="number" defaultValue={reviewValue('ask_amount', 0)} placeholder="Ask amount" className="d68-admin-input"/>
+      <AdminNumberInput name="ebitda_margin" value={reviewValue('ebitda_margin', 0)} placeholder="EBITDA %" allowDecimal/>
+      <AdminNumberInput name="growth_pct" value={reviewValue('growth_pct', 0)} placeholder="Tăng trưởng năm %" allowDecimal/>
+      <AdminNumberInput name="ask_amount" value={reviewValue('ask_amount', 0)} placeholder="Nhu cầu vốn/Giá chào"/>
       <select name="ask_currency" defaultValue={reviewValue('ask_currency') || reviewValue('revenue_currency', 'VND')} className="d68-admin-input"><option>VND</option><option>USD</option></select>
-      <input name="stake_pct" type="number" defaultValue={reviewValue('stake_pct', 0)} placeholder="Stake %" className="d68-admin-input"/>
-      <input name="quality_score" type="number" defaultValue={reviewValue('quality_score', b.quality_score ?? 0)} placeholder="Business Quality Score 0-100" min="0" max="100" className="d68-admin-input"/>
+      <AdminNumberInput name="stake_pct" value={reviewValue('stake_pct', 0)} placeholder="Tỷ lệ cổ phần %" allowDecimal/>
+      <AdminNumberInput name="quality_score" value={reviewValue('quality_score', b.quality_score ?? 0)} placeholder="Business Quality Score 0-100"/>
       <label className="d68-admin-check"><input name="quality_score_manual_override" type="checkbox" defaultChecked={!!b.quality_score_manual_override}/> Giữ điểm Admin nhập</label>
-      <input name="data_confidence" type="number" defaultValue={reviewValue('data_confidence', b.data_confidence ?? 0)} placeholder="Data confidence" className="d68-admin-input"/>
+      <AdminNumberInput name="data_confidence" value={reviewValue('data_confidence', b.data_confidence ?? 0)} placeholder="Data confidence"/>
       <input name="hero_image_url" defaultValue={reviewValue('hero_image_url') || reviewValue('image_url')} placeholder="Approved hero image URL" className="d68-admin-input d68-admin-span2"/>
       <label className="d68-admin-field d68-admin-span2"><span>Mô tả/Giới thiệu (hiển thị public, VN)</span><textarea name="description_vi" defaultValue={reviewValue('description_vi')} placeholder="Mô tả public VI" className="d68-admin-input textarea"/></label>
       <label className="d68-admin-field d68-admin-span2"><span>Mô tả/Giới thiệu (hiển thị public, EN)</span><textarea name="description_en" defaultValue={reviewValue('description_en') || autoEn(String(reviewValue('description_vi') || ''))} placeholder="Description EN" className="d68-admin-input textarea"/></label>
@@ -959,7 +943,7 @@ function InvestorEditor({ i, profiles, onSave, onToggle }: any) {
     {needsReview ? <div className="d68-admin-notice warn">Tài khoản Investor mới tạo hoặc mới cập nhật thông tin cần Admin duyệt trước khi public.</div> : null}
     <div className="d68-admin-loginbox"><b>Login Investor</b><span>Username: <code>{loginUsername}</code></span><span>Password: <code>{loginPassword}</code></span><span>Email: <code>{loginProfile.email || i.private_email || '—'}</code></span></div>
     <div className="d68-admin-targetbox">
-      <b>Khu vực/Thị trường quan tâm đầu tư</b>
+      <b>Thị trường quan tâm</b>
       <div className="d68-admin-taglist">{targetLabels.length ? targetLabels.map((label, idx) => <span key={`${label}-${idx}`}>{label}</span>) : <em>Chưa chọn thị trường</em>}</div>
     </div>
     {pending ? <details className="d68-admin-source" open><summary>Pending changes from Investor Dashboard</summary><pre>{JSON.stringify(pending, null, 2)}</pre></details> : null}
@@ -970,12 +954,12 @@ function InvestorEditor({ i, profiles, onSave, onToggle }: any) {
       <input name="country" defaultValue={src.country || ''} placeholder="Quốc gia trụ sở" className="d68-admin-input"/>
       <input name="country_iso2" defaultValue={src.country_iso2 || i.country_iso2 || ''} placeholder="Mã quốc gia trụ sở ISO2" className="d68-admin-input"/>
       <input name="region" defaultValue={src.region || i.region || ''} placeholder="Region" className="d68-admin-input"/>
-      <input name="ticket_min" type="number" defaultValue={src.ticket_min || 0} placeholder="Ticket min" className="d68-admin-input"/>
-      <input name="ticket_max" type="number" defaultValue={src.ticket_max || 0} placeholder="Ticket max" className="d68-admin-input"/>
+      <AdminNumberInput name="ticket_min" value={src.ticket_min || 0} placeholder="Ticket min"/>
+      <AdminNumberInput name="ticket_max" value={src.ticket_max || 0} placeholder="Ticket max"/>
       <input name="stage" defaultValue={src.stage || ''} placeholder="Stage" className="d68-admin-input"/>
       <input name="industries" defaultValue={arrFromText(src.industries).join(', ')} placeholder="Industries" className="d68-admin-input"/>
       <input name="deal_types" defaultValue={arrFromText(src.deal_types).join(', ')} placeholder="Deal types" className="d68-admin-input"/>
-      <label className="d68-admin-field d68-admin-span2"><span>Khu vực/Thị trường quan tâm đầu tư (mã quốc gia, cách nhau bằng dấu phẩy)</span><input name="target_countries" defaultValue={targetCountryText} placeholder="VD: VN, US, SG, JP" className="d68-admin-input"/><small>Hiển thị thành tag phía trên; lưu vào criteria.targetCountries/preferredCountries.</small></label>
+      <label className="d68-admin-field d68-admin-span2"><span>Thị trường quan tâm (mã quốc gia, cách nhau bằng dấu phẩy)</span><input name="target_countries" defaultValue={targetCountryText} placeholder="VD: VN, US, SG, JP" className="d68-admin-input"/><small>Hiển thị thành tag phía trên; lưu vào criteria.targetCountries/preferredCountries.</small></label>
       <label className="d68-admin-check"><input name="verified" type="checkbox" defaultChecked={!!i.verified}/> Verified</label>
       <label className="d68-admin-check"><input name="admin_priority" type="checkbox" defaultChecked={!!i.admin_priority}/> Priority</label>
       <label className="d68-admin-check"><input name="visible" type="checkbox" defaultChecked={!!i.visible}/> Visible</label>
@@ -989,39 +973,24 @@ function InvestorEditor({ i, profiles, onSave, onToggle }: any) {
     <div className="d68-admin-actions"><button className="d68-admin-btn green">{pending ? 'Duyệt thay đổi & public' : 'Lưu investor'}</button><button type="button" onClick={() => onToggle(i)} className={`d68-admin-btn ${i.visible ? 'red' : ''}`}>{i.visible ? 'Ẩn public' : 'Bật visible'}</button>{i.code ? <Link to={`/investors/${i.code}`} className="d68-admin-btn blue">Public ↗</Link> : null}</div>
   </form></Card>;
 }
-function AssetEditor({ b }: { b: Row }) {
-  const [files, setFiles] = useState<Row[]>([]);
-  const [images, setImages] = useState<Row[]>([]);
-  const [msg, setMsg] = useState('');
-  const plan = businessUploadPlan(b);
-  const plannedImages = uploadPlanArray(plan, 'images');
-  const plannedFiles = uploadPlanArray(plan, 'files');
-  const missingPlannedUploads = (!!plannedImages.length && !images.length) || (!!plannedFiles.length && !files.length);
-  async function loadAssets() {
-    const [f, im] = await Promise.all([getBusinessFiles(b.id).catch(() => []), getBusinessImages(b.id).catch(() => [])]);
-    setFiles(f); setImages(im);
-  }
-  useEffect(() => { loadAssets(); }, [b.id]);
-  async function saveImage(img: Row, patch: Row) {
-    try { await updateBusinessImage(img.id, { ...patch, admin_note: reviewedAssetNote('image') }); setMsg('Image updated.'); loadAssets(); }
-    catch (e: any) { setMsg(e?.message || 'Image update failed.'); }
-  }
-  async function saveFile(file: Row, patch: Row) {
-    try { await updateBusinessFile(file.id, { ...patch, admin_note: reviewedAssetNote('file') }); setMsg('File updated.'); loadAssets(); }
-    catch (e: any) { setMsg(e?.message || 'File update failed.'); }
-  }
-  return <Card><h3>{b.public_code || b.slug} · Ảnh/File duyệt public</h3>
-    {msg ? <div className="d68-admin-notice ok">{msg}</div> : null}
-    {missingPlannedUploads ? <div className="d68-admin-notice warn"><b>DN đã chọn ảnh/file lúc đăng ký nhưng chưa thấy file trong hệ thống.</b><br/>Có thể upload bị bỏ qua vì tài khoản đang chờ OTP/session. Admin cần yêu cầu DN vào Dashboard upload lại tại tab Tài liệu/Ảnh, hoặc Admin upload thủ công nếu có file gốc.</div> : null}
-    {(plannedImages.length || plannedFiles.length) ? <details className="d68-admin-source" open={missingPlannedUploads}><summary>File/ảnh DN đã chọn lúc đăng ký</summary><div className="d68-admin-upload-plan">
-      {plannedImages.length ? <div><b>Ảnh đã chọn</b>{plannedImages.map((x: Row, idx: number) => <span key={`pi-${idx}`}>{x.display_name || x.file_name || 'Ảnh'} <small>{x.file_name || ''} {adminBytes(x.size_bytes)}</small></span>)}</div> : null}
-      {plannedFiles.length ? <div><b>File đã chọn</b>{plannedFiles.map((x: Row, idx: number) => <span key={`pf-${idx}`}>{x.display_name || x.file_name || 'File'} <small>{x.file_name || ''} {adminBytes(x.size_bytes)}</small></span>)}</div> : null}
-    </div></details> : null}
-    <div className="d68-admin-asset-grid">
-      <div><h4>Ảnh hiện có trong hệ thống</h4>{images.length ? images.map((img) => <div key={img.id} className="d68-admin-asset-row"><img src={img.public_url} alt=""/><div><input defaultValue={img.display_title || img.title || ''} onBlur={(e) => saveImage(img, { display_title: e.target.value })} placeholder="Tên ảnh public" className="d68-admin-input"/><label className="d68-admin-check"><input type="checkbox" defaultChecked={!!img.is_sanitized} onChange={(e) => saveImage(img, { is_sanitized: e.target.checked })}/> Đã làm mờ logo/tên DN</label><label className="d68-admin-check"><input type="checkbox" defaultChecked={!!img.public_visible} onChange={(e) => saveImage(img, { public_visible: e.target.checked })}/> Cho hiển thị public</label><label className="d68-admin-check"><input type="checkbox" defaultChecked={!!img.is_hero} onChange={(e) => saveImage(img, { is_hero: e.target.checked })}/> Ảnh hero</label></div></div>) : <Empty text="Chưa có ảnh nào được upload thành công."/>}</div>
-      <div><h4>Files hiện có trong hệ thống</h4>{files.length ? files.map((f) => <div key={f.id} className="d68-admin-card"><input defaultValue={f.display_name || f.file_name || ''} onBlur={(e) => saveFile(f, { display_name: e.target.value })} className="d68-admin-input"/><label className="d68-admin-check"><input type="checkbox" defaultChecked={!!f.public_visible} onChange={(e) => saveFile(f, { public_visible: e.target.checked })}/> Public visible</label><select defaultValue={f.privacy_level || 'locked'} onChange={(e) => saveFile(f, { privacy_level: e.target.value })} className="d68-admin-input"><option value="locked">locked</option><option value="public">public</option></select></div>) : <Empty text="Chưa có file nào được upload thành công."/>}</div>
-    </div>
-  </Card>;
+function AssetEditor({
+  b,
+  adminId,
+  onRefresh,
+}: {
+  b: Row;
+  adminId?: string;
+  onRefresh?: () => void | Promise<void>;
+}) {
+  return (
+    <Card>
+      <AdminBusinessAssets
+        business={b}
+        adminId={adminId}
+        onRefresh={onRefresh}
+      />
+    </Card>
+  );
 }
 function Promos({ promos, createPromo }: any) { return <Card><h3>Mã khuyến mãi</h3><form onSubmit={createPromo} className="d68-admin-form4 d68-admin-form-gap"><input required name="code" placeholder="CODE" className="d68-admin-input"/><input name="description" placeholder="Description" className="d68-admin-input"/><select name="role" className="d68-admin-input"><option value="business">business</option><option value="investor">investor</option><option value="advisor">advisor</option><option value="affiliate">affiliate</option></select><input name="discount_pct" type="number" placeholder="%" className="d68-admin-input"/><input name="quota_total" type="number" placeholder="Quota" className="d68-admin-input"/><input name="starts_at" type="datetime-local" className="d68-admin-input"/><input name="ends_at" type="datetime-local" className="d68-admin-input"/><button className="d68-admin-btn green">Tạo mã</button></form>{promos.map((p: Row) => <div key={p.id} className="d68-admin-card"><b>{p.code}</b> · {p.discount_pct}% · {p.role} · {p.active ? 'active' : 'inactive'}</div>)}</Card>; }
 function Requests({ requests, markRequest }: any) { return <Card><h3>Yêu cầu data</h3>{requests.length ? requests.map((r: Row) => <div key={r.id} className="d68-admin-card"><b>{r.businesses?.public_code || r.business_id}</b> ← {r.investors?.code || r.investor_id}<p>{r.note}</p><span>{r.status}</span><div className="d68-admin-actions"><button className="d68-admin-btn blue" onClick={() => markRequest(r, 'forwarded')}>Forwarded</button><button className="d68-admin-btn green" onClick={() => markRequest(r, 'fulfilled')}>Fulfilled</button><button className="d68-admin-btn red" onClick={() => markRequest(r, 'rejected')}>Rejected</button></div></div>) : <Empty text="No data requests."/>}</Card>; }
