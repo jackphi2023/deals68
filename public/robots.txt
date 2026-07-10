@@ -2,6 +2,15 @@ User-agent: *
 Allow: /
 Disallow: /admin
 Disallow: /dashboard
+Disallow: /checkout
+Disallow: /payment
+Disallow: /data-room
+Disallow: /messages
+Disallow: /notifications
+Disallow: /support
 Disallow: /login
+Disallow: /forgot-password
+Disallow: /reset-password
 Disallow: /register
+
 Sitemap: https://deals68.com/sitemap.xml

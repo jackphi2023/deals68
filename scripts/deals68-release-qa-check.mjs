@@ -20,6 +20,17 @@ const login = read('src/pages/Login.tsx');
 const businessDashboard = read('src/pages/BusinessDashboard.tsx');
 const dataLib = read('src/lib/data.ts');
 const pendingUploads = read('src/lib/pendingBusinessUploads.ts');
+const app = read('src/App.tsx');
+const businessDetail = read('src/pages/BusinessDetail.tsx');
+const investorDetail = read('src/pages/InvestorDetail.tsx');
+const seoConfig = read('src/lib/seoConfig.ts');
+const seoRuntime = read('src/lib/seo.ts');
+const seoManager = read('src/components/SeoManager.tsx');
+const indexHtml = read('index.html');
+const netlifyConfig = read('netlify.toml');
+const seoEdge = read('netlify/edge-functions/seo.ts');
+const robots = read('public/robots.txt');
+const sitemap = read('dist/sitemap.xml');
 
 ok('build script exists', !!pkg.scripts?.build, 'package.json scripts.build');
 ok('test:e2e scripts exist', !!pkg.scripts?.['test:e2e'] && !!pkg.scripts?.['test:e2e:public'], 'package.json e2e scripts');
@@ -73,6 +84,81 @@ ok(
     && /BusinessPendingComparison/.test(admin)
     && /expected_pending_submitted_at/.test(admin),
   'Admin sees old/new and uses transactional RPC'
+);
+
+ok(
+  'SEO title structure configured',
+  /Sàn mua bán Doanh nghiệp, M&A, Chuyển nhượng, Huy động vốn, Cho vay/.test(indexHtml)
+    && /SEO_SUFFIX_VI/.test(seoConfig)
+    && /buildSeoTitle/.test(seoRuntime),
+  'Tên trang | Sàn mua bán Doanh nghiệp, M&A, Chuyển nhượng, Huy động vốn, Cho vay'
+);
+
+ok(
+  'route SEO manager is mounted',
+  /<SeoManager\s*\/>/.test(app)
+    && /seoForPath/.test(seoManager)
+    && /noindex/.test(seoConfig),
+  'public routes get metadata; login/dashboard/admin routes are noindex'
+);
+
+ok(
+  'default social image and favicon configured',
+  fs.existsSync('public/assets/deals68-image.jpg')
+    && fs.statSync('public/assets/deals68-image.jpg').size > 100000
+    && /https:\/\/deals68\.com\/assets\/deals68-image\.jpg/.test(indexHtml)
+    && /favicon-16x16\.png/.test(indexHtml)
+    && /favicon-32x32\.png/.test(indexHtml)
+    && /apple-touch-icon\.png/.test(indexHtml),
+  '1200x630 Deals68 image plus favicon links'
+);
+
+ok(
+  'business detail uses approved hero SEO image',
+  /activeHero\?\.url/.test(businessDetail)
+    && /business\.hero_image_url/.test(businessDetail)
+    && /applySeo/.test(businessDetail)
+    && /business_images/.test(seoEdge)
+    && /public_visible/.test(seoEdge),
+  'client and Netlify Edge prefer Business hero image'
+);
+
+ok(
+  'all other pages use shared Deals68 image',
+  /DEFAULT_SOCIAL_IMAGE/.test(seoManager)
+    || /DEFAULT_SOCIAL_IMAGE/.test(seoRuntime),
+  'shared image is the fallback for non-Business pages'
+);
+
+ok(
+  'Netlify server-rendered metadata enabled',
+  /function\s*=\s*"seo"/.test(netlifyConfig)
+    && /context\.next/.test(seoEdge)
+    && /x-deals68-seo/.test(seoEdge)
+    && /d68:seo:start/.test(indexHtml),
+  'social crawlers receive title, description, canonical and OG tags'
+);
+
+ok(
+  'robots and sitemap configured',
+  /Sitemap:\s*https:\/\/deals68\.com\/sitemap\.xml/.test(robots)
+    && /Disallow:\s*\/admin/.test(robots)
+    && pkg.scripts?.postbuild === 'node scripts/generate-sitemap.mjs dist'
+    && /<urlset/.test(sitemap)
+    && /https:\/\/deals68\.com\/businesses/.test(sitemap)
+    && /https:\/\/deals68\.com\/investors/.test(sitemap),
+  'public URLs are listed; private URLs are blocked/noindex'
+);
+
+ok(
+  'canonical Open Graph and Twitter metadata complete',
+  /rel="canonical"/.test(indexHtml)
+    && /property="og:title"/.test(indexHtml)
+    && /property="og:description"/.test(indexHtml)
+    && /property="og:image"/.test(indexHtml)
+    && /name="twitter:card"/.test(indexHtml)
+    && /application\/ld\+json/.test(indexHtml),
+  'canonical, Open Graph, Twitter Card and JSON-LD'
 );
 
 const failed = checks.filter((x) => !x.pass);

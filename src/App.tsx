@@ -1,6 +1,7 @@
 import { Route, Routes, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { lazy, Suspense, useEffect, type ReactNode } from 'react';
 import Header from './components/Header';
+import SeoManager from './components/SeoManager';
 import Footer from './components/Footer';
 import Home from './pages/Home';
 import Businesses from './pages/Businesses';
@@ -97,6 +98,7 @@ export default function App(){
   return <div data-lang={lang}>
     <ScrollToTop />
     <LanguageMemory />
+    <SeoManager />
     <Header lang={lang}/>
     <Suspense fallback={<RouteFallback/>}>
       <Routes>

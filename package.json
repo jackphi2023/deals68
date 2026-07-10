@@ -23,7 +23,8 @@
     "test:all": "npm run build && npm run test:e2e",
     "test:report": "node scripts/deals68-print-latest-report.mjs",
     "qa:release": "npm run build && node scripts/deals68-release-qa-check.mjs",
-    "qa:release:full": "npm run qa:release && npm run test:e2e:public"
+    "qa:release:full": "npm run qa:release && npm run test:e2e:public",
+    "postbuild": "node scripts/generate-sitemap.mjs dist"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.45.4",
