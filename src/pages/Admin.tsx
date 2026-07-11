@@ -3,6 +3,7 @@ import { Link, Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { AdminBusinessAssets } from '../components/admin/AdminBusinessAssets';
 import { AdminNumberInput } from '../components/admin/AdminNumberInput';
+import { IndustryTagPicker } from '../components/investor/IndustryTagPicker';
 import { parseFormattedNumber } from '../lib/numberFormat';
 import { supabase } from '../lib/supabase';
 import { proposalStatusLabel, updateProposalStatus, type ProposalStatus } from '../lib/proposals';
@@ -923,7 +924,11 @@ function BusinessPublicEditor({ b, onApprove, onToggle, businessFiles = [], busi
 function InvestorEditor({ i, profiles, onSave, onToggle }: any) {
   const pending = i.privacy?.pending_profile_changes;
   const needsReview = investorNeedsReview(i);
-  const src = pending || i;
+  const src = {
+    ...i,
+    desc_vi: pending?.desc_vi ?? i.desc_vi,
+    desc_en: pending?.desc_en ?? i.desc_en,
+  };
   const criteria = objectOf(src.criteria || i.criteria);
   const targetCountries = investorTargetCountriesAdmin({ ...i, criteria });
   const targetCountryText = targetCountries.join(', ');
@@ -957,7 +962,18 @@ function InvestorEditor({ i, profiles, onSave, onToggle }: any) {
       <AdminNumberInput name="ticket_min" value={src.ticket_min || 0} placeholder="Ticket min"/>
       <AdminNumberInput name="ticket_max" value={src.ticket_max || 0} placeholder="Ticket max"/>
       <input name="stage" defaultValue={src.stage || ''} placeholder="Stage" className="d68-admin-input"/>
-      <input name="industries" defaultValue={arrFromText(src.industries).join(', ')} placeholder="Industries" className="d68-admin-input"/>
+            <div className="d68-admin-span2">
+        <label className="d68-admin-field">
+          <span>Ngành/Lĩnh vực quan tâm</span>
+          <IndustryTagPicker
+            lang="vi"
+            name="industries"
+            values={arrFromText(src.industries)}
+            expandVi="Mở rộng"
+            expandEn="Expand"
+          />
+        </label>
+      </div>
       <input name="deal_types" defaultValue={arrFromText(src.deal_types).join(', ')} placeholder="Deal types" className="d68-admin-input"/>
       <label className="d68-admin-field d68-admin-span2"><span>Thị trường quan tâm (mã quốc gia, cách nhau bằng dấu phẩy)</span><input name="target_countries" defaultValue={targetCountryText} placeholder="VD: VN, US, SG, JP" className="d68-admin-input"/><small>Hiển thị thành tag phía trên; lưu vào criteria.targetCountries/preferredCountries.</small></label>
       <label className="d68-admin-check"><input name="verified" type="checkbox" defaultChecked={!!i.verified}/> Verified</label>

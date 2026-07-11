@@ -319,15 +319,31 @@ export async function getBusinessBySlug(slug: string, options: { includeHidden?:
   return data ? getPublicBusinessView(data) : null;
 }
 
-export async function getBusinessFiles(businessId: string, options: { publicOnly?: boolean } = {}): Promise<BusinessAssetRow[]> {
-  const select = options.publicOnly
-    ? 'id,business_id,file_name,display_name,file_type,size_bytes,category,privacy_level,public_visible,created_at,updated_at'
-    : 'id,business_id,owner_id,file_name,display_name,file_path,file_type,size_bytes,category,privacy_level,public_visible,admin_note,created_at,updated_at';
-  let q: any = supabase.from('business_files').select(select as string).eq('business_id', businessId);
-  if (options.publicOnly) q = q.eq('public_visible', true);
-  const { data, error } = await q.order('created_at', { ascending: false });
+export async function getBusinessFiles(
+  businessId: string,
+  options: { publicOnly?: boolean } = {},
+) {
+  if (options.publicOnly) {
+    const { data, error } = await supabase.rpc(
+      'get_business_file_metadata_for_viewer',
+      { business_uuid: businessId },
+    );
+    if (error) throw error;
+    return data || [];
+  }
+
+  const { data, error } = await supabase
+    .from('business_files')
+    .select(
+      'id,business_id,owner_id,file_name,file_path,file_type,' +
+        'size_bytes,category,privacy_level,review_status,' +
+        'created_at,display_name,public_visible,admin_note,updated_at',
+    )
+    .eq('business_id', businessId)
+    .order('created_at', { ascending: false });
+
   if (error) throw error;
-  return (data || []) as BusinessAssetRow[];
+  return data || [];
 }
 
 export async function getBusinessImages(businessId: string, options: { publicOnly?: boolean } = {}): Promise<BusinessAssetRow[]> {

@@ -90,9 +90,9 @@ export function About({ lang }: Props) {
           <strong>300.000 – 500.000</strong>
           <p>{T(lang, 'Doanh nghiệp, chủ cửa hàng, nhà đầu tư, người mua doanh nghiệp, bên cho vay và đối tác vốn Việt Nam - quốc tế.', 'Businesses, store owners, investors, business buyers, lenders and capital partners across Vietnamese and international markets.')}</p>
         </Card>
-        <Card icon="🌍" title={T(lang, 'Mục tiêu năm năm', '5-Year Goal')}>
+        <Card icon="🌍" title={T(lang, 'Mục tiêu 10 năm', '10-Year Goal')}>
           <strong>{T(lang, 'Tối thiểu 1 triệu', '1 million+')}</strong>
-          <p>{T(lang, 'Doanh nghiệp và nhà đầu tư toàn cầu.', 'Businesses and investors globally.')}</p>
+          <p>{T(lang, 'Doanh nghiệp và nhà đầu tư toàn cầu được phục vụ.', 'Businesses and investors served globally.')}</p>
         </Card>
       </div>
     </Section>
