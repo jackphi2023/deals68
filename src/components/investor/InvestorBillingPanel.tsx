@@ -3,6 +3,12 @@ import type { Lang } from '../../lib/i18n';
 import { T } from '../../lib/labels';
 import { calculatePricing, lookupPromo } from '../../lib/pricing';
 import { supabase } from '../../lib/supabase';
+import {
+  createOwnPaymentOrder,
+  formatServiceExpiry,
+  makePaymentOrderCode,
+  paymentOrderCode,
+} from '../../lib/paymentOrders';
 
 const STATIC_VIETQR_URL = '/assets/vietqr-vcb.png';
 
@@ -59,6 +65,9 @@ export default function InvestorBillingPanel({
   const [paymentAck, setPaymentAck] = useState(false);
   const [orderBusy, setOrderBusy] = useState(false);
   const [qrSrc, setQrSrc] = useState('');
+  const [orderCode, setOrderCode] = useState(() =>
+    makePaymentOrderCode('INVUP'),
+  );
 
   const country = String(investor?.country_iso2 || 'VN').toUpperCase();
   const price = useMemo(
@@ -74,12 +83,6 @@ export default function InvestorBillingPanel({
       ),
     [country, months, promoCode, promoPct],
   );
-
-  const orderCode = `DEALS68-INV-${String(
-    investor?.code || investor?.id || 'INVESTOR',
-  )
-    .replace(/[^a-zA-Z0-9]/g, '')
-    .slice(0, 20)}`.toUpperCase();
 
   const amountParam =
     price.currency === 'VND'
@@ -126,6 +129,11 @@ export default function InvestorBillingPanel({
       return;
     }
 
+    if (!profile?.id) {
+      setError(T(lang, 'Phiên đăng nhập không hợp lệ.', 'Invalid session.'));
+      return;
+    }
+
     setOrderBusy(true);
     setError('');
 
@@ -139,40 +147,42 @@ export default function InvestorBillingPanel({
       promoCode: promoCode.trim().toUpperCase() || null,
       promoDiscountPct: promoPct,
       bankContent: orderCode,
+      orderCode,
       pricing: price,
     };
 
-    const { error } = await supabase.from('payment_orders').insert({
-      investor_id: investor.id,
-      profile_id: profile?.id || null,
-      created_by: profile?.id || null,
-      status: 'pending',
-      title:
-        `${T(lang, 'Mua/Nâng cấp dịch vụ Nhà đầu tư', 'Buy/Upgrade investor service')}` +
-        ` · ${months} ${T(lang, 'tháng', 'months')}` +
-        ` · ${money(price.total, price.currency)}`,
-      payload,
-      visibility: 'private',
-      sort_order: 0,
-    });
+    try {
+      await createOwnPaymentOrder({
+        entity: 'investor',
+        entityId: investor.id,
+        profileId: profile.id,
+        title:
+          `${T(lang, 'Mua/Nâng cấp dịch vụ Nhà đầu tư', 'Buy/Upgrade investor service')}` +
+          ` · ${months} ${T(lang, 'tháng', 'months')}` +
+          ` · ${money(price.total, price.currency)}`,
+        payload,
+        orderCode,
+      });
 
-    setOrderBusy(false);
-
-    if (error) {
-      setError(T(lang, 'Có lỗi', 'Something went wrong'));
-      return;
+      setMessage(
+        T(
+          lang,
+          'Đã ghi nhận thanh toán. Quản trị/SePay sẽ xác nhận và cập nhật dịch vụ.',
+          'Payment recorded. The administrator/SePay will confirm and update the service.',
+        ),
+      );
+      setOpen(false);
+      setPaymentAck(false);
+      setOrderCode(makePaymentOrderCode('INVUP'));
+      await onReload();
+    } catch (error: any) {
+      setError(
+        error?.message ||
+          T(lang, 'Không tạo được đơn thanh toán.', 'Could not create payment order.'),
+      );
+    } finally {
+      setOrderBusy(false);
     }
-
-    setMessage(
-      T(
-        lang,
-        'Đã ghi nhận thanh toán. Quản trị/SePay sẽ xác nhận và cập nhật dịch vụ.',
-        'Payment recorded. The administrator/SePay will confirm and update the service.',
-      ),
-    );
-    setOpen(false);
-    setPaymentAck(false);
-    await onReload();
   }
 
   return (
@@ -197,6 +207,11 @@ export default function InvestorBillingPanel({
         </button>
       </div>
 
+      {investor.membership_expires_at ? (
+        <div className="d68-dashboard-notice">
+          {T(lang, 'Hạn dịch vụ hiện tại', 'Current membership expiry')}: {formatServiceExpiry(investor.membership_expires_at, lang === 'vi' ? 'vi-VN' : 'en-US')}
+        </div>
+      ) : null}
       <div className="d68-billing-history">
         {payments.length ? (
           payments.map((payment) => {
@@ -225,10 +240,10 @@ export default function InvestorBillingPanel({
                       ? money(amount, currency)
                       : T(lang, 'Đang cập nhật', 'Pending')}
                   </div>
-                  {payload.bankContent ? (
+                  {paymentOrderCode(payment) ? (
                     <div className="d68-dashboard-mini">
-                      {T(lang, 'Nội dung chuyển khoản', 'Transfer reference')}:{' '}
-                      {payload.bankContent}
+                      {T(lang, 'Mã đơn/Nội dung chuyển khoản', 'Order/transfer reference')}:{' '}
+                      {paymentOrderCode(payment)}
                     </div>
                   ) : null}
                 </div>

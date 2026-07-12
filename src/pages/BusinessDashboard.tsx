@@ -21,6 +21,12 @@ import { businessQualityPublicExplanation, normalizeQualityBreakdown, qualityIte
 import { proposalQuotaTotal } from '../lib/proposals';
 import { calculatePricing, lookupPromo, type BusinessPlan } from '../lib/pricing';
 import { businessProposalQuotaForPlan } from '../lib/businessPlans';
+import {
+  createOwnPaymentOrder,
+  formatServiceExpiry,
+  makePaymentOrderCode,
+  paymentOrderCode,
+} from '../lib/paymentOrders';
 import { resumePendingBusinessSignupUploads } from '../lib/pendingBusinessUploads';
 
 type Lang = 'vi' | 'en';
@@ -773,11 +779,13 @@ function BusinessBillingPanel({ lang, b, payments, profile, setMsg, setErr, onRe
   const [paymentAck, setPaymentAck] = useState(false);
   const [orderBusy, setOrderBusy] = useState(false);
   const [qrSrc, setQrSrc] = useState('');
+  const [orderCode, setOrderCode] = useState(() =>
+    makePaymentOrderCode('BIZUP'),
+  );
 
   const country = String(b?.country_iso2 || 'VN').toUpperCase();
   const price = calculatePricing({ role: 'business', country, termWeeks: weeks, businessPlan: plan, promoCode }, promoPct);
   const quotaAdd = businessProposalQuotaForPlan(plan);
-  const orderCode = `DEALS68-UPGRADE-${String(b?.public_code || b?.slug || b?.id || 'BUSINESS').replace(/[^a-zA-Z0-9]/g, '').slice(0, 18)}`.toUpperCase();
   const qrAmountParam = price.currency === 'VND' ? `amount=${Math.round(price.total)}&` : '';
   const qrUrl = `https://img.vietqr.io/image/VCB-0011004000713-compact2.png?${qrAmountParam}addInfo=${encodeURIComponent(orderCode)}&accountName=${encodeURIComponent('Tieu Vo Dinh Phi')}`;
   useEffect(() => { setQrSrc(qrUrl); }, [qrUrl]);
@@ -792,8 +800,25 @@ function BusinessBillingPanel({ lang, b, payments, profile, setMsg, setErr, onRe
   }
 
   async function createUpgradeOrder() {
-    if (!paymentAck) { setErr(T(lang, 'Vui lòng xác nhận đã chuyển khoản đúng số tiền và nội dung.', 'Please confirm the payment transfer details.')); return; }
-    setOrderBusy(true); setErr('');
+    if (!paymentAck) {
+      setErr(
+        T(
+          lang,
+          'Vui lòng xác nhận đã chuyển khoản đúng số tiền và nội dung.',
+          'Please confirm the payment transfer details.',
+        ),
+      );
+      return;
+    }
+
+    if (!profile?.id) {
+      setErr(T(lang, 'Phiên đăng nhập không hợp lệ.', 'Invalid session.'));
+      return;
+    }
+
+    setOrderBusy(true);
+    setErr('');
+
     const payload = {
       orderType: 'business_service_upgrade',
       businessPlan: plan,
@@ -804,33 +829,54 @@ function BusinessBillingPanel({ lang, b, payments, profile, setMsg, setErr, onRe
       promoCode: promoCode.trim().toUpperCase() || null,
       promoDiscountPct: promoPct,
       bankContent: orderCode,
-      pricing: price
+      orderCode,
+      pricing: price,
     };
-    const { error } = await supabase.from('payment_orders').insert({
-      business_id: b.id,
-      profile_id: profile?.id || null,
-      created_by: profile?.id || null,
-      status: 'pending',
-      title: `${T(lang, 'Mua/Nâng cấp Gói dịch vụ', 'Buy/Upgrade service package')} - ${displayPlan(lang, plan)} - ${billingMoney(price.total, price.currency)}`,
-      payload,
-      visibility: 'private',
-      sort_order: 0
-    });
-    setOrderBusy(false);
-    if (error) { setErr(error.message); return; }
-    setMsg(T(lang, 'Đã ghi nhận thanh toán. Admin/SePay sẽ xác nhận để cập nhật gói hiển thị và cộng thêm lượt gửi Hồ sơ doanh nghiệp.', 'Payment recorded. Admin/SePay confirmation will update the listing plan and add business profile sends.'));
-    setOpen(false); setPaymentAck(false);
-    await onReload?.();
+
+    try {
+      await createOwnPaymentOrder({
+        entity: 'business',
+        entityId: b.id,
+        profileId: profile.id,
+        title:
+          `${T(lang, 'Mua/Nâng cấp Gói dịch vụ', 'Buy/Upgrade service package')}` +
+          ` - ${displayPlan(lang, plan)}` +
+          ` - ${billingMoney(price.total, price.currency)}`,
+        payload,
+        orderCode,
+      });
+
+      setMsg(
+        T(
+          lang,
+          'Đã ghi nhận thanh toán. Admin/SePay sẽ xác nhận để cập nhật gói hiển thị và cộng thêm lượt gửi Hồ sơ doanh nghiệp.',
+          'Payment recorded. Admin/SePay confirmation will update the listing plan and add business profile sends.',
+        ),
+      );
+      setOpen(false);
+      setPaymentAck(false);
+      setOrderCode(makePaymentOrderCode('BIZUP'));
+      await onReload?.();
+    } catch (error: any) {
+      setErr(error?.message || T(lang, 'Không tạo được đơn thanh toán.', 'Could not create payment order.'));
+    } finally {
+      setOrderBusy(false);
+    }
   }
 
   return <div className="d68-dashboard-card d68-dashboard-billing">
     <div className="d68-dashboard-row-head"><div><h2>{T(lang,'Thanh toán / Invoice','Payments / Invoices')}</h2><p>{T(lang,'Lịch sử thanh toán của doanh nghiệp và mua thêm/nâng cấp gói hiển thị.', 'Business payment history and service package upgrade.')}</p></div><button type="button" className="d68-dashboard-btn gold" onClick={() => setOpen((v) => !v)}>{T(lang,'Mua/Nâng cấp Gói dịch vụ','Buy/Upgrade service package')}</button></div>
+    {b.plan_expires_at ? (
+      <div className="d68-dashboard-notice">
+        {T(lang, 'Hạn gói hiện tại', 'Current plan expiry')}: {formatServiceExpiry(b.plan_expires_at, lang === 'vi' ? 'vi-VN' : 'en-US')}
+      </div>
+    ) : null}
     <div className="d68-billing-history">
       {payments.length ? payments.map((p: any) => {
         const payload = paymentPayload(p);
         const amount = payload.amount ?? payload.pricing?.total;
         const currency = payload.currency ?? payload.pricing?.currency ?? 'VND';
-        return <div key={p.id} className="d68-dashboard-row d68-billing-row"><div style={{ flex: 1 }}><b>{p.title || T(lang,'Đơn thanh toán','Payment order')}</b><div className="d68-dashboard-mini">{paymentStatusText(lang, p.status)} · {new Date(p.created_at).toLocaleString()} · {amount ? billingMoney(amount, currency) : T(lang,'Đang cập nhật','Pending')}</div>{payload.bankContent ? <div className="d68-dashboard-mini">{T(lang,'Nội dung CK','Transfer note')}: {payload.bankContent}</div> : null}</div><span className={`d68-dashboard-badge ${String(p.status).toLowerCase() === 'confirmed' ? 'green' : 'gold'}`}>{paymentStatusText(lang, p.status)}</span></div>;
+        return <div key={p.id} className="d68-dashboard-row d68-billing-row"><div style={{ flex: 1 }}><b>{p.title || T(lang,'Đơn thanh toán','Payment order')}</b><div className="d68-dashboard-mini">{paymentStatusText(lang, p.status)} · {new Date(p.created_at).toLocaleString()} · {amount ? billingMoney(amount, currency) : T(lang,'Đang cập nhật','Pending')}</div>{paymentOrderCode(p) ? <div className="d68-dashboard-mini">{T(lang,'Mã đơn/Nội dung CK','Order/transfer code')}: {paymentOrderCode(p)}</div> : null}</div><span className={`d68-dashboard-badge ${String(p.status).toLowerCase() === 'confirmed' ? 'green' : 'gold'}`}>{paymentStatusText(lang, p.status)}</span></div>;
       }) : <div className="d68-dashboard-empty">{T(lang,'Chưa có lịch sử thanh toán.','No payment history yet.')}</div>}
     </div>
     {open ? <div className="d68-dashboard-upgrade-box">

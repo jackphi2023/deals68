@@ -28,6 +28,7 @@ import {
 } from '../lib/labels';
 import { DEFAULT_VALUATION_CONFIG, getActiveValuationConfig, valuate, formatValuationMoney, valuationVerdictMessage } from '../lib/valuationEngine';
 import { BUSINESS_FEATURED_PROPOSAL_QUOTA, BUSINESS_STANDARD_PROPOSAL_QUOTA, businessProposalQuotaForPlan } from '../lib/businessPlans';
+import { makePaymentOrderCode } from '../lib/paymentOrders';
 
 const countryIso: Record<string, string> = Object.fromEntries(countryOptions.map((c) => [c.vi, c.iso2]).concat(countryOptions.map((c) => [c.en, c.iso2])));
 const MAX_BUSINESS_IMAGES = 5;
@@ -164,6 +165,11 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
   useEffect(() => { getActiveValuationConfig().then(setValuationConfig).catch(() => setValuationConfig(DEFAULT_VALUATION_CONFIG)); }, []);
   const isBusiness = normalized === 'business';
   const isInvestor = normalized === 'investor';
+  const [registrationOrderCode] = useState(() =>
+    makePaymentOrderCode(
+      isInvestor ? 'INVREG' : isBusiness ? 'BIZREG' : 'PARTNER',
+    ),
+  );
   const countryCode = countryIso[country] || 'VN';
   const locationChoices = getLocationOptionsForCountry(countryCode);
   const effectiveWeeks = isBusiness ? serviceWeeks : investorMonths * 4;
@@ -181,7 +187,7 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
   const termOptions = [4, 8, 12, 16, 24];
   const currentTermValue = isInvestor ? investorMonths : serviceWeeks;
   const termUnitLabel = isInvestor ? T(lang, 'tháng', 'months') : T(lang, 'tuần', 'weeks');
-  const bankContent = `DEALS68-${safeUsername(email || normalized, companyName || name || normalized)}`.toUpperCase();
+  const bankContent = registrationOrderCode;
   const qrAmountParam = price.currency === 'VND' ? `amount=${Math.round(price.total)}&` : '';
   const qrUrl = `https://img.vietqr.io/image/VCB-0011004000713-compact2.png?${qrAmountParam}addInfo=${encodeURIComponent(bankContent)}&accountName=${encodeURIComponent('Tieu Vo Dinh Phi')}`;
   const [qrImageSrc, setQrImageSrc] = useState(qrUrl);
@@ -404,7 +410,17 @@ try {
         profile: profilePayload,
         business: businessPayload,
         investor: investorPayload,
-        payment: { title: `${roleLabel(normalized as any, lang)} · ${pricingSummary}`, role: normalized, country: countryCode, plan: isBusiness ? plan : 'membership', checkout_intent: intent, price, source: 'register_beta_reference' }
+        payment: {
+          title: `${roleLabel(normalized as any, lang)} · ${pricingSummary}`,
+          role: normalized,
+          country: countryCode,
+          plan: isBusiness ? plan : 'membership',
+          checkout_intent: intent,
+          price,
+          orderCode: registrationOrderCode,
+          bankContent: registrationOrderCode,
+          source: 'register_beta_reference',
+        }
       });
 
       let uploadNote = '';
@@ -473,7 +489,7 @@ try {
 
   const planLabel = planText(plan, lang);
   const currentCurrency = countryCode === 'VN' ? 'VND' : 'USD';
-  const paymentSection = <section className={`d68-register-section d68-register-section--pricing${isBusiness ? ' d68-register-section--business-pricing' : ''}`}>
+  const paymentSection = <section className={`d68-register-section d68-register-section--pricing${isBusiness ? ' d68-register-section--business-pricing' : isInvestor ? ' d68-register-section--investor-pricing' : ''}`}>
     <h2>{T(lang, 'Gói dịch vụ và Thanh toán', 'Service package and Payment')}</h2>
     <div className="d68-bizreg-options">
       {isBusiness ? ([
