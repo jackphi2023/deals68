@@ -473,7 +473,7 @@ try {
 
   const planLabel = planText(plan, lang);
   const currentCurrency = countryCode === 'VN' ? 'VND' : 'USD';
-  const paymentSection = <section className="d68-register-section d68-register-section--pricing">
+  const paymentSection = <section className={`d68-register-section d68-register-section--pricing${isBusiness ? ' d68-register-section--business-pricing' : ''}`}>
     <h2>{T(lang, 'Gói dịch vụ và Thanh toán', 'Service package and Payment')}</h2>
     <div className="d68-bizreg-options">
       {isBusiness ? ([

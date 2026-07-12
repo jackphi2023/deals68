@@ -374,3 +374,17 @@ html,body,#root{max-width:100%;overflow-x:hidden}
   .d68-promo-banner.d68-home-container{padding-top:50px!important;padding-bottom:50px!important}
   .d68-home-hero-stats{margin-top:30px!important;width:100%;max-width:100%}
 }
+
+/* G6 — Business registration desktop payment sizing only. */
+@media(min-width:781px){
+  .d68-register-section--business-pricing .d68-bizreg-paygrid{
+    grid-template-columns:minmax(0,1fr) 350px;
+  }
+  .d68-register-section--business-pricing .d68-bizreg-promo{
+    grid-template-columns:200px 88px;
+    justify-content:start;
+  }
+  .d68-register-section--business-pricing .d68-bizreg-promo input{
+    width:200px;
+  }
+}
