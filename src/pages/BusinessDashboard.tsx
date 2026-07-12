@@ -5,6 +5,8 @@ import { useAuth } from '../contexts/AuthContext';
 import {
   deleteBusinessFile,
   deleteBusinessImage,
+  getBusinessFiles,
+  getBusinessImages,
   getMyBusiness,
   updateBusinessFile,
   updateBusinessImage,
@@ -12,6 +14,7 @@ import {
   uploadBusinessImage
 } from '../lib/data';
 import { supabase } from '../lib/supabase';
+import { ensureBusinessImagePrivate } from '../lib/businessAssetStorage';
 import { DEFAULT_VALUATION_CONFIG, getActiveValuationConfig, valuate, valuationInputFromBusiness, formatValuationMoney, valuationVerdictMessage, VALUATION_DISCLAIMER_VI, VALUATION_DISCLAIMER_EN } from '../lib/valuationEngine';
 import { businessQualityPublicExplanation, normalizeQualityBreakdown, qualityItemLabel, qualityItemNote } from '../lib/businessQuality';
 import { proposalQuotaTotal } from '../lib/proposals';
@@ -435,29 +438,64 @@ export default function BusinessDashboard() {
       const biz = await getMyBusiness(profile.id);
       setB(biz);
       if (biz) {
-        const [filesRes, imagesRes, relationsRes, paymentsRes, savedRes, benchmarkRes] = await Promise.all([
-          supabase.from('business_files').select('*').eq('business_id', biz.id).order('created_at', { ascending: false }),
-          supabase.from('business_images').select('*').eq('business_id', biz.id).order('sort_order', { ascending: true, nullsFirst: false }).order('created_at', { ascending: true }),
-          supabase.rpc('get_my_business_dashboard_relations', { business_uuid: biz.id }),
-          supabase.from('payment_orders').select('*').eq('business_id', biz.id).order('created_at', { ascending: false }),
-          supabase.from('saved_businesses').select('id,investor_id,business_id,created_at').eq('business_id', biz.id).order('created_at', { ascending: false }),
-          supabase.from('public_businesses_safe').select('id,industry,country_iso2,revenue_2025,revenue_currency,ask_amount,ask_currency,stake_pct,deal_type,visible,status,public_snapshot_json').eq('country_iso2', biz.country_iso2 || 'VN').limit(80)
+        const [
+          nextFiles,
+          nextImages,
+          relationsRes,
+          paymentsRes,
+          savedRes,
+          benchmarkRes,
+        ] = await Promise.all([
+          getBusinessFiles(biz.id),
+          getBusinessImages(biz.id),
+          supabase.rpc('get_my_business_dashboard_relations', {
+            business_uuid: biz.id,
+          }),
+          supabase
+            .from('payment_orders')
+            .select('*')
+            .eq('business_id', biz.id)
+            .order('created_at', { ascending: false }),
+          supabase
+            .from('saved_businesses')
+            .select('id,investor_id,business_id,created_at')
+            .eq('business_id', biz.id)
+            .order('created_at', { ascending: false }),
+          supabase
+            .from('public_businesses_safe')
+            .select(
+              'id,industry,country_iso2,revenue_2025,revenue_currency,' +
+                'ask_amount,ask_currency,stake_pct,deal_type,visible,status,' +
+                'public_snapshot_json',
+            )
+            .eq('country_iso2', biz.country_iso2 || 'VN')
+            .limit(80),
         ]);
-        if (filesRes.error) throw filesRes.error;
-        if (imagesRes.error) throw imagesRes.error;
+
         if (relationsRes.error) throw relationsRes.error;
         if (paymentsRes.error) throw paymentsRes.error;
-        const relations = relationsRes.data && typeof relationsRes.data === 'object'
-          ? relationsRes.data as Record<string, any>
-          : {};
-        setFiles(filesRes.data || []);
-        setImages(imagesRes.data || []);
-        setRequests(Array.isArray(relations.requests) ? relations.requests : []);
-        setInterests(Array.isArray(relations.interests) ? relations.interests : []);
+
+        const relations =
+          relationsRes.data && typeof relationsRes.data === 'object'
+            ? (relationsRes.data as Record<string, any>)
+            : {};
+
+        setFiles(nextFiles || []);
+        setImages(nextImages || []);
+        setRequests(
+          Array.isArray(relations.requests) ? relations.requests : [],
+        );
+        setInterests(
+          Array.isArray(relations.interests) ? relations.interests : [],
+        );
         setPayments(paymentsRes.data || []);
-        setProposals(Array.isArray(relations.proposals) ? relations.proposals : []);
+        setProposals(
+          Array.isArray(relations.proposals) ? relations.proposals : [],
+        );
         setSavedBusinesses(savedRes.error ? [] : (savedRes.data || []));
-        setBenchmarkBusinesses(benchmarkRes.error ? [] : (benchmarkRes.data || []));
+        setBenchmarkBusinesses(
+          benchmarkRes.error ? [] : (benchmarkRes.data || []),
+        );
       }
     } catch (e: any) { setErr(e?.message || 'Could not load dashboard data.'); }
     finally { setBusy(false); }
@@ -612,22 +650,77 @@ export default function BusinessDashboard() {
   }
 
   async function deleteFile(row: any) {
-    if (!confirm(T(lang, 'Xóa tài liệu này?', 'Delete this document?'))) return;
-    try { await deleteBusinessFile(row); setMsg(T(lang, 'Đã xóa tài liệu.', 'Document deleted.')); await load(); }
-    catch (e: any) { setErr(e?.message || 'Delete failed.'); }
+    if (!confirm(T(lang, 'Xóa tài liệu này?', 'Delete this document?'))) {
+      return;
+    }
+
+    setBusy(true);
+    setErr('');
+    setMsg('');
+
+    try {
+      await deleteBusinessFile(row);
+      setFiles((current) =>
+        current.filter((file) => String(file.id) !== String(row.id)),
+      );
+      setMsg(T(lang, 'Đã xóa tài liệu.', 'Document deleted.'));
+      await load();
+    } catch (e: any) {
+      setErr(e?.message || T(lang, 'Xóa tài liệu thất bại.', 'Delete failed.'));
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function deleteImage(row: any) {
-    if (!confirm(T(lang, 'Xóa ảnh này?', 'Delete this image?'))) return;
-    try { await deleteBusinessImage(row); setMsg(T(lang, 'Đã xóa ảnh.', 'Image deleted.')); await load(); }
-    catch (e: any) { setErr(e?.message || 'Delete failed.'); }
+    if (!confirm(T(lang, 'Xóa ảnh này?', 'Delete this image?'))) {
+      return;
+    }
+
+    setBusy(true);
+    setErr('');
+    setMsg('');
+
+    try {
+      await deleteBusinessImage(row);
+      setImages((current) =>
+        current.filter((image) => String(image.id) !== String(row.id)),
+      );
+      setMsg(T(lang, 'Đã xóa ảnh.', 'Image deleted.'));
+      await load();
+    } catch (e: any) {
+      setErr(e?.message || T(lang, 'Xóa ảnh thất bại.', 'Delete failed.'));
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function renameImage(row: any) {
-    const title = prompt(T(lang, 'Tên ảnh mới', 'New image title'), row.title || '');
+    const title = prompt(
+      T(lang, 'Tên ảnh mới', 'New image title'),
+      row.title || '',
+    );
     if (title === null) return;
-    try { await updateBusinessImage(row.id, { title, admin_note: 'User renamed image; Admin must approve display_title/public visibility.' }); setMsg(businessUpdateSuccessMsg(lang)); await load(); }
-    catch (e: any) { setErr(e?.message || 'Update failed.'); }
+
+    setBusy(true);
+    setErr('');
+    setMsg('');
+
+    try {
+      const securedRow = await ensureBusinessImagePrivate(row);
+      await updateBusinessImage(securedRow.id, {
+        title,
+        display_title: title,
+        admin_note:
+          'User renamed image; Admin must approve public display again.',
+      });
+      setMsg(businessUpdateSuccessMsg(lang));
+      await load();
+    } catch (e: any) {
+      setErr(e?.message || T(lang, 'Cập nhật ảnh thất bại.', 'Update failed.'));
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function suggestHero(row: any) {

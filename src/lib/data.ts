@@ -1,4 +1,10 @@
 import { supabase } from './supabase';
+import {
+  BUSINESS_FILE_BUCKET,
+  BUSINESS_IMAGE_PRIVATE_BUCKET,
+  attachBusinessImagePreviewUrls,
+  deleteBusinessAsset,
+} from './businessAssetStorage';
 import { seedBusinesses } from '../data/seedBusinesses';
 import { computeBusinessQuality } from './scoring';
 import { industryKeyFromLabel } from './industryTaxonomy';
@@ -348,15 +354,42 @@ export async function getBusinessFiles(
   return data || [];
 }
 
-export async function getBusinessImages(businessId: string, options: { publicOnly?: boolean } = {}): Promise<BusinessAssetRow[]> {
+export async function getBusinessImages(
+  businessId: string,
+  options: { publicOnly?: boolean } = {},
+): Promise<BusinessAssetRow[]> {
   const select = options.publicOnly
-    ? 'id,business_id,title,display_title,public_url,sort_order,public_visible,is_sanitized,is_hero,created_at,updated_at'
-    : 'id,business_id,owner_id,title,display_title,image_path,public_url,sort_order,public_visible,is_sanitized,is_hero,admin_note,created_at,updated_at';
-  let q: any = supabase.from('business_images').select(select as string).eq('business_id', businessId);
-  if (options.publicOnly) q = q.eq('public_visible', true).eq('is_sanitized', true);
-  const { data, error } = await q.order('is_hero', { ascending: false }).order('sort_order', { ascending: true, nullsFirst: false }).order('created_at', { ascending: true });
+    ? 'id,business_id,title,display_title,public_url,sort_order,' +
+      'public_visible,is_sanitized,is_hero,review_status,storage_bucket,' +
+      'created_at,updated_at'
+    : 'id,business_id,owner_id,title,display_title,image_path,public_url,' +
+      'sort_order,public_visible,is_sanitized,is_hero,review_status,' +
+      'storage_bucket,admin_note,created_at,updated_at';
+
+  let q: any = supabase
+    .from('business_images')
+    .select(select as string)
+    .eq('business_id', businessId);
+
+  if (options.publicOnly) {
+    q = q
+      .eq('public_visible', true)
+      .eq('is_sanitized', true)
+      .eq('review_status', 'approved')
+      .eq('storage_bucket', 'business-images-public');
+  }
+
+  const { data, error } = await q
+    .order('is_hero', { ascending: false })
+    .order('sort_order', { ascending: true, nullsFirst: false })
+    .order('created_at', { ascending: true });
+
   if (error) throw error;
-  return (data || []) as BusinessAssetRow[];
+
+  const rows = (data || []) as BusinessAssetRow[];
+  return options.publicOnly
+    ? rows
+    : attachBusinessImagePreviewUrls(rows);
 }
 
 export async function getBusinessDetailAssets(businessId: string, options: { publicOnly?: boolean } = {}): Promise<BusinessDetailAssets> {
@@ -537,7 +570,7 @@ export async function uploadBusinessFile(
     : `${businessId}/${Date.now()}-${safeName}`;
 
   const { error: upErr } = await supabase.storage
-    .from('business-files-private')
+    .from(BUSINESS_FILE_BUCKET)
     .upload(path, file, { upsert: false });
 
   if (upErr && !(stableId && isDuplicateStorageUploadError(upErr))) {
@@ -555,6 +588,7 @@ export async function uploadBusinessFile(
     category,
     privacy_level: privacy,
     public_visible: false,
+    review_status: 'pending_admin_approval',
     client_upload_id: stableId || null,
   };
 
@@ -578,10 +612,9 @@ export async function updateBusinessFile(fileId: string, patch: any) {
 }
 
 export async function deleteBusinessFile(row: any) {
-  const path = row?.file_path;
-  if (path) await supabase.storage.from('business-files-private').remove([path]).catch(() => undefined);
-  const { error } = await supabase.from('business_files').delete().eq('id', row.id);
-  if (error) throw error;
+  const assetId = String(row?.id || '').trim();
+  if (!assetId) throw new Error('Tài liệu thiếu ID để xóa.');
+  return deleteBusinessAsset('file', assetId);
 }
 
 export async function uploadBusinessImage(
@@ -592,22 +625,23 @@ export async function uploadBusinessImage(
   clientUploadId = '',
 ) {
   const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-  const stableId = String(clientUploadId || '').replace(/[^a-zA-Z0-9_-]/g, '');
+  const stableId = String(clientUploadId || '')
+    .replace(/[^a-zA-Z0-9_-]/g, '');
   const path = stableId
     ? `${businessId}/signup/${stableId}-${safeName}`
-    : `${businessId}/${Date.now()}-${safeName}`;
+    : `${businessId}/pending/${Date.now()}-${safeName}`;
 
   const { error: upErr } = await supabase.storage
-    .from('business-images-public')
-    .upload(path, file, { upsert: false });
+    .from(BUSINESS_IMAGE_PRIVATE_BUCKET)
+    .upload(path, file, {
+      upsert: false,
+      contentType: file.type || 'application/octet-stream',
+      cacheControl: '3600',
+    });
 
   if (upErr && !(stableId && isDuplicateStorageUploadError(upErr))) {
     throw upErr;
   }
-
-  const { data: pub } = supabase.storage
-    .from('business-images-public')
-    .getPublicUrl(path);
 
   const payload = {
     business_id: businessId,
@@ -615,10 +649,12 @@ export async function uploadBusinessImage(
     title,
     display_title: title,
     image_path: path,
-    public_url: pub.publicUrl,
+    storage_bucket: BUSINESS_IMAGE_PRIVATE_BUCKET,
+    public_url: null,
     public_visible: false,
     is_sanitized: false,
     is_hero: false,
+    review_status: 'pending_admin_approval',
     client_upload_id: stableId || null,
   };
 
@@ -631,7 +667,17 @@ export async function uploadBusinessImage(
     : supabase.from('business_images').insert(payload).select().single();
 
   const { data, error } = await query;
-  if (error) throw error;
+
+  if (error) {
+    if (!upErr) {
+      await supabase.storage
+        .from(BUSINESS_IMAGE_PRIVATE_BUCKET)
+        .remove([path])
+        .catch(() => undefined);
+    }
+    throw error;
+  }
+
   return data;
 }
 
@@ -642,10 +688,9 @@ export async function updateBusinessImage(imageId: string, patch: any) {
 }
 
 export async function deleteBusinessImage(row: any) {
-  const path = row?.image_path;
-  if (path) await supabase.storage.from('business-images-public').remove([path]).catch(() => undefined);
-  const { error } = await supabase.from('business_images').delete().eq('id', row.id);
-  if (error) throw error;
+  const assetId = String(row?.id || '').trim();
+  if (!assetId) throw new Error('Ảnh thiếu ID để xóa.');
+  return deleteBusinessAsset('image', assetId);
 }
 
 export async function createInvestorForOwner(ownerId: string, payload: any) {

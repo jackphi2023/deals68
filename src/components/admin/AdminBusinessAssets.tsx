@@ -8,6 +8,12 @@ import {
   uploadBusinessImage,
 } from '../../lib/data';
 import { supabase } from '../../lib/supabase';
+import {
+  countLegacyPendingBusinessImages,
+  ensureBusinessImagePrivate,
+  ensureBusinessImagePublic,
+  migrateLegacyPendingBusinessImages,
+} from '../../lib/businessAssetStorage';
 import '../../styles/pages/admin-assets.css';
 
 type Row = Record<string, any>;
@@ -75,6 +81,7 @@ export function AdminBusinessAssets({
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
   const [messageType, setMessageType] = useState<'ok' | 'err'>('ok');
+  const [legacyPendingCount, setLegacyPendingCount] = useState(0);
   const imageInputRef = useRef<HTMLInputElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -138,6 +145,10 @@ export function AdminBusinessAssets({
           nextImages.find((image: Row) => image.is_hero)?.id || '',
         ),
     );
+
+    const nextLegacyCount =
+      await countLegacyPendingBusinessImages().catch(() => 0);
+    setLegacyPendingCount(nextLegacyCount);
   }
 
   useEffect(() => {
@@ -317,13 +328,45 @@ export function AdminBusinessAssets({
     );
   }
 
+  async function secureLegacyPendingImages() {
+    setBusy(true);
+    setMessage('');
+
+    try {
+      const result = await migrateLegacyPendingBusinessImages();
+      await loadAssets();
+      await onRefresh?.();
+
+      if (result.errors.length) {
+        setMessageType('err');
+        setMessage(
+          `Đã di chuyển ${result.migrated}/${result.total} ảnh. ` +
+            `Còn lỗi: ${result.errors[0]}`,
+        );
+      } else {
+        setMessageType('ok');
+        setMessage(
+          `Đã chuyển ${result.migrated} ảnh chưa duyệt khỏi vùng public.`,
+        );
+      }
+    } catch (error: any) {
+      setMessageType('err');
+      setMessage(
+        error?.message || 'Không di chuyển được ảnh chưa duyệt.',
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function approveAssets() {
     if (heroImageId) {
       const heroDraft = imageDrafts[heroImageId];
       if (!heroDraft?.public_visible || !heroDraft?.is_sanitized) {
         setMessageType('err');
         setMessage(
-          'Ảnh chính phải được tick “Đã xử lý logo/tên DN” và “Hiển thị frontend”.',
+          'Ảnh chính phải được tick “Đã xử lý logo/tên DN” và ' +
+            '“Hiển thị frontend”.',
         );
         return;
       }
@@ -333,6 +376,15 @@ export function AdminBusinessAssets({
     setMessage('');
 
     try {
+      for (const image of images) {
+        const draft = imageDrafts[String(image.id)] || {};
+        if (draft.public_visible && draft.is_sanitized) {
+          await ensureBusinessImagePublic(image);
+        } else {
+          await ensureBusinessImagePrivate(image);
+        }
+      }
+
       const { data, error } = await supabase.rpc(
         'approve_business_assets',
         {
@@ -372,7 +424,7 @@ export function AdminBusinessAssets({
       setMessage(
         `Đã duyệt ${data?.approved_images ?? images.length} ảnh và ` +
           `${data?.approved_files ?? files.length} file. ` +
-          'Ảnh chính đã đồng bộ với list, Homepage và Business Detail.',
+          'Ảnh public đã được tách khỏi vùng ảnh chờ duyệt.',
       );
 
       await loadAssets(
@@ -411,6 +463,21 @@ export function AdminBusinessAssets({
           }`}
         >
           {message}
+        </div>
+      ) : null}
+
+      {legacyPendingCount > 0 ? (
+        <div className="d68-admin-notice warn">
+          <b>{legacyPendingCount} ảnh chưa duyệt vẫn nằm ở vùng public cũ.</b>
+          {' '}
+          <button
+            type="button"
+            className="d68-admin-btn blue"
+            onClick={secureLegacyPendingImages}
+            disabled={busy}
+          >
+            Chuyển toàn bộ sang vùng riêng tư
+          </button>
         </div>
       ) : null}
 
