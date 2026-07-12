@@ -50,6 +50,7 @@ import {
   normalizeIndustryKeys,
 } from '../components/investor/IndustryTagPicker';
 import InvestorBillingPanel from '../components/investor/InvestorBillingPanel';
+import BusinessTitleLink from '../components/investor/BusinessTitleLink';
 
 type Tab =
   | 'profile'
@@ -324,7 +325,11 @@ function MatchCard({
             lang,
           )}
         </small>
-        <h3>{title}</h3>
+        <h3>
+          <BusinessTitleLink business={business} lang={lang}>
+            {title}
+          </BusinessTitleLink>
+        </h3>
         <div className="d68-match-card__metrics">
           <div>
             <small>{T(lang, 'Doanh thu', 'Revenue')}</small>
@@ -422,7 +427,11 @@ function InterestRows({
                     lang,
                   )}
                 </span>
-                <h3>{title}</h3>
+                <h3>
+                  <BusinessTitleLink business={business} lang={lang}>
+                    {title}
+                  </BusinessTitleLink>
+                </h3>
                 <small>
                   {business.city || '—'} ·{' '}
                   {new Date(row.created_at).toLocaleDateString(
@@ -523,10 +532,12 @@ function ProposalRows({
             >
               <div style={{ flex: 1 }}>
                 <b>
-                  {business.title_vi ||
-                    business.title_en ||
-                    business.public_code ||
-                    row.business_id}
+                  <BusinessTitleLink business={business} lang={lang}>
+                    {business.title_vi ||
+                      business.title_en ||
+                      business.public_code ||
+                      row.business_id}
+                  </BusinessTitleLink>
                 </b>
                 <div className="d68-dashboard-mini">
                   {new Date(
@@ -612,7 +623,7 @@ function ProposalRows({
 }
 
 export default function InvestorDashboard() {
-  const { profile, loading, signOut } = useAuth();
+  const { profile, loading } = useAuth();
   const location = useLocation();
   const lang = langFromPath(location.pathname);
   const [tab, setTab] = useState<Tab>(() =>
@@ -1027,13 +1038,6 @@ export default function InvestorDashboard() {
                 'Investor profile not found',
               )}
             </h1>
-            <button
-              type="button"
-              className="d68-dashboard-btn"
-              onClick={() => signOut()}
-            >
-              {T(lang, 'Đăng xuất', 'Sign out')}
-            </button>
           </div>
         </div>
       </main>
@@ -1045,6 +1049,18 @@ export default function InvestorDashboard() {
   const formKey = `${investor.id}:${investor.updated_at || ''}:${
     privacy.pending_submitted_at || ''
   }`;
+  const privateInvestorName = String(
+    investor.private_name ||
+      privacy.private_name ||
+      profile.display_name ||
+      profile.email?.split('@')[0] ||
+      investor.title_vi ||
+      investor.title_en ||
+      T(lang, 'Nhà đầu tư', 'Investor'),
+  ).trim();
+  const publicInvestorPath = investor.code
+    ? toLocalizedPath(`/investors/${investor.code}`, lang)
+    : '';
 
   return (
     <main className="d68-dashboard-page d68-investor-dashboard-page">
@@ -1054,28 +1070,12 @@ export default function InvestorDashboard() {
             <div className="d68-dashboard-kicker">
               Investor Dashboard
             </div>
-            <h1>
-              {T(
-                lang,
-                'Quản lý hồ sơ và cơ hội đầu tư',
-                'Manage your profile and investment opportunities',
-              )}
-            </h1>
-          </div>
-          <div className="d68-dashboard-actions">
-            <Link
-              className="d68-dashboard-btn light"
-              to={toLocalizedPath('/businesses', lang)}
-            >
-              {T(lang, 'Xem doanh nghiệp', 'Browse businesses')}
-            </Link>
-            <button
-              type="button"
-              className="d68-dashboard-btn"
-              onClick={() => signOut()}
-            >
-              {T(lang, 'Đăng xuất', 'Sign out')}
-            </button>
+            <div className="d68-investor-dashboard-title-row">
+              <h1>{privateInvestorName}</h1>
+              <span className="d68-investor-dashboard-id">
+                {investor.code}
+              </span>
+            </div>
           </div>
         </header>
 
@@ -1094,6 +1094,21 @@ export default function InvestorDashboard() {
                 {T(lang, item.vi, item.en)}
               </Link>
             ))}
+            {publicInvestorPath ? (
+              <a
+                className="d68-dashboard-public-link"
+                href={publicInvestorPath}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {T(
+                  lang,
+                  'Xem Hồ sơ hiển thị',
+                  'View displayed profile',
+                )}{' '}
+                ↗
+              </a>
+            ) : null}
           </nav>
 
           <section>
@@ -1130,9 +1145,6 @@ export default function InvestorDashboard() {
                       )}
                     </p>
                   </div>
-                  <span className="d68-dashboard-badge blue">
-                    {investor.code}
-                  </span>
                 </div>
 
                 <div className="d68-dashboard-form2">
