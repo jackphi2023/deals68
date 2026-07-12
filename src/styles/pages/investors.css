@@ -6,3 +6,21 @@
 
 /* Deals68 Beta v1.3 — Proposal button states */
 .d68-investor-card__actions button:disabled{opacity:.62;cursor:not-allowed;background:#94A3B8!important;border-color:#94A3B8!important;color:#fff!important}.d68-investors-toolbar span:last-child{font-weight:800;color:#0F2A4A}
+
+/* G5 — Investor card title is a detail link. */
+.d68-investor-card__title-link,
+.d68-investor-card__title-link:visited{
+  color:#0F2A4A;
+  text-decoration:none;
+  transition:color .16s ease;
+}
+.d68-investor-card__title-link:hover{
+  color:#1596CC;
+  text-decoration:underline;
+  text-underline-offset:3px;
+}
+.d68-investor-card__title-link:focus-visible{
+  border-radius:4px;
+  outline:3px solid rgba(27,173,234,.26);
+  outline-offset:3px;
+}

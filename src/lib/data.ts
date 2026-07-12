@@ -1,4 +1,10 @@
 import { supabase } from './supabase';
+import {
+  BUSINESS_FILE_BUCKET,
+  BUSINESS_IMAGE_PRIVATE_BUCKET,
+  attachBusinessImagePreviewUrls,
+  deleteBusinessAsset,
+} from './businessAssetStorage';
 import { seedBusinesses } from '../data/seedBusinesses';
 import { computeBusinessQuality } from './scoring';
 import { industryKeyFromLabel } from './industryTaxonomy';
@@ -7,7 +13,7 @@ type BusinessAssetRow = Record<string, any>;
 type BusinessDetailAssets = { files: BusinessAssetRow[]; images: BusinessAssetRow[] };
 
 const businessPublicSelect = [
-  'id','public_code','slug','title_vi','title_en','description_vi','description_en','country_iso2','city','industry','industry_key','deal_type','plan','revenue_2025','revenue_currency','ebitda_margin','ask_amount','ask_currency','stake_pct','highlights_vi','highlights_en','investment_reason_vi','investment_reason_en','data_confidence','quality_score','valuation_reasonableness','visible','status','quota_total','quota_used','image_url','created_at','updated_at','public_snapshot_json','public_version','last_approved_at','moderation_status','hero_image_url'
+  'id','public_code','slug','title_vi','title_en','description_vi','description_en','country_iso2','city','industry','industry_key','deal_type','plan','revenue_2025','revenue_currency','ebitda_margin','ask_amount','ask_currency','stake_pct','highlights_vi','highlights_en','investment_reason_vi','investment_reason_en','data_confidence','quality_score','valuation_reasonableness','visible','status','image_url','created_at','updated_at','public_snapshot_json','public_version','last_approved_at','moderation_status','hero_image_url','business_files_count','business_images_count','business_files','business_images'
 ].join(',');
 
 const investorPublicSelect = [
@@ -219,7 +225,7 @@ function applyBusinessPublicFilters(q: any, filters: any) {
 }
 
 export async function listBusinessFacets(filters: any = {}): Promise<{ city: string; industry: string; industry_key: string; deal_type: string; plan: string; quality_score: number | null }[]> {
-  let q: any = supabase.from('businesses').select('city, industry, industry_key, deal_type, plan, quality_score');
+  let q: any = supabase.from('public_businesses_safe').select('city, industry, industry_key, deal_type, plan, quality_score');
   q = applyBusinessPublicFilters(q, { search: filters.search, country: filters.country });
   const { data, error } = await q.limit(1000);
   if (error) throw error;
@@ -227,8 +233,9 @@ export async function listBusinessFacets(filters: any = {}): Promise<{ city: str
 }
 
 export async function listBusinesses(filters: any = {}): Promise<any[]> {
-  const select = filters.includeHidden ? '*, business_files(count), business_images(count)' : `${businessPublicSelect}, business_files(count), business_images(count)`;
-  let q: any = supabase.from('businesses').select(select as string);
+  const select = filters.includeHidden ? '*, business_files(count), business_images(count)' : businessPublicSelect;
+  const source = filters.includeHidden ? 'businesses' : 'public_businesses_safe';
+  let q: any = supabase.from(source).select(select as string);
   q = applyBusinessPublicFilters(q, filters);
   const sort = filters.sort || 'featured';
   if (sort === 'revenue') q = q.order('revenue_2025', { ascending: false, nullsFirst: false });
@@ -266,7 +273,7 @@ export async function listHomepageBusinesses(limit = 6): Promise<any[]> {
 
   const ids = orderedRanked.map((row: any) => row.business_id);
   let query: any = supabase
-    .from('businesses')
+    .from('public_businesses_safe')
     .select(businessPublicSelect as string)
     .in('id', ids);
 
@@ -303,7 +310,7 @@ export async function listHomepageBusinesses(limit = 6): Promise<any[]> {
 }
 
 export async function countBusinesses(filters: any = {}): Promise<number> {
-  let q: any = supabase.from('businesses').select('id', { count: 'exact', head: true });
+  let q: any = supabase.from('public_businesses_safe').select('id', { count: 'exact', head: true });
   q = applyBusinessPublicFilters(q, filters);
   const { count, error } = await q;
   if (error) throw error;
@@ -312,33 +319,77 @@ export async function countBusinesses(filters: any = {}): Promise<number> {
 
 export async function getBusinessBySlug(slug: string, options: { includeHidden?: boolean } = {}): Promise<any | null> {
   const select = options.includeHidden ? '*' : businessPublicSelect;
-  let q: any = supabase.from('businesses').select(select as string).eq('slug', slug);
+  const source = options.includeHidden ? 'businesses' : 'public_businesses_safe';
+  let q: any = supabase.from(source).select(select as string).eq('slug', slug);
   if (!options.includeHidden) q = q.eq('visible', true).eq('status', 'active').not('public_snapshot_json', 'is', null);
   const { data, error } = await q.maybeSingle();
   if (error) throw error;
   return data ? getPublicBusinessView(data) : null;
 }
 
-export async function getBusinessFiles(businessId: string, options: { publicOnly?: boolean } = {}): Promise<BusinessAssetRow[]> {
-  const select = options.publicOnly
-    ? 'id,business_id,file_name,display_name,file_type,size_bytes,category,privacy_level,public_visible,created_at,updated_at'
-    : 'id,business_id,owner_id,file_name,display_name,file_path,file_type,size_bytes,category,privacy_level,public_visible,admin_note,created_at,updated_at';
-  let q: any = supabase.from('business_files').select(select as string).eq('business_id', businessId);
-  if (options.publicOnly) q = q.eq('public_visible', true);
-  const { data, error } = await q.order('created_at', { ascending: false });
+export async function getBusinessFiles(
+  businessId: string,
+  options: { publicOnly?: boolean } = {},
+) {
+  if (options.publicOnly) {
+    const { data, error } = await supabase.rpc(
+      'get_business_file_metadata_for_viewer',
+      { business_uuid: businessId },
+    );
+    if (error) throw error;
+    return data || [];
+  }
+
+  const { data, error } = await supabase
+    .from('business_files')
+    .select(
+      'id,business_id,owner_id,file_name,file_path,file_type,' +
+        'size_bytes,category,privacy_level,review_status,' +
+        'created_at,display_name,public_visible,admin_note,updated_at',
+    )
+    .eq('business_id', businessId)
+    .order('created_at', { ascending: false });
+
   if (error) throw error;
-  return (data || []) as BusinessAssetRow[];
+  return data || [];
 }
 
-export async function getBusinessImages(businessId: string, options: { publicOnly?: boolean } = {}): Promise<BusinessAssetRow[]> {
+export async function getBusinessImages(
+  businessId: string,
+  options: { publicOnly?: boolean } = {},
+): Promise<BusinessAssetRow[]> {
   const select = options.publicOnly
-    ? 'id,business_id,title,display_title,public_url,sort_order,public_visible,is_sanitized,is_hero,created_at,updated_at'
-    : 'id,business_id,owner_id,title,display_title,image_path,public_url,sort_order,public_visible,is_sanitized,is_hero,admin_note,created_at,updated_at';
-  let q: any = supabase.from('business_images').select(select as string).eq('business_id', businessId);
-  if (options.publicOnly) q = q.eq('public_visible', true).eq('is_sanitized', true);
-  const { data, error } = await q.order('is_hero', { ascending: false }).order('sort_order', { ascending: true, nullsFirst: false }).order('created_at', { ascending: true });
+    ? 'id,business_id,title,display_title,public_url,sort_order,' +
+      'public_visible,is_sanitized,is_hero,review_status,storage_bucket,' +
+      'created_at,updated_at'
+    : 'id,business_id,owner_id,title,display_title,image_path,public_url,' +
+      'sort_order,public_visible,is_sanitized,is_hero,review_status,' +
+      'storage_bucket,admin_note,created_at,updated_at';
+
+  let q: any = supabase
+    .from('business_images')
+    .select(select as string)
+    .eq('business_id', businessId);
+
+  if (options.publicOnly) {
+    q = q
+      .eq('public_visible', true)
+      .eq('is_sanitized', true)
+      .eq('review_status', 'approved')
+      .eq('storage_bucket', 'business-images-public');
+  }
+
+  const { data, error } = await q
+    .order('is_hero', { ascending: false })
+    .order('sort_order', { ascending: true, nullsFirst: false })
+    .order('created_at', { ascending: true });
+
   if (error) throw error;
-  return (data || []) as BusinessAssetRow[];
+
+  const rows = (data || []) as BusinessAssetRow[];
+  return options.publicOnly
+    ? rows
+    : attachBusinessImagePreviewUrls(rows);
 }
 
 export async function getBusinessDetailAssets(businessId: string, options: { publicOnly?: boolean } = {}): Promise<BusinessDetailAssets> {
@@ -353,7 +404,8 @@ export async function getMyBusiness(ownerId: string) {
 }
 
 export async function listInvestors(filters: any = {}): Promise<any[]> {
-  let q: any = supabase.from('investors').select(investorPublicSelect as string);
+  const source = filters.includeHidden ? 'investors' : 'public_investors_safe';
+  let q: any = supabase.from(source).select(investorPublicSelect as string);
   if (!filters.includeHidden) q = q.eq('visible', true).eq('status', 'active');
   if (filters.type) q = q.eq('type', filters.type);
   // country/region filters mean target investment markets, not investor office location.
@@ -382,7 +434,8 @@ export async function countInvestors(filters: any = {}): Promise<number> {
     const rows = await listInvestors({ ...filters, limit: 1000, offset: 0, rawLimit: 1000 });
     return rows.length;
   }
-  let q: any = supabase.from('investors').select('id', { count: 'exact', head: true });
+  const source = filters.includeHidden ? 'investors' : 'public_investors_safe';
+  let q: any = supabase.from(source).select('id', { count: 'exact', head: true });
   if (!filters.includeHidden) q = q.eq('visible', true).eq('status', 'active');
   if (filters.type) q = q.eq('type', filters.type);
   if (filters.dealType) { const value = String(filters.dealType); q = q.or(`deal_types.cs.{${value}},deal_types.cs.{"${value}"}`); }
@@ -399,7 +452,7 @@ export async function getInvestorByOwner(ownerId: string) {
 }
 
 export async function getInvestorByCode(code: string): Promise<any | null> {
-  const { data, error } = await supabase.from('investors').select(investorPublicSelect as string).eq('code', code).eq('visible', true).eq('status', 'active').maybeSingle();
+  const { data, error } = await supabase.from('public_investors_safe').select(investorPublicSelect as string).eq('code', code).eq('visible', true).eq('status', 'active').maybeSingle();
   if (error) throw error;
   return data;
 }
@@ -517,7 +570,7 @@ export async function uploadBusinessFile(
     : `${businessId}/${Date.now()}-${safeName}`;
 
   const { error: upErr } = await supabase.storage
-    .from('business-files-private')
+    .from(BUSINESS_FILE_BUCKET)
     .upload(path, file, { upsert: false });
 
   if (upErr && !(stableId && isDuplicateStorageUploadError(upErr))) {
@@ -535,6 +588,7 @@ export async function uploadBusinessFile(
     category,
     privacy_level: privacy,
     public_visible: false,
+    review_status: 'pending_admin_approval',
     client_upload_id: stableId || null,
   };
 
@@ -558,10 +612,9 @@ export async function updateBusinessFile(fileId: string, patch: any) {
 }
 
 export async function deleteBusinessFile(row: any) {
-  const path = row?.file_path;
-  if (path) await supabase.storage.from('business-files-private').remove([path]).catch(() => undefined);
-  const { error } = await supabase.from('business_files').delete().eq('id', row.id);
-  if (error) throw error;
+  const assetId = String(row?.id || '').trim();
+  if (!assetId) throw new Error('Tài liệu thiếu ID để xóa.');
+  return deleteBusinessAsset('file', assetId);
 }
 
 export async function uploadBusinessImage(
@@ -572,22 +625,23 @@ export async function uploadBusinessImage(
   clientUploadId = '',
 ) {
   const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-  const stableId = String(clientUploadId || '').replace(/[^a-zA-Z0-9_-]/g, '');
+  const stableId = String(clientUploadId || '')
+    .replace(/[^a-zA-Z0-9_-]/g, '');
   const path = stableId
     ? `${businessId}/signup/${stableId}-${safeName}`
-    : `${businessId}/${Date.now()}-${safeName}`;
+    : `${businessId}/pending/${Date.now()}-${safeName}`;
 
   const { error: upErr } = await supabase.storage
-    .from('business-images-public')
-    .upload(path, file, { upsert: false });
+    .from(BUSINESS_IMAGE_PRIVATE_BUCKET)
+    .upload(path, file, {
+      upsert: false,
+      contentType: file.type || 'application/octet-stream',
+      cacheControl: '3600',
+    });
 
   if (upErr && !(stableId && isDuplicateStorageUploadError(upErr))) {
     throw upErr;
   }
-
-  const { data: pub } = supabase.storage
-    .from('business-images-public')
-    .getPublicUrl(path);
 
   const payload = {
     business_id: businessId,
@@ -595,10 +649,12 @@ export async function uploadBusinessImage(
     title,
     display_title: title,
     image_path: path,
-    public_url: pub.publicUrl,
+    storage_bucket: BUSINESS_IMAGE_PRIVATE_BUCKET,
+    public_url: null,
     public_visible: false,
     is_sanitized: false,
     is_hero: false,
+    review_status: 'pending_admin_approval',
     client_upload_id: stableId || null,
   };
 
@@ -611,7 +667,17 @@ export async function uploadBusinessImage(
     : supabase.from('business_images').insert(payload).select().single();
 
   const { data, error } = await query;
-  if (error) throw error;
+
+  if (error) {
+    if (!upErr) {
+      await supabase.storage
+        .from(BUSINESS_IMAGE_PRIVATE_BUCKET)
+        .remove([path])
+        .catch(() => undefined);
+    }
+    throw error;
+  }
+
   return data;
 }
 
@@ -622,10 +688,9 @@ export async function updateBusinessImage(imageId: string, patch: any) {
 }
 
 export async function deleteBusinessImage(row: any) {
-  const path = row?.image_path;
-  if (path) await supabase.storage.from('business-images-public').remove([path]).catch(() => undefined);
-  const { error } = await supabase.from('business_images').delete().eq('id', row.id);
-  if (error) throw error;
+  const assetId = String(row?.id || '').trim();
+  if (!assetId) throw new Error('Ảnh thiếu ID để xóa.');
+  return deleteBusinessAsset('image', assetId);
 }
 
 export async function createInvestorForOwner(ownerId: string, payload: any) {

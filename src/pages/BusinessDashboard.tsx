@@ -5,6 +5,8 @@ import { useAuth } from '../contexts/AuthContext';
 import {
   deleteBusinessFile,
   deleteBusinessImage,
+  getBusinessFiles,
+  getBusinessImages,
   getMyBusiness,
   updateBusinessFile,
   updateBusinessImage,
@@ -12,11 +14,19 @@ import {
   uploadBusinessImage
 } from '../lib/data';
 import { supabase } from '../lib/supabase';
+import { ensureBusinessImagePrivate } from '../lib/businessAssetStorage';
+import { langFromPath, toLocalizedPath } from '../lib/i18nRoutes';
 import { DEFAULT_VALUATION_CONFIG, getActiveValuationConfig, valuate, valuationInputFromBusiness, formatValuationMoney, valuationVerdictMessage, VALUATION_DISCLAIMER_VI, VALUATION_DISCLAIMER_EN } from '../lib/valuationEngine';
 import { businessQualityPublicExplanation, normalizeQualityBreakdown, qualityItemLabel, qualityItemNote } from '../lib/businessQuality';
 import { proposalQuotaTotal } from '../lib/proposals';
 import { calculatePricing, lookupPromo, type BusinessPlan } from '../lib/pricing';
 import { businessProposalQuotaForPlan } from '../lib/businessPlans';
+import {
+  createOwnPaymentOrder,
+  formatServiceExpiry,
+  makePaymentOrderCode,
+  paymentOrderCode,
+} from '../lib/paymentOrders';
 import { resumePendingBusinessSignupUploads } from '../lib/pendingBusinessUploads';
 
 type Lang = 'vi' | 'en';
@@ -385,10 +395,10 @@ function ValuationOverviewBox({ lang, result }: any) {
 }
 
 export default function BusinessDashboard() {
-  const { profile, loading, signOut } = useAuth();
+  const { profile, loading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const [lang, setLang] = useState<Lang>('vi');
+  const lang = langFromPath(location.pathname) as Lang;
   const [tab, setTab] = useState<Tab>(() => resolveTab(location.pathname));
   const [b, setB] = useState<any>(null);
   const [files, setFiles] = useState<any[]>([]);
@@ -435,36 +445,77 @@ export default function BusinessDashboard() {
       const biz = await getMyBusiness(profile.id);
       setB(biz);
       if (biz) {
-        const [filesRes, imagesRes, requestsRes, interestsRes, paymentsRes, proposalsRes, savedRes, benchmarkRes] = await Promise.all([
-          supabase.from('business_files').select('*').eq('business_id', biz.id).order('created_at', { ascending: false }),
-          supabase.from('business_images').select('*').eq('business_id', biz.id).order('sort_order', { ascending: true, nullsFirst: false }).order('created_at', { ascending: true }),
-          supabase.from('request_data').select('*, investors(code,title_en,title_vi,type,country)').eq('business_id', biz.id).order('created_at', { ascending: false }),
-          supabase.from('investor_interests').select('*, investors(id,code,title_en,title_vi,type,country,industries,deal_types,ticket_min,ticket_max)').eq('business_id', biz.id).order('created_at', { ascending: false }),
-          supabase.from('payment_orders').select('*').eq('business_id', biz.id).order('created_at', { ascending: false }),
-          supabase.from('proposals').select('*, investors(code,title_en,title_vi,type,country,country_iso2,ticket_min,ticket_max)').eq('business_id', biz.id).order('sent_at', { ascending: false }),
-          supabase.from('saved_businesses').select('id,investor_id,business_id,created_at').eq('business_id', biz.id).order('created_at', { ascending: false }),
-          supabase.from('businesses').select('id,industry,country_iso2,revenue_2025,revenue_currency,ask_amount,ask_currency,stake_pct,deal_type,visible,status,public_snapshot_json').eq('visible', true).eq('status', 'active').not('public_snapshot_json', 'is', null).eq('country_iso2', biz.country_iso2 || 'VN').limit(80)
+        const [
+          nextFiles,
+          nextImages,
+          relationsRes,
+          paymentsRes,
+          savedRes,
+          benchmarkRes,
+        ] = await Promise.all([
+          getBusinessFiles(biz.id),
+          getBusinessImages(biz.id),
+          supabase.rpc('get_my_business_dashboard_relations', {
+            business_uuid: biz.id,
+          }),
+          supabase
+            .from('payment_orders')
+            .select('*')
+            .eq('business_id', biz.id)
+            .order('created_at', { ascending: false }),
+          supabase
+            .from('saved_businesses')
+            .select('id,investor_id,business_id,created_at')
+            .eq('business_id', biz.id)
+            .order('created_at', { ascending: false }),
+          supabase
+            .from('public_businesses_safe')
+            .select(
+              'id,industry,country_iso2,revenue_2025,revenue_currency,' +
+                'ask_amount,ask_currency,stake_pct,deal_type,visible,status,' +
+                'public_snapshot_json',
+            )
+            .eq('country_iso2', biz.country_iso2 || 'VN')
+            .limit(80),
         ]);
-        if (filesRes.error) throw filesRes.error;
-        if (imagesRes.error) throw imagesRes.error;
-        if (requestsRes.error) throw requestsRes.error;
-        if (interestsRes.error) throw interestsRes.error;
+
+        if (relationsRes.error) throw relationsRes.error;
         if (paymentsRes.error) throw paymentsRes.error;
-        setFiles(filesRes.data || []);
-        setImages(imagesRes.data || []);
-        setRequests(requestsRes.data || []);
-        setInterests(interestsRes.data || []);
+
+        const relations =
+          relationsRes.data && typeof relationsRes.data === 'object'
+            ? (relationsRes.data as Record<string, any>)
+            : {};
+
+        setFiles(nextFiles || []);
+        setImages(nextImages || []);
+        setRequests(
+          Array.isArray(relations.requests) ? relations.requests : [],
+        );
+        setInterests(
+          Array.isArray(relations.interests) ? relations.interests : [],
+        );
         setPayments(paymentsRes.data || []);
-        setProposals(proposalsRes.error ? [] : (proposalsRes.data || []));
+        setProposals(
+          Array.isArray(relations.proposals) ? relations.proposals : [],
+        );
         setSavedBusinesses(savedRes.error ? [] : (savedRes.data || []));
-        setBenchmarkBusinesses(benchmarkRes.error ? [] : (benchmarkRes.data || []));
+        setBenchmarkBusinesses(
+          benchmarkRes.error ? [] : (benchmarkRes.data || []),
+        );
       }
     } catch (e: any) { setErr(e?.message || 'Could not load dashboard data.'); }
     finally { setBusy(false); }
   }
 
   useEffect(() => {
-    if (!loading && !profile) navigate('/login?next=/dashboard/business');
+    if (!loading && !profile) {
+      const loginPath = toLocalizedPath('/login', lang);
+      const next = encodeURIComponent(
+        location.pathname + location.search,
+      );
+      navigate(`${loginPath}?next=${next}`);
+    }
     if (profile) load();
   }, [profile?.id, loading]);
 
@@ -612,22 +663,77 @@ export default function BusinessDashboard() {
   }
 
   async function deleteFile(row: any) {
-    if (!confirm(T(lang, 'Xóa tài liệu này?', 'Delete this document?'))) return;
-    try { await deleteBusinessFile(row); setMsg(T(lang, 'Đã xóa tài liệu.', 'Document deleted.')); await load(); }
-    catch (e: any) { setErr(e?.message || 'Delete failed.'); }
+    if (!confirm(T(lang, 'Xóa tài liệu này?', 'Delete this document?'))) {
+      return;
+    }
+
+    setBusy(true);
+    setErr('');
+    setMsg('');
+
+    try {
+      await deleteBusinessFile(row);
+      setFiles((current) =>
+        current.filter((file) => String(file.id) !== String(row.id)),
+      );
+      setMsg(T(lang, 'Đã xóa tài liệu.', 'Document deleted.'));
+      await load();
+    } catch (e: any) {
+      setErr(e?.message || T(lang, 'Xóa tài liệu thất bại.', 'Delete failed.'));
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function deleteImage(row: any) {
-    if (!confirm(T(lang, 'Xóa ảnh này?', 'Delete this image?'))) return;
-    try { await deleteBusinessImage(row); setMsg(T(lang, 'Đã xóa ảnh.', 'Image deleted.')); await load(); }
-    catch (e: any) { setErr(e?.message || 'Delete failed.'); }
+    if (!confirm(T(lang, 'Xóa ảnh này?', 'Delete this image?'))) {
+      return;
+    }
+
+    setBusy(true);
+    setErr('');
+    setMsg('');
+
+    try {
+      await deleteBusinessImage(row);
+      setImages((current) =>
+        current.filter((image) => String(image.id) !== String(row.id)),
+      );
+      setMsg(T(lang, 'Đã xóa ảnh.', 'Image deleted.'));
+      await load();
+    } catch (e: any) {
+      setErr(e?.message || T(lang, 'Xóa ảnh thất bại.', 'Delete failed.'));
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function renameImage(row: any) {
-    const title = prompt(T(lang, 'Tên ảnh mới', 'New image title'), row.title || '');
+    const title = prompt(
+      T(lang, 'Tên ảnh mới', 'New image title'),
+      row.title || '',
+    );
     if (title === null) return;
-    try { await updateBusinessImage(row.id, { title, admin_note: 'User renamed image; Admin must approve display_title/public visibility.' }); setMsg(businessUpdateSuccessMsg(lang)); await load(); }
-    catch (e: any) { setErr(e?.message || 'Update failed.'); }
+
+    setBusy(true);
+    setErr('');
+    setMsg('');
+
+    try {
+      const securedRow = await ensureBusinessImagePrivate(row);
+      await updateBusinessImage(securedRow.id, {
+        title,
+        display_title: title,
+        admin_note:
+          'User renamed image; Admin must approve public display again.',
+      });
+      setMsg(businessUpdateSuccessMsg(lang));
+      await load();
+    } catch (e: any) {
+      setErr(e?.message || T(lang, 'Cập nhật ảnh thất bại.', 'Update failed.'));
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function suggestHero(row: any) {
@@ -640,10 +746,10 @@ export default function BusinessDashboard() {
   async function fulfillRequest(row: any) { const { error } = await supabase.from('request_data').update({ status: 'fulfilled' }).eq('id', row.id); setErr(error?.message || ''); setMsg(error ? '' : T(lang, 'Đã đánh dấu hoàn tất.', 'Marked as fulfilled.')); load(); }
 
   return <main className="d68-dashboard-page d68-business-dashboard-page"><div className="d68-dashboard-wrap">
-    <header className="d68-dashboard-head"><div><div className="d68-dashboard-kicker">Business Dashboard</div><h1>{title}</h1></div><div className="d68-dashboard-actions"><button className="d68-dashboard-btn light" onClick={() => setLang(lang === 'vi' ? 'en' : 'vi')}>{lang.toUpperCase()}</button><span className="d68-dashboard-badge blue">{planLabel}</span><span className={`d68-dashboard-badge ${status.cls}`}>{status.label}</span><button className="d68-dashboard-btn light" style={{ background: '#475569', color: '#fff', borderColor: '#334155' }} onClick={() => signOut().then(() => navigate('/'))}>{T(lang,'Thoát','Exit')}</button></div></header>
+    <header className="d68-dashboard-head"><div><div className="d68-dashboard-kicker">Business Dashboard</div><h1>{title}</h1></div><div className="d68-dashboard-actions"><span className="d68-dashboard-badge blue">{planLabel}</span><span className={`d68-dashboard-badge ${status.cls}`}>{status.label}</span></div></header>
     {msg ? <div className="d68-dashboard-notice ok d68-business-update-alert">{msg}</div> : null}{err ? <div className="d68-dashboard-notice err">{err}</div> : null}{busy ? <div className="d68-dashboard-notice warn">{T(lang,'Đang tải dữ liệu...','Loading data...')}</div> : null}{hasPending ? <div className="d68-dashboard-notice ok d68-business-update-alert">{businessUpdateSuccessMsg(lang)}</div> : null}
-    <div className="d68-dashboard-cols"><nav className="d68-dashboard-side">{tabs.map((t) => <Link key={t.id} to={t.href} onClick={() => setTab(t.id)} className={tab === t.id ? 'active' : ''}><span className="d68-dashboard-nav-icon"><t.Icon size={17} strokeWidth={2.2} /></span><span>{T(lang,t.vi,t.en)}</span></Link>)}{b.slug ? <a className="d68-dashboard-public-link" href={`/businesses/${b.slug}`} target="_blank" rel="noreferrer">{T(lang, 'Xem hồ sơ công khai', 'View public profile')} &gt;</a> : null}<div className="d68-dashboard-side__note">{T(lang,'Cần hỗ trợ hoàn thiện hồ sơ, định giá và tài liệu làm việc với Nhà đầu tư? Hãy tham khảo:', 'Need help preparing your profile, valuation and investor materials? Please refer to:')}<br/><a href="https://vietcapitalpartners.com" target="_blank" rel="noreferrer">vietcapitalpartners.com ↗</a><br/>Hotline: 0909.584.075</div></nav><section>
-      {tab === 'overview' ? <><ValuationOverviewBox lang={lang} result={industryBenchmark} /><div className="d68-dashboard-scorecard"><div className="d68-dashboard-scorecard__ring" style={{ background: `conic-gradient(${score === null ? '#CBD5E1' : band.cls === 'green' ? '#16A34A' : band.cls === 'blue' ? '#1596cc' : '#B8860B'} ${Math.max(0, Math.min(100, score ?? 0)) * 3.6}deg, #EEF2F6 0deg)` }}><div><b>{score === null ? '—' : score}</b><span>/100</span></div></div><section><div><h2>Business Quality Score</h2><span className={`d68-dashboard-badge ${band.cls}`}>{score === null ? T(lang,'Đang cập nhật','Pending') : T(lang, band.labelVi, band.labelEn)}</span></div><p>{businessQualityPublicExplanation(lang)}</p></section></div><div className="d68-quality-list d68-dashboard-card"><div className="d68-quality-list__head"><BarChart3 size={18}/><h2>{T(lang,'Điểm theo nhóm tiêu chí','Score by criterion')}</h2></div>{qualityBreakdown.items.map((item) => <div key={item.key} className={`d68-quality-item ${item.score >= item.max * 0.7 ? 'ok' : 'missing'}`}><b>{qualityItemLabel(item, lang)}</b><span>{item.score}/{item.max} · {qualityItemNote(item, lang)}</span></div>)}</div><div className="d68-quality-list d68-dashboard-card"><div className="d68-quality-list__head"><BarChart3 size={18}/><h2>{T(lang,'Hồ sơ/tài liệu đạt yêu cầu','Required profile materials')}</h2></div>{qualityItems.map((item) => <div key={item.label} className={`d68-quality-item ${item.ok ? 'ok' : 'missing'}`}><b>{item.ok ? '✓' : '×'} {item.label}</b><span>{item.detail}</span></div>)}</div><div className="d68-dashboard-grid4" style={{ marginBottom: 18 }}>{metric(T(lang,'Trạng thái','Status'), status.label, status.cls)}{metric(T(lang,'Gói hiển thị','Listing plan'), planLabel)}{metric(T(lang,'Đã gửi Hồ sơ / Được duyệt','Proposals sent / approved'), `${sentProposalCount} / ${approvedProposalCount}`, approvedProposalCount ? 'green' : 'blue', T(lang,'Số lượt gửi Hồ sơ DN và số nhà đầu tư đã được duyệt/kết nối.', 'Business profile sends and investors approved/connected.'))}{metric(T(lang,'Nhà đầu tư quan tâm','Investor attention'), String(investorAttentionCount), investorAttentionCount ? 'green' : 'gold', T(lang,`Lưu hồ sơ: ${savedBusinesses.length} · Quan tâm: ${interests.length} · Yêu cầu data: ${requests.length}`, `Saved: ${savedBusinesses.length} · Interest: ${interests.length} · Data requests: ${requests.length}`))}</div><div className="d68-dashboard-card"><h2>{T(lang,'Hạn mức proposal','Proposal quota')}</h2><div className="d68-dashboard-progress"><span style={{ width: `${Math.min(100, Math.round((sentProposalCount / Math.max(1, quotaTotal)) * 100))}%` }} /></div><p><b>{sentProposalCount} / {quotaTotal}</b> · {T(lang, `đã dùng, còn lại ${remainingProposalQuota} lượt`, `used, ${remainingProposalQuota} sends remaining`)}</p><Link to="/investors" className="d68-dashboard-btn gold">{T(lang,'Tìm Nhà đầu tư','Find investors')} →</Link></div></> : null}
+    <div className="d68-dashboard-cols"><nav className="d68-dashboard-side">{tabs.map((t) => <Link key={t.id} to={toLocalizedPath(t.href, lang)} onClick={() => setTab(t.id)} className={tab === t.id ? 'active' : ''}><span className="d68-dashboard-nav-icon"><t.Icon size={17} strokeWidth={2.2} /></span><span>{T(lang,t.vi,t.en)}</span></Link>)}{b.slug ? <a className="d68-dashboard-public-link" href={toLocalizedPath(`/businesses/${b.slug}`, lang)} target="_blank" rel="noreferrer">{T(lang, 'Xem hồ sơ công khai', 'View public profile')} &gt;</a> : null}<div className="d68-dashboard-side__note">{T(lang,'Cần hỗ trợ hoàn thiện hồ sơ, định giá và tài liệu làm việc với Nhà đầu tư? Hãy tham khảo:', 'Need help preparing your profile, valuation and investor materials? Please refer to:')}<br/><a href="https://vietcapitalpartners.com" target="_blank" rel="noreferrer">vietcapitalpartners.com ↗</a><br/>Hotline: 0909.584.075</div></nav><section>
+      {tab === 'overview' ? <><ValuationOverviewBox lang={lang} result={industryBenchmark} /><div className="d68-dashboard-scorecard"><div className="d68-dashboard-scorecard__ring" style={{ background: `conic-gradient(${score === null ? '#CBD5E1' : band.cls === 'green' ? '#16A34A' : band.cls === 'blue' ? '#1596cc' : '#B8860B'} ${Math.max(0, Math.min(100, score ?? 0)) * 3.6}deg, #EEF2F6 0deg)` }}><div><b>{score === null ? '—' : score}</b><span>/100</span></div></div><section><div><h2>Business Quality Score</h2><span className={`d68-dashboard-badge ${band.cls}`}>{score === null ? T(lang,'Đang cập nhật','Pending') : T(lang, band.labelVi, band.labelEn)}</span></div><p>{businessQualityPublicExplanation(lang)}</p></section></div><div className="d68-quality-list d68-dashboard-card"><div className="d68-quality-list__head"><BarChart3 size={18}/><h2>{T(lang,'Điểm theo nhóm tiêu chí','Score by criterion')}</h2></div>{qualityBreakdown.items.map((item) => <div key={item.key} className={`d68-quality-item ${item.score >= item.max * 0.7 ? 'ok' : 'missing'}`}><b>{qualityItemLabel(item, lang)}</b><span>{item.score}/{item.max} · {qualityItemNote(item, lang)}</span></div>)}</div><div className="d68-quality-list d68-dashboard-card"><div className="d68-quality-list__head"><BarChart3 size={18}/><h2>{T(lang,'Hồ sơ/tài liệu đạt yêu cầu','Required profile materials')}</h2></div>{qualityItems.map((item) => <div key={item.label} className={`d68-quality-item ${item.ok ? 'ok' : 'missing'}`}><b>{item.ok ? '✓' : '×'} {item.label}</b><span>{item.detail}</span></div>)}</div><div className="d68-dashboard-grid4" style={{ marginBottom: 18 }}>{metric(T(lang,'Trạng thái','Status'), status.label, status.cls)}{metric(T(lang,'Gói hiển thị','Listing plan'), planLabel)}{metric(T(lang,'Đã gửi Hồ sơ / Được duyệt','Proposals sent / approved'), `${sentProposalCount} / ${approvedProposalCount}`, approvedProposalCount ? 'green' : 'blue', T(lang,'Số lượt gửi Hồ sơ DN và số nhà đầu tư đã được duyệt/kết nối.', 'Business profile sends and investors approved/connected.'))}{metric(T(lang,'Nhà đầu tư quan tâm','Investor attention'), String(investorAttentionCount), investorAttentionCount ? 'green' : 'gold', T(lang,`Lưu hồ sơ: ${savedBusinesses.length} · Quan tâm: ${interests.length} · Yêu cầu data: ${requests.length}`, `Saved: ${savedBusinesses.length} · Interest: ${interests.length} · Data requests: ${requests.length}`))}</div><div className="d68-dashboard-card"><h2>{T(lang,'Hạn mức proposal','Proposal quota')}</h2><div className="d68-dashboard-progress"><span style={{ width: `${Math.min(100, Math.round((sentProposalCount / Math.max(1, quotaTotal)) * 100))}%` }} /></div><p><b>{sentProposalCount} / {quotaTotal}</b> · {T(lang, `đã dùng, còn lại ${remainingProposalQuota} lượt`, `used, ${remainingProposalQuota} sends remaining`)}</p><Link to={toLocalizedPath('/investors', lang)} className="d68-dashboard-btn gold">{T(lang,'Tìm Nhà đầu tư','Find investors')} →</Link></div></> : null}
       {tab === 'profile' ? (
         <ProfileForm
           key={`${b.id}:${b.updated_at || ''}:${b.pending_submitted_at || ''}`}
@@ -673,11 +779,13 @@ function BusinessBillingPanel({ lang, b, payments, profile, setMsg, setErr, onRe
   const [paymentAck, setPaymentAck] = useState(false);
   const [orderBusy, setOrderBusy] = useState(false);
   const [qrSrc, setQrSrc] = useState('');
+  const [orderCode, setOrderCode] = useState(() =>
+    makePaymentOrderCode('BIZUP'),
+  );
 
   const country = String(b?.country_iso2 || 'VN').toUpperCase();
   const price = calculatePricing({ role: 'business', country, termWeeks: weeks, businessPlan: plan, promoCode }, promoPct);
   const quotaAdd = businessProposalQuotaForPlan(plan);
-  const orderCode = `DEALS68-UPGRADE-${String(b?.public_code || b?.slug || b?.id || 'BUSINESS').replace(/[^a-zA-Z0-9]/g, '').slice(0, 18)}`.toUpperCase();
   const qrAmountParam = price.currency === 'VND' ? `amount=${Math.round(price.total)}&` : '';
   const qrUrl = `https://img.vietqr.io/image/VCB-0011004000713-compact2.png?${qrAmountParam}addInfo=${encodeURIComponent(orderCode)}&accountName=${encodeURIComponent('Tieu Vo Dinh Phi')}`;
   useEffect(() => { setQrSrc(qrUrl); }, [qrUrl]);
@@ -692,8 +800,25 @@ function BusinessBillingPanel({ lang, b, payments, profile, setMsg, setErr, onRe
   }
 
   async function createUpgradeOrder() {
-    if (!paymentAck) { setErr(T(lang, 'Vui lòng xác nhận đã chuyển khoản đúng số tiền và nội dung.', 'Please confirm the payment transfer details.')); return; }
-    setOrderBusy(true); setErr('');
+    if (!paymentAck) {
+      setErr(
+        T(
+          lang,
+          'Vui lòng xác nhận đã chuyển khoản đúng số tiền và nội dung.',
+          'Please confirm the payment transfer details.',
+        ),
+      );
+      return;
+    }
+
+    if (!profile?.id) {
+      setErr(T(lang, 'Phiên đăng nhập không hợp lệ.', 'Invalid session.'));
+      return;
+    }
+
+    setOrderBusy(true);
+    setErr('');
+
     const payload = {
       orderType: 'business_service_upgrade',
       businessPlan: plan,
@@ -704,33 +829,54 @@ function BusinessBillingPanel({ lang, b, payments, profile, setMsg, setErr, onRe
       promoCode: promoCode.trim().toUpperCase() || null,
       promoDiscountPct: promoPct,
       bankContent: orderCode,
-      pricing: price
+      orderCode,
+      pricing: price,
     };
-    const { error } = await supabase.from('payment_orders').insert({
-      business_id: b.id,
-      profile_id: profile?.id || null,
-      created_by: profile?.id || null,
-      status: 'pending',
-      title: `${T(lang, 'Mua/Nâng cấp Gói dịch vụ', 'Buy/Upgrade service package')} - ${displayPlan(lang, plan)} - ${billingMoney(price.total, price.currency)}`,
-      payload,
-      visibility: 'private',
-      sort_order: 0
-    });
-    setOrderBusy(false);
-    if (error) { setErr(error.message); return; }
-    setMsg(T(lang, 'Đã ghi nhận thanh toán. Admin/SePay sẽ xác nhận để cập nhật gói hiển thị và cộng thêm lượt gửi Hồ sơ doanh nghiệp.', 'Payment recorded. Admin/SePay confirmation will update the listing plan and add business profile sends.'));
-    setOpen(false); setPaymentAck(false);
-    await onReload?.();
+
+    try {
+      await createOwnPaymentOrder({
+        entity: 'business',
+        entityId: b.id,
+        profileId: profile.id,
+        title:
+          `${T(lang, 'Mua/Nâng cấp Gói dịch vụ', 'Buy/Upgrade service package')}` +
+          ` - ${displayPlan(lang, plan)}` +
+          ` - ${billingMoney(price.total, price.currency)}`,
+        payload,
+        orderCode,
+      });
+
+      setMsg(
+        T(
+          lang,
+          'Đã ghi nhận thanh toán. Admin/SePay sẽ xác nhận để cập nhật gói hiển thị và cộng thêm lượt gửi Hồ sơ doanh nghiệp.',
+          'Payment recorded. Admin/SePay confirmation will update the listing plan and add business profile sends.',
+        ),
+      );
+      setOpen(false);
+      setPaymentAck(false);
+      setOrderCode(makePaymentOrderCode('BIZUP'));
+      await onReload?.();
+    } catch (error: any) {
+      setErr(error?.message || T(lang, 'Không tạo được đơn thanh toán.', 'Could not create payment order.'));
+    } finally {
+      setOrderBusy(false);
+    }
   }
 
   return <div className="d68-dashboard-card d68-dashboard-billing">
     <div className="d68-dashboard-row-head"><div><h2>{T(lang,'Thanh toán / Invoice','Payments / Invoices')}</h2><p>{T(lang,'Lịch sử thanh toán của doanh nghiệp và mua thêm/nâng cấp gói hiển thị.', 'Business payment history and service package upgrade.')}</p></div><button type="button" className="d68-dashboard-btn gold" onClick={() => setOpen((v) => !v)}>{T(lang,'Mua/Nâng cấp Gói dịch vụ','Buy/Upgrade service package')}</button></div>
+    {b.plan_expires_at ? (
+      <div className="d68-dashboard-notice">
+        {T(lang, 'Hạn gói hiện tại', 'Current plan expiry')}: {formatServiceExpiry(b.plan_expires_at, lang === 'vi' ? 'vi-VN' : 'en-US')}
+      </div>
+    ) : null}
     <div className="d68-billing-history">
       {payments.length ? payments.map((p: any) => {
         const payload = paymentPayload(p);
         const amount = payload.amount ?? payload.pricing?.total;
         const currency = payload.currency ?? payload.pricing?.currency ?? 'VND';
-        return <div key={p.id} className="d68-dashboard-row d68-billing-row"><div style={{ flex: 1 }}><b>{p.title || T(lang,'Đơn thanh toán','Payment order')}</b><div className="d68-dashboard-mini">{paymentStatusText(lang, p.status)} · {new Date(p.created_at).toLocaleString()} · {amount ? billingMoney(amount, currency) : T(lang,'Đang cập nhật','Pending')}</div>{payload.bankContent ? <div className="d68-dashboard-mini">{T(lang,'Nội dung CK','Transfer note')}: {payload.bankContent}</div> : null}</div><span className={`d68-dashboard-badge ${String(p.status).toLowerCase() === 'confirmed' ? 'green' : 'gold'}`}>{paymentStatusText(lang, p.status)}</span></div>;
+        return <div key={p.id} className="d68-dashboard-row d68-billing-row"><div style={{ flex: 1 }}><b>{p.title || T(lang,'Đơn thanh toán','Payment order')}</b><div className="d68-dashboard-mini">{paymentStatusText(lang, p.status)} · {new Date(p.created_at).toLocaleString()} · {amount ? billingMoney(amount, currency) : T(lang,'Đang cập nhật','Pending')}</div>{paymentOrderCode(p) ? <div className="d68-dashboard-mini">{T(lang,'Mã đơn/Nội dung CK','Order/transfer code')}: {paymentOrderCode(p)}</div> : null}</div><span className={`d68-dashboard-badge ${String(p.status).toLowerCase() === 'confirmed' ? 'green' : 'gold'}`}>{paymentStatusText(lang, p.status)}</span></div>;
       }) : <div className="d68-dashboard-empty">{T(lang,'Chưa có lịch sử thanh toán.','No payment history yet.')}</div>}
     </div>
     {open ? <div className="d68-dashboard-upgrade-box">

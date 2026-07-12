@@ -4,7 +4,7 @@ import { countInvestors, getMyBusiness, investorTargetCountries, listInvestors }
 import { useAuth } from '../contexts/AuthContext';
 import { toLocalizedPath } from '../lib/i18nRoutes';
 import { listBusinessProposalStatuses, proposalQuotaTotal, sendBusinessProposalToInvestor } from '../lib/proposals';
-import { labelCountry, labelDealType, labelIndustry, labelInvestorType, labelRegion, labelStage, T } from '../lib/labels';
+import { labelCountry, labelDealType, labelIndustry, labelInvestorType, labelStage, T } from '../lib/labels';
 import type { Lang } from '../lib/i18n';
 import { PromotionBanner } from '../components/SiteBanners';
 import { investorPublicDescription, investorPublicTitle, investorTicketLabel } from '../lib/investorDisplay';
@@ -12,7 +12,6 @@ import { industryOptions } from '../lib/industryTaxonomy';
 
 const PAGE_SIZE = 20;
 const investorTypes = ['VC', 'PE', 'Institutional', 'Corporate/Strategic', 'Individual/Angel', 'Family Office', 'Lender/Debt'];
-const regions = ['asia', 'americas', 'europe', 'oceania', 'mideast'];
 const countries = ['VN', 'SG', 'US', 'CA', 'KR', 'DE', 'AU', 'JP', 'HK'];
 const stages = ['Seed', 'Series A', 'Growth', 'Mature', 'Buyout'];
 const dealTypes = ['Investment', 'Lending', 'M&A', 'Partnership / JV'];
@@ -88,7 +87,14 @@ function InvestorCard({ inv, lang, onProposal, proposalState, quotaExceeded, bus
           {inv.verified ? <span className="verified">✓ {T(lang, 'Xác minh', 'Verified')}</span> : null}
         </div>
 
-        <h3>{investorPublicTitle(inv.raw, lang)}</h3>
+        <h3>
+          <Link
+            className="d68-investor-card__title-link"
+            to={toLocalizedPath(`/investors/${inv.code}`, lang)}
+          >
+            {investorPublicTitle(inv.raw, lang)}
+          </Link>
+        </h3>
         <p>{investorPublicDescription(inv.raw, lang)}</p>
 
         <div className="d68-investor-card__meta">
@@ -127,7 +133,6 @@ export default function Investors({ lang }: { lang: Lang }) {
   const [total, setTotal] = useState<number | null>(null);
   const [page, setPage] = useState(1);
   const [type, setType] = useState(() => params.get('type') || '');
-  const [region, setRegion] = useState(() => params.get('region') || '');
   const [country, setCountry] = useState(() => params.get('country') || '');
   const [industry, setIndustry] = useState(() => params.get('industry') || '');
   const [stage, setStage] = useState(() => params.get('stage') || '');
@@ -142,7 +147,6 @@ export default function Investors({ lang }: { lang: Lang }) {
   useEffect(() => {
     const p = new URLSearchParams(location.search);
     setType(p.get('type') || '');
-    setRegion(p.get('region') || '');
     setCountry(p.get('country') || '');
     setIndustry(p.get('industry') || '');
     setStage(p.get('stage') || '');
@@ -163,7 +167,6 @@ export default function Investors({ lang }: { lang: Lang }) {
         limit: PAGE_SIZE,
         offset: (page - 1) * PAGE_SIZE,
         type: type || undefined,
-        region: region || undefined,
         country: country || undefined,
         industry: industry || undefined,
         stage: stage || undefined,
@@ -192,7 +195,7 @@ export default function Investors({ lang }: { lang: Lang }) {
 
     load();
     return () => { live = false; };
-  }, [page, type, region, country, industry, stage, dealType, minTicket, search, lang]);
+  }, [page, type, country, industry, stage, dealType, minTicket, search, lang]);
 
   useEffect(() => {
     let live = true;
@@ -226,7 +229,6 @@ export default function Investors({ lang }: { lang: Lang }) {
 
   function clearFilters() {
     setType('');
-    setRegion('');
     setCountry('');
     setIndustry('');
     setStage('');
@@ -302,7 +304,6 @@ export default function Investors({ lang }: { lang: Lang }) {
 
           <label>{T(lang, 'Tìm kiếm', 'Search')}<input value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} placeholder="keyword..." /></label>
           <label>{T(lang, 'Loại nhà đầu tư', 'Investor type')}<select value={type} onChange={(e) => { setType(e.target.value); setPage(1); }}><option value="">{T(lang, 'Tất cả', 'All')}</option>{investorTypes.map((x) => <option key={x} value={x}>{labelInvestorType(x, lang)}</option>)}</select></label>
-          <label>{T(lang, 'Khu vực đầu tư', 'Investment region')}<select value={region} onChange={(e) => { setRegion(e.target.value); setPage(1); }}><option value="">{T(lang, 'Tất cả', 'All')}</option>{regions.map((x) => <option key={x} value={x}>{labelRegion(x, lang)}</option>)}</select></label>
           <label>{T(lang, 'Quốc gia đầu tư', 'Investment country')}<select value={country} onChange={(e) => { setCountry(e.target.value); setPage(1); }}><option value="">{T(lang, 'Tất cả', 'All')}</option>{countries.map((x) => <option key={x} value={x}>{labelCountry(x, lang)}</option>)}</select></label>
           <label>{T(lang, 'Ngành quan tâm', 'Preferred industry')}<select value={industry} onChange={(e) => { setIndustry(e.target.value); setPage(1); }}><option value="">{T(lang, 'Tất cả', 'All')}</option>{industryOptions.map((x) => <option key={x.key} value={x.key}>{T(lang, x.vi, x.en)}</option>)}</select></label>
           <label>{T(lang, 'Loại giao dịch', 'Deal type')}<select value={dealType} onChange={(e) => { setDealType(e.target.value); setPage(1); }}><option value="">{T(lang, 'Tất cả', 'All')}</option>{dealTypes.map((x) => <option key={x} value={x}>{labelDealType(x, lang, true)}</option>)}</select></label>
