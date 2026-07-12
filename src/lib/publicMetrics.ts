@@ -17,7 +17,7 @@ function normalizeCurrency(row: DealValueRow) {
 
 export async function getPublicDealValueSummary(): Promise<PublicDealValueSummary> {
   const { data, error } = await supabase
-    .from('businesses')
+    .from('public_businesses_safe')
     .select('ask_amount,ask_currency,revenue_currency')
     .eq('visible', true)
     .eq('status', 'active')

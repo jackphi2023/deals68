@@ -263,7 +263,7 @@ export default function Admin() {
         supabase.from('business_files').select('id,business_id,display_name,file_name,privacy_level,public_visible,admin_note,created_at,updated_at').order('created_at', { ascending: false }).limit(2000),
         supabase.from('business_images').select('id,business_id,title,display_title,public_visible,is_sanitized,is_hero,admin_note,created_at,updated_at').order('created_at', { ascending: false }).limit(2000),
         supabase.from('investors').select('*').order('created_at', { ascending: false }).limit(2000),
-        supabase.from('profiles').select('*').order('created_at', { ascending: false }).limit(2000),
+        supabase.from('profiles').select('id,role,username,display_name,email,country_iso2,language_code,timezone,phone_country_iso2,phone,status,dashboard_login_enabled,created_at,updated_at').order('created_at', { ascending: false }).limit(2000),
         supabase.from('promo_codes').select('*').order('created_at', { ascending: false }).limit(500),
         supabase.from('request_data').select('*, businesses(title_vi,title_en,public_code,slug), investors(title_en,title_vi,code,type)').order('created_at', { ascending: false }).limit(500),
         supabase.from('proposals').select('id,business_id,investor_id,message,status,sent_at,updated_at,businesses(id,slug,company_name_private,title_vi,title_en,public_code),investors(id,code,private_name,title_vi,title_en,private_email)').order('sent_at', { ascending: false }).limit(1000),
@@ -935,7 +935,6 @@ function InvestorEditor({ i, profiles, onSave, onToggle }: any) {
   const targetLabels = targetCountries.map(countryLabelAdmin);
   const loginProfile = (profiles || []).find((p: Row) => p.id === i.owner_id || p.username === i.username || p.email === i.private_email) || {};
   const loginUsername = loginProfile.username || i.username || loginProfile.email || i.private_email || '—';
-  const loginPassword = loginProfile.initial_password || '—';
   return <Card><form onSubmit={(e) => onSave(e, i, pending ? 'approve' : 'save')}>
     <div className="d68-admin-row-head">
       <div>
@@ -946,7 +945,7 @@ function InvestorEditor({ i, profiles, onSave, onToggle }: any) {
       {needsReview ? <span className="d68-admin-badge warn">Cần duyệt</span> : null}
     </div>
     {needsReview ? <div className="d68-admin-notice warn">Tài khoản Investor mới tạo hoặc mới cập nhật thông tin cần Admin duyệt trước khi public.</div> : null}
-    <div className="d68-admin-loginbox"><b>Login Investor</b><span>Username: <code>{loginUsername}</code></span><span>Password: <code>{loginPassword}</code></span><span>Email: <code>{loginProfile.email || i.private_email || '—'}</code></span></div>
+    <div className="d68-admin-loginbox"><b>Login Investor</b><span>Username: <code>{loginUsername}</code></span><span>Mật khẩu: <code>Quản lý bằng Supabase Auth · không lưu trong database</code></span><span>Email: <code>{loginProfile.email || i.private_email || '—'}</code></span></div>
     <div className="d68-admin-targetbox">
       <b>Thị trường quan tâm</b>
       <div className="d68-admin-taglist">{targetLabels.length ? targetLabels.map((label, idx) => <span key={`${label}-${idx}`}>{label}</span>) : <em>Chưa chọn thị trường</em>}</div>

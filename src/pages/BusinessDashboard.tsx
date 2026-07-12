@@ -435,27 +435,27 @@ export default function BusinessDashboard() {
       const biz = await getMyBusiness(profile.id);
       setB(biz);
       if (biz) {
-        const [filesRes, imagesRes, requestsRes, interestsRes, paymentsRes, proposalsRes, savedRes, benchmarkRes] = await Promise.all([
+        const [filesRes, imagesRes, relationsRes, paymentsRes, savedRes, benchmarkRes] = await Promise.all([
           supabase.from('business_files').select('*').eq('business_id', biz.id).order('created_at', { ascending: false }),
           supabase.from('business_images').select('*').eq('business_id', biz.id).order('sort_order', { ascending: true, nullsFirst: false }).order('created_at', { ascending: true }),
-          supabase.from('request_data').select('*, investors(code,title_en,title_vi,type,country)').eq('business_id', biz.id).order('created_at', { ascending: false }),
-          supabase.from('investor_interests').select('*, investors(id,code,title_en,title_vi,type,country,industries,deal_types,ticket_min,ticket_max)').eq('business_id', biz.id).order('created_at', { ascending: false }),
+          supabase.rpc('get_my_business_dashboard_relations', { business_uuid: biz.id }),
           supabase.from('payment_orders').select('*').eq('business_id', biz.id).order('created_at', { ascending: false }),
-          supabase.from('proposals').select('*, investors(code,title_en,title_vi,type,country,country_iso2,ticket_min,ticket_max)').eq('business_id', biz.id).order('sent_at', { ascending: false }),
           supabase.from('saved_businesses').select('id,investor_id,business_id,created_at').eq('business_id', biz.id).order('created_at', { ascending: false }),
-          supabase.from('businesses').select('id,industry,country_iso2,revenue_2025,revenue_currency,ask_amount,ask_currency,stake_pct,deal_type,visible,status,public_snapshot_json').eq('visible', true).eq('status', 'active').not('public_snapshot_json', 'is', null).eq('country_iso2', biz.country_iso2 || 'VN').limit(80)
+          supabase.from('public_businesses_safe').select('id,industry,country_iso2,revenue_2025,revenue_currency,ask_amount,ask_currency,stake_pct,deal_type,visible,status,public_snapshot_json').eq('country_iso2', biz.country_iso2 || 'VN').limit(80)
         ]);
         if (filesRes.error) throw filesRes.error;
         if (imagesRes.error) throw imagesRes.error;
-        if (requestsRes.error) throw requestsRes.error;
-        if (interestsRes.error) throw interestsRes.error;
+        if (relationsRes.error) throw relationsRes.error;
         if (paymentsRes.error) throw paymentsRes.error;
+        const relations = relationsRes.data && typeof relationsRes.data === 'object'
+          ? relationsRes.data as Record<string, any>
+          : {};
         setFiles(filesRes.data || []);
         setImages(imagesRes.data || []);
-        setRequests(requestsRes.data || []);
-        setInterests(interestsRes.data || []);
+        setRequests(Array.isArray(relations.requests) ? relations.requests : []);
+        setInterests(Array.isArray(relations.interests) ? relations.interests : []);
         setPayments(paymentsRes.data || []);
-        setProposals(proposalsRes.error ? [] : (proposalsRes.data || []));
+        setProposals(Array.isArray(relations.proposals) ? relations.proposals : []);
         setSavedBusinesses(savedRes.error ? [] : (savedRes.data || []));
         setBenchmarkBusinesses(benchmarkRes.error ? [] : (benchmarkRes.data || []));
       }

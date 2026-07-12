@@ -7,7 +7,7 @@ type BusinessAssetRow = Record<string, any>;
 type BusinessDetailAssets = { files: BusinessAssetRow[]; images: BusinessAssetRow[] };
 
 const businessPublicSelect = [
-  'id','public_code','slug','title_vi','title_en','description_vi','description_en','country_iso2','city','industry','industry_key','deal_type','plan','revenue_2025','revenue_currency','ebitda_margin','ask_amount','ask_currency','stake_pct','highlights_vi','highlights_en','investment_reason_vi','investment_reason_en','data_confidence','quality_score','valuation_reasonableness','visible','status','quota_total','quota_used','image_url','created_at','updated_at','public_snapshot_json','public_version','last_approved_at','moderation_status','hero_image_url'
+  'id','public_code','slug','title_vi','title_en','description_vi','description_en','country_iso2','city','industry','industry_key','deal_type','plan','revenue_2025','revenue_currency','ebitda_margin','ask_amount','ask_currency','stake_pct','highlights_vi','highlights_en','investment_reason_vi','investment_reason_en','data_confidence','quality_score','valuation_reasonableness','visible','status','image_url','created_at','updated_at','public_snapshot_json','public_version','last_approved_at','moderation_status','hero_image_url','business_files_count','business_images_count','business_files','business_images'
 ].join(',');
 
 const investorPublicSelect = [
@@ -219,7 +219,7 @@ function applyBusinessPublicFilters(q: any, filters: any) {
 }
 
 export async function listBusinessFacets(filters: any = {}): Promise<{ city: string; industry: string; industry_key: string; deal_type: string; plan: string; quality_score: number | null }[]> {
-  let q: any = supabase.from('businesses').select('city, industry, industry_key, deal_type, plan, quality_score');
+  let q: any = supabase.from('public_businesses_safe').select('city, industry, industry_key, deal_type, plan, quality_score');
   q = applyBusinessPublicFilters(q, { search: filters.search, country: filters.country });
   const { data, error } = await q.limit(1000);
   if (error) throw error;
@@ -227,8 +227,9 @@ export async function listBusinessFacets(filters: any = {}): Promise<{ city: str
 }
 
 export async function listBusinesses(filters: any = {}): Promise<any[]> {
-  const select = filters.includeHidden ? '*, business_files(count), business_images(count)' : `${businessPublicSelect}, business_files(count), business_images(count)`;
-  let q: any = supabase.from('businesses').select(select as string);
+  const select = filters.includeHidden ? '*, business_files(count), business_images(count)' : businessPublicSelect;
+  const source = filters.includeHidden ? 'businesses' : 'public_businesses_safe';
+  let q: any = supabase.from(source).select(select as string);
   q = applyBusinessPublicFilters(q, filters);
   const sort = filters.sort || 'featured';
   if (sort === 'revenue') q = q.order('revenue_2025', { ascending: false, nullsFirst: false });
@@ -266,7 +267,7 @@ export async function listHomepageBusinesses(limit = 6): Promise<any[]> {
 
   const ids = orderedRanked.map((row: any) => row.business_id);
   let query: any = supabase
-    .from('businesses')
+    .from('public_businesses_safe')
     .select(businessPublicSelect as string)
     .in('id', ids);
 
@@ -303,7 +304,7 @@ export async function listHomepageBusinesses(limit = 6): Promise<any[]> {
 }
 
 export async function countBusinesses(filters: any = {}): Promise<number> {
-  let q: any = supabase.from('businesses').select('id', { count: 'exact', head: true });
+  let q: any = supabase.from('public_businesses_safe').select('id', { count: 'exact', head: true });
   q = applyBusinessPublicFilters(q, filters);
   const { count, error } = await q;
   if (error) throw error;
@@ -312,7 +313,8 @@ export async function countBusinesses(filters: any = {}): Promise<number> {
 
 export async function getBusinessBySlug(slug: string, options: { includeHidden?: boolean } = {}): Promise<any | null> {
   const select = options.includeHidden ? '*' : businessPublicSelect;
-  let q: any = supabase.from('businesses').select(select as string).eq('slug', slug);
+  const source = options.includeHidden ? 'businesses' : 'public_businesses_safe';
+  let q: any = supabase.from(source).select(select as string).eq('slug', slug);
   if (!options.includeHidden) q = q.eq('visible', true).eq('status', 'active').not('public_snapshot_json', 'is', null);
   const { data, error } = await q.maybeSingle();
   if (error) throw error;
@@ -369,7 +371,8 @@ export async function getMyBusiness(ownerId: string) {
 }
 
 export async function listInvestors(filters: any = {}): Promise<any[]> {
-  let q: any = supabase.from('investors').select(investorPublicSelect as string);
+  const source = filters.includeHidden ? 'investors' : 'public_investors_safe';
+  let q: any = supabase.from(source).select(investorPublicSelect as string);
   if (!filters.includeHidden) q = q.eq('visible', true).eq('status', 'active');
   if (filters.type) q = q.eq('type', filters.type);
   // country/region filters mean target investment markets, not investor office location.
@@ -398,7 +401,8 @@ export async function countInvestors(filters: any = {}): Promise<number> {
     const rows = await listInvestors({ ...filters, limit: 1000, offset: 0, rawLimit: 1000 });
     return rows.length;
   }
-  let q: any = supabase.from('investors').select('id', { count: 'exact', head: true });
+  const source = filters.includeHidden ? 'investors' : 'public_investors_safe';
+  let q: any = supabase.from(source).select('id', { count: 'exact', head: true });
   if (!filters.includeHidden) q = q.eq('visible', true).eq('status', 'active');
   if (filters.type) q = q.eq('type', filters.type);
   if (filters.dealType) { const value = String(filters.dealType); q = q.or(`deal_types.cs.{${value}},deal_types.cs.{"${value}"}`); }
@@ -415,7 +419,7 @@ export async function getInvestorByOwner(ownerId: string) {
 }
 
 export async function getInvestorByCode(code: string): Promise<any | null> {
-  const { data, error } = await supabase.from('investors').select(investorPublicSelect as string).eq('code', code).eq('visible', true).eq('status', 'active').maybeSingle();
+  const { data, error } = await supabase.from('public_investors_safe').select(investorPublicSelect as string).eq('code', code).eq('visible', true).eq('status', 'active').maybeSingle();
   if (error) throw error;
   return data;
 }

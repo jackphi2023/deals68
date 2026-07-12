@@ -649,32 +649,14 @@ export default function InvestorDashboard() {
       const [
         nextBusinesses,
         nextFacets,
-        interestResult,
-        proposalResult,
+        relationResult,
         paymentResult,
       ] = await Promise.all([
         listBusinesses({ limit: 120, sort: 'featured' }),
         listBusinessFacets(),
-        supabase
-          .from('investor_interests')
-          .select(
-            'id,status,created_at,updated_at,business_id,' +
-              'businesses(id,public_code,title_vi,title_en,slug,' +
-              'quality_score,industry,industry_key,city,' +
-              'revenue_2025,revenue_currency,ask_amount,ask_currency,' +
-              'image_url,hero_image_url)',
-          )
-          .eq('investor_id', currentInvestor.id)
-          .order('created_at', { ascending: false }),
-        supabase
-          .from('proposals')
-          .select(
-            '*,businesses(id,public_code,title_vi,title_en,slug,' +
-              'quality_score,industry,industry_key,city,' +
-              'ask_amount,ask_currency,revenue_currency)',
-          )
-          .eq('investor_id', currentInvestor.id)
-          .order('sent_at', { ascending: false }),
+        supabase.rpc('get_my_investor_dashboard_relations', {
+          investor_uuid: currentInvestor.id,
+        }),
         supabase
           .from('payment_orders')
           .select('*')
@@ -686,13 +668,11 @@ export default function InvestorDashboard() {
       ]);
 
       if (
-        interestResult.error ||
-        proposalResult.error ||
+        relationResult.error ||
         paymentResult.error
       ) {
         throw (
-          interestResult.error ||
-          proposalResult.error ||
+          relationResult.error ||
           paymentResult.error
         );
       }
@@ -717,8 +697,11 @@ export default function InvestorDashboard() {
       setInvestor(currentInvestor);
       setBusinesses(nextBusinesses);
       setFacets(nextFacets);
-      setInterests(interestResult.data || []);
-      setProposals(proposalResult.data || []);
+      const relations = relationResult.data && typeof relationResult.data === 'object'
+        ? relationResult.data as Record<string, any>
+        : {};
+      setInterests(Array.isArray(relations.interests) ? relations.interests : []);
+      setProposals(Array.isArray(relations.proposals) ? relations.proposals : []);
       setPayments(paymentResult.data || []);
       setFilterIndustries(selectedAvailable);
     } catch {
