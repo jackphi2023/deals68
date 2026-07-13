@@ -22,9 +22,12 @@
     "test:e2e:auth": "D68_TEST_MODE=auth playwright test tests/e2e/02-register-business.spec.ts tests/e2e/03-register-investor.spec.ts tests/e2e/05-dashboard-admin-workflows.spec.ts --config=playwright.config.ts",
     "test:all": "npm run build && npm run test:e2e",
     "test:report": "node scripts/deals68-print-latest-report.mjs",
-    "qa:release": "npm run build && node scripts/deals68-release-qa-check.mjs",
+    "qa:release": "npm run build && node scripts/deals68-release-qa-check.mjs && npm run qa:packages",
     "qa:release:full": "npm run qa:release && npm run test:e2e:public",
-    "postbuild": "node scripts/generate-sitemap.mjs dist"
+    "postbuild": "node scripts/generate-sitemap.mjs dist",
+    "qa:packages": "node scripts/deals68-package-checks.mjs",
+    "qa:css": "node scripts/deals68-css-architecture-check.mjs",
+    "qa:migrations": "node scripts/deals68-migration-state-check.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.45.4",

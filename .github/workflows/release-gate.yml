@@ -1,0 +1,46 @@
+name: Deals68 Release Gate
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [beta-reference]
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-static-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run qa:release
+
+  public-e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+      VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Run public E2E when Supabase secrets are configured
+        shell: bash
+        run: |
+          if [[ -z "${VITE_SUPABASE_URL}" || -z "${VITE_SUPABASE_ANON_KEY}" ]]; then
+            echo "Public E2E skipped: add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY repository secrets."
+            exit 0
+          fi
+          npm run test:e2e:public
