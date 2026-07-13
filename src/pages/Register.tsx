@@ -115,7 +115,32 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
   const { signUp, signOut } = useAuth();
   const navigate = useNavigate();
   const intent = useMemo(() => { try { return JSON.parse(localStorage.getItem('d68_checkout_intent') || '{}'); } catch { return {}; } }, []);
-  const [plan, setPlan] = useState<BusinessPlan>(intent.businessPlan === 'featured' ? 'featured' : 'standard');
+  const checkoutIntentCreatedAt = Date.parse(
+    String(intent.createdAt || ''),
+  );
+  const checkoutIntentAge = Date.now() - checkoutIntentCreatedAt;
+  const checkoutIntentMatchesRole =
+    String(intent.role || intent.internalRole || '') === normalized &&
+    Number.isFinite(checkoutIntentCreatedAt) &&
+    checkoutIntentAge >= 0 &&
+    checkoutIntentAge <= 30 * 60 * 1000;
+
+  const [plan, setPlan] = useState<BusinessPlan | ''>(() =>
+    checkoutIntentMatchesRole &&
+    (
+      intent.businessPlan === 'featured' ||
+      intent.businessPlan === 'standard'
+    )
+      ? (intent.businessPlan as BusinessPlan)
+      : '',
+  );
+
+  const [
+    investorPackageSelected,
+    setInvestorPackageSelected,
+  ] = useState<boolean>(
+    () => checkoutIntentMatchesRole && normalized === 'investor',
+  );
   const [serviceWeeks, setServiceWeeks] = useState<number>(Number(intent.termWeeks || intent.units || 16));
   const [investorMonths, setInvestorMonths] = useState<number>(Number(intent.units || (intent.termWeeks ? Math.max(1, Math.round(Number(intent.termWeeks) / 4)) : 12)));
   const [promoCode, setPromoCode] = useState(String(intent.promoCode || ''));
@@ -174,21 +199,36 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
   const locationChoices = getLocationOptionsForCountry(countryCode);
   const effectiveWeeks = isBusiness ? serviceWeeks : investorMonths * 4;
   const pricingRole = (isInvestor ? 'investor' : isBusiness ? 'business' : normalized) as PricingRole;
+  const selectedBusinessPlan: BusinessPlan = plan || 'standard';
+  const hasSelectedPackage = isBusiness
+    ? Boolean(plan)
+    : isInvestor
+      ? investorPackageSelected
+      : true;
   useEffect(() => {
     const opts = getLocationOptionsForCountry(countryCode);
     if (isBusiness && opts.length && !opts.some((x) => x.vi === city || x.en === city || x.key === city)) {
       setCity(lang === 'en' ? opts[0].en : opts[0].vi);
     }
   }, [countryCode, isBusiness, lang, city]);
-  const price = calculatePricing({ role: pricingRole, country: countryCode, termWeeks: effectiveWeeks, businessPlan: plan, promoCode }, promoPct);
+  const price = calculatePricing({ role: pricingRole, country: countryCode, termWeeks: effectiveWeeks, businessPlan: selectedBusinessPlan, promoCode }, promoPct);
   const standardPrice = calculatePricing({ role: 'business', country: countryCode, termWeeks: effectiveWeeks, businessPlan: 'standard', promoCode }, promoPct);
   const featuredPrice = calculatePricing({ role: 'business', country: countryCode, termWeeks: effectiveWeeks, businessPlan: 'featured', promoCode }, promoPct);
-  const pricingSummary = isInvestor ? `${money(price.total, price.currency)} · ${investorMonths} ${T(lang, 'tháng', 'months')}` : `${money(price.total, price.currency)} · ${price.termWeeks} ${T(lang, 'tuần', 'weeks')}`;
+  const pricingSummary = hasSelectedPackage
+    ? (
+        isInvestor
+          ? `${money(price.total, price.currency)} · ${investorMonths} ${T(lang, 'tháng', 'months')}`
+          : `${money(price.total, price.currency)} · ${price.termWeeks} ${T(lang, 'tuần', 'weeks')}`
+      )
+    : '-';
   const termOptions = [4, 8, 12, 16, 24];
   const currentTermValue = isInvestor ? investorMonths : serviceWeeks;
   const termUnitLabel = isInvestor ? T(lang, 'tháng', 'months') : T(lang, 'tuần', 'weeks');
   const bankContent = registrationOrderCode;
-  const qrAmountParam = price.currency === 'VND' ? `amount=${Math.round(price.total)}&` : '';
+  const qrAmountParam =
+    hasSelectedPackage && price.currency === 'VND'
+      ? `amount=${Math.round(price.total)}&`
+      : '';
   const qrUrl = `https://img.vietqr.io/image/VCB-0011004000713-compact2.png?${qrAmountParam}addInfo=${encodeURIComponent(bankContent)}&accountName=${encodeURIComponent('Tieu Vo Dinh Phi')}`;
   const [qrImageSrc, setQrImageSrc] = useState(qrUrl);
   useEffect(() => { setQrImageSrc(qrUrl); }, [qrUrl]);
@@ -273,14 +313,38 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
       if (!ebitda.trim()) missing.push(T(lang, 'Tỷ suất lợi nhuận/EBITDA (%)', 'EBITDA margin (%)'));
       if (!ask.trim()) missing.push(T(lang, 'Số tiền gọi vốn / giá trị giao dịch mong muốn', 'Capital sought / desired transaction value'));
       if (!stake.trim()) missing.push(T(lang, 'Tỷ lệ cổ phần', 'Stake percentage'));
-      if (!paymentAck) missing.push(T(lang, 'Xác nhận đã chuyển khoản đúng nội dung', 'Payment transfer confirmation'));
+      if (!plan) {
+        missing.push(
+          T(lang, 'Gói dịch vụ', 'Service package'),
+        );
+      } else if (!paymentAck) {
+        missing.push(
+          T(
+            lang,
+            'Xác nhận đã chuyển khoản đúng nội dung',
+            'Payment transfer confirmation',
+          ),
+        );
+      }
     }
     if (isInvestor) {
       if (!selectedIndustries.length) missing.push(T(lang, 'Ngành quan tâm', 'Preferred industries'));
       if (!investorDealTypes.length) missing.push(T(lang, 'Loại giao dịch quan tâm', 'Interested deal types'));
       if (!generalDesc.trim()) missing.push(T(lang, 'Giới thiệu chung', 'General introduction'));
       if (!ticketMin.trim() || !ticketMax.trim()) missing.push(T(lang, 'Khoản đầu tư/ticket size', 'Ticket size'));
-      if (!paymentAck) missing.push(T(lang, 'Xác nhận đã chuyển khoản đúng nội dung', 'Payment transfer confirmation'));
+      if (!investorPackageSelected) {
+        missing.push(
+          T(lang, 'Gói dịch vụ', 'Service package'),
+        );
+      } else if (!paymentAck) {
+        missing.push(
+          T(
+            lang,
+            'Xác nhận đã chuyển khoản đúng nội dung',
+            'Payment transfer confirmation',
+          ),
+        );
+      }
     }
     if (!agree) missing.push(T(lang, 'Đồng ý Điều khoản & Chính sách bảo mật', 'Agree to Terms & Privacy Policy'));
     if (missing.length) {
@@ -351,7 +415,7 @@ try {
           industry,
           industry_key: industryKeyFromLabel(industry),
           deal_type: dealType,
-          plan,
+          plan: selectedBusinessPlan,
           revenue_month: parseFormattedNumber(revenueMonth),
           revenue_2025: parseFormattedNumber(revenue) || parseFormattedNumber(revenueMonth) * 12,
           revenue_currency: revenueCurrency,
@@ -369,7 +433,7 @@ try {
           bench_verdict: benchmarkResult?.verdict || null,
           bench_config_version: benchmarkResult?.configVersion || null,
           bench_calculated_at: benchmarkResult ? new Date().toISOString() : null,
-          quota_total: businessProposalQuotaForPlan(plan),
+          quota_total: businessProposalQuotaForPlan(selectedBusinessPlan),
           highlights_vi: highlights,
           highlights_en: '',
           investment_reason_vi: reason,
@@ -424,7 +488,7 @@ try {
           title: `${roleLabel(normalized as any, lang)} · ${pricingSummary}`,
           role: normalized,
           country: countryCode,
-          plan: isBusiness ? plan : 'membership',
+          plan: isBusiness ? selectedBusinessPlan : 'membership',
           checkout_intent: intent,
           price,
           orderCode: registrationOrderCode,
@@ -497,7 +561,7 @@ try {
     }
   }
 
-  const planLabel = planText(plan, lang);
+  const planLabel = hasSelectedPackage ? planText(selectedBusinessPlan, lang) : '-';
   const currentCurrency = countryCode === 'VN' ? 'VND' : 'USD';
   const paymentSection = <section className={`d68-register-section d68-register-section--pricing${isBusiness ? ' d68-register-section--business-pricing' : isInvestor ? ' d68-register-section--investor-pricing' : ''}`}>
     <h2>{T(lang, 'Gói dịch vụ và Thanh toán', 'Service package and Payment')}</h2>
@@ -505,25 +569,143 @@ try {
       {isBusiness ? ([
         { key: 'standard' as BusinessPlan, title: T(lang, 'Gói Thường', 'Regular package'), desc: T(lang, `Hiển thị tại danh sách và gửi Hồ sơ doanh nghiệp tới tối đa ${BUSINESS_STANDARD_PROPOSAL_QUOTA} nhà đầu tư`, `Display in the listing and send your business profile to up to ${BUSINESS_STANDARD_PROPOSAL_QUOTA} investors`), badge: T(lang, `${BUSINESS_STANDARD_PROPOSAL_QUOTA} lượt gửi Hồ sơ doanh nghiệp`, `${BUSINESS_STANDARD_PROPOSAL_QUOTA} business profile sends`) },
         { key: 'featured' as BusinessPlan, title: T(lang, 'Gói Ưu tiên ★', 'Priority package ★'), desc: T(lang, `Hiển thị tại danh sách/trang chủ và gửi Hồ sơ doanh nghiệp tới tối đa ${BUSINESS_FEATURED_PROPOSAL_QUOTA} nhà đầu tư`, `Display in the listing/homepage and send your business profile to up to ${BUSINESS_FEATURED_PROPOSAL_QUOTA} investors`), badge: T(lang, `${BUSINESS_FEATURED_PROPOSAL_QUOTA} lượt gửi Hồ sơ doanh nghiệp`, `${BUSINESS_FEATURED_PROPOSAL_QUOTA} business profile sends`) }
-      ].map((item) => <button key={item.key} type="button" className={plan === item.key ? 'active' : ''} onClick={() => setPlan(item.key)}>
+      ].map((item) => <button key={item.key} type="button" className={plan === item.key ? 'active' : ''} onClick={() => { setPlan(item.key); setPaymentAck(false); }}>
         <h3>{item.title}</h3><p>{item.desc}</p><span>{item.badge}</span>{item.key === 'featured' ? <em>+30% {T(lang, 'so với gói Thường', 'vs Standard')}</em> : null}
       </button>)) : (<>
-        <button type="button" className="active"><h3>{T(lang, 'Gói Nhà đầu tư', 'Investor membership')}</h3><p>{T(lang, 'Tìm kiếm, lưu doanh nghiệp, gửi yêu cầu kết nối/data và nhận gợi ý thương vụ phù hợp.', 'Search, save businesses, request connection/data and receive matched opportunities.')}</p><span>{T(lang, 'Dashboard investor included', 'Dashboard investor included')}</span></button>
+        <button
+          type="button"
+          className={investorPackageSelected ? 'active' : ''}
+          onClick={() => {
+            setInvestorPackageSelected(true);
+            setPaymentAck(false);
+          }}
+        ><h3>{T(lang, 'Gói Nhà đầu tư', 'Investor membership')}</h3><p>{T(lang, 'Tìm kiếm, lưu doanh nghiệp, gửi yêu cầu kết nối/data và nhận gợi ý thương vụ phù hợp.', 'Search, save businesses, request connection/data and receive matched opportunities.')}</p><span>{T(lang, 'Dashboard investor included', 'Dashboard investor included')}</span></button>
         <button type="button" disabled><h3>{T(lang, 'Gói Tổ chức / Ưu tiên', 'Institutional / Priority')}</h3><p>{T(lang, 'Dành cho quỹ/tổ chức cần thêm workflow nhóm, phân quyền và hỗ trợ riêng.', 'For funds/institutions requiring team workflow, permissions and dedicated support.')}</p><span>{T(lang, 'Sắp ra mắt', 'Coming soon')}</span></button>
       </>)}
     </div>
     <div className="d68-bizreg-paygrid">
       <div className="d68-bizreg-payleft">
         <label className="d68-bizreg-label">{T(lang, 'Kỳ hạn', 'Term')} <small>({termUnitLabel})</small></label>
-        <div className="d68-bizreg-terms">{termOptions.map((t) => { const termWeeks = isInvestor ? t * 4 : t; const tmp = calculatePricing({ role: pricingRole, country: countryCode, termWeeks, businessPlan: plan, promoCode }, promoPct); return <button type="button" key={t} className={currentTermValue === t ? 'active' : ''} onClick={() => isInvestor ? setInvestorMonths(t) : setServiceWeeks(t)}><b>{t}</b>{tmp.termDiscountPct ? <span>-{tmp.termDiscountPct}%</span> : null}</button>; })}</div>
+        <div className="d68-bizreg-terms">{termOptions.map((t) => { const termWeeks = isInvestor ? t * 4 : t; const tmp = calculatePricing({ role: pricingRole, country: countryCode, termWeeks, businessPlan: selectedBusinessPlan, promoCode }, promoPct); return <button type="button" key={t} className={currentTermValue === t ? 'active' : ''} onClick={() => {
+          if (isInvestor) setInvestorMonths(t);
+          else setServiceWeeks(t);
+          setPaymentAck(false);
+        }}><b>{t}</b>{tmp.termDiscountPct ? <span>-{tmp.termDiscountPct}%</span> : null}</button>; })}</div>
         <label className="d68-bizreg-label">{T(lang, 'Mã khuyến mãi/giới thiệu', 'Promo/referral code')}</label>
         <div className="d68-bizreg-promo"><input value={promoCode} onChange={(e) => setPromoCode(e.target.value.toUpperCase())} placeholder="DEALS68"/><button type="button" disabled={promoLoading} onClick={async () => { setPromoLoading(true); const res = await lookupPromo(promoCode, pricingRole).catch((err: any) => ({ discountPct: 0, message: err?.message || 'Could not check promo.' })); setPromoLoading(false); setPromoPct(Number(res.discountPct || 0)); setPromoMsg(res.discountPct ? T(lang, 'Mã hợp lệ, đã cập nhật số tiền giảm giá', 'Valid code, discount amount updated') : (res.message || T(lang, 'Mã không hợp lệ.', 'Invalid code.'))); }}>{promoLoading ? '...' : T(lang, 'Áp dụng', 'Apply')}</button></div>
         {promoMsg ? <p className={promoPct ? 'd68-bizreg-promo-ok' : 'd68-bizreg-promo-warn'}>{promoMsg}</p> : null}
       </div>
-      <aside className="d68-bizreg-summary"><span>{T(lang, 'Tạm tính', 'Estimate')}</span><RowMini a={T(lang, `Phí dịch vụ (${currentTermValue} ${isInvestor ? 'tháng' : 'tuần'})`, `Service fee (${currentTermValue} ${isInvestor ? 'months' : 'weeks'})`)} b={money(price.subtotal, price.currency)} /><RowMini a={T(lang, 'Chiết khấu kỳ hạn', 'Term discount')} b={price.termDiscountPct ? `-${money(price.termDiscount, price.currency)} (${price.termDiscountPct}%)` : T(lang, 'Không', 'None')} good={!!price.termDiscountPct}/><RowMini a={T(lang, 'Giảm giá', 'Promo discount')} b={price.promoDiscountPct ? `-${money(price.promoDiscount, price.currency)} (${price.promoDiscountPct}%)` : T(lang, 'Không', 'None')} good={!!price.promoDiscountPct}/><strong>{T(lang, 'Tổng thanh toán', 'Total due')}<b>{money(price.total, price.currency)}</b></strong></aside>
+      <aside className="d68-bizreg-summary">
+        <span>{T(lang, 'Tạm tính', 'Estimate')}</span>
+
+        <RowMini
+          a={T(
+            lang,
+            `Phí dịch vụ (${currentTermValue} ${isInvestor ? 'tháng' : 'tuần'})`,
+            `Service fee (${currentTermValue} ${isInvestor ? 'months' : 'weeks'})`,
+          )}
+          b={hasSelectedPackage ? money(price.subtotal, price.currency) : '-'}
+        />
+
+        <RowMini
+          a={T(lang, 'Chiết khấu kỳ hạn', 'Term discount')}
+          b={
+            hasSelectedPackage
+              ? (
+                  price.termDiscountPct
+                    ? `-${money(price.termDiscount, price.currency)} (${price.termDiscountPct}%)`
+                    : T(lang, 'Không', 'None')
+                )
+              : '-'
+          }
+          good={hasSelectedPackage && !!price.termDiscountPct}
+        />
+
+        <RowMini
+          a={T(lang, 'Giảm giá', 'Promo discount')}
+          b={
+            hasSelectedPackage
+              ? (
+                  price.promoDiscountPct
+                    ? `-${money(price.promoDiscount, price.currency)} (${price.promoDiscountPct}%)`
+                    : T(lang, 'Không', 'None')
+                )
+              : '-'
+          }
+          good={hasSelectedPackage && !!price.promoDiscountPct}
+        />
+
+        <strong>
+          {T(lang, 'Tổng thanh toán', 'Total due')}
+          <b>
+            {hasSelectedPackage
+              ? money(price.total, price.currency)
+              : '-'}
+          </b>
+        </strong>
+      </aside>
     </div>
     <div className="d68-bizreg-payment-methods d68-bizreg-payment-methods--primary"><button type="button" className="active"><span>💵</span>{T(lang, 'Chuyển khoản QR', 'QR bank transfer')}</button></div>
-    <div className="d68-bizreg-qrbox"><a href={qrImageSrc} target="_blank" rel="noreferrer"><img src={qrImageSrc} alt="QR Vietcombank" onError={() => setQrImageSrc(STATIC_VIETQR_URL)} /></a><div><p>{T(lang, 'Người nhận:', 'Recipient:')} <b>Tieu Vo Dinh Phi</b></p><p>{T(lang, 'Số TK:', 'Account no.:')} <b>0011004000713</b></p><p>{T(lang, 'Nội dung:', 'Transfer note:')} <b>{bankContent}</b></p><p>{T(lang, 'Số tiền:', 'Amount:')} <b>{money(price.total, price.currency)}</b></p></div><label><input type="checkbox" checked={paymentAck} onChange={(e) => setPaymentAck(e.target.checked)} /> {T(lang, 'Tôi đã chuyển khoản đúng số tiền và nội dung ở trên', 'I have transferred the exact amount with the transfer note above')}</label></div>
+    {hasSelectedPackage ? (
+      <div className="d68-bizreg-qrbox">
+        <a href={qrImageSrc} target="_blank" rel="noreferrer">
+          <img
+            src={qrImageSrc}
+            alt="QR Vietcombank"
+            onError={() => setQrImageSrc(STATIC_VIETQR_URL)}
+          />
+        </a>
+
+        <div>
+          <p>
+            {T(lang, 'Người nhận:', 'Recipient:')}{' '}
+            <b>Tieu Vo Dinh Phi</b>
+          </p>
+          <p>
+            {T(lang, 'Số TK:', 'Account no.:')}{' '}
+            <b>0011004000713</b>
+          </p>
+          <p>
+            {T(lang, 'Nội dung:', 'Transfer note:')}{' '}
+            <b>{bankContent}</b>
+          </p>
+          <p>
+            {T(lang, 'Số tiền:', 'Amount:')}{' '}
+            <b>{money(price.total, price.currency)}</b>
+          </p>
+        </div>
+
+        <label>
+          <input
+            type="checkbox"
+            checked={paymentAck}
+            onChange={(e) => setPaymentAck(e.target.checked)}
+          />{' '}
+          {T(
+            lang,
+            'Tôi đã chuyển khoản đúng số tiền và nội dung ở trên',
+            'I have transferred the exact amount with the transfer note above',
+          )}
+        </label>
+      </div>
+    ) : (
+      <div className="d68-bizreg-package-pending" role="status">
+        <b>
+          {T(
+            lang,
+            'Vui lòng chọn gói dịch vụ',
+            'Please select a service package',
+          )}
+        </b>
+        <span>
+          {T(
+            lang,
+            'Số tiền và thông tin thanh toán sẽ hiển thị sau khi chọn gói.',
+            'The amount and payment information will appear after a package is selected.',
+          )}
+        </span>
+      </div>
+    )}
     <div className="d68-bizreg-payment-methods d68-bizreg-payment-methods--secondary"><button type="button" disabled><span>💳</span>Sepay ({T(lang, 'Thẻ nội địa / tín dụng', 'Debit / credit card')}) · {T(lang, 'Sắp ra mắt', 'Coming soon')}</button><button type="button" disabled><span>💳</span>Stripe / Paypal · {T(lang, 'Sắp ra mắt', 'Coming soon')}</button></div>
   </section>;
 
@@ -586,8 +768,8 @@ try {
         <section className="d68-register-section">
           <h2>{T(lang, 'Thông tin tài sản & nguồn số liệu', 'Assets & financial source')}</h2>
           <Field label={T(lang, 'Tài sản hữu hình & vô hình DN sở hữu', 'Tangible & intangible assets owned')} wide hint={T(lang, 'VD: thiết bị, thương hiệu, IP, phần mềm, hợp đồng thuê, giấy phép, dữ liệu khách hàng...', 'Examples: equipment, brand, IP, software, leases, licenses, customer data...')}><textarea rows={3} value={assetsOwned} onChange={(e) => setAssetsOwned(e.target.value)} /></Field>
-          <div className="d68-form-grid">
-            <Field label={T(lang, 'Giá trị tài sản vật chất KHÔNG nằm trong giao dịch', 'Physical asset value excluded from transaction')} spaced hint={T(lang, `Nhập số tuyệt đối theo ${currentCurrency}`, `Enter absolute amount in ${currentCurrency}`)}><input inputMode="numeric" value={excludedAssetValue} onChange={(e) => setExcludedAssetValue(formatNumberTyping(e.target.value))} /></Field>
+          <div className="d68-form-grid d68-assets-source-grid">
+            <Field label={T(lang, 'Giá trị tài sản vật chất KHÔNG nằm trong giao dịch', 'Physical asset value excluded from transaction')} hint={T(lang, `Nhập số tuyệt đối theo ${currentCurrency}`, `Enter absolute amount in ${currentCurrency}`)}><input inputMode="numeric" value={excludedAssetValue} onChange={(e) => setExcludedAssetValue(formatNumberTyping(e.target.value))} /></Field>
             <Field label={T(lang, 'Nguồn số liệu tài chính', 'Financial data source')}><select value={financialSource} onChange={(e) => setFinancialSource(e.target.value)}><option value="management_accounts">{T(lang, 'Số liệu quản trị nội bộ', 'Management accounts')}</option><option value="tax_report">{T(lang, 'Báo cáo thuế', 'Tax filings')}</option><option value="audited_financials">{T(lang, 'Báo cáo kiểm toán', 'Audited financials')}</option><option value="bank_statement">{T(lang, 'Sao kê ngân hàng / POS', 'Bank / POS statements')}</option><option value="estimate">{T(lang, 'Ước tính của chủ DN', 'Founder estimate')}</option></select></Field>
           </div>
           <div className={`d68-valuation-check d68-valuation-check--${valuationCheck.level}`}>

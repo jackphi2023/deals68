@@ -32,7 +32,11 @@ import { resumePendingBusinessSignupUploads } from '../lib/pendingBusinessUpload
 type Lang = 'vi' | 'en';
 type Tab = 'overview' | 'profile' | 'documents' | 'images' | 'interests' | 'requests' | 'services';
 const T = (lang: Lang, vi: string, en: string) => lang === 'en' ? en : vi;
-const businessUpdateSuccessMsg = (lang: Lang) => T(lang, 'Bạn đã cập nhật thành công, đội ngũ Deals68 sẽ duyệt, ẩn thông tin tên/thương hiệu nếu có để hiển thị', 'Updated successfully. The Deals68 team will review and hide any name/brand information before publishing.');
+const businessUpdateSuccessMsg = (lang: Lang) => T(
+  lang,
+  'Thông tin doanh nghiệp của bạn đang được duyệt trong 1-3 ngày tới, Deals68 sẽ ẩn thông tin tên/thương hiệu nếu có để hiển thị.',
+  'Your business information is being reviewed within the next 1-3 days. Deals68 will hide any name or brand information before publishing.',
+);
 
 const tabs = [
   { id: 'overview' as Tab, Icon: LayoutDashboard, vi: 'Tổng quan', en: 'Overview', href: '/dashboard/business' },

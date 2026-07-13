@@ -49,12 +49,21 @@
 }
 
 /* G11 — Business overview metric-to-quota spacing. */
-.d68-business-dashboard-page .d68-business-overview-metrics{
-  margin-bottom:24px!important;
+.d68-business-dashboard-page .d68-business-overview-metrics {
+  align-items: stretch;
+  margin-bottom: 0 !important;
+  padding-bottom: 24px;
 }
 
-@media(max-width:700px){
-  .d68-business-dashboard-page .d68-business-overview-metrics{
-    margin-bottom:20px!important;
+.d68-business-dashboard-page
+  .d68-business-overview-metrics
+  > .d68-dashboard-card {
+  height: 100%;
+  margin-top: 0 !important;
+}
+
+@media (max-width: 700px) {
+  .d68-business-dashboard-page .d68-business-overview-metrics {
+    padding-bottom: 20px;
   }
 }

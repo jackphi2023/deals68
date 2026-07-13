@@ -12,3 +12,53 @@
   min-height:50px;
   padding:12px 18px;
 }
+
+
+/* Deals68 registration package-selection and asset-row alignment. */
+.d68-register-page .d68-assets-source-grid .d68-auth-field > span {
+  align-items: flex-end;
+  display: flex;
+  min-height: 34px;
+}
+
+.d68-register-page .d68-assets-source-grid input,
+.d68-register-page .d68-assets-source-grid select {
+  min-height: 46px;
+}
+
+.d68-register-page .d68-bizreg-package-pending {
+  align-items: center;
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  border-radius: 16px;
+  color: #64748b;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  justify-content: center;
+  min-height: 150px;
+  padding: 24px;
+  text-align: center;
+}
+
+.d68-register-page .d68-bizreg-package-pending b {
+  color: #0f2a4a;
+  font-size: 16px;
+}
+
+.d68-register-page .d68-bizreg-package-pending span {
+  font-size: 13px;
+  line-height: 1.55;
+  max-width: 480px;
+}
+
+@media (max-width: 720px) {
+  .d68-register-page .d68-assets-source-grid .d68-auth-field > span {
+    min-height: 0;
+  }
+
+  .d68-register-page .d68-bizreg-package-pending {
+    min-height: 120px;
+    padding: 20px;
+  }
+}
