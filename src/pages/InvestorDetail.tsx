@@ -28,10 +28,8 @@ function criteriaList(inv: any, lang: Lang): string[] {
   const criteria = inv?.criteria && typeof inv.criteria === 'object' ? inv.criteria : {};
   const out: string[] = [];
   const deals = arr(inv?.deal_types || criteria.dealTypes);
-  const markets = investorTargetCountries(inv);
   const sectors = arr(inv?.industries || criteria.sectors);
   if (deals.length) out.push(`${T(lang, 'Ưu tiên giao dịch', 'Preferred transactions')}: ${deals.map((x) => labelDealType(x, lang, true)).join(', ')}`);
-  if (markets.length) out.push(`${T(lang, 'Địa lý quan tâm', 'Target geographies')}: ${markets.map((x) => labelCountry(x, lang)).join(', ')}`);
   if (inv?.stage) out.push(`${T(lang, 'Giai đoạn phù hợp', 'Preferred stage')}: ${labelStage(inv.stage, lang)}`);
   if (sectors.length) out.push(`${T(lang, 'Ngành quan tâm', 'Target sectors')}: ${sectors.map((x) => labelIndustry(x, lang)).join(', ')}`);
   if (criteria.investment_appetite) out.push(`${T(lang, 'Khẩu vị đầu tư', 'Investment appetite')}: ${criteria.investment_appetite}`);

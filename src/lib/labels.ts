@@ -25,13 +25,13 @@ function first(raw: any) {
 }
 
 const investorTypeMap: { keys: string[]; vi: string; en: string }[] = [
-  { keys: ['vc', 'venture'], vi: 'Quỹ đầu tư mạo hiểm', en: 'VC' },
-  { keys: ['pe', 'private equity'], vi: 'Quỹ đầu tư tư nhân', en: 'PE' },
-  { keys: ['institutional'], vi: 'Nhà đầu tư tổ chức', en: 'Institutional' },
-  { keys: ['corporate', 'strategic'], vi: 'Doanh nghiệp chiến lược', en: 'Corporate / Strategic' },
+  { keys: ['vc', 'venture', 'quy dau tu mao hiem'], vi: 'Quỹ đầu tư mạo hiểm', en: 'VC' },
+  { keys: ['pe', 'private equity', 'quy dau tu tu nhan'], vi: 'Quỹ đầu tư tư nhân', en: 'PE' },
+  { keys: ['institutional', 'nha dau tu to chuc'], vi: 'Nhà đầu tư tổ chức', en: 'Institutional' },
+  { keys: ['corporate', 'strategic', 'doanh nghiep chien luoc', 'nha dau tu chien luoc'], vi: 'Doanh nghiệp chiến lược', en: 'Corporate / Strategic' },
   { keys: ['individual', 'angel', 'nha dau tu ca nhan'], vi: 'Nhà đầu tư cá nhân', en: 'Individual / Angel' },
-  { keys: ['family office'], vi: 'Family Office', en: 'Family Office' },
-  { keys: ['lender', 'debt', 'credit'], vi: 'Bên cho vay / Tín dụng', en: 'Lender / Debt' },
+  { keys: ['family office', 'van phong gia dinh'], vi: 'Family Office', en: 'Family Office' },
+  { keys: ['lender', 'debt', 'credit', 'ben cho vay', 'tin dung'], vi: 'Bên cho vay / Tín dụng', en: 'Lender / Debt' },
 ];
 
 const dealMap: { keys: string[]; vi: string; en: string; investorVi: string; investorEn: string }[] = [
@@ -64,6 +64,12 @@ export const countryOptions = [
   { iso2: 'CN', vi: 'Trung Quốc', en: 'China', dial: '+86' },
   { iso2: 'CZ', vi: 'Séc', en: 'Czech Republic', dial: '+420' },
   { iso2: 'AE', vi: 'UAE', en: 'UAE', dial: '+971' },
+  { iso2: 'IN', vi: 'Ấn Độ', en: 'India', dial: '+91' },
+  { iso2: 'ID', vi: 'Indonesia', en: 'Indonesia', dial: '+62' },
+  { iso2: 'MY', vi: 'Malaysia', en: 'Malaysia', dial: '+60' },
+  { iso2: 'PH', vi: 'Philippines', en: 'Philippines', dial: '+63' },
+  { iso2: 'GB', vi: 'Vương quốc Anh', en: 'United Kingdom', dial: '+44' },
+  { iso2: 'BR', vi: 'Brazil', en: 'Brazil', dial: '+55' },
   { iso2: 'OTHER', vi: 'Khác', en: 'Other', dial: '+' },
 ];
 
@@ -74,7 +80,7 @@ export const stageOptions = stageMap.map(({ vi, en }) => ({ vi, en }));
 
 function matchMap(raw: any, map: { keys: string[]; vi: string; en: string }[]) {
   const n = norm(raw);
-  return map.find((item) => item.keys.some((k) => n.includes(norm(k))));
+  return map.find((item) => [...item.keys, item.vi, item.en].some((k) => n.includes(norm(k))));
 }
 
 export function labelIndustry(raw: any, lang: Lang) {
@@ -110,6 +116,25 @@ export function labelCountry(raw: any, lang: Lang) {
   const n = norm(r);
   const item = countryOptions.find((c) => norm(c.iso2) === n || norm(c.vi) === n || norm(c.en) === n);
   if (item) return T(lang, item.vi, item.en);
+  if (/^[A-Za-z]{2}$/.test(r)) {
+    try {
+      const DisplayNames = (Intl as any).DisplayNames;
+      const displayName = DisplayNames
+        ? new DisplayNames(
+            [lang === 'en' ? 'en' : 'vi'],
+            { type: 'region' },
+          ).of(r.toUpperCase())
+        : '';
+      if (
+        displayName &&
+        String(displayName).toUpperCase() !== r.toUpperCase()
+      ) {
+        return String(displayName);
+      }
+    } catch {
+      // Continue to the location taxonomy fallback.
+    }
+  }
   const loc = labelLocation(r, lang);
   return loc || T(lang, 'Toàn cầu', 'Global');
 }
