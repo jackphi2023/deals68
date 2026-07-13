@@ -120,36 +120,55 @@ export async function sendBusinessProposalToInvestor(input: {
   const message = input.message || `Business profile sent from Deals68 on ${sentAt}`;
 
   const rpc = await supabase
-    .rpc('submit_business_proposal', { business_uuid: businessId, investor_uuid: investorId, proposal_note: message })
+    .rpc('submit_business_proposal', {
+      business_uuid: businessId,
+      investor_uuid: investorId,
+      proposal_note: message,
+    })
     .catch((error: any) => ({ data: null, error }));
 
-  if (!rpc.error) {
-    const proposal = await fetchProposalByIdOrPair(rpc.data, businessId, investorId);
+  if (rpc.error) {
+    const errorText = cleanText(rpc.error?.message || rpc.error).toLowerCase();
+    if (errorText.includes('quota') || errorText.includes('hạn mức')) {
+      return {
+        ok: false,
+        reason: 'quota_exceeded',
+        quotaTotal,
+        quotaUsed,
+        remainingQuota: 0,
+        message: rpc.error?.message || 'Proposal quota exceeded.',
+      };
+    }
     return {
-      ok: true,
-      proposal: proposal || { id: rpc.data, business_id: businessId, investor_id: investorId, status: 'sent', sent_at: sentAt, message },
+      ok: false,
+      reason: 'error',
       quotaTotal,
-      quotaUsed: quotaUsed + 1,
-      remainingQuota: Math.max(0, remainingQuota - 1),
+      quotaUsed,
+      remainingQuota,
+      message: rpc.error?.message || 'Could not submit Proposal.',
     };
   }
 
-  const { data, error } = await supabase
-    .from('proposals')
-    .insert({ business_id: businessId, investor_id: investorId, message, status: 'sent', sent_at: sentAt })
-    .select('id,business_id,investor_id,status,sent_at,updated_at,message')
-    .single();
+  const [proposal, refreshedCount] = await Promise.all([
+    fetchProposalByIdOrPair(rpc.data, businessId, investorId),
+    countBusinessProposals(businessId).catch(() => quotaUsed + 1),
+  ]);
+  const nextUsed = Number(refreshedCount || 0);
 
-  if (error) {
-    const text = cleanText(error.message).toLowerCase();
-    if (text.includes('duplicate') || text.includes('unique')) {
-      const duplicate = await getBusinessProposalForInvestor(businessId, investorId).catch(() => null);
-      return { ok: true, reason: 'duplicate', proposal: duplicate, quotaTotal, quotaUsed, remainingQuota };
-    }
-    return { ok: false, reason: 'error', quotaTotal, quotaUsed, remainingQuota, message: error.message };
-  }
-
-  return { ok: true, proposal: data, quotaTotal, quotaUsed: quotaUsed + 1, remainingQuota: Math.max(0, remainingQuota - 1) };
+  return {
+    ok: true,
+    proposal: proposal || {
+      id: rpc.data,
+      business_id: businessId,
+      investor_id: investorId,
+      status: 'sent',
+      sent_at: sentAt,
+      message,
+    },
+    quotaTotal,
+    quotaUsed: nextUsed,
+    remainingQuota: Math.max(0, quotaTotal - nextUsed),
+  };
 }
 
 export async function updateProposalStatus(proposalId: string, status: ProposalStatus) {

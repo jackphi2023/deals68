@@ -473,15 +473,17 @@ export function makePublicCode(prefix = 'D68') {
 export async function createSignupBundle(payload: {
   userId: string;
   email: string;
+  signupNonce: string;
   role: 'business' | 'investor' | 'affiliate';
   profile: any;
   business?: any | null;
   investor?: any | null;
   payment: any;
 }) {
-  const { data, error } = await supabase.rpc('create_signup_bundle', {
+  const { data, error } = await supabase.rpc('create_signup_bundle_v2', {
     user_uuid: payload.userId,
     user_email: payload.email,
+    signup_nonce: payload.signupNonce,
     role_text: payload.role,
     profile_payload: payload.profile || {},
     business_payload: payload.business || null,
@@ -511,39 +513,10 @@ export async function createBusinessFromProfile(ownerId: string, payload: any) {
 
 export async function approveBusinessPublicSnapshot(businessId: string, snapshot: any) {
   const normalized = { ...snapshot, approved_at: new Date().toISOString() };
-  const rpc = await supabase.rpc('approve_business_public_snapshot', { business_uuid: businessId, snapshot: normalized });
-  if (!rpc.error) return rpc.data;
-  const fallback = {
-    public_snapshot_json: normalized,
-    title_vi: normalized.title_vi,
-    title_en: normalized.title_en,
-    description_vi: normalized.description_vi,
-    description_en: normalized.description_en,
-    highlights_vi: normalized.highlights_vi,
-    highlights_en: normalized.highlights_en,
-    investment_reason_vi: normalized.investment_reason_vi,
-    investment_reason_en: normalized.investment_reason_en,
-    industry: normalized.industry,
-    deal_type: normalized.deal_type,
-    city: normalized.city,
-    country_iso2: normalized.country_iso2,
-    revenue_2025: Number(normalized.revenue_2025 || 0),
-    revenue_currency: normalized.revenue_currency || 'VND',
-    ebitda_margin: Number(normalized.ebitda_margin || 0),
-    ask_amount: Number(normalized.ask_amount || 0),
-    ask_currency: normalized.ask_currency || normalized.revenue_currency || 'VND',
-    stake_pct: Number(normalized.stake_pct || 0),
-    quality_score: Number(normalized.quality_score || 0),
-    data_confidence: Number(normalized.data_confidence || 0),
-    hero_image_url: normalized.hero_image_url || normalized.image_url || null,
-    image_url: normalized.image_url || normalized.hero_image_url || null,
-    visible: true,
-    status: 'active',
-    pending_changes_json: null,
-    last_approved_at: new Date().toISOString(),
-    public_version: normalized.public_version
-  };
-  const { data, error } = await supabase.from('businesses').update(fallback).eq('id', businessId).select().single();
+  const { data, error } = await supabase.rpc(
+    'approve_business_public_snapshot',
+    { business_uuid: businessId, snapshot: normalized },
+  );
   if (error) throw error;
   return data;
 }

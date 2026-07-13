@@ -307,7 +307,16 @@ try {
 
     const realName = name || companyName || email;
     const username = safeUsername(email, realName);
-    const sr = await signUp(r, email.trim(), password, { username, display_name: realName, country_iso2: countryCode, language_code: lang });
+    const signupNonce = typeof globalThis.crypto?.randomUUID === 'function'
+      ? globalThis.crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}`;
+    const sr = await signUp(r, email.trim(), password, {
+      username,
+      display_name: realName,
+      country_iso2: countryCode,
+      language_code: lang,
+      signup_nonce: signupNonce,
+    });
     if (sr.error || !sr.user) { setMsgType('err'); setMsg(sr.error || T(lang, 'Không thể tạo tài khoản', 'Could not create account')); setLoading(false); return; }
 
     try {
@@ -406,6 +415,7 @@ try {
       const bundle = await createSignupBundle({
         userId: sr.user.id,
         email: email.trim(),
+        signupNonce,
         role: (isInvestor ? 'investor' : isBusiness ? 'business' : 'affiliate'),
         profile: profilePayload,
         business: businessPayload,

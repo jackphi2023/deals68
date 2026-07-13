@@ -15,6 +15,7 @@ type Profile = {
   dashboard_login_enabled?: boolean;
 };
 
+type SignupMeta = Partial<Profile> & { signup_nonce?: string };
 type AuthResult = { error?: string; code?: string; status?: number; user?: User | null };
 
 type AuthContextValue = {
@@ -22,7 +23,7 @@ type AuthContextValue = {
   profile: Profile | null;
   loading: boolean;
   signIn: (emailOrUsername: string, password: string) => Promise<AuthResult>;
-  signUp: (role: Role, email: string, password: string, meta?: Partial<Profile>) => Promise<AuthResult>;
+  signUp: (role: Role, email: string, password: string, meta?: SignupMeta) => Promise<AuthResult>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 };
@@ -81,7 +82,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { user: data.user };
   }
 
-  async function signUp(role: Role, email: string, password: string, meta: Partial<Profile> = {}): Promise<AuthResult> {
+  async function signUp(role: Role, email: string, password: string, meta: SignupMeta = {}): Promise<AuthResult> {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -92,7 +93,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           display_name: meta.display_name || email,
           country_iso2: meta.country_iso2 || 'VN',
           language_code: meta.language_code || (role === 'investor' ? 'en' : 'vi'),
-          timezone: meta.timezone || 'Asia/Ho_Chi_Minh'
+          timezone: meta.timezone || 'Asia/Ho_Chi_Minh',
+          signup_nonce: meta.signup_nonce
         }
       }
     });
