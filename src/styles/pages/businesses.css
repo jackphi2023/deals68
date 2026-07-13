@@ -15,19 +15,19 @@
 
   .d68-list-cols { align-items:start; display:grid; gap:26px; grid-template-columns:288px minmax(0,1fr); margin:0 auto; max-width:1240px; padding:14px 24px 40px; }
   .d68-sidebar { background:#fff; border:1px solid var(--d68-border-card); border-radius:16px; box-shadow:0 1px 2px rgba(15,42,74,.04); overflow:hidden; position:sticky; top:132px; }
-  .d68-filter-head { align-items:center; border-bottom:1px solid var(--d68-border-soft); display:flex; justify-content:space-between; padding:16px 18px; }
+  .d68-filter-head { align-items:center; border-bottom:1px solid var(--d68-border-soft); display:flex; justify-content:space-between; padding:14px; }
   .d68-filter-head span { font-size:15px; font-weight:800; }
   .d68-filter-head button { background:none; border:0; color:var(--d68-blue-ink); cursor:pointer; font-size:13px; font-weight:600; }
-  .d68-filter-scroll { max-height:66vh; overflow-y:auto; padding:6px 18px 18px; }
-  .d68-filter-title { color:var(--d68-text-faint); font-size:12px; font-weight:800; letter-spacing:.6px; padding:16px 0 6px; text-transform:uppercase; }
+  .d68-filter-scroll { max-height:66vh; overflow-y:auto; padding:4px 14px 14px; }
+  .d68-filter-title { color:var(--d68-text-faint); font-size:12px; font-weight:800; letter-spacing:.6px; padding:14px 0 6px; text-transform:uppercase; }
   .d68-filter-title--border { border-top:1px solid var(--d68-border-soft); margin-top:12px; padding-top:18px; }
-  .d68-filter-check { align-items:center; color:#334155; cursor:pointer; display:flex; font-size:14px; gap:10px; padding:6px 0; }
+  .d68-filter-check { align-items:center; color:#334155; cursor:pointer; display:flex; font-size:14px; gap:10px; padding:5px 0; }
   .d68-filter-check input { accent-color:var(--d68-blue); flex:0 0 auto; height:16px; width:16px; }
   .d68-filter-check span { flex:1; }
   .d68-filter-check em { color:var(--d68-text-faint); font-size:12px; font-style:normal; }
   .d68-filter-select { background:var(--d68-bg); border:1px solid var(--d68-border); border-radius:10px; color:var(--d68-navy); cursor:pointer; font-size:14px; font-weight:500; padding:10px 12px; width:100%; }
   .d68-filter-switches { border-top:1px solid var(--d68-border-soft); display:flex; flex-direction:column; gap:10px; margin-top:14px; padding-top:14px; }
-  .d68-filter-submit { border-top:1px solid var(--d68-border-soft); padding:14px 18px; }
+  .d68-filter-submit { border-top:1px solid var(--d68-border-soft); padding:12px 14px; }
   .d68-filter-submit button { background:var(--d68-navy); border:0; border-radius:10px; color:#fff; cursor:pointer; font-size:14px; font-weight:700; padding:12px; width:100%; }
   .d68-filter-submit button:hover { background:var(--d68-navy-2); }
 
@@ -316,4 +316,21 @@
   .d68-onsite-head h2{font-size:22px}
   .d68-onsite-tags a{font-size:13px;padding:9px 12px}
   .d68-onsite-faq-item summary{padding-right:54px}
+}
+
+/* G9 — Compact Business filter card. */
+.d68-businesses-page .d68-sidebar .d68-filter-head{
+  padding:14px!important;
+}
+.d68-businesses-page .d68-sidebar .d68-filter-scroll{
+  padding:4px 14px 14px!important;
+}
+.d68-businesses-page .d68-sidebar .d68-filter-title{
+  padding:14px 0 6px!important;
+}
+.d68-businesses-page .d68-sidebar .d68-filter-check{
+  padding:5px 0!important;
+}
+.d68-businesses-page .d68-sidebar .d68-filter-submit{
+  padding:12px 14px!important;
 }

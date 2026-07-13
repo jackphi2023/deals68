@@ -26,4 +26,5 @@
 @import './pages/admin.css' layer(d68-overrides);
 @import './pages/static.css' layer(d68-overrides);
 @import './pages/ui-fixes.css' layer(d68-overrides);
+@import './final/release-foundation.css' layer(d68-overrides);
 @import './pages/release-cleanup.css' layer(d68-overrides);

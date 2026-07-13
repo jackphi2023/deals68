@@ -23,9 +23,10 @@ const banners = read('src/lib/banners.ts');
 const homeCss = read('src/styles/pages/home.css');
 const investorsCss = read('src/styles/pages/investors.css');
 const adminCss = read('src/styles/pages/admin.css');
-const cleanupCss = read(
-  'src/styles/pages/release-cleanup.css',
+const releaseFoundationCss = read(
+  'src/styles/final/release-foundation.css',
 );
+const heroCss = [homeCss, releaseFoundationCss].join('\n');
 const migration = read(
   'supabase/migrations/' +
     '20260712112248_home_hero_responsive_fields.sql',
@@ -119,20 +120,20 @@ requireToken(
 
 if (
   (
-    cleanupCss.match(
+    heroCss.match(
       /var\(--d68-hero-position,center center\)/g,
     ) || []
   ).length < 2
 ) {
   failures.push(
-    'Hero focal point is still overridden by release-cleanup.css',
+    'Hero focal point is missing from owned Hero CSS',
   );
 }
 
 requireToken(
-  cleanupCss,
+  heroCss,
   'clamp(420px,37.5vw,600px)',
-  'Desktop Hero is not aligned to 1600x600',
+  'Desktop Hero owned CSS is not aligned to 1600x600',
 );
 
 for (const token of [

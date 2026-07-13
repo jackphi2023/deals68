@@ -47,3 +47,14 @@
     justify-content: flex-start;
   }
 }
+
+/* G11 — Business overview metric-to-quota spacing. */
+.d68-business-dashboard-page .d68-business-overview-metrics{
+  margin-bottom:24px!important;
+}
+
+@media(max-width:700px){
+  .d68-business-dashboard-page .d68-business-overview-metrics{
+    margin-bottom:20px!important;
+  }
+}

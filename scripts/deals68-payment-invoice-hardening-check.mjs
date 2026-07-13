@@ -25,11 +25,11 @@ const admin = read('src/pages/Admin.tsx');
 const helper = read('src/lib/paymentOrders.ts');
 const migration = read(
   'supabase/migrations/' +
-    '20260712131500_payment_invoice_atomic_lifecycle.sql',
+    '20260712124143_payment_invoice_atomic_lifecycle.sql',
 );
 const collision = read(
   'supabase/migrations/' +
-    '20260712132500_payment_order_code_collision_guard.sql',
+    '20260712124601_payment_order_code_collision_guard.sql',
 );
 
 for (const token of [
