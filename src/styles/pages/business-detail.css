@@ -23,10 +23,10 @@
   .d68-detail-image-card,
   .d68-detail-card,
   .d68-detail-facts { background:#fff; border:1px solid var(--d68-border-card,#E7EDF3); border-radius:18px; box-shadow:0 1px 2px rgba(15,42,74,.04); }
-  .d68-detail-image-card { padding:12px; }
-  .d68-detail-hero-media { background-image:repeating-linear-gradient(135deg,#DDF4FE 0 20px, rgba(255,255,255,.55) 20px 40px); border-radius:12px; height:400px; overflow:hidden; position:relative; }
+  .d68-detail-image-card { overflow:hidden; padding:0; }
+  .d68-detail-hero-media { background-image:repeating-linear-gradient(135deg,#DDF4FE 0 20px, rgba(255,255,255,.55) 20px 40px); border-radius:17px; height:400px; max-width:none; overflow:hidden; position:relative; width:100%; }
   .d68-detail-hero-media.has-image { background:#EAF0F6; }
-  .d68-detail-hero-media img { display:block; height:100%; object-fit:cover; width:100%; }
+  .d68-detail-hero-media img { display:block; height:100%; inset:0; max-width:none; object-fit:cover; position:absolute; width:100%; }
   .d68-detail-anon-visual { align-items:center; color:rgba(15,42,74,.48); display:flex; flex-direction:column; gap:10px; height:100%; justify-content:center; text-align:center; }
   .d68-detail-anon-visual b { background:rgba(255,255,255,.75); border-radius:9px; color:rgba(15,42,74,.58); font-family:monospace; font-size:13px; letter-spacing:.5px; padding:8px 16px; }
   .d68-detail-anon-visual span { font-size:12px; }
@@ -35,7 +35,7 @@
   .d68-detail-slide--prev { left:14px; }
   .d68-detail-slide--next { right:14px; }
   .d68-detail-slide-count { background:rgba(15,42,74,.86); border-radius:999px; bottom:14px; color:#fff; font-size:12px; font-weight:800; padding:5px 11px; position:absolute; right:14px; }
-  .d68-detail-thumbs { display:flex; gap:8px; margin-top:10px; min-width:0; overflow-x:auto; }
+  .d68-detail-thumbs { display:flex; gap:8px; margin-top:10px; min-width:0; overflow-x:auto; padding:0 12px 12px; }
   .d68-detail-thumbs button { background:#fff; border:1px solid #E2E8F0; border-radius:10px; cursor:pointer; flex:0 0 86px; height:62px; overflow:hidden; padding:0; }
   .d68-detail-thumbs button.active { border:2px solid var(--d68-blue,#1BADEA); }
   .d68-detail-thumbs img { display:block; height:100%; object-fit:cover; width:100%; }
@@ -159,3 +159,13 @@
 .d68-bqs-public-criteria{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:12px 0}
 .d68-bqs-public-criteria span{background:#F8FAFC;border:1px solid #EEF2F6;border-radius:10px;color:#334155;font-size:13px;font-weight:750;padding:10px 12px}
 @media(max-width:640px){.d68-bqs-public-criteria{grid-template-columns:1fr}}
+
+/* G9 RC — Business detail full-frame ownership. */
+.d68-detail-shell .d68-detail-image-card{
+  overflow:hidden!important;
+  padding:0!important;
+}
+.d68-detail-shell .d68-detail-hero-media{
+  max-width:none!important;
+  width:100%!important;
+}

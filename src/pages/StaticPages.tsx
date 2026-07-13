@@ -113,7 +113,9 @@ export function About({ lang }: Props) {
       <div className="d68-static-grid d68-static-grid--3">
         {flows.map((p) => <Card key={p.vi} icon={p.icon} title={T(lang, p.vi, p.en)}><p>{T(lang, p.descVi, p.descEn)}</p></Card>)}
       </div>
-      <CTA lang={lang} to="/businesses" title="Khám phá cơ hội trên Deals68" titleEn="Explore opportunities on Deals68" cta="Xem doanh nghiệp" ctaEn="View businesses" />
+      <div className="d68-static-cta d68-static-cta--partnership">
+        <p>{T(lang, 'Hân hạnh được hợp tác và đồng hành', 'Honoured to collaborate and grow together')}</p>
+      </div>
     </Section>
   </main>;
 }

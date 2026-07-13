@@ -21,3 +21,22 @@
   text-align:center!important;
 }
 
+/* G10 — About partnership statement. */
+.d68-static-cta--partnership{
+  align-items:center;
+  background:#0F2A4A;
+  color:#F2B51D;
+  flex-direction:row;
+  justify-content:center;
+  min-height:88px;
+  text-align:center;
+}
+.d68-static-cta--partnership p{
+  color:#F2B51D;
+  font-size:20px;
+  font-weight:800;
+  line-height:1.4;
+  margin:0;
+  text-align:center;
+  width:100%;
+}

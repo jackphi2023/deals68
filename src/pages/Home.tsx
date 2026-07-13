@@ -64,11 +64,13 @@ function IndustryLineIcon({ type }: { type: string }) {
 function dealValueText(lang: Lang, value: PublicDealValueSummary | null, loading: boolean) {
   if (!value) return loading ? '…' : T(lang, 'Đang cập nhật', 'Pending');
   if (lang === 'en') {
-    if (value.totalUsd >= 1_000_000) return `$${(value.totalUsd / 1_000_000).toLocaleString('en-US', { maximumFractionDigits: 1 })}M`;
+    if (value.totalUsd >= 1_000_000) {
+      return `$${Math.floor(value.totalUsd / 1_000_000).toLocaleString('en-US')}M`;
+    }
     return `$${Math.round(value.totalUsd).toLocaleString('en-US')}`;
   }
   return value.totalVnd >= 1_000_000_000
-    ? `${(value.totalVnd / 1_000_000_000).toLocaleString('vi-VN', { maximumFractionDigits: 1 })} tỷ ₫`
+    ? `${Math.floor(value.totalVnd / 1_000_000_000).toLocaleString('vi-VN')} tỷ ₫`
     : `${Math.round(value.totalVnd / 1_000_000).toLocaleString('vi-VN')} triệu ₫`;
 }
 

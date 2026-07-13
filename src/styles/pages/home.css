@@ -285,3 +285,9 @@
   color:#0F2A4A!important;
   transform:translateY(-1px)!important;
 }
+
+/* G9 — Homepage hero metric labels. */
+.d68-home-page .d68-home-hero-stats span{
+  font-size:10px!important;
+  line-height:1.2!important;
+}
