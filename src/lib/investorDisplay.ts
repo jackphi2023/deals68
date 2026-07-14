@@ -29,6 +29,14 @@ export function investorTicketLabel(lang: Lang, row: AnyRow) {
 }
 
 export function investorPublicTitle(row: AnyRow, lang: Lang) {
+  const editedTitle = cleanPublicText(
+    lang === 'en'
+      ? row?.title_en || row?.title_vi
+      : row?.title_vi || row?.title_en,
+  );
+
+  if (editedTitle) return editedTitle;
+
   const industries = arr(row?.industries || row?.criteria?.sectors).slice(0, 2).map((x) => labelIndustry(x, lang));
   const type = labelInvestorType(row?.type, lang);
   const targets = investorTargetCountries(row).slice(0, 2).map((x) => labelCountry(x, lang));
