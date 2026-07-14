@@ -76,7 +76,11 @@ export default function HeroBannerMedia({
 
   return (
     <picture
-      className={`d68-hero-media ${className}`.trim()}
+      className={
+        `d68-hero-media${
+          mobileUrl ? ' d68-hero-media--has-mobile' : ''
+        } ${className}`.trim()
+      }
       style={style}
     >
       {mobileEnabled && mobileUrl ? (
@@ -90,6 +94,7 @@ export default function HeroBannerMedia({
         alt={alt}
         loading={eager ? 'eager' : 'lazy'}
         fetchPriority={eager ? 'high' : 'auto'}
+        style={style}
         onError={handleError}
       />
     </picture>

@@ -219,9 +219,17 @@ export function HeroBannerSlider({
     return () => window.clearInterval(timer);
   }, [rows.length]);
 
+  const activeBanner = rows[active] || null;
+  const sliderClassName =
+    `d68-hero-slider${
+      cleanUrl(activeBanner?.mobile_image_url)
+        ? ' has-mobile-image'
+        : ''
+    }`;
+
   if (!loaded || !rows.length) {
     return (
-      <div className="d68-hero-slider" aria-hidden="true">
+      <div className={sliderClassName} aria-hidden="true">
         <div className="d68-hero-slide is-active">
           <HeroBannerMedia
             banner={HERO_FALLBACK_ROW}
@@ -235,7 +243,7 @@ export function HeroBannerSlider({
   }
 
   return (
-    <div className="d68-hero-slider" aria-hidden="true">
+    <div className={sliderClassName} aria-hidden="true">
       {rows.map((slide, index) => (
         <MaybeLink
           key={slide.id}
@@ -336,11 +344,18 @@ function firstSlotRow(
           row.placement === placement &&
           Number(row.sort_order || 1) === slot,
       )
-      .sort((a, b) =>
-        String(b.created_at || '').localeCompare(
-          String(a.created_at || ''),
-        ),
-      )[0] || null
+      .sort((a, b) => {
+        const activeOrder =
+          Number(b.active !== false) - Number(a.active !== false);
+
+        if (activeOrder) return activeOrder;
+
+        return String(
+          b.updated_at || b.created_at || '',
+        ).localeCompare(
+          String(a.updated_at || a.created_at || ''),
+        );
+      })[0] || null
   );
 }
 
@@ -396,6 +411,7 @@ export function AdminBannerManager() {
       .select('*')
       .order('placement')
       .order('sort_order')
+      .order('updated_at', { ascending: false })
       .order('created_at', { ascending: false });
 
     if (loadError) {
@@ -552,12 +568,34 @@ export function AdminBannerManager() {
             .from('site_banners')
             .update(payload)
             .eq('id', row.id)
+            .select('id')
+            .single()
         : await supabase
             .from('site_banners')
-            .insert(payload);
+            .insert(payload)
+            .select('id')
+            .single();
 
       if (saveResult.error) throw saveResult.error;
       databaseSaved = true;
+
+      const savedId = String(
+        saveResult.data?.id || row?.id || '',
+      );
+
+      if (savedId) {
+        const duplicateResult = await supabase
+          .from('site_banners')
+          .update({ active: false })
+          .eq('placement', placement)
+          .eq('sort_order', slot)
+          .neq('id', savedId)
+          .eq('active', true);
+
+        if (duplicateResult.error) {
+          throw duplicateResult.error;
+        }
+      }
 
       const activePaths = new Set(
         [imagePath, mobileImagePath].filter(Boolean) as string[],
@@ -693,7 +731,12 @@ export function AdminBannerManager() {
                 placement.id,
                 slot,
               );
-              const key = `${placement.id}-${slot}`;
+              const key =
+                `${placement.id}-${slot}:` +
+                `${row?.id || 'new'}:` +
+                `${row?.updated_at || ''}:` +
+                `${row?.focal_x ?? 50}:` +
+                `${row?.focal_y ?? 50}`;
 
               return (
                 <form

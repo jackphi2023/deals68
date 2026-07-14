@@ -130,11 +130,60 @@ if (
   );
 }
 
+for (const token of [
+  'aspect-ratio:8/3',
+  'aspect-ratio:3/4',
+  '.d68-hero-media--has-mobile img',
+  'object-fit:contain!important',
+]) {
+  requireToken(
+    heroCss,
+    token,
+    `Hero full-frame CSS missing ${token}`,
+  );
+}
+
+for (const token of [
+  ".order('updated_at', { ascending: false })",
+  "row?.updated_at || ''",
+  'const savedId = String(',
+  ".neq('id', savedId)",
+]) {
+  requireToken(
+    siteBanners,
+    token,
+    `Banner save/canonical logic missing ${token}`,
+  );
+}
+
 requireToken(
-  heroCss,
-  'clamp(420px,37.5vw,600px)',
-  'Desktop Hero owned CSS is not aligned to 1600x600',
+  releaseFoundationCss,
+  'aspect-ratio:8/3',
+  'Release Foundation desktop Hero frame is missing',
 );
+requireToken(
+  releaseFoundationCss,
+  'Deals68 Hero responsive full-frame v4',
+  'Release Foundation mobile Hero override is missing',
+);
+
+requireToken(
+  banners,
+  ".order('updated_at', { ascending: false })",
+  'Public banners do not prioritize latest saved row',
+);
+
+requireToken(
+  hero,
+  "mobileUrl ? ' d68-hero-media--has-mobile' : ''",
+  'Hero media does not mark mobile-specific images',
+);
+
+if ((hero.match(/style=\{style\}/g) || []).length < 2) {
+  failures.push(
+    'Focal variables are not applied to picture and img',
+  );
+}
 
 for (const token of [
   'mobile_image_url',
@@ -169,6 +218,9 @@ console.log('✓ Deals68 G5 Home/Investors/Hero UX static check: PASS');
 console.log('✓ No Home Investor CTA is active by default.');
 console.log('✓ Hero supports desktop and optional mobile images.');
 console.log('✓ Hero focal point controls object-position.');
-console.log('✓ Desktop Hero ratio is aligned to 1600×600.');
+console.log('✓ Latest saved Hero row wins in Admin and public.');
+console.log('✓ Duplicate active rows are disabled on save.');
+console.log('✓ Desktop Hero uses a 1600×600 frame on large screens.');
+console.log('✓ Mobile-specific Hero uses a full 900×1200 frame.');
 console.log('✓ Investor region filter is removed.');
 console.log('✓ Investor display names link to detail.');

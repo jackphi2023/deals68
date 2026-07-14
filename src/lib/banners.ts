@@ -64,6 +64,7 @@ export async function listSiteBanners(
     .select('*')
     .eq('placement', placement)
     .order('sort_order', { ascending: true })
+    .order('updated_at', { ascending: false })
     .order('created_at', { ascending: false });
 
   if (!admin) {
