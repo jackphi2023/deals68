@@ -290,3 +290,54 @@
   .d68-admin-queue-card{min-height:160px}
   .d68-admin-queue-filter{width:100%}
 }
+
+
+/* Deals68 Hero Admin preview v2 */
+.d68-banner-hero-previews{
+  display:grid;
+  grid-template-columns:minmax(0,2fr) minmax(160px,.75fr);
+  gap:12px;
+}
+
+.d68-banner-hero-previews>div{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  min-width:0;
+}
+
+.d68-banner-hero-previews span{
+  color:#64748B;
+  font-size:11px;
+  font-weight:900;
+}
+
+.d68-banner-hero-previews img{
+  display:block;
+  width:100%;
+  height:auto;
+  object-fit:contain;
+  object-position:center;
+  border:1px solid #E2E8F0;
+  border-radius:10px;
+  background:#0F2A4A;
+}
+
+.d68-banner-hero-previews>div:first-child img{
+  aspect-ratio:8/3;
+}
+
+.d68-banner-hero-previews>div:last-child img{
+  aspect-ratio:3/4;
+  max-height:340px;
+}
+
+@media(max-width:700px){
+  .d68-banner-hero-previews{
+    grid-template-columns:1fr;
+  }
+
+  .d68-banner-hero-previews>div:last-child img{
+    max-height:none;
+  }
+}
