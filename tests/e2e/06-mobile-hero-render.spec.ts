@@ -1,102 +1,295 @@
-import { expect, test, type Page } from '@playwright/test';
+import {
+  expect,
+  test,
+  type Page,
+  type TestInfo,
+} from '@playwright/test';
 
-async function assertHeroImage(
-  page: Page,
-  expectedVariant: 'mobile' | 'desktop',
-) {
-  const hero = page.locator('.d68-home-hero');
-  const slider = hero.locator('.d68-hero-slider');
-  const activeSlide = hero.locator('.d68-hero-slide.is-active');
+declare global {
+  interface Window {
+    __d68HeroPlaceholderSeen?: boolean;
+  }
+}
 
-  await expect(slider).toBeVisible({ timeout: 20_000 });
-  await expect(activeSlide).toHaveCount(1);
-  await expect(activeSlide).toBeVisible();
+type HeroState = {
+  activeCount: number;
+  slideCount: number;
+  complete: boolean;
+  naturalWidth: number;
+  naturalHeight: number;
+  width: number;
+  height: number;
+  opacity: number;
+  visibility: string;
+  display: string;
+  objectFit: string;
+  variant: string;
+  source: string;
+};
 
-  const media = activeSlide.locator(
-    `[data-hero-variant="${expectedVariant}"]`,
-  );
-  const image = activeSlide.locator('.d68-hero-media__image');
+async function installPlaceholderWatch(page: Page) {
+  await page.addInitScript(() => {
+    window.__d68HeroPlaceholderSeen = false;
 
-  await expect(media).toHaveCount(1);
-  await expect(image).toBeVisible();
+    const inspect = (node: Node) => {
+      if (!(node instanceof HTMLElement)) return;
 
-  await expect
-    .poll(
-      async () =>
-        image.evaluate((node: HTMLImageElement) => ({
-          complete: node.complete,
-          naturalWidth: node.naturalWidth,
-          naturalHeight: node.naturalHeight,
-          source: node.currentSrc || node.src,
-        })),
-      { timeout: 20_000 },
-    )
-    .toMatchObject({
-      complete: true,
+      const images = [
+        ...(node instanceof HTMLImageElement ? [node] : []),
+        ...node.querySelectorAll('img'),
+      ];
+
+      for (const image of images) {
+        const source =
+          image.currentSrc ||
+          image.getAttribute('src') ||
+          '';
+        const alt = image.getAttribute('alt') || '';
+
+        if (
+          alt.includes('Deals68 hero placeholder') ||
+          source.includes('Deals68.com') ||
+          source.includes(
+            'Upload%20active%20Hero%20banners',
+          )
+        ) {
+          window.__d68HeroPlaceholderSeen = true;
+        }
+      }
+    };
+
+    const observer = new MutationObserver((mutations) => {
+      for (const mutation of mutations) {
+        if (
+          mutation.type === 'attributes' &&
+          mutation.target instanceof Node
+        ) {
+          inspect(mutation.target);
+        }
+
+        mutation.addedNodes.forEach(inspect);
+      }
     });
 
-  const state = await image.evaluate((node: HTMLImageElement) => {
-    const style = window.getComputedStyle(node);
-    const rect = node.getBoundingClientRect();
+    observer.observe(document, {
+      subtree: true,
+      childList: true,
+      attributes: true,
+      attributeFilter: ['src', 'alt'],
+    });
+  });
+}
+
+async function readHeroState(page: Page): Promise<HeroState> {
+  return page.evaluate(() => {
+    const slides = Array.from(
+      document.querySelectorAll<HTMLElement>(
+        '.d68-home-hero .d68-hero-slide',
+      ),
+    );
+
+    const activeSlides = slides.filter((slide) =>
+      slide.classList.contains('is-active'),
+    );
+
+    const active = activeSlides[0] || null;
+    const image =
+      active?.querySelector<HTMLImageElement>(
+        '.d68-hero-media__image',
+      ) || null;
+    const media =
+      active?.querySelector<HTMLElement>(
+        '[data-hero-variant]',
+      ) || null;
+
+    if (!image) {
+      return {
+        activeCount: activeSlides.length,
+        slideCount: slides.length,
+        complete: false,
+        naturalWidth: 0,
+        naturalHeight: 0,
+        width: 0,
+        height: 0,
+        opacity: 0,
+        visibility: '',
+        display: '',
+        objectFit: '',
+        variant: media?.dataset.heroVariant || '',
+        source: '',
+      };
+    }
+
+    const style = window.getComputedStyle(image);
+    const rect = image.getBoundingClientRect();
 
     return {
-      naturalWidth: node.naturalWidth,
-      naturalHeight: node.naturalHeight,
-      source: node.currentSrc || node.src,
+      activeCount: activeSlides.length,
+      slideCount: slides.length,
+      complete: image.complete,
+      naturalWidth: image.naturalWidth,
+      naturalHeight: image.naturalHeight,
       width: rect.width,
       height: rect.height,
-      display: style.display,
-      visibility: style.visibility,
       opacity: Number(style.opacity),
+      visibility: style.visibility,
+      display: style.display,
       objectFit: style.objectFit,
+      variant: media?.dataset.heroVariant || '',
+      source: image.currentSrc || image.src,
     };
   });
+}
 
+async function expectHeroVisible(
+  page: Page,
+  mobile: boolean,
+) {
+  await expect
+    .poll(
+      () => readHeroState(page),
+      {
+        timeout: 30_000,
+        intervals: [250, 500, 1000],
+      },
+    )
+    .toMatchObject({
+      activeCount: 1,
+      complete: true,
+      visibility: 'visible',
+      display: 'block',
+    });
+
+  const state = await readHeroState(page);
+
+  expect(state.slideCount).toBeGreaterThanOrEqual(3);
   expect(state.naturalWidth).toBeGreaterThan(100);
   expect(state.naturalHeight).toBeGreaterThan(100);
   expect(state.width).toBeGreaterThan(250);
   expect(state.height).toBeGreaterThan(200);
-  expect(state.display).not.toBe('none');
-  expect(state.visibility).toBe('visible');
   expect(state.opacity).toBeGreaterThan(0.9);
 
-  if (expectedVariant === 'mobile') {
+  const response = await page.request.get(state.source);
+  expect(response.ok()).toBeTruthy();
+
+  if (mobile) {
+    expect(state.variant).toBe('mobile');
     expect(state.source).toContain('/mobile/');
     expect(state.objectFit).toBe('contain');
   } else {
+    expect(state.variant).toBe('desktop');
     expect(state.objectFit).toBe('cover');
   }
 }
 
-test('mobile homepage renders every Hero banner', async ({ page }) => {
-  await page.setViewportSize({ width: 375, height: 900 });
-  await page.goto('/', { waitUntil: 'domcontentloaded' });
+async function openHomepage(
+  page: Page,
+  testInfo: TestInfo,
+) {
+  const heroRequestFailures: string[] = [];
 
-  await assertHeroImage(page, 'mobile');
+  await installPlaceholderWatch(page);
 
+  page.on('requestfailed', (request) => {
+    const url = request.url();
+
+    if (
+      url.includes('/site-banners/') ||
+      url.includes('/home_hero/')
+    ) {
+      heroRequestFailures.push(
+        `${request.failure()?.errorText || 'failed'} ${url}`,
+      );
+    }
+  });
+
+  await page.emulateMedia({
+    reducedMotion: 'reduce',
+  });
+
+  const response = await page.goto('/', {
+    waitUntil: 'domcontentloaded',
+    timeout: 45_000,
+  });
+
+  expect(response?.status()).toBeLessThan(400);
+
+  await expect(
+    page.locator('.d68-home-hero'),
+  ).toBeVisible({
+    timeout: 30_000,
+  });
+
+  await expect
+    .poll(
+      async () =>
+        page.locator(
+          '.d68-home-hero .d68-hero-dots button',
+        ).count(),
+      {
+        timeout: 30_000,
+        intervals: [250, 500, 1000],
+      },
+    )
+    .toBeGreaterThanOrEqual(3);
+
+  const placeholderSeen = await page.evaluate(
+    () => Boolean(window.__d68HeroPlaceholderSeen),
+  );
+
+  await testInfo.attach('hero-runtime-diagnostics', {
+    body: JSON.stringify(
+      {
+        heroRequestFailures,
+        placeholderSeen,
+        url: page.url(),
+        viewport: page.viewportSize(),
+      },
+      null,
+      2,
+    ),
+    contentType: 'application/json',
+  });
+
+  expect(heroRequestFailures).toEqual([]);
+  expect(placeholderSeen).toBe(false);
+}
+
+test('homepage Hero renders every configured slide', async ({
+  page,
+}, testInfo) => {
+  await openHomepage(page, testInfo);
+
+  const mobile =
+    (page.viewportSize()?.width || 1440) <= 700;
   const dots = page.locator(
     '.d68-home-hero .d68-hero-dots button',
   );
   const dotCount = await dots.count();
 
-  expect(dotCount).toBeGreaterThan(0);
+  expect(dotCount).toBeGreaterThanOrEqual(3);
 
   for (let index = 0; index < dotCount; index += 1) {
-    await dots.nth(index).click({ force: true });
+    await dots.nth(index).evaluate((element) => {
+      (element as HTMLButtonElement).click();
+    });
 
-    await expect(
-      page.locator(
-        '.d68-home-hero .d68-hero-slide.is-active',
-      ),
-    ).toHaveCount(1);
+    await expect(dots.nth(index)).toHaveClass(
+      /active/,
+      {
+        timeout: 10_000,
+      },
+    );
 
-    await assertHeroImage(page, 'mobile');
+    await expectHeroVisible(page, mobile);
   }
-});
 
-test('desktop homepage Hero remains visible', async ({ page }) => {
-  await page.setViewportSize({ width: 1440, height: 1000 });
-  await page.goto('/', { waitUntil: 'domcontentloaded' });
-
-  await assertHeroImage(page, 'desktop');
+  await page.screenshot({
+    path: testInfo.outputPath(
+      mobile
+        ? 'hero-mobile-final.png'
+        : 'hero-desktop-final.png',
+    ),
+    fullPage: false,
+  });
 });

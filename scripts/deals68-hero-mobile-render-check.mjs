@@ -48,7 +48,35 @@ assert.ok(
 );
 
 for (const token of [
+  'function preferredHeroUrl',
+  'function preloadHeroImage',
+  'await preloadHeroImage(',
+  'd68-hero-slider--loading',
+  'data-hero-loading="true"',
+  'prefers-reduced-motion: reduce',
+]) {
+  assert.ok(
+    slider.includes(token),
+    `Hero loading/preload logic missing: ${token}`,
+  );
+}
+
+assert.ok(
+  !slider.includes("'Deals68.com'"),
+  'Public Hero fallback still renders Deals68.com text',
+);
+
+assert.ok(
+  !slider.includes(
+    "'Upload active Hero banners in Admin'",
+  ),
+  'Public Hero fallback still renders Admin instruction text',
+);
+
+for (const token of [
   'Deals68 Homepage Hero owner v6',
+  'Deals68 Hero loading state v6.3',
+  '.d68-hero-slider--loading',
   '.d68-hero-slide.is-active',
   'opacity:1!important',
   'visibility:visible!important',

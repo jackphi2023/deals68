@@ -84,8 +84,8 @@ function svgData(
 }
 
 const HERO_FALLBACK = svgData(
-  'Deals68.com',
-  'Upload active Hero banners in Admin',
+  '',
+  '',
   '#0F2A4A',
   '#1596cc',
   600,
@@ -111,6 +111,49 @@ const HERO_FALLBACK_ROW: SiteBanner = {
   lang_mode: 'both',
   active: true,
 };
+
+function preferredHeroUrl(row?: SiteBanner | null) {
+  if (!row) return '';
+
+  const mobile =
+    typeof window !== 'undefined' &&
+    window.matchMedia('(max-width: 700px)').matches;
+
+  return cleanUrl(
+    mobile
+      ? row.mobile_image_url || row.image_url
+      : row.image_url || row.mobile_image_url,
+  );
+}
+
+function preloadHeroImage(url: string) {
+  if (!url || typeof window === 'undefined') {
+    return Promise.resolve();
+  }
+
+  return new Promise<void>((resolve) => {
+    const image = new Image();
+    let settled = false;
+
+    const finish = () => {
+      if (settled) return;
+      settled = true;
+      window.clearTimeout(timeout);
+      image.onload = null;
+      image.onerror = null;
+      resolve();
+    };
+
+    const timeout = window.setTimeout(finish, 8000);
+
+    image.onload = finish;
+    image.onerror = finish;
+    image.decoding = 'async';
+    image.src = url;
+
+    if (image.complete) finish();
+  });
+}
 
 function cleanUrl(url?: string | null) {
   return String(url || '').trim();
@@ -189,9 +232,15 @@ export function HeroBannerSlider({
     setLoaded(false);
 
     listSiteBanners('home_hero', lang)
-      .then((data) => {
+      .then(async (data) => {
+        const nextRows = data.slice(0, 5);
+
+        await preloadHeroImage(
+          preferredHeroUrl(nextRows[0]),
+        );
+
         if (!live) return;
-        setRows(data.slice(0, 5));
+        setRows(nextRows);
         setLoaded(true);
       })
       .catch(() => {
@@ -212,6 +261,12 @@ export function HeroBannerSlider({
   useEffect(() => {
     if (rows.length <= 1) return;
 
+    const reducedMotion = window.matchMedia(
+      '(prefers-reduced-motion: reduce)',
+    );
+
+    if (reducedMotion.matches) return;
+
     const timer = window.setInterval(() => {
       setActive((current) => (current + 1) % rows.length);
     }, 5500);
@@ -219,14 +274,31 @@ export function HeroBannerSlider({
     return () => window.clearInterval(timer);
   }, [rows.length]);
 
-  if (!loaded || !rows.length) {
+  if (!loaded) {
     return (
-      <div className="d68-hero-slider" aria-hidden="true">
+      <div
+        className={
+          'd68-hero-slider d68-hero-slider--loading'
+        }
+        aria-hidden="true"
+        data-hero-loading="true"
+      />
+    );
+  }
+
+  if (!rows.length) {
+    return (
+      <div
+        className={
+          'd68-hero-slider d68-hero-slider--empty'
+        }
+        aria-hidden="true"
+      >
         <div className="d68-hero-slide is-active">
           <HeroBannerMedia
             banner={HERO_FALLBACK_ROW}
             fallback={HERO_FALLBACK}
-            alt="Deals68 hero placeholder"
+            alt=""
             eager
           />
         </div>
@@ -235,7 +307,12 @@ export function HeroBannerSlider({
   }
 
   return (
-    <div className="d68-hero-slider" aria-hidden="true">
+    <div
+      className={
+        'd68-hero-slider d68-hero-slider--ready'
+      }
+      aria-hidden="true"
+    >
       {rows.map((slide, index) => (
         <MaybeLink
           key={slide.id}

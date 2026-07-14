@@ -396,3 +396,47 @@
     background:#0F2A4A!important;
   }
 }
+
+/* Deals68 Hero loading state v6.3 */
+.d68-home-page
+.d68-home-hero
+.d68-hero-slider--loading,
+.d68-home-page
+.d68-home-hero
+.d68-hero-slider--empty{
+  background:
+    radial-gradient(
+      circle at 82% 20%,
+      rgba(27,173,234,.20),
+      transparent 32%
+    ),
+    linear-gradient(
+      110deg,
+      #0F2A4A 0%,
+      #143B66 58%,
+      #1596CC 100%
+    )!important;
+}
+
+.d68-home-page
+.d68-home-hero
+.d68-hero-slider--loading::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:
+    linear-gradient(
+      90deg,
+      transparent,
+      rgba(255,255,255,.045),
+      transparent
+    );
+  pointer-events:none;
+}
+
+.d68-home-page
+.d68-home-hero
+.d68-hero-slider--ready{
+  opacity:1!important;
+  visibility:visible!important;
+}
