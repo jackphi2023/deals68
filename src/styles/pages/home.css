@@ -292,49 +292,90 @@
   line-height:1.2!important;
 }
 
-/* Deals68 Homepage Hero owner v6 */
+/* Deals68 Homepage Hero owner v6.5 */
 .d68-home-page .d68-home-hero{
+  position:relative!important;
+  width:100%!important;
+  max-width:none!important;
   aspect-ratio:8/3!important;
   height:auto!important;
   min-height:0!important;
+  overflow:hidden!important;
 }
 
 .d68-home-page .d68-home-hero__inner{
+  position:relative!important;
+  z-index:3!important;
+  width:100%!important;
   height:100%!important;
+  min-width:0!important;
   min-height:0!important;
 }
 
 .d68-home-page .d68-home-hero .d68-hero-slider{
+  position:absolute!important;
+  inset:0!important;
   z-index:0!important;
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr)!important;
+  grid-template-rows:minmax(0,1fr)!important;
+  width:100%!important;
+  max-width:none!important;
+  height:100%!important;
+  min-width:0!important;
+  min-height:0!important;
+  overflow:hidden!important;
+  opacity:1!important;
+  visibility:visible!important;
 }
 
 .d68-home-page .d68-home-hero .d68-hero-slide{
+  grid-column:1!important;
+  grid-row:1!important;
+  position:relative!important;
+  inset:auto!important;
+  display:block!important;
+  width:100%!important;
+  max-width:none!important;
+  height:100%!important;
+  min-width:0!important;
+  min-height:0!important;
+  overflow:hidden!important;
   opacity:0!important;
   visibility:hidden!important;
   pointer-events:none!important;
 }
 
 .d68-home-page .d68-home-hero .d68-hero-slide.is-active{
+  z-index:1!important;
   opacity:1!important;
   visibility:visible!important;
   pointer-events:auto!important;
 }
 
 .d68-home-page .d68-home-hero .d68-hero-media{
-  position:relative!important;
+  position:absolute!important;
+  inset:0!important;
   display:block!important;
   width:100%!important;
+  max-width:none!important;
   height:100%!important;
   min-width:0!important;
   min-height:0!important;
+  overflow:hidden!important;
   opacity:1!important;
   visibility:visible!important;
 }
 
 .d68-home-page .d68-home-hero .d68-hero-media__image{
+  position:absolute!important;
+  inset:0!important;
   display:block!important;
   width:100%!important;
+  max-width:none!important;
   height:100%!important;
+  min-width:0!important;
+  min-height:0!important;
   opacity:1!important;
   visibility:visible!important;
   object-fit:cover!important;
@@ -358,23 +399,24 @@
   .d68-home-page .d68-home-hero .d68-hero-slider{
     position:relative!important;
     inset:auto!important;
-    display:block!important;
+    display:grid!important;
     width:100%!important;
+    max-width:none!important;
     height:auto!important;
+    min-width:0!important;
     min-height:0!important;
     aspect-ratio:3/4!important;
     overflow:hidden!important;
-    opacity:1!important;
-    visibility:visible!important;
     background:#0F2A4A!important;
   }
 
   .d68-home-page .d68-home-hero .d68-hero-slide{
-    position:absolute!important;
-    inset:0!important;
-    display:block!important;
+    position:relative!important;
+    inset:auto!important;
     width:100%!important;
+    max-width:none!important;
     height:100%!important;
+    min-width:0!important;
     min-height:0!important;
   }
 
@@ -387,9 +429,10 @@
 
   .d68-home-page .d68-home-hero__inner{
     position:relative!important;
-    z-index:3;
+    z-index:3!important;
     width:100%!important;
     height:auto!important;
+    min-width:0!important;
     min-height:0!important;
     padding-top:34px!important;
     padding-bottom:42px!important;

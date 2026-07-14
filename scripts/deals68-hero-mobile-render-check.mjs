@@ -102,3 +102,50 @@ console.log('✓ One explicit img is selected through matchMedia.');
 console.log('✓ Failed mobile images fall back to desktop.');
 console.log('✓ Active slide visibility is deterministic.');
 console.log('✓ Hero responsive CSS is owned by home.css.');
+
+
+// Hero layout ownership v6.5
+for (const token of [
+  'Deals68 Homepage Hero owner v6.5',
+  'display:grid!important',
+  'grid-template-columns:minmax(0,1fr)!important',
+  'grid-template-rows:minmax(0,1fr)!important',
+  'grid-column:1!important',
+  'grid-row:1!important',
+  'data-hero-layout="grid-v65"',
+]) {
+  const source = token.startsWith('data-hero-')
+    ? slider
+    : homeCss;
+
+  assert.ok(
+    source.includes(token),
+    `Hero grid layout missing: ${token}`,
+  );
+}
+
+assert.ok(
+  !foundationCss.includes(
+    '.d68-hero-slider,.d68-hero-slide',
+  ),
+  'Frozen foundation still owns Hero slider/slide layout',
+);
+
+assert.ok(
+  !foundationCss.includes('.d68-hero-slide img'),
+  'Frozen foundation still owns Hero image layout',
+);
+
+assert.ok(
+  homeCss.includes(
+    'var(--d68-hero-position,center center)',
+  ),
+  'Home-owned Hero focal CSS is missing',
+);
+
+assert.ok(
+  !foundationCss.includes(
+    'var(--d68-hero-position,center center)',
+  ),
+  'Frozen foundation still owns Hero focal CSS',
+);

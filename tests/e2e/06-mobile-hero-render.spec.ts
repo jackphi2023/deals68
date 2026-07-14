@@ -12,19 +12,26 @@ declare global {
 }
 
 type HeroState = {
-  activeCount: number;
   slideCount: number;
+  activeCount: number;
   complete: boolean;
   naturalWidth: number;
   naturalHeight: number;
-  width: number;
-  height: number;
+  sliderWidth: number;
+  sliderHeight: number;
+  slideWidth: number;
+  slideHeight: number;
+  mediaWidth: number;
+  mediaHeight: number;
+  imageWidth: number;
+  imageHeight: number;
   opacity: number;
   visibility: string;
   display: string;
   objectFit: string;
   variant: string;
   source: string;
+  layout: string;
 };
 
 async function installPlaceholderWatch(page: Page) {
@@ -82,6 +89,11 @@ async function installPlaceholderWatch(page: Page) {
 
 async function readHeroState(page: Page): Promise<HeroState> {
   return page.evaluate(() => {
+    const slider =
+      document.querySelector<HTMLElement>(
+        '.d68-home-hero .d68-hero-slider--ready',
+      );
+
     const slides = Array.from(
       document.querySelectorAll<HTMLElement>(
         '.d68-home-hero .d68-hero-slide',
@@ -93,81 +105,101 @@ async function readHeroState(page: Page): Promise<HeroState> {
     );
 
     const active = activeSlides[0] || null;
-    const image =
-      active?.querySelector<HTMLImageElement>(
-        '.d68-hero-media__image',
-      ) || null;
     const media =
       active?.querySelector<HTMLElement>(
         '[data-hero-variant]',
       ) || null;
+    const image =
+      active?.querySelector<HTMLImageElement>(
+        '.d68-hero-media__image',
+      ) || null;
 
-    if (!image) {
-      return {
-        activeCount: activeSlides.length,
-        slideCount: slides.length,
-        complete: false,
-        naturalWidth: 0,
-        naturalHeight: 0,
-        width: 0,
-        height: 0,
-        opacity: 0,
-        visibility: '',
-        display: '',
-        objectFit: '',
-        variant: media?.dataset.heroVariant || '',
-        source: '',
-      };
-    }
-
-    const style = window.getComputedStyle(image);
-    const rect = image.getBoundingClientRect();
+    const sliderRect = slider?.getBoundingClientRect();
+    const slideRect = active?.getBoundingClientRect();
+    const mediaRect = media?.getBoundingClientRect();
+    const imageRect = image?.getBoundingClientRect();
+    const style = image
+      ? window.getComputedStyle(image)
+      : null;
 
     return {
-      activeCount: activeSlides.length,
       slideCount: slides.length,
-      complete: image.complete,
-      naturalWidth: image.naturalWidth,
-      naturalHeight: image.naturalHeight,
-      width: rect.width,
-      height: rect.height,
-      opacity: Number(style.opacity),
-      visibility: style.visibility,
-      display: style.display,
-      objectFit: style.objectFit,
+      activeCount: activeSlides.length,
+      complete: Boolean(image?.complete),
+      naturalWidth: image?.naturalWidth || 0,
+      naturalHeight: image?.naturalHeight || 0,
+      sliderWidth: sliderRect?.width || 0,
+      sliderHeight: sliderRect?.height || 0,
+      slideWidth: slideRect?.width || 0,
+      slideHeight: slideRect?.height || 0,
+      mediaWidth: mediaRect?.width || 0,
+      mediaHeight: mediaRect?.height || 0,
+      imageWidth: imageRect?.width || 0,
+      imageHeight: imageRect?.height || 0,
+      opacity: Number(style?.opacity || 0),
+      visibility: style?.visibility || '',
+      display: style?.display || '',
+      objectFit: style?.objectFit || '',
       variant: media?.dataset.heroVariant || '',
-      source: image.currentSrc || image.src,
+      source: image?.currentSrc || image?.src || '',
+      layout: slider?.dataset.heroLayout || '',
     };
   });
+}
+
+function layoutReady(state: HeroState) {
+  return (
+    state.slideCount >= 3 &&
+    state.activeCount === 1 &&
+    state.complete &&
+    state.naturalWidth > 100 &&
+    state.naturalHeight > 100 &&
+    state.sliderWidth > 250 &&
+    state.sliderHeight > 200 &&
+    state.slideWidth > 250 &&
+    state.slideHeight > 200 &&
+    state.mediaWidth > 250 &&
+    state.mediaHeight > 200 &&
+    state.imageWidth > 250 &&
+    state.imageHeight > 200 &&
+    state.opacity > 0.9 &&
+    state.visibility === 'visible' &&
+    state.display === 'block' &&
+    state.layout === 'grid-v65'
+  );
 }
 
 async function expectHeroVisible(
   page: Page,
   mobile: boolean,
+  testInfo: TestInfo,
+  slideIndex: number,
 ) {
   await expect
     .poll(
-      () => readHeroState(page),
+      async () => {
+        const state = await readHeroState(page);
+        return layoutReady(state);
+      },
       {
         timeout: 30_000,
-        intervals: [250, 500, 1000],
+        intervals: [100, 250, 500, 1000],
+        message:
+          `Hero slide ${slideIndex + 1} did not reach a ` +
+          'non-zero stable layout',
       },
     )
-    .toMatchObject({
-      activeCount: 1,
-      complete: true,
-      visibility: 'visible',
-      display: 'block',
-    });
+    .toBe(true);
 
   const state = await readHeroState(page);
 
-  expect(state.slideCount).toBeGreaterThanOrEqual(3);
-  expect(state.naturalWidth).toBeGreaterThan(100);
-  expect(state.naturalHeight).toBeGreaterThan(100);
-  expect(state.width).toBeGreaterThan(250);
-  expect(state.height).toBeGreaterThan(200);
-  expect(state.opacity).toBeGreaterThan(0.9);
+  await testInfo.attach(
+    `hero-state-${mobile ? 'mobile' : 'desktop'}-${slideIndex + 1}`,
+    {
+      body: JSON.stringify(state, null, 2),
+      contentType: 'application/json',
+    },
+  );
 
   const response = await page.request.get(state.source);
   expect(response.ok()).toBeTruthy();
@@ -228,7 +260,7 @@ async function openHomepage(
         ).count(),
       {
         timeout: 30_000,
-        intervals: [250, 500, 1000],
+        intervals: [100, 250, 500, 1000],
       },
     )
     .toBeGreaterThanOrEqual(3);
@@ -281,7 +313,21 @@ test('homepage Hero renders every configured slide', async ({
       },
     );
 
-    await expectHeroVisible(page, mobile);
+    await page.evaluate(
+      () =>
+        new Promise<void>((resolve) => {
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => resolve());
+          });
+        }),
+    );
+
+    await expectHeroVisible(
+      page,
+      mobile,
+      testInfo,
+      index,
+    );
   }
 
   await page.screenshot({

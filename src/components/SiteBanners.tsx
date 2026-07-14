@@ -312,6 +312,7 @@ export function HeroBannerSlider({
         'd68-hero-slider d68-hero-slider--ready'
       }
       aria-hidden="true"
+      data-hero-layout="grid-v65"
     >
       {rows.map((slide, index) => (
         <MaybeLink

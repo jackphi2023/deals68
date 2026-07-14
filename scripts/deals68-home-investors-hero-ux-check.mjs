@@ -26,7 +26,7 @@ const adminCss = read('src/styles/pages/admin.css');
 const releaseFoundationCss = read(
   'src/styles/final/release-foundation.css',
 );
-const heroCss = [homeCss, releaseFoundationCss].join('\n');
+const heroCss = homeCss;
 const migration = read(
   'supabase/migrations/' +
     '20260712112248_home_hero_responsive_fields.sql',
@@ -120,20 +120,30 @@ requireToken(
   'Admin Hero preview CSS is missing',
 );
 
+const homeFocalCount = (
+  homeCss.match(
+    /var\(--d68-hero-position,center center\)/g,
+  ) || []
+).length;
+
+if (homeFocalCount < 1) {
+  failures.push(
+    'Hero focal point is missing from home-owned Hero CSS',
+  );
+}
+
 if (
-  (
-    heroCss.match(
-      /var\(--d68-hero-position,center center\)/g,
-    ) || []
-  ).length < 2
+  releaseFoundationCss.includes(
+    'var(--d68-hero-position,center center)',
+  )
 ) {
   failures.push(
-    'Hero focal point is missing from owned Hero CSS',
+    'Frozen Release Foundation still owns Hero focal CSS',
   );
 }
 
 for (const token of [
-  'Deals68 Homepage Hero owner v6',
+  'Deals68 Homepage Hero owner v6.5',
   'aspect-ratio:8/3!important',
   'aspect-ratio:3/4!important',
   '.d68-hero-slide.is-active',
@@ -162,7 +172,7 @@ for (const token of [
 
 requireToken(
   homeCss,
-  'Deals68 Homepage Hero owner v6',
+  'Deals68 Homepage Hero owner v6.5',
   'Homepage does not own the Hero responsive rules',
 );
 forbidToken(
@@ -238,7 +248,7 @@ if (failures.length) {
 console.log('✓ Deals68 G5 Home/Investors/Hero UX static check: PASS');
 console.log('✓ No Home Investor CTA is active by default.');
 console.log('✓ Hero supports desktop and optional mobile images.');
-console.log('✓ Hero focal point controls object-position.');
+console.log('✓ Hero focal point is owned only by home.css.');
 console.log('✓ Latest saved Hero row wins in Admin and public.');
 console.log('✓ Duplicate active rows are disabled on save.');
 console.log('✓ Desktop Hero uses a 1600×600 frame on large screens.');
