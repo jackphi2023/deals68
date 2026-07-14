@@ -52,8 +52,10 @@ for (const token of [
   'mobile_image_url',
   'focal_x',
   'focal_y',
-  '<source',
-  'media="(max-width: 700px)"',
+  "const MOBILE_QUERY = '(max-width: 700px)'",
+  'window.matchMedia(MOBILE_QUERY)',
+  'data-hero-variant={variant}',
+  'd68-hero-media__image',
   '--d68-hero-position',
   'heroFocusPosition',
 ]) {
@@ -131,9 +133,11 @@ if (
 }
 
 for (const token of [
-  'aspect-ratio:8/3',
-  'aspect-ratio:3/4',
-  '.d68-hero-media--has-mobile img',
+  'Deals68 Homepage Hero owner v6',
+  'aspect-ratio:8/3!important',
+  'aspect-ratio:3/4!important',
+  '.d68-hero-slide.is-active',
+  '.d68-hero-media__image',
   'object-fit:contain!important',
 ]) {
   requireToken(
@@ -157,14 +161,14 @@ for (const token of [
 }
 
 requireToken(
-  releaseFoundationCss,
-  'aspect-ratio:8/3',
-  'Release Foundation desktop Hero frame is missing',
+  homeCss,
+  'Deals68 Homepage Hero owner v6',
+  'Homepage does not own the Hero responsive rules',
 );
-requireToken(
+forbidToken(
   releaseFoundationCss,
   'Deals68 Hero responsive full-frame v4',
-  'Release Foundation mobile Hero override is missing',
+  'Frozen Release Foundation still owns Hero feature CSS',
 );
 
 requireToken(
@@ -173,15 +177,32 @@ requireToken(
   'Public banners do not prioritize latest saved row',
 );
 
-requireToken(
+for (const token of [
+  'const usingMobileSource =',
+  "const variant = usingMobileSource ? 'mobile' : 'desktop'",
+  'data-hero-variant={variant}',
+  'setMobileSourceEnabled(false)',
+]) {
+  requireToken(
+    hero,
+    token,
+    `Hero deterministic source logic missing ${token}`,
+  );
+}
+forbidToken(
   hero,
-  "mobileUrl ? ' d68-hero-media--has-mobile' : ''",
-  'Hero media does not mark mobile-specific images',
+  '<picture',
+  'Hero still relies on picture rendering',
+);
+forbidToken(
+  hero,
+  '<source',
+  'Hero still relies on source rendering',
 );
 
 if ((hero.match(/style=\{style\}/g) || []).length < 2) {
   failures.push(
-    'Focal variables are not applied to picture and img',
+    'Focal variables are not applied to wrapper and img',
   );
 }
 
@@ -221,6 +242,6 @@ console.log('✓ Hero focal point controls object-position.');
 console.log('✓ Latest saved Hero row wins in Admin and public.');
 console.log('✓ Duplicate active rows are disabled on save.');
 console.log('✓ Desktop Hero uses a 1600×600 frame on large screens.');
-console.log('✓ Mobile-specific Hero uses a full 900×1200 frame.');
+console.log('✓ Mobile Hero uses one explicit responsive image in a full 900×1200 frame.');
 console.log('✓ Investor region filter is removed.');
 console.log('✓ Investor display names link to detail.');

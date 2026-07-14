@@ -8,6 +8,7 @@ const scripts = [
   'scripts/deals68-business-dashboard-ux-check.mjs',
   'scripts/deals68-investor-dashboard-ux-check.mjs',
   'scripts/deals68-home-investors-hero-ux-check.mjs',
+  'scripts/deals68-hero-mobile-render-check.mjs',
   'scripts/deals68-register-valuation-ux-check.mjs',
   'scripts/deals68-payment-invoice-hardening-check.mjs',
   'scripts/deals68-admin-operations-check.mjs',

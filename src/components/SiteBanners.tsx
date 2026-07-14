@@ -219,17 +219,9 @@ export function HeroBannerSlider({
     return () => window.clearInterval(timer);
   }, [rows.length]);
 
-  const activeBanner = rows[active] || null;
-  const sliderClassName =
-    `d68-hero-slider${
-      cleanUrl(activeBanner?.mobile_image_url)
-        ? ' has-mobile-image'
-        : ''
-    }`;
-
   if (!loaded || !rows.length) {
     return (
-      <div className={sliderClassName} aria-hidden="true">
+      <div className="d68-hero-slider" aria-hidden="true">
         <div className="d68-hero-slide is-active">
           <HeroBannerMedia
             banner={HERO_FALLBACK_ROW}
@@ -243,7 +235,7 @@ export function HeroBannerSlider({
   }
 
   return (
-    <div className={sliderClassName} aria-hidden="true">
+    <div className="d68-hero-slider" aria-hidden="true">
       {rows.map((slide, index) => (
         <MaybeLink
           key={slide.id}
