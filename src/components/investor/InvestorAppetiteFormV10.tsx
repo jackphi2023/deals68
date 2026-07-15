@@ -1,6 +1,9 @@
 import { type FormEvent, useEffect, useState } from 'react';
 import type { Lang } from '../../lib/i18n';
-import type { InvestorRow } from '../../lib/investorAdminV10';
+import {
+  hasPendingInvestorAppetiteV10,
+  type InvestorRow,
+} from '../../lib/investorAdminV10';
 import {
   approvedInvestorAppetite,
   INVESTOR_APPETITE_MAX_LENGTH,
@@ -26,10 +29,11 @@ export default function InvestorAppetiteFormV10({
 
   const approved = approvedInvestorAppetite(investor);
   const pending = pendingInvestorAppetite(investor);
+  const hasPending = hasPendingInvestorAppetiteV10(investor);
 
   useEffect(() => {
-    setDraft(pending || approved);
-  }, [investor.id, pending, approved]);
+    setDraft(hasPending ? pending : approved);
+  }, [investor.id, hasPending, pending, approved]);
 
   useEffect(() => {
     setMessage('');
@@ -94,7 +98,7 @@ export default function InvestorAppetiteFormV10({
         <small>{T(lang, 'Đang public', 'Currently public')}</small>
         <p>{approved || T(lang, 'Chưa có nội dung.', 'No content yet.')}</p>
       </div>
-      {pending ? (
+      {hasPending ? (
         <div className="d68-dashboard-notice warn">
           {T(lang, 'Bản mới đang chờ Admin duyệt.', 'A new version is awaiting administrator approval.')}
         </div>
