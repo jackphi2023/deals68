@@ -54,8 +54,9 @@ async function deployedCandidate(request) {
           });
           if (response.ok()) cssBundle += await response.text();
         }
+        const compactCss = cssBundle.replace(/\s+/g, '');
         const missing = requiredBundleTokens.filter((token) => !bundle.includes(token));
-        const missingCss = requiredCssTokens.filter((token) => !cssBundle.includes(token));
+        const missingCss = requiredCssTokens.filter((token) => !compactCss.includes(token.replace(/\s+/g, '')));
         last.push({
           base,
           status: htmlResponse.status(),
