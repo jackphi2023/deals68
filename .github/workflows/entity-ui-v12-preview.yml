@@ -8,6 +8,7 @@ on:
       - '.github/workflows/entity-ui-v12-preview.yml'
       - 'src/styles/pages/entity-ui-v12.css'
       - 'scripts/deals68-entity-ui-v12-beta-smoke.mjs'
+      - 'scripts/entity-ui-v12-home-hover-diagnostic.mjs'
 
 permissions:
   contents: read
@@ -32,6 +33,11 @@ jobs:
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
 
+      - name: Diagnose homepage Investor hover cascade
+        env:
+          D68_BETA_URL: https://deploy-preview-${{ github.event.pull_request.number }}--beta-reference-deals68.netlify.app
+        run: node scripts/entity-ui-v12-home-hover-diagnostic.mjs | tee /tmp/deals68-home-hover-diagnostic.json
+
       - name: Wait for exact Netlify Deploy Preview and run V12 smoke
         env:
           D68_BETA_URLS: https://deploy-preview-${{ github.event.pull_request.number }}--beta-reference-deals68.netlify.app
@@ -46,6 +52,7 @@ jobs:
         with:
           name: entity-ui-v12-preview-${{ github.sha }}
           path: |
+            /tmp/deals68-home-hover-diagnostic.json
             /tmp/deals68-entity-ui-v12-preview.log
             /tmp/deals68-entity-ui-v12-home.png
             /tmp/deals68-entity-ui-v12-listings.png
