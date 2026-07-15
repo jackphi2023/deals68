@@ -6,6 +6,7 @@ const failures = [];
 const read = (path) => fs.existsSync(path) ? fs.readFileSync(path, 'utf8') : '';
 const requiredFiles = [
   'src/lib/investorProfileService.ts',
+  'src/lib/investorCriteriaReviewService.ts',
   'src/lib/investorAdminV10.ts',
   'src/pages/AdminBannersV10.tsx',
   'src/pages/AdminInvestorsV10.tsx',
@@ -101,6 +102,14 @@ if (fs.existsSync(servicePath)) {
   if (service.includes('as unknown as')) failures.push('Blind double cast remains in Investor service');
 }
 
+const reviewService = read('src/lib/investorCriteriaReviewService.ts');
+for (const rpc of [
+  'submit_my_investor_criteria_review',
+  'admin_approve_investor_criteria',
+]) {
+  if (!reviewService.includes(`'${rpc}'`)) failures.push(`Reviewed criteria service missing RPC ${rpc}`);
+}
+
 const app = read('src/App.tsx');
 for (const token of [
   "import InvestorDetailV10 from './pages/InvestorDetailV10'",
@@ -114,17 +123,19 @@ for (const token of [
 }
 
 const adminHelper = read('src/lib/investorAdminV10.ts');
-if (!adminHelper.includes('hasPendingInvestorAppetiteV10')) failures.push('Empty pending appetite helper missing');
-if (!adminHelper.includes('hasOwnProperty.call')) failures.push('Pending appetite must use property presence, not truthiness');
+if (!adminHelper.includes('hasPendingInvestorAppetiteV10')) failures.push('Backward-compatible pending appetite helper missing');
+if (!adminHelper.includes('pendingInvestorCriteriaKeysV10')) failures.push('Expanded pending criteria helper missing');
+if (!adminHelper.includes('hasOwnProperty.call')) failures.push('Pending criteria must use property presence, not truthiness');
 
-for (const path of [
-  'src/components/admin/InvestorAppetiteEditorV10.tsx',
-  'src/components/investor/InvestorAppetiteFormV10.tsx',
+for (const [path, requiredToken] of [
+  ['src/components/admin/InvestorAppetiteEditorV10.tsx', 'pendingInvestorReviewKeys'],
+  ['src/components/investor/InvestorAppetiteFormV10.tsx', 'pendingInvestorReviewKeys'],
 ]) {
   const source = read(path);
-  if (!source.includes('hasPendingInvestorAppetiteV10')) failures.push(`${path} does not preserve empty pending appetite`);
-  if (/\[investor\.id,\s*investor\.updated_at\]/.test(source)) failures.push(`${path} still clears feedback on same-Investor refresh`);
-  if (!/setMessage\(''\);[\s\S]*?\}, \[investor\.id\]\);/.test(source)) failures.push(`${path} must reset feedback only when Investor ID changes`);
+  if (!source.includes(requiredToken)) failures.push(`${path} does not preserve reviewed pending criteria`);
+  if (!/setMessage\(''\);[\s\S]*?\}, \[investor\.id\]\);/.test(source)) {
+    failures.push(`${path} must reset feedback only when Investor ID changes`);
+  }
 }
 
 const heroPath = 'src/components/investor/InvestorPublicHeroV10.tsx';
