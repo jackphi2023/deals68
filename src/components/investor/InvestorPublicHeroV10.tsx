@@ -7,6 +7,14 @@ import {
 } from '../../lib/investorProfileService';
 import { labelCountry, labelInvestorType, T } from '../../lib/labels';
 
+function countryFlag(raw: unknown) {
+  const code = String(raw || '').trim().toUpperCase();
+  if (!/^[A-Z]{2}$/.test(code)) return '🌐';
+  return String.fromCodePoint(
+    ...[...code].map((char) => 127397 + char.charCodeAt(0)),
+  );
+}
+
 export default function InvestorPublicHeroV10({
   investor,
   defaultCover,
@@ -18,6 +26,8 @@ export default function InvestorPublicHeroV10({
   lang: Lang;
   title: string;
 }) {
+  const country = investor.country_iso2 || investor.country;
+
   return (
     <section className="d68-id-cover" data-testid="investor-public-hero">
       <img
@@ -36,7 +46,7 @@ export default function InvestorPublicHeroV10({
         <h1>{title}</h1>
         <div className="d68-id-cover__badges">
           <span>{labelInvestorType(investor.type, lang)}</span>
-          <span>📍 {labelCountry(investor.country_iso2 || investor.country, lang)}</span>
+          <span>{countryFlag(country)} {labelCountry(country, lang)}</span>
           <span className="active">● {T(lang, 'Đang hoạt động', 'Active')}</span>
         </div>
       </div>
