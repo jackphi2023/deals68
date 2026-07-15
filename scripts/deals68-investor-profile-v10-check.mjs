@@ -15,6 +15,7 @@ const requiredFiles = [
   'src/components/admin/InvestorCoverEditorV10.tsx',
   'src/components/investor/InvestorAppetiteFormV10.tsx',
   'src/components/investor/InvestorPublicHeroV10.tsx',
+  'src/components/investor/InvestorPublicSectionsV10.tsx',
   'src/styles/pages/investor-profile-v10.css',
   'public/assets/investor-cover-default.svg',
   'supabase/migrations/20260715045336_investor_profile_cover_appetite_v1.sql',
@@ -26,22 +27,26 @@ for (const path of requiredFiles) {
   if (!fs.existsSync(path)) failures.push(`Missing ${path}`);
 }
 
-for (const path of requiredFiles.filter((item) => /\.(ts|tsx|mjs)$/.test(item))) {
-  if (!fs.existsSync(path)) continue;
-  const source = ts.createSourceFile(
+function sourceFile(path) {
+  return ts.createSourceFile(
     path,
     read(path),
     ts.ScriptTarget.Latest,
     true,
     path.endsWith('.tsx') ? ts.ScriptKind.TSX : ts.ScriptKind.TS,
   );
+}
+
+for (const path of requiredFiles.filter((item) => /\.(ts|tsx|mjs)$/.test(item))) {
+  if (!fs.existsSync(path)) continue;
+  const source = sourceFile(path);
   for (const diagnostic of source.parseDiagnostics) {
     failures.push(`${path}: ${ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n')}`);
   }
 }
 
 function constantValue(path, name) {
-  const source = ts.createSourceFile(path, read(path), ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
+  const source = sourceFile(path);
   let result;
   const visit = (node) => {
     if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name) && node.name.text === name && node.initializer) {
@@ -51,6 +56,24 @@ function constantValue(path, name) {
   };
   visit(source);
   return result;
+}
+
+function functionParameterNames(path, functionName) {
+  const source = sourceFile(path);
+  const names = [];
+  const visit = (node) => {
+    if (
+      (ts.isFunctionDeclaration(node) || ts.isFunctionExpression(node)) &&
+      node.name?.text === functionName &&
+      node.parameters[0]?.name &&
+      ts.isObjectBindingPattern(node.parameters[0].name)
+    ) {
+      for (const element of node.parameters[0].name.elements) names.push(element.name.getText(source));
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(source);
+  return names;
 }
 
 const servicePath = 'src/lib/investorProfileService.ts';
@@ -92,7 +115,7 @@ for (const token of [
 
 const adminHelper = read('src/lib/investorAdminV10.ts');
 if (!adminHelper.includes('hasPendingInvestorAppetiteV10')) failures.push('Empty pending appetite helper missing');
-if (!adminHelper.includes("hasOwnProperty.call")) failures.push('Pending appetite must use property presence, not truthiness');
+if (!adminHelper.includes('hasOwnProperty.call')) failures.push('Pending appetite must use property presence, not truthiness');
 
 for (const path of [
   'src/components/admin/InvestorAppetiteEditorV10.tsx',
@@ -103,6 +126,64 @@ for (const path of [
   if (/\[investor\.id,\s*investor\.updated_at\]/.test(source)) failures.push(`${path} still clears feedback on same-Investor refresh`);
   if (!/setMessage\(''\);[\s\S]*?\}, \[investor\.id\]\);/.test(source)) failures.push(`${path} must reset feedback only when Investor ID changes`);
 }
+
+const heroPath = 'src/components/investor/InvestorPublicHeroV10.tsx';
+const hero = read(heroPath);
+const heroParameters = functionParameterNames(heroPath, 'InvestorPublicHeroV10');
+if (heroParameters.includes('description')) failures.push('Public Hero must not accept description');
+if (!hero.includes('investor.code')) failures.push('Public Hero must display Investor code');
+if (!hero.includes('d68-id-cover__eyebrow')) failures.push('Public Hero code eyebrow is missing');
+if (/<p[\s>]/.test(hero)) failures.push('Public Hero must not render a description paragraph');
+if (!hero.includes('d68-id-cover__badges')) failures.push('Public Hero badges are missing');
+
+const detail = read('src/pages/InvestorDetailV10.tsx');
+const mainIndex = detail.indexOf('<div className="d68-id-main">');
+const heroIndex = detail.indexOf('<InvestorPublicHeroV10', mainIndex);
+const sectionsIndex = detail.indexOf('<InvestorPublicSectionsV10', mainIndex);
+const asideIndex = detail.indexOf('<aside className="d68-id-side d68-id-side--sticky">');
+if (!(mainIndex >= 0 && heroIndex > mainIndex && sectionsIndex > heroIndex && asideIndex > sectionsIndex)) {
+  failures.push('Public detail must order main → Hero → sections → unchanged sidebar');
+}
+if (/<InvestorPublicHeroV10\b[^>]*\bdescription=/.test(detail)) failures.push('Description is still passed to Public Hero');
+if (detail.includes("'Tổng quan đầu tư'")) failures.push('Obsolete Investment overview card remains');
+for (const sidebarToken of [
+  "T(lang, 'Gửi Hồ sơ Doanh nghiệp', 'Send business profile')",
+  'onClick={sendProposal}',
+  "T(lang, 'Ai được xem gì', 'Who can see what')",
+  "T(lang, 'Khách chỉ xem được hồ sơ công khai'",
+  "T(lang, 'Sau khi kết nối: mở thông tin liên hệ do nhà đầu tư cài đặt.'",
+]) {
+  if (!detail.includes(sidebarToken)) failures.push(`Existing sidebar contract changed: ${sidebarToken}`);
+}
+
+const sections = read('src/components/investor/InvestorPublicSectionsV10.tsx');
+for (const testId of [
+  'investor-introduction',
+  'investor-criteria',
+  'investor-markets',
+  'investor-proposal-history',
+  'investor-contact',
+]) {
+  if (!sections.includes(`data-testid="${testId}"`)) failures.push(`Missing public section ${testId}`);
+}
+if (sections.includes('d68-v10-appetite-public')) failures.push('Investment appetite must not be a separate card');
+if (/data-testid="investor-industries"/.test(sections)) failures.push('Industries must not be a separate card');
+if (!sections.includes("label={T(lang, 'Khẩu vị đầu tư'")) failures.push('Appetite row is missing from Investment criteria');
+if (!sections.includes('d68-id-sector-block')) failures.push('Industries are not nested in Investment criteria');
+if (!sections.includes('countryFlag(item)')) failures.push('Market chips must include country flags');
+
+const css = read('src/styles/pages/investor-profile-v10.css');
+for (const token of [
+  'grid-template-columns:minmax(0,1fr) 332px',
+  'height:clamp(300px,22vw,350px)',
+  'max-height:350px',
+  'object-position:62% center',
+  '.d68-id-criteria-table',
+  '.d68-id-market-tags',
+]) {
+  if (!css.includes(token)) failures.push(`Public CSS contract missing ${token}`);
+}
+if (!css.includes('@media (max-width:1050px)')) failures.push('Tablet/mobile one-column breakpoint is missing');
 
 const cover = read('public/assets/investor-cover-default.svg');
 if (!cover.startsWith('<svg')) failures.push('Default Investor cover is not valid SVG text');
@@ -135,7 +216,7 @@ if (failures.length) {
 }
 
 console.log('✓ Deals68 Investor Profile V10 check: PASS');
-console.log('✓ Default and per-Investor cover flows are wired through atomic RPCs.');
-console.log('✓ Empty appetite submissions remain pending until Admin approval.');
-console.log('✓ Success/warning feedback survives same-Investor refresh.');
-console.log('✓ No Portal/Enhanced duplicate data owner is present.');
+console.log('✓ Hero is the first item in the main column and contains no duplicate description.');
+console.log('✓ Introduction, criteria, markets, proposal history and contact follow the approved order.');
+console.log('✓ Existing Send Proposal and Who can see what sidebar is preserved.');
+console.log('✓ Cover source remains 1600x560 while desktop display is constrained to 300–350px.');

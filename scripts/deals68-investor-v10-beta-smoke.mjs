@@ -7,8 +7,8 @@ const base = String(
   process.env.D68_BETA_URL || 'https://beta-reference-deals68.netlify.app',
 ).replace(/\/+$/, '');
 const release = String(process.env.D68_RELEASE_SHA || Date.now());
-const investorUrl = `${base}/investors/INV-0603?v10=${encodeURIComponent(release)}`;
-const assetUrl = `${base}/assets/investor-cover-default.svg?v10=${encodeURIComponent(release)}`;
+const investorUrl = `${base}/investors/INV-0603?v11=${encodeURIComponent(release)}`;
+const assetUrl = `${base}/assets/investor-cover-default.svg?v11=${encodeURIComponent(release)}`;
 const deployDeadline = Date.now() + 12 * 60 * 1000;
 const diagnosticPath = '/tmp/deals68-investor-v10-beta-diagnostic.json';
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -26,13 +26,13 @@ async function pageSnapshot(page, events = []) {
     url: location.href,
     title: document.title,
     rootChildren: document.querySelector('#root')?.childElementCount || 0,
-    bodyText: (document.body?.innerText || '').slice(0, 2400),
-    bodyHtml: (document.body?.innerHTML || '').slice(0, 5000),
+    bodyText: (document.body?.innerText || '').slice(0, 3200),
+    bodyHtml: (document.body?.innerHTML || '').slice(0, 7000),
     coverCount: document.querySelectorAll('.d68-id-cover').length,
     errorState: document.querySelector('.d68-id-state h1')?.textContent?.trim() || '',
     h1: document.querySelector('.d68-id-cover h1')?.textContent?.trim() || '',
   })).catch(() => null);
-  return { dom, events: events.slice(-40) };
+  return { dom, events: events.slice(-50) };
 }
 
 async function writeDiagnostic(payload) {
@@ -63,22 +63,14 @@ async function waitForDeployedAsset(request) {
         hasArtwork: /data:image\/webp;base64,/.test(text),
       };
       console.log(`Deploy asset probe ${attempt}: ${JSON.stringify(last)}`);
-      if (
-        response.ok() &&
-        last.hasSvg &&
-        last.hasWidth &&
-        last.hasHeight &&
-        last.hasArtwork
-      ) {
-        return last;
-      }
+      if (response.ok() && last.hasSvg && last.hasWidth && last.hasHeight && last.hasArtwork) return last;
     } catch (error) {
       last = { attempt, error: serializeError(error) };
       console.log(`Deploy asset probe ${attempt}: ${error?.message || error}`);
     }
     await delay(10_000);
   }
-  const error = new Error('Netlify Beta did not serve the V10 default cover asset within 12 minutes.');
+  const error = new Error('Netlify Beta did not serve the Investor default cover asset within 12 minutes.');
   error.probe = last;
   throw error;
 }
@@ -122,52 +114,82 @@ async function inspectInvestor(page, viewportName) {
 
   const state = await page.evaluate(() => {
     const cover = document.querySelector('.d68-id-cover');
+    const main = document.querySelector('.d68-id-main');
+    const side = document.querySelector('.d68-id-side');
     const image = document.querySelector('.d68-id-cover img');
-    const rect = cover?.getBoundingClientRect();
+    const intro = document.querySelector('.d68-id-introduction__copy');
+    const coverRect = cover?.getBoundingClientRect();
+    const mainRect = main?.getBoundingClientRect();
+    const sideRect = side?.getBoundingClientRect();
+    const introText = intro?.textContent?.trim() || '';
+    const bodyText = document.body?.innerText || '';
+    const occurrenceCount = introText ? bodyText.split(introText).length - 1 : 0;
+    const orderedSections = Array.from(main?.querySelectorAll(':scope > [data-testid]') || [])
+      .map((node) => node.getAttribute('data-testid'));
     return {
       rootChildren: document.querySelector('#root')?.childElementCount || 0,
       h1: document.querySelector('.d68-id-cover h1')?.textContent?.trim() || '',
+      eyebrow: document.querySelector('.d68-id-cover__eyebrow')?.textContent?.trim() || '',
+      heroParagraphCount: document.querySelectorAll('.d68-id-cover p').length,
       badgeCount: document.querySelectorAll('.d68-id-cover__badges span').length,
       activeBadge: document.querySelector('.d68-id-cover__badges .active')?.textContent?.trim() || '',
-      coverWidth: rect?.width || 0,
-      coverHeight: rect?.height || 0,
+      coverWidth: coverRect?.width || 0,
+      coverHeight: coverRect?.height || 0,
+      mainWidth: mainRect?.width || 0,
+      sideWidth: sideRect?.width || 0,
+      sideTopDelta: coverRect && sideRect ? Math.abs(coverRect.top - sideRect.top) : 9999,
+      sideBelowMain: mainRect && sideRect ? sideRect.top >= mainRect.bottom - 2 : false,
       imageSrc: image instanceof HTMLImageElement ? image.currentSrc || image.src : '',
       imageWidth: image instanceof HTMLImageElement ? image.naturalWidth : 0,
       imageHeight: image instanceof HTMLImageElement ? image.naturalHeight : 0,
+      introTextLength: introText.length,
+      descriptionOccurrences: occurrenceCount,
+      orderedSections,
       sectionTitles: Array.from(document.querySelectorAll('.d68-id-section h2')).map((node) => node.textContent?.trim() || ''),
-      sideExists: Boolean(document.querySelector('.d68-id-side')),
+      criteriaRows: document.querySelectorAll('[data-testid="investor-criteria"] .d68-id-criteria-row').length,
+      sectorTagCount: document.querySelectorAll('[data-testid="investor-criteria"] .d68-id-sector-block .d68-id-tags span').length,
+      marketFlagCount: document.querySelectorAll('[data-testid="investor-markets"] .d68-id-market-tags i').length,
+      sidebarSend: document.querySelector('.d68-id-cta span')?.textContent?.trim() || '',
+      sidebarAccess: document.querySelector('.d68-id-access h3')?.textContent?.trim() || '',
+      overviewCount: Array.from(document.querySelectorAll('.d68-id-section h2')).filter((node) => /Tổng quan đầu tư|Investment overview/i.test(node.textContent || '')).length,
       overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
     };
   });
 
   assert.ok(state.rootChildren > 0, `${viewportName}: React root is empty`);
   assert.ok(state.h1.length > 8, `${viewportName}: Investor title is missing`);
+  assert.match(state.eyebrow, /INV-0603/i, `${viewportName}: Investor code is missing from Hero`);
+  assert.equal(state.heroParagraphCount, 0, `${viewportName}: Hero contains duplicated description paragraph`);
+  assert.equal(state.descriptionOccurrences, 1, `${viewportName}: Introduction description occurrence count ${state.descriptionOccurrences}`);
   assert.ok(state.badgeCount >= 3, `${viewportName}: Cover badges are incomplete`);
   assert.match(state.activeBadge, /hoạt động|active/i, `${viewportName}: Active badge is missing`);
   assert.ok(state.imageWidth > 0 && state.imageHeight > 0, `${viewportName}: Cover image failed to load`);
-  assert.ok(state.sideExists, `${viewportName}: Investor CTA sidebar is missing`);
+  assert.equal(state.overviewCount, 0, `${viewportName}: obsolete Investment overview card remains`);
+  assert.ok(state.criteriaRows >= 2, `${viewportName}: criteria table is incomplete`);
+  assert.ok(state.sectorTagCount >= 1, `${viewportName}: sectors are not nested in criteria`);
+  assert.ok(state.marketFlagCount >= 1, `${viewportName}: market flags are missing`);
+  assert.match(state.sidebarSend, /Gửi Hồ sơ Doanh nghiệp|Send business profile/i, `${viewportName}: Send Proposal sidebar changed`);
+  assert.match(state.sidebarAccess, /Ai được xem gì|Who can see what/i, `${viewportName}: Access sidebar changed`);
   assert.ok(state.overflow <= 2, `${viewportName}: Horizontal overflow ${state.overflow}px`);
 
-  for (const expected of [
-    /Tổng quan đầu tư|Investment overview/i,
-    /Giới thiệu|Introduction/i,
-    /Tiêu chí đầu tư|Investment criteria/i,
-    /Thị trường quan tâm|Target investment markets/i,
-    /Proposal/i,
-    /Thông tin liên hệ|Contact information/i,
-  ]) {
-    assert.ok(
-      state.sectionTitles.some((title) => expected.test(title)),
-      `${viewportName}: missing section ${expected}`,
-    );
-  }
+  assert.deepEqual(state.orderedSections, [
+    'investor-public-hero',
+    'investor-introduction',
+    'investor-criteria',
+    'investor-markets',
+    'investor-proposal-history',
+    'investor-contact',
+  ], `${viewportName}: main-column section order changed`);
 
   if (viewportName === 'desktop') {
-    assert.ok(state.coverWidth >= 900, `desktop: cover width ${state.coverWidth}`);
-    assert.ok(state.coverHeight >= 300, `desktop: cover height ${state.coverHeight}`);
+    assert.ok(state.coverWidth >= 650, `desktop: cover width ${state.coverWidth}`);
+    assert.ok(state.coverHeight >= 300 && state.coverHeight <= 351, `desktop: cover height ${state.coverHeight}`);
+    assert.ok(state.sideWidth >= 320 && state.sideWidth <= 340, `desktop: sidebar width ${state.sideWidth}`);
+    assert.ok(state.sideTopDelta <= 3, `desktop: sidebar is not aligned with Hero (${state.sideTopDelta}px)`);
   } else {
     assert.ok(state.coverWidth >= 350, `mobile: cover width ${state.coverWidth}`);
-    assert.ok(state.coverHeight >= 400, `mobile: cover height ${state.coverHeight}`);
+    assert.ok(state.coverHeight >= 300 && state.coverHeight <= 341, `mobile: cover height ${state.coverHeight}`);
+    assert.ok(state.sideBelowMain, 'mobile: sidebar must stack below the full main column');
   }
 
   const pageErrors = events.filter((event) => event.startsWith('pageerror:'));
@@ -219,7 +241,7 @@ try {
   }
 
   console.log(JSON.stringify({ assetProbe, desktop, mobile }, null, 2));
-  console.log('✓ Netlify Beta Investor Profile V10 real public smoke: PASS');
+  console.log('✓ Netlify Beta Investor Profile V11 public layout smoke: PASS');
 } catch (error) {
   if (!fs.existsSync(diagnosticPath)) {
     await writeDiagnostic({ phase: 'deploy', release, base, investorUrl, assetUrl, assetProbe, error: serializeError(error), probe: error?.probe || null });

@@ -2,7 +2,10 @@ import { Link } from 'react-router-dom';
 import type { Lang } from '../../lib/i18n';
 import {
   labelCountry,
+  labelDealType,
   labelIndustry,
+  labelInvestorType,
+  labelStage,
   T,
 } from '../../lib/labels';
 
@@ -40,10 +43,38 @@ function relativeTime(value: unknown, lang: Lang) {
   return T(lang, `${months} tháng trước`, `${months} month${months > 1 ? 's' : ''} ago`);
 }
 
+function countryFlag(raw: string) {
+  const code = String(raw || '').trim().toUpperCase();
+  if (!/^[A-Z]{2}$/.test(code)) return '🌐';
+  return String.fromCodePoint(...[...code].map((char) => 127397 + char.charCodeAt(0)));
+}
+
+function SectionTitle({ icon, children }: { icon: string; children: string }) {
+  return (
+    <div className="d68-id-section-title">
+      <span aria-hidden="true">{icon}</span>
+      <h2>{children}</h2>
+    </div>
+  );
+}
+
+function CriteriaRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="d68-id-criteria-row">
+      <span>{label}</span>
+      <b>{value}</b>
+    </div>
+  );
+}
+
 export default function InvestorPublicSectionsV10({
   lang,
   description,
-  criteria,
+  country,
+  investorType,
+  dealTypes,
+  stage,
+  ticket,
   appetite,
   industries,
   markets,
@@ -52,7 +83,11 @@ export default function InvestorPublicSectionsV10({
 }: {
   lang: Lang;
   description: string;
-  criteria: string[];
+  country: string;
+  investorType: string;
+  dealTypes: string[];
+  stage: string;
+  ticket: string;
   appetite: string;
   industries: string[];
   markets: string[];
@@ -60,44 +95,64 @@ export default function InvestorPublicSectionsV10({
   contact: any;
 }) {
   const connected = Boolean(contact?.connected);
+  const transactionLabel = dealTypes
+    .map((item) => labelDealType(item, lang, true))
+    .filter(Boolean)
+    .join(' · ');
+  const stageLabel = stage ? labelStage(stage, lang) : '';
+  const ticketLabel = ticket && ticket !== '—' ? ticket : '';
+  const hasCriteria = Boolean(transactionLabel || stageLabel || ticketLabel || appetite || industries.length);
+
   return (
     <>
-      <section className="d68-id-section d68-id-section--card">
-        <h2>{T(lang, 'Giới thiệu', 'Introduction')}</h2>
-        <p>{description}</p>
-      </section>
-      <section className="d68-id-section d68-id-section--card">
-        <h2>{T(lang, 'Tiêu chí đầu tư', 'Investment criteria')}</h2>
-        <ul className="d68-id-bullets">
-          {criteria.length
-            ? criteria.map((item, index) => <li key={`${index}-${item}`}>{item}</li>)
-            : <li>{T(lang, 'Chưa có tiêu chí chi tiết được Admin duyệt public.', 'No detailed administrator-approved criteria yet.')}</li>}
-        </ul>
-      </section>
-      {appetite ? (
-        <section className="d68-id-section d68-id-section--card d68-v10-appetite-public">
-          <h2>{T(lang, 'Khẩu vị đầu tư', 'Investment appetite')}</h2>
-          <p>{appetite}</p>
-        </section>
-      ) : null}
-      <section className="d68-id-section d68-id-section--card">
-        <h2>{T(lang, 'Ngành quan tâm', 'Sectors of interest')}</h2>
-        <div className="d68-id-tags">
-          {industries.length
-            ? industries.map((item) => <span key={item}>{labelIndustry(item, lang)}</span>)
-            : <span>{T(lang, 'Đang cập nhật', 'Updating')}</span>}
+      <section className="d68-id-section d68-id-section--card d68-id-introduction" data-testid="investor-introduction">
+        <SectionTitle icon="ⓘ">{T(lang, 'Giới thiệu', 'Introduction')}</SectionTitle>
+        {description ? <p className="d68-id-introduction__copy">{description}</p> : null}
+        <div className="d68-id-introduction__facts">
+          <CriteriaRow label={T(lang, 'Quốc gia trụ sở', 'HQ country')} value={labelCountry(country, lang)} />
+          <CriteriaRow label={T(lang, 'Loại Nhà đầu tư', 'Investor type')} value={labelInvestorType(investorType, lang)} />
         </div>
       </section>
-      <section className="d68-id-section d68-id-section--card">
-        <h2>{T(lang, 'Thị trường quan tâm', 'Target investment markets')}</h2>
-        <div className="d68-id-tags">
-          {markets.length
-            ? markets.map((item) => <span key={item}>{labelCountry(item, lang)}</span>)
-            : <span>{T(lang, 'Đang cập nhật', 'Updating')}</span>}
-        </div>
+
+      <section className="d68-id-section d68-id-section--card" data-testid="investor-criteria">
+        <SectionTitle icon="◎">{T(lang, 'Tiêu chí đầu tư', 'Investment criteria')}</SectionTitle>
+        {hasCriteria ? (
+          <>
+            <div className="d68-id-criteria-table">
+              {transactionLabel ? <CriteriaRow label={T(lang, 'Ưu tiên giao dịch', 'Preferred transactions')} value={transactionLabel} /> : null}
+              {stageLabel ? <CriteriaRow label={T(lang, 'Giai đoạn phù hợp', 'Preferred stage')} value={stageLabel} /> : null}
+              {ticketLabel ? <CriteriaRow label={T(lang, 'Khoản đầu tư', 'Investment size')} value={ticketLabel} /> : null}
+              {appetite ? <CriteriaRow label={T(lang, 'Khẩu vị đầu tư', 'Investment appetite')} value={appetite} /> : null}
+            </div>
+            {industries.length ? (
+              <div className="d68-id-sector-block">
+                <h3>{T(lang, 'Ngành quan tâm', 'Sectors of interest')}</h3>
+                <div className="d68-id-tags">
+                  {industries.map((item) => <span key={item}>{labelIndustry(item, lang)}</span>)}
+                </div>
+              </div>
+            ) : null}
+          </>
+        ) : (
+          <p className="d68-id-muted">{T(lang, 'Chưa có tiêu chí đầu tư được duyệt public.', 'No public investment criteria are available yet.')}</p>
+        )}
       </section>
-      <section className="d68-id-section d68-id-section--card">
-        <h2>{T(lang, 'Lịch sử nhận proposal', 'Proposal history')}</h2>
+
+      <section className="d68-id-section d68-id-section--card" data-testid="investor-markets">
+        <SectionTitle icon="🌐">{T(lang, 'Thị trường quan tâm', 'Target investment markets')}</SectionTitle>
+        {markets.length ? (
+          <div className="d68-id-tags d68-id-market-tags">
+            {markets.map((item) => (
+              <span key={item}><i aria-hidden="true">{countryFlag(item)}</i>{labelCountry(item, lang)}</span>
+            ))}
+          </div>
+        ) : (
+          <p className="d68-id-muted">{T(lang, 'Chưa công bố thị trường đầu tư.', 'No target investment markets are public yet.')}</p>
+        )}
+      </section>
+
+      <section className="d68-id-section d68-id-section--card" data-testid="investor-proposal-history">
+        <SectionTitle icon="◷">{T(lang, 'Lịch sử nhận Proposal', 'Proposal history')}</SectionTitle>
         {publicHistory.length ? (
           <div className="d68-id-timeline d68-id-timeline--proposal">
             {publicHistory.map((item, index) => (
@@ -116,8 +171,9 @@ export default function InvestorPublicSectionsV10({
           <p className="d68-id-muted">{T(lang, 'Chưa nhận Hồ sơ chào từ doanh nghiệp nào.', 'No business proposal profiles received yet.')}</p>
         )}
       </section>
-      <section className="d68-id-section d68-id-section--card">
-        <h2>{T(lang, 'Thông tin liên hệ', 'Contact information')}</h2>
+
+      <section className="d68-id-section d68-id-section--card" data-testid="investor-contact">
+        <SectionTitle icon="🔒">{T(lang, 'Thông tin liên hệ', 'Contact information')}</SectionTitle>
         <p className="d68-id-muted">{T(lang, 'Chỉ Doanh nghiệp đã kết nối với Nhà đầu tư mới được xem.', 'Only businesses connected with this investor can view contact details.')}</p>
         <div className="d68-id-contact-list">
           <ContactRow label={T(lang, 'Người liên hệ', 'Contact person')} value={contact?.name} unlocked={connected && Boolean(contact?.name)} />

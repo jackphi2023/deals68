@@ -12,16 +12,14 @@ export default function InvestorPublicHeroV10({
   defaultCover,
   lang,
   title,
-  description,
 }: {
   investor: InvestorRow;
   defaultCover: InvestorCoverBanner | null;
   lang: Lang;
   title: string;
-  description: string;
 }) {
   return (
-    <section className="d68-id-cover">
+    <section className="d68-id-cover" data-testid="investor-public-hero">
       <img
         src={investorCoverUrl(investor, defaultCover)}
         alt={title}
@@ -32,13 +30,15 @@ export default function InvestorPublicHeroV10({
       />
       <div className="d68-id-cover__shade" />
       <div className="d68-id-cover__content">
+        <div className="d68-id-cover__eyebrow">
+          {investor.code} · {T(lang, 'Hồ sơ Nhà đầu tư', 'Investor profile')}
+        </div>
+        <h1>{title}</h1>
         <div className="d68-id-cover__badges">
           <span>{labelInvestorType(investor.type, lang)}</span>
           <span>📍 {labelCountry(investor.country_iso2 || investor.country, lang)}</span>
           <span className="active">● {T(lang, 'Đang hoạt động', 'Active')}</span>
         </div>
-        <h1>{title}</h1>
-        <p>{description}</p>
       </div>
     </section>
   );

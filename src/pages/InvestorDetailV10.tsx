@@ -20,15 +20,7 @@ import {
   investorPublicTitle,
   investorTicketLabel,
 } from '../lib/investorDisplay';
-import {
-  labelCountry,
-  labelDealType,
-  labelIndustry,
-  labelInvestorType,
-  labelRegion,
-  labelStage,
-  T,
-} from '../lib/labels';
+import { T } from '../lib/labels';
 import { sendBusinessProposalToInvestor } from '../lib/proposals';
 import { applySeo, DEFAULT_SOCIAL_IMAGE } from '../lib/seo';
 import { supabase } from '../lib/supabase';
@@ -51,31 +43,6 @@ function arr(value: unknown): string[] {
     .filter(Boolean);
 }
 
-function criteriaList(investor: any, lang: Lang) {
-  const criteria = investor?.criteria && typeof investor.criteria === 'object'
-    ? investor.criteria
-    : {};
-  const out: string[] = [];
-  const deals = arr(investor?.deal_types || criteria.dealTypes);
-  const sectors = arr(investor?.industries || criteria.sectors);
-  if (deals.length) {
-    out.push(`${T(lang, 'Ưu tiên giao dịch', 'Preferred transactions')}: ${deals.map((item) => labelDealType(item, lang, true)).join(', ')}`);
-  }
-  if (investor?.stage) {
-    out.push(`${T(lang, 'Giai đoạn phù hợp', 'Preferred stage')}: ${labelStage(investor.stage, lang)}`);
-  }
-  if (sectors.length) {
-    out.push(`${T(lang, 'Ngành quan tâm', 'Target sectors')}: ${sectors.map((item) => labelIndustry(item, lang)).join(', ')}`);
-  }
-  if (criteria.riskAppetite) {
-    out.push(`${T(lang, 'Khẩu vị rủi ro', 'Risk appetite')}: ${criteria.riskAppetite}`);
-  }
-  if (criteria.returnExpectation) {
-    out.push(`${T(lang, 'Kỳ vọng lợi nhuận', 'Return expectation')}: ${criteria.returnExpectation}`);
-  }
-  return out;
-}
-
 function proposalFallback(investor: any, lang: Lang) {
   const raw = investor?.criteria?.proposal_history || investor?.criteria?.proposalHistory;
   return arr(raw).map((label) => ({
@@ -83,10 +50,6 @@ function proposalFallback(investor: any, lang: Lang) {
     slug: '',
     sent_at: null,
   }));
-}
-
-function Fact({ label, value }: { label: string; value: string }) {
-  return <div className="d68-id-fact"><span>{label}</span><b>{value || '—'}</b></div>;
 }
 
 export default function InvestorDetailV10({ lang }: { lang: Lang }) {
@@ -181,10 +144,23 @@ export default function InvestorDetailV10({ lang }: { lang: Lang }) {
 
   const title = investor ? investorPublicTitle(investor, lang) : '';
   const description = investor ? investorPublicDescription(investor, lang) : '';
-  const industries = useMemo(() => arr(investor?.industries), [investor]);
-  const criteria = useMemo(() => criteriaList(investor, lang), [investor, lang]);
+  const criteriaSource = useMemo(
+    () => investor?.criteria && typeof investor.criteria === 'object'
+      ? investor.criteria
+      : {},
+    [investor],
+  );
+  const industries = useMemo(
+    () => arr(investor?.industries || criteriaSource.sectors),
+    [investor, criteriaSource],
+  );
+  const dealTypes = useMemo(
+    () => arr(investor?.deal_types || criteriaSource.dealTypes),
+    [investor, criteriaSource],
+  );
   const markets = useMemo(() => investorTargetCountries(investor), [investor]);
   const appetite = approvedInvestorAppetite(investor);
+  const ticket = investor ? investorTicketLabel(lang, investor) : '';
 
   useEffect(() => {
     if (loading) return;
@@ -252,20 +228,23 @@ export default function InvestorDetailV10({ lang }: { lang: Lang }) {
     <main className="d68-investor-detail d68-v10-investor-detail">
       <section className="d68-id-wrap">
         <div className="d68-id-breadcrumb"><Link to={toLocalizedPath('/', lang)}>{T(lang, 'Trang chủ', 'Home')}</Link> › <Link to={toLocalizedPath('/investors', lang)}>{T(lang, 'Nhà đầu tư', 'Investors')}</Link> › <b>{investor.code}</b></div>
-        <InvestorPublicHeroV10 investor={investor} defaultCover={defaultCover} lang={lang} title={title} description={description} />
         <div className="d68-id-layout">
           <div className="d68-id-main">
-            <section className="d68-id-section d68-id-section--card">
-              <h2>{T(lang, 'Tổng quan đầu tư', 'Investment overview')}</h2>
-              <div className="d68-id-facts d68-id-facts--top">
-                <Fact label={T(lang, 'Quốc gia trụ sở', 'HQ country')} value={labelCountry(investor.country_iso2 || investor.country, lang)} />
-                <Fact label={T(lang, 'Loại nhà đầu tư', 'Investor type')} value={labelInvestorType(investor.type, lang)} />
-                <Fact label={T(lang, 'Khu vực', 'Region')} value={labelRegion(investor.region, lang)} />
-                <Fact label={T(lang, 'Giai đoạn đầu tư', 'Investment stage')} value={labelStage(investor.stage, lang)} />
-                <Fact label={T(lang, 'Quy mô đầu tư', 'Investment size')} value={investorTicketLabel(lang, investor)} />
-              </div>
-            </section>
-            <InvestorPublicSectionsV10 lang={lang} description={description} criteria={criteria} appetite={appetite} industries={industries} markets={markets} publicHistory={publicHistory} contact={contact} />
+            <InvestorPublicHeroV10 investor={investor} defaultCover={defaultCover} lang={lang} title={title} />
+            <InvestorPublicSectionsV10
+              lang={lang}
+              description={description}
+              country={investor.country_iso2 || investor.country}
+              investorType={investor.type}
+              dealTypes={dealTypes}
+              stage={investor.stage || ''}
+              ticket={ticket}
+              appetite={appetite}
+              industries={industries}
+              markets={markets}
+              publicHistory={publicHistory}
+              contact={contact}
+            />
           </div>
           <aside className="d68-id-side d68-id-side--sticky">
             <div className="d68-id-cta">
