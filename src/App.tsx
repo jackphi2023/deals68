@@ -7,7 +7,7 @@ import Home from './pages/Home';
 import Businesses from './pages/Businesses';
 import BusinessDetail from './pages/BusinessDetail';
 import Investors from './pages/Investors';
-import InvestorDetail from './pages/InvestorDetail';
+import InvestorDetailV10 from './pages/InvestorDetailV10';
 import Pricing from './pages/Pricing';
 import Login from './pages/Login';
 import ForgotPassword from './pages/ForgotPassword';
@@ -21,8 +21,10 @@ import { langFromPath, stripLangPrefix, toLocalizedPath } from './lib/i18nRoutes
 
 const BusinessDashboard = lazy(() => import('./pages/BusinessDashboard'));
 const InvestorDashboard = lazy(() => import('./pages/InvestorDashboard'));
+const InvestorProfileV10 = lazy(() => import('./pages/InvestorProfileV10'));
 const Admin = lazy(() => import('./pages/Admin'));
-const AdminProposals = lazy(() => import('./pages/AdminProposals'));
+const AdminBannersV10 = lazy(() => import('./pages/AdminBannersV10'));
+const AdminInvestorsV10 = lazy(() => import('./pages/AdminInvestorsV10'));
 const AdminValuation = lazy(() => import('./pages/AdminValuation'));
 const About = lazy(() => import('./pages/StaticPages').then((m) => ({ default: m.About })));
 const Terms = lazy(() => import('./pages/StaticPages').then((m) => ({ default: m.Terms })));
@@ -106,7 +108,7 @@ export default function App(){
         <Route path="/businesses" element={<Businesses lang="vi"/>}/>
         <Route path="/businesses/:slug" element={<BusinessDetail lang="vi"/>}/>
         <Route path="/investors" element={<Investors lang="vi"/>}/>
-        <Route path="/investors/:code" element={<InvestorDetail lang="vi"/>}/>
+        <Route path="/investors/:code" element={<InvestorDetailV10 lang="vi"/>}/>
         <Route path="/pricing" element={<Pricing lang="vi"/>}/>
         <Route path="/valuation" element={<Valuation lang="vi"/>}/>
         <Route path="/login" element={<Login lang="vi"/>}/>
@@ -125,7 +127,7 @@ export default function App(){
         <Route path="/en/businesses" element={<Businesses lang="en"/>}/>
         <Route path="/en/businesses/:slug" element={<BusinessDetail lang="en"/>}/>
         <Route path="/en/investors" element={<Investors lang="en"/>}/>
-        <Route path="/en/investors/:code" element={<InvestorDetail lang="en"/>}/>
+        <Route path="/en/investors/:code" element={<InvestorDetailV10 lang="en"/>}/>
         <Route path="/en/pricing" element={<Pricing lang="en"/>}/>
         <Route path="/en/valuation" element={<Valuation lang="en"/>}/>
         <Route path="/en/login" element={<Login lang="en"/>}/>
@@ -141,7 +143,8 @@ export default function App(){
         <Route path="/en/market-partner" element={<MarketPartner lang="en"/>}/>
         <Route path="/en/dashboard/business" element={<DashboardGate role="business"><BusinessDashboard/></DashboardGate>}/>
         <Route path="/en/dashboard/business/*" element={<DashboardGate role="business"><BusinessDashboard/></DashboardGate>}/>
-        <Route path="/en/dashboard/investor" element={<DashboardGate role="investor"><InvestorDashboard/></DashboardGate>}/>
+        <Route path="/en/dashboard/investor" element={<DashboardGate role="investor"><InvestorProfileV10/></DashboardGate>}/>
+        <Route path="/en/dashboard/investor/profile" element={<DashboardGate role="investor"><InvestorProfileV10/></DashboardGate>}/>
         <Route path="/en/dashboard/investor/*" element={<DashboardGate role="investor"><InvestorDashboard/></DashboardGate>}/>
 
         <Route path="/vi" element={<Navigate to="/" replace/>}/>
@@ -150,11 +153,14 @@ export default function App(){
         <Route path="/admin/login" element={<Login lang={lang}/>}/>
         <Route path="/dashboard/business" element={<DashboardGate role="business"><BusinessDashboard/></DashboardGate>}/>
         <Route path="/dashboard/business/*" element={<DashboardGate role="business"><BusinessDashboard/></DashboardGate>}/>
-        <Route path="/dashboard/investor" element={<DashboardGate role="investor"><InvestorDashboard/></DashboardGate>}/>
+        <Route path="/dashboard/investor" element={<DashboardGate role="investor"><InvestorProfileV10/></DashboardGate>}/>
+        <Route path="/dashboard/investor/profile" element={<DashboardGate role="investor"><InvestorProfileV10/></DashboardGate>}/>
         <Route path="/dashboard/investor/*" element={<DashboardGate role="investor"><InvestorDashboard/></DashboardGate>}/>
         <Route path="/admin/valuation" element={<AdminValuation/>}/>
         <Route path="/admin/valuation-config" element={<AdminValuation/>}/>
         <Route path="/admin/proposals" element={<Admin/>}/>
+        <Route path="/admin/banners" element={<AdminBannersV10/>}/>
+        <Route path="/admin/investors" element={<AdminInvestorsV10/>}/>
         <Route path="/admin" element={<Admin/>}/>
         <Route path="/admin/*" element={<Admin/>}/>
 
