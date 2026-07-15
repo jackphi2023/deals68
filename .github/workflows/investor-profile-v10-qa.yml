@@ -60,6 +60,9 @@ jobs:
       - name: Investor Profile V10 semantic QA
         run: node scripts/deals68-investor-profile-v10-check.mjs
 
+      - name: Beta smoke parser QA
+        run: node --check scripts/deals68-investor-v10-beta-smoke.mjs
+
       - name: Full package QA
         run: npm run qa:packages
 
@@ -73,7 +76,7 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/beta-reference'
     needs: build-and-package-qa
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 25
     steps:
       - name: Publish pending Beta smoke status
         env:
@@ -128,10 +131,10 @@ jobs:
             "repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
             -f state=failure \
             -f context='deals68/investor-v10-beta-smoke' \
-            -f description='Real Netlify Beta Investor V10 smoke failed' \
+            -f description='Real Netlify Beta Investor V10 smoke failed; inspect diagnostic artifact' \
             -f target_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
 
-      - name: Upload Beta smoke screenshots
+      - name: Upload Beta smoke diagnostics
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -139,5 +142,7 @@ jobs:
           path: |
             /tmp/deals68-investor-v10-beta-desktop.png
             /tmp/deals68-investor-v10-beta-mobile.png
+            /tmp/deals68-investor-v10-beta-failure.png
+            /tmp/deals68-investor-v10-beta-diagnostic.json
           if-no-files-found: ignore
           retention-days: 7
