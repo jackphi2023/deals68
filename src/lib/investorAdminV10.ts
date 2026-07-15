@@ -1,5 +1,12 @@
 export type InvestorRow = Record<string, any>;
 
+export const INVESTOR_REVIEW_CRITERIA_KEYS = [
+  'investment_appetite',
+  'riskAppetite',
+  'returnExpectation',
+  'revenueRange',
+] as const;
+
 export function objectOf(value: unknown): InvestorRow {
   return value && typeof value === 'object' && !Array.isArray(value)
     ? (value as InvestorRow)
@@ -24,10 +31,32 @@ export function pendingInvestorProfile(investor: InvestorRow) {
   return objectOf(objectOf(investor.privacy).pending_profile_changes);
 }
 
+export function pendingInvestorCriteriaV10(investor: InvestorRow) {
+  return objectOf(pendingInvestorProfile(investor).criteria);
+}
+
+export function pendingInvestorCriteriaKeysV10(investor: InvestorRow) {
+  const pendingCriteria = pendingInvestorCriteriaV10(investor);
+  return INVESTOR_REVIEW_CRITERIA_KEYS.filter((key) =>
+    Object.prototype.hasOwnProperty.call(pendingCriteria, key),
+  );
+}
+
+export function changedInvestorCriteriaKeysV10(investor: InvestorRow) {
+  const approvedCriteria = objectOf(investor.criteria);
+  const pendingCriteria = pendingInvestorCriteriaV10(investor);
+  return pendingInvestorCriteriaKeysV10(investor).filter(
+    (key) => clean(pendingCriteria[key]) !== clean(approvedCriteria[key]),
+  );
+}
+
+export function hasPendingInvestorCriteriaV10(investor: InvestorRow) {
+  return pendingInvestorCriteriaKeysV10(investor).length > 0;
+}
+
 export function hasPendingInvestorAppetiteV10(investor: InvestorRow) {
-  const pendingCriteria = objectOf(pendingInvestorProfile(investor).criteria);
   return Object.prototype.hasOwnProperty.call(
-    pendingCriteria,
+    pendingInvestorCriteriaV10(investor),
     'investment_appetite',
   );
 }
@@ -53,15 +82,23 @@ export function investorDisplayNameV10(investor: InvestorRow) {
 export function privacyAfterInvestorProfileApproval(investor: InvestorRow) {
   const privacy = { ...objectOf(investor.privacy) };
   const pending = pendingInvestorProfile(investor);
-  const pendingCriteria = objectOf(pending.criteria);
-  const hasAppetite = hasPendingInvestorAppetiteV10(investor);
+  const pendingCriteria = pendingInvestorCriteriaV10(investor);
+  const preservedCriteria: InvestorRow = {};
 
-  if (hasAppetite) {
-    privacy.pending_profile_changes = {
-      criteria: {
-        investment_appetite: clean(pendingCriteria.investment_appetite),
-      },
-    };
+  for (const key of INVESTOR_REVIEW_CRITERIA_KEYS) {
+    if (Object.prototype.hasOwnProperty.call(pendingCriteria, key)) {
+      preservedCriteria[key] = clean(pendingCriteria[key]);
+    }
+  }
+
+  const preservedPending = Object.keys(preservedCriteria).length
+    ? { criteria: preservedCriteria }
+    : {};
+
+  if (Object.keys(preservedPending).length) {
+    privacy.pending_profile_changes = preservedPending;
+    privacy.pending_submitted_at =
+      clean(privacy.pending_submitted_at) || new Date().toISOString();
   } else {
     delete privacy.pending_profile_changes;
     delete privacy.pending_submitted_at;
