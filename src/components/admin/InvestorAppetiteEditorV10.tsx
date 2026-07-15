@@ -1,5 +1,8 @@
 import { useEffect, useState } from 'react';
-import type { InvestorRow } from '../../lib/investorAdminV10';
+import {
+  hasPendingInvestorAppetiteV10,
+  type InvestorRow,
+} from '../../lib/investorAdminV10';
 import {
   approveInvestorAppetite,
   approvedInvestorAppetite,
@@ -22,10 +25,11 @@ export default function InvestorAppetiteEditorV10({
 
   const approved = approvedInvestorAppetite(investor);
   const pending = pendingInvestorAppetite(investor);
+  const hasPending = hasPendingInvestorAppetiteV10(investor);
 
   useEffect(() => {
-    setDraft(pending || approved);
-  }, [investor.id, pending, approved]);
+    setDraft(hasPending ? pending : approved);
+  }, [investor.id, hasPending, pending, approved]);
 
   useEffect(() => {
     setMessage('');
@@ -63,7 +67,7 @@ export default function InvestorAppetiteEditorV10({
           <h2>Khẩu vị đầu tư</h2>
           <p>Investor gửi → Admin xem/sửa → Admin duyệt → public.</p>
         </div>
-        {pending ? <span className="d68-admin-badge warn">Đang chờ duyệt</span> : <span className="d68-admin-badge ok">Không có bản chờ</span>}
+        {hasPending ? <span className="d68-admin-badge warn">Đang chờ duyệt</span> : <span className="d68-admin-badge ok">Không có bản chờ</span>}
       </div>
       {message ? <div data-testid="admin-investor-appetite-success" className="d68-admin-notice ok">{message}</div> : null}
       {warning ? <div data-testid="admin-investor-appetite-warning" className="d68-admin-notice warn">{warning}</div> : null}
