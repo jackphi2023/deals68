@@ -135,6 +135,8 @@ if (!hero.includes('investor.code')) failures.push('Public Hero must display Inv
 if (!hero.includes('d68-id-cover__eyebrow')) failures.push('Public Hero code eyebrow is missing');
 if (/<p[\s>]/.test(hero)) failures.push('Public Hero must not render a description paragraph');
 if (!hero.includes('d68-id-cover__badges')) failures.push('Public Hero badges are missing');
+if (!hero.includes('countryFlag(country)')) failures.push('Public Hero country badge must use an ISO country flag');
+if (hero.includes('📍')) failures.push('Public Hero country badge must not use the obsolete location pin');
 
 const detail = read('src/pages/InvestorDetailV10.tsx');
 const mainIndex = detail.indexOf('<div className="d68-id-main">');
@@ -219,4 +221,5 @@ console.log('✓ Deals68 Investor Profile V10 check: PASS');
 console.log('✓ Hero is the first item in the main column and contains no duplicate description.');
 console.log('✓ Introduction, criteria, markets, proposal history and contact follow the approved order.');
 console.log('✓ Existing Send Proposal and Who can see what sidebar is preserved.');
+console.log('✓ Country badge uses the ISO flag instead of the obsolete location pin.');
 console.log('✓ Cover source remains 1600x560 while desktop display is constrained to 300–350px.');
