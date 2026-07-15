@@ -9,6 +9,7 @@ on:
     branches:
       - beta-reference
     paths:
+      - 'netlify.toml'
       - 'public/assets/investor-cover-default.svg'
       - 'src/App.tsx'
       - 'src/components/admin/**'
@@ -62,6 +63,11 @@ jobs:
 
       - name: Beta smoke parser QA
         run: node --check scripts/deals68-investor-v10-beta-smoke.mjs
+
+      - name: Font CSP contract QA
+        run: |
+          grep -F "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com" netlify.toml
+          grep -F "font-src 'self' data: https://fonts.gstatic.com" netlify.toml
 
       - name: Full package QA
         run: npm run qa:packages
