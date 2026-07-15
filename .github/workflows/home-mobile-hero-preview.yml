@@ -1,0 +1,240 @@
+name: Home Mobile Hero Preview
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/components/HomepageHeroSlider.tsx'
+      - 'src/pages/Home.tsx'
+      - 'src/styles/index.css'
+      - 'src/styles/pages/home-hero-mobile-fix.css'
+      - 'tests/e2e/00-public-smoke.spec.ts'
+      - '.github/workflows/home-mobile-hero-preview.yml'
+
+permissions:
+  contents: read
+  statuses: read
+
+jobs:
+  preview-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+
+      - name: Wait for Netlify Deploy Preview
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          preview_url=''
+          for attempt in $(seq 1 60); do
+            status_json="$(
+              curl --fail --silent --show-error \
+                -H "Accept: application/vnd.github+json" \
+                -H "Authorization: Bearer ${GH_TOKEN}" \
+                -H "X-GitHub-Api-Version: 2022-11-28" \
+                "https://api.github.com/repos/${REPOSITORY}/commits/${HEAD_SHA}/status"
+            )"
+
+            failed="$(
+              jq -r '[.statuses[]? | select(.state == "failure" or .state == "error") | .context] | join(",")' \
+                <<<"${status_json}"
+            )"
+            if [[ -n "${failed}" ]]; then
+              echo "Netlify/GitHub status failed: ${failed}"
+              exit 1
+            fi
+
+            preview_url="$(
+              jq -r '[.statuses[]? | select(.context == "netlify/deals68/deploy-preview" and .state == "success") | .target_url][0] // empty' \
+                <<<"${status_json}"
+            )"
+            echo "Attempt ${attempt}/60 — ${preview_url:-waiting for preview}"
+            [[ -n "${preview_url}" ]] && break
+            sleep 10
+          done
+
+          [[ -n "${preview_url}" ]] || {
+            echo 'Netlify Deploy Preview did not become ready.'
+            exit 1
+          }
+          echo "PREVIEW_URL=${preview_url}" >> "${GITHUB_ENV}"
+
+      - name: Verify loading, mobile banner and large statistics
+        shell: bash
+        run: |
+          node <<'NODE'
+          const { chromium } = require('@playwright/test');
+
+          const previewUrl = process.env.PREVIEW_URL;
+          if (!previewUrl) throw new Error('PREVIEW_URL is missing');
+
+          async function waitForHeroImage(page) {
+            await page.waitForSelector(
+              '.d68-home-hero-slider-v2--ready .d68-home-hero-media__image',
+              { state: 'visible', timeout: 30000 },
+            );
+            await page.waitForFunction(() => {
+              const image = document.querySelector(
+                '.d68-home-hero-slider-v2--ready .d68-home-hero-media__image',
+              );
+              return image instanceof HTMLImageElement &&
+                image.complete &&
+                image.naturalWidth > 100 &&
+                image.naturalHeight > 100;
+            }, { timeout: 30000 });
+          }
+
+          (async () => {
+            const browser = await chromium.launch({ headless: true });
+
+            // Loading state: no legacy SVG/text image may appear while Supabase waits.
+            {
+              const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+              const errors = [];
+              page.on('pageerror', (error) => errors.push(error.message));
+
+              let releaseRequest;
+              const gate = new Promise((resolve) => { releaseRequest = resolve; });
+              await page.route('**/rest/v1/site_banners*', async (route) => {
+                await gate;
+                await route.abort();
+              });
+
+              await page.goto(previewUrl, {
+                waitUntil: 'domcontentloaded',
+                timeout: 45000,
+              });
+              const loading = page.locator('.d68-home-hero-slider-v2--loading');
+              await loading.waitFor({ state: 'visible', timeout: 15000 });
+
+              const loadingState = await loading.evaluate((node) => ({
+                text: node.textContent || '',
+                imageCount: node.querySelectorAll('img').length,
+                dataSvgCount: node.querySelectorAll('img[src^="data:image/svg+xml"]').length,
+                background: getComputedStyle(node).backgroundImage,
+              }));
+
+              if (loadingState.text.trim()) {
+                throw new Error(`Loading Hero contains text: ${loadingState.text}`);
+              }
+              if (loadingState.imageCount !== 0 || loadingState.dataSvgCount !== 0) {
+                throw new Error('Loading Hero still renders an image placeholder.');
+              }
+              if (!loadingState.background || loadingState.background === 'none') {
+                throw new Error('Loading Hero has no neutral background.');
+              }
+              if (errors.length) throw new Error(`Loading page errors: ${errors.join(' | ')}`);
+
+              releaseRequest();
+              await page.close();
+            }
+
+            for (const width of [375, 390, 430]) {
+              const page = await browser.newPage({ viewport: { width, height: 900 } });
+              const errors = [];
+              page.on('pageerror', (error) => errors.push(error.message));
+
+              await page.goto(previewUrl, {
+                waitUntil: 'domcontentloaded',
+                timeout: 45000,
+              });
+              await waitForHeroImage(page);
+
+              const state = await page.evaluate(() => {
+                const slider = document.querySelector('.d68-home-hero-slider-v2--ready');
+                const media = slider?.querySelector('.d68-home-hero-media');
+                const image = slider?.querySelector('.d68-home-hero-media__image');
+                const dealValue = document.querySelector(
+                  '.d68-home-hero-stats > div:nth-child(3) b',
+                );
+                if (!(dealValue instanceof HTMLElement)) {
+                  throw new Error('Deal-value metric is missing');
+                }
+                dealValue.textContent = '300.000 tỷ ₫';
+
+                const metricStyle = getComputedStyle(dealValue);
+                const metricRect = dealValue.getBoundingClientRect();
+                return {
+                  layout: slider?.getAttribute('data-hero-layout') || '',
+                  slideCount: slider?.querySelectorAll('.d68-hero-slide').length || 0,
+                  variant: media?.getAttribute('data-hero-variant') || '',
+                  source: image instanceof HTMLImageElement
+                    ? image.currentSrc || image.src
+                    : '',
+                  naturalWidth: image instanceof HTMLImageElement ? image.naturalWidth : 0,
+                  naturalHeight: image instanceof HTMLImageElement ? image.naturalHeight : 0,
+                  whiteSpace: metricStyle.whiteSpace,
+                  metricClientWidth: dealValue.clientWidth,
+                  metricScrollWidth: dealValue.scrollWidth,
+                  metricHeight: metricRect.height,
+                  metricLineHeight: Number.parseFloat(metricStyle.lineHeight),
+                  overflow: document.documentElement.scrollWidth - innerWidth,
+                };
+              });
+
+              console.log(`viewport=${width}`, state);
+              const pass =
+                errors.length === 0 &&
+                state.layout === 'single-active' &&
+                state.slideCount === 1 &&
+                state.variant === 'mobile' &&
+                state.source &&
+                !state.source.startsWith('data:image/svg+xml') &&
+                state.naturalWidth > 100 &&
+                state.naturalHeight > 100 &&
+                state.whiteSpace === 'nowrap' &&
+                state.metricScrollWidth <= state.metricClientWidth + 1 &&
+                state.metricHeight <= state.metricLineHeight * 1.25 &&
+                state.overflow <= 1;
+
+              if (!pass) {
+                throw new Error(
+                  `Mobile Hero check failed at ${width}px: ${JSON.stringify({ state, errors })}`,
+                );
+              }
+              await page.close();
+            }
+
+            // Tablet remains outside the mobile-only override.
+            {
+              const page = await browser.newPage({ viewport: { width: 768, height: 900 } });
+              await page.goto(previewUrl, {
+                waitUntil: 'domcontentloaded',
+                timeout: 45000,
+              });
+              await waitForHeroImage(page);
+              const tablet = await page.evaluate(() => {
+                const stats = document.querySelector('.d68-home-hero-stats');
+                const hero = document.querySelector('.d68-home-hero');
+                const style = stats ? getComputedStyle(stats) : null;
+                const rect = hero?.getBoundingClientRect();
+                return {
+                  statsDisplay: style?.display || '',
+                  heroRatio: rect ? rect.width / rect.height : 0,
+                };
+              });
+              console.log('tablet=768', tablet);
+              if (tablet.statsDisplay !== 'flex' || tablet.heroRatio < 2.3) {
+                throw new Error(`Tablet layout changed unexpectedly: ${JSON.stringify(tablet)}`);
+              }
+              await page.close();
+            }
+
+            await browser.close();
+            console.log('HOME MOBILE HERO PREVIEW PASS');
+          })().catch((error) => {
+            console.error(error);
+            process.exit(1);
+          });
+          NODE
