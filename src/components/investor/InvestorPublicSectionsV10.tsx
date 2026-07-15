@@ -1,6 +1,11 @@
 import { Link } from 'react-router-dom';
 import type { Lang } from '../../lib/i18n';
 import {
+  revenueRangeLabel,
+  returnExpectationLabel,
+  riskAppetiteLabel,
+} from '../../lib/investorCriteriaOptions';
+import {
   labelCountry,
   labelDealType,
   labelIndustry,
@@ -76,6 +81,9 @@ export default function InvestorPublicSectionsV10({
   stage,
   ticket,
   appetite,
+  riskAppetite,
+  returnExpectation,
+  revenueRange,
   industries,
   markets,
   publicHistory,
@@ -89,6 +97,9 @@ export default function InvestorPublicSectionsV10({
   stage: string;
   ticket: string;
   appetite: string;
+  riskAppetite: string;
+  returnExpectation: string;
+  revenueRange: string;
   industries: string[];
   markets: string[];
   publicHistory: any[];
@@ -101,7 +112,21 @@ export default function InvestorPublicSectionsV10({
     .join(' · ');
   const stageLabel = stage ? labelStage(stage, lang) : '';
   const ticketLabel = ticket && ticket !== '—' ? ticket : '';
-  const hasCriteria = Boolean(transactionLabel || stageLabel || ticketLabel || appetite || industries.length);
+  const riskLabel = riskAppetite ? riskAppetiteLabel(riskAppetite, lang) : '';
+  const returnLabel = returnExpectation
+    ? returnExpectationLabel(returnExpectation, lang)
+    : '';
+  const revenueLabel = revenueRange ? revenueRangeLabel(revenueRange, lang) : '';
+  const hasCriteria = Boolean(
+    transactionLabel ||
+    stageLabel ||
+    ticketLabel ||
+    appetite ||
+    riskLabel ||
+    returnLabel ||
+    revenueLabel ||
+    industries.length,
+  );
 
   return (
     <>
@@ -122,6 +147,9 @@ export default function InvestorPublicSectionsV10({
               {transactionLabel ? <CriteriaRow label={T(lang, 'Ưu tiên giao dịch', 'Preferred transactions')} value={transactionLabel} /> : null}
               {stageLabel ? <CriteriaRow label={T(lang, 'Giai đoạn phù hợp', 'Preferred stage')} value={stageLabel} /> : null}
               {ticketLabel ? <CriteriaRow label={T(lang, 'Khoản đầu tư', 'Investment size')} value={ticketLabel} /> : null}
+              {revenueLabel ? <CriteriaRow label={T(lang, 'Quy mô doanh thu', 'Revenue scale')} value={revenueLabel} /> : null}
+              {riskLabel ? <CriteriaRow label={T(lang, 'Khẩu vị rủi ro', 'Risk appetite')} value={riskLabel} /> : null}
+              {returnLabel ? <CriteriaRow label={T(lang, 'Kỳ vọng lợi nhuận', 'Return expectation')} value={returnLabel} /> : null}
               {appetite ? <CriteriaRow label={T(lang, 'Khẩu vị đầu tư', 'Investment appetite')} value={appetite} /> : null}
             </div>
             {industries.length ? (
