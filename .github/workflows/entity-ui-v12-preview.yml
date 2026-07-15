@@ -1,0 +1,50 @@
+name: Entity UI V12 Deploy Preview
+
+on:
+  pull_request:
+    branches:
+      - beta-reference
+    paths:
+      - '.github/workflows/entity-ui-v12-preview.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  preview-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Wait for exact Netlify Deploy Preview and run V12 smoke
+        env:
+          D68_BETA_URLS: https://deploy-preview-${{ github.event.pull_request.number }}--deals68.netlify.app
+          D68_DEPLOY_TIMEOUT_MS: 1200000
+        run: node scripts/deals68-entity-ui-v12-beta-smoke.mjs
+
+      - name: Upload V12 preview screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: entity-ui-v12-preview-${{ github.sha }}
+          path: |
+            /tmp/deals68-entity-ui-v12-home.png
+            /tmp/deals68-entity-ui-v12-listings.png
+            /tmp/deals68-entity-ui-v12-detail-desktop.png
+            /tmp/deals68-entity-ui-v12-detail-mobile.png
+          if-no-files-found: ignore
+          retention-days: 7
