@@ -28,11 +28,12 @@ async function pageSnapshot(page, events = []) {
     rootChildren: document.querySelector('#root')?.childElementCount || 0,
     bodyText: (document.body?.innerText || '').slice(0, 3200),
     bodyHtml: (document.body?.innerHTML || '').slice(0, 7000),
+    layoutMarker: document.querySelector('[data-investor-layout]')?.getAttribute('data-investor-layout') || '',
     coverCount: document.querySelectorAll('.d68-id-cover').length,
     errorState: document.querySelector('.d68-id-state h1')?.textContent?.trim() || '',
     h1: document.querySelector('.d68-id-cover h1')?.textContent?.trim() || '',
   })).catch(() => null);
-  return { dom, events: events.slice(-50) };
+  return { dom, events: events.slice(-80) };
 }
 
 async function writeDiagnostic(payload) {
@@ -76,10 +77,9 @@ async function waitForDeployedAsset(request) {
 }
 
 async function waitForDeployedDocument(request) {
-  const deadline = Date.now() + 8 * 60 * 1000;
   let attempt = 0;
   let last = null;
-  while (Date.now() < deadline) {
+  while (Date.now() < deployDeadline) {
     attempt += 1;
     try {
       const response = await request.get(investorUrl, {
@@ -116,14 +116,17 @@ async function waitForDeployedDocument(request) {
     }
     await delay(10_000);
   }
-  const error = new Error('Netlify Beta did not serve a valid Investor application document within 8 minutes.');
+  const error = new Error('Netlify Beta did not serve a valid Investor application document within 12 minutes.');
   error.probe = last;
   throw error;
 }
 
 async function navigateToInvestor(page, viewportName, events) {
   let lastError = null;
-  for (let attempt = 1; attempt <= 3; attempt += 1) {
+  let attempt = 0;
+
+  while (Date.now() < deployDeadline) {
+    attempt += 1;
     try {
       events.push(`navigation:${attempt}:start`);
       const response = await page.goto(investorUrl, {
@@ -139,24 +142,38 @@ async function navigateToInvestor(page, viewportName, events) {
         Boolean(document.querySelector('.d68-id-state h1'))
       ), null, { timeout: 45_000 });
 
-      events.push(`navigation:${attempt}:ready:${response.status()}`);
-      return { attempt, status: response.status(), url: response.url() };
+      const errorState = await page.locator('.d68-id-state h1').count();
+      if (errorState) {
+        events.push(`navigation:${attempt}:product-error-state`);
+        return { attempt, status: response.status(), url: response.url(), layoutReady: false };
+      }
+
+      const layoutMarker = await page
+        .locator('[data-investor-layout="v11-two-column"]')
+        .count();
+
+      if (layoutMarker === 1) {
+        events.push(`navigation:${attempt}:v11-ready:${response.status()}`);
+        return { attempt, status: response.status(), url: response.url(), layoutReady: true };
+      }
+
+      events.push(`navigation:${attempt}:stale-deploy`);
+      console.log(`${viewportName}: Netlify still serves the pre-V11 Investor layout; retrying deployment readiness.`);
     } catch (error) {
       lastError = error;
       events.push(`navigation:${attempt}:error:${error?.message || error}`);
-      if (attempt < 3) {
-        await page.goto('about:blank', {
-          waitUntil: 'commit',
-          timeout: 10_000,
-        }).catch(() => undefined);
-        await delay(attempt * 2500);
-      }
     }
+
+    await page.goto('about:blank', {
+      waitUntil: 'commit',
+      timeout: 10_000,
+    }).catch(() => undefined);
+    await delay(10_000);
   }
 
   const snapshot = await pageSnapshot(page, events);
   throw Object.assign(
-    new Error(`${viewportName}: Investor browser navigation failed after 3 attempts: ${lastError?.message || lastError}`),
+    new Error(`${viewportName}: Netlify did not serve data-investor-layout=v11-two-column before the deployment deadline: ${lastError?.message || 'stale deployment'}`),
     { snapshot, cause: lastError },
   );
 }
@@ -182,6 +199,7 @@ async function inspectInvestor(page, viewportName) {
     throw Object.assign(new Error(`${viewportName}: Investor page rendered an error state`), { snapshot });
   }
 
+  assert.equal(navigation.layoutReady, true, `${viewportName}: V11 deployment marker is missing`);
   await page.locator('.d68-id-cover img').waitFor({ state: 'visible', timeout: 15_000 });
   await page.waitForFunction(() => {
     const image = document.querySelector('.d68-id-cover img');
@@ -203,6 +221,7 @@ async function inspectInvestor(page, viewportName) {
     const orderedSections = Array.from(main?.querySelectorAll(':scope > [data-testid]') || [])
       .map((node) => node.getAttribute('data-testid'));
     return {
+      layoutMarker: document.querySelector('[data-investor-layout]')?.getAttribute('data-investor-layout') || '',
       rootChildren: document.querySelector('#root')?.childElementCount || 0,
       h1: document.querySelector('.d68-id-cover h1')?.textContent?.trim() || '',
       eyebrow: document.querySelector('.d68-id-cover__eyebrow')?.textContent?.trim() || '',
@@ -232,6 +251,7 @@ async function inspectInvestor(page, viewportName) {
     };
   });
 
+  assert.equal(state.layoutMarker, 'v11-two-column', `${viewportName}: wrong deployed layout marker`);
   assert.ok(state.rootChildren > 0, `${viewportName}: React root is empty`);
   assert.ok(state.h1.length > 8, `${viewportName}: Investor title is missing`);
   assert.match(state.eyebrow, /INV-0603/i, `${viewportName}: Investor code is missing from Hero`);

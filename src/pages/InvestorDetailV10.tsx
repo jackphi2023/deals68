@@ -225,7 +225,10 @@ export default function InvestorDetailV10({ lang }: { lang: Lang }) {
   }
 
   return (
-    <main className="d68-investor-detail d68-v10-investor-detail">
+    <main
+      className="d68-investor-detail d68-v10-investor-detail"
+      data-investor-layout="v11-two-column"
+    >
       <section className="d68-id-wrap">
         <div className="d68-id-breadcrumb"><Link to={toLocalizedPath('/', lang)}>{T(lang, 'Trang chủ', 'Home')}</Link> › <Link to={toLocalizedPath('/investors', lang)}>{T(lang, 'Nhà đầu tư', 'Investors')}</Link> › <b>{investor.code}</b></div>
         <div className="d68-id-layout">
