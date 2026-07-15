@@ -67,8 +67,8 @@
   line-clamp:3;
 }
 
-/* Metadata values remain compact; long industry lists resolve to two lines with an ellipsis. */
-.d68-investors-page .d68-investor-card__meta > span {
+/* Only the Industries row is limited to two lines with an ellipsis. */
+.d68-investors-page .d68-investor-card__industries {
   display:-webkit-box;
   overflow:hidden;
   max-width:100%;
