@@ -1,5 +1,10 @@
 import { type FormEvent, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import {
+  InvestorDealTypeTagPicker,
+  InvestorStageTagPicker,
+  InvestorTypeTagPicker,
+} from '../investor/InvestorCriteriaTagPickers';
 import type { InvestorRow } from '../../lib/investorAdminV10';
 import {
   clean,
@@ -12,7 +17,7 @@ import {
 import { parseFormattedNumber } from '../../lib/numberFormat';
 import { supabase } from '../../lib/supabase';
 
-type SubmitMode = 'save' | 'approve';
+ type SubmitMode = 'save' | 'approve';
 
 function lines(value: unknown) {
   return valueList(value).join('\n');
@@ -56,10 +61,14 @@ export default function InvestorProfileEditorV10({
       const targetCountries = valueList(form.get('target_countries')).map(
         (item) => item.toUpperCase(),
       );
+      const industries = valueList(form.get('industries'));
+      const dealTypes = valueList(form.get('deal_types'));
+      const stage = clean(form.get('stage'));
       const criteria = {
         ...currentCriteria,
-        sectors: valueList(form.get('industries')),
-        dealTypes: valueList(form.get('deal_types')),
+        sectors: industries,
+        stage,
+        dealTypes,
         targetCountries,
         preferredCountries: targetCountries,
         targetCountriesCache: targetCountries,
@@ -78,9 +87,9 @@ export default function InvestorProfileEditorV10({
         country: clean(form.get('country')),
         country_iso2: clean(form.get('country_iso2')).toUpperCase(),
         region: clean(form.get('region')),
-        industries: criteria.sectors,
-        deal_types: criteria.dealTypes,
-        stage: clean(form.get('stage')),
+        industries,
+        deal_types: dealTypes,
+        stage,
         ticket_min: parseFormattedNumber(form.get('ticket_min')),
         ticket_max: parseFormattedNumber(form.get('ticket_max')),
         criteria,
@@ -103,7 +112,7 @@ export default function InvestorProfileEditorV10({
 
       setMessage(
         mode === 'approve'
-          ? 'Đã duyệt hồ sơ khác. Khẩu vị đầu tư vẫn được duyệt riêng.'
+          ? 'Đã duyệt hồ sơ khác. Các tiêu chí khẩu vị vẫn được duyệt riêng.'
           : 'Đã lưu hồ sơ Investor.',
       );
       try {
@@ -129,6 +138,7 @@ export default function InvestorProfileEditorV10({
       className="d68-admin-card"
       onSubmit={submit}
       key={`${investor.id}:${investor.updated_at || ''}`}
+      data-testid="admin-investor-profile-editor"
     >
       <div className="d68-v10-section-head">
         <div>
@@ -150,8 +160,6 @@ export default function InvestorProfileEditorV10({
         <label className="d68-admin-field"><span>Điện thoại nội bộ</span><input name="private_phone" className="d68-admin-input" defaultValue={investor.private_phone || ''} /></label>
         <label className="d68-admin-field"><span>Tiêu đề public VN</span><input name="title_vi" className="d68-admin-input" defaultValue={pending.title_vi ?? investor.title_vi ?? ''} /></label>
         <label className="d68-admin-field"><span>Tiêu đề public EN</span><input name="title_en" className="d68-admin-input" defaultValue={pending.title_en ?? investor.title_en ?? ''} /></label>
-        <label className="d68-admin-field"><span>Loại Investor</span><input name="type" className="d68-admin-input" defaultValue={investor.type || ''} /></label>
-        <label className="d68-admin-field"><span>Giai đoạn</span><input name="stage" className="d68-admin-input" defaultValue={investor.stage || ''} /></label>
         <label className="d68-admin-field"><span>Quốc gia</span><input name="country" className="d68-admin-input" defaultValue={investor.country || ''} /></label>
         <label className="d68-admin-field"><span>Mã quốc gia</span><input name="country_iso2" className="d68-admin-input" defaultValue={investor.country_iso2 || ''} /></label>
         <label className="d68-admin-field"><span>Khu vực</span><input name="region" className="d68-admin-input" defaultValue={investor.region || ''} /></label>
@@ -160,9 +168,26 @@ export default function InvestorProfileEditorV10({
         <label className="d68-admin-field"><span>Thị trường quan tâm</span><textarea name="target_countries" className="d68-admin-input d68-v10-textarea" defaultValue={lines(criteria.targetCountries || criteria.preferredCountries)} /></label>
       </div>
 
+      <div className="d68-v10-admin-taxonomy-section">
+        <label className="d68-admin-field">
+          <span>Loại hình Nhà đầu tư</span>
+          <small>Chọn một loại hình. Nhãn hiển thị bằng tiếng Việt để Admin dễ kiểm tra.</small>
+          <InvestorTypeTagPicker lang="vi" value={investor.type} />
+        </label>
+        <label className="d68-admin-field">
+          <span>Giai đoạn phù hợp</span>
+          <small>Chọn một giai đoạn chính hoặc Linh hoạt.</small>
+          <InvestorStageTagPicker lang="vi" value={investor.stage || criteria.stage} />
+        </label>
+        <label className="d68-admin-field">
+          <span>Ưu tiên giao dịch</span>
+          <small>Có thể chọn một hoặc nhiều loại giao dịch.</small>
+          <InvestorDealTypeTagPicker lang="vi" values={investor.deal_types || criteria.dealTypes} />
+        </label>
+      </div>
+
       <div className="d68-admin-form2">
         <label className="d68-admin-field"><span>Ngành quan tâm</span><textarea name="industries" className="d68-admin-input d68-v10-textarea" defaultValue={lines(investor.industries || criteria.sectors)} /></label>
-        <label className="d68-admin-field"><span>Loại giao dịch</span><textarea name="deal_types" className="d68-admin-input d68-v10-textarea" defaultValue={lines(investor.deal_types || criteria.dealTypes)} /></label>
         <label className="d68-admin-field"><span>Mô tả public VN</span><textarea name="desc_vi" className="d68-admin-input d68-v10-textarea" defaultValue={pending.desc_vi ?? investor.desc_vi ?? ''} /></label>
         <label className="d68-admin-field"><span>Mô tả public EN</span><textarea name="desc_en" className="d68-admin-input d68-v10-textarea" defaultValue={pending.desc_en ?? investor.desc_en ?? ''} /></label>
       </div>
