@@ -24,6 +24,14 @@ export function pendingInvestorProfile(investor: InvestorRow) {
   return objectOf(objectOf(investor.privacy).pending_profile_changes);
 }
 
+export function hasPendingInvestorAppetiteV10(investor: InvestorRow) {
+  const pendingCriteria = objectOf(pendingInvestorProfile(investor).criteria);
+  return Object.prototype.hasOwnProperty.call(
+    pendingCriteria,
+    'investment_appetite',
+  );
+}
+
 export function investorNeedsReviewV10(investor: InvestorRow) {
   return (
     ['draft', 'payment_pending', 'pending_admin_review'].includes(
@@ -46,11 +54,13 @@ export function privacyAfterInvestorProfileApproval(investor: InvestorRow) {
   const privacy = { ...objectOf(investor.privacy) };
   const pending = pendingInvestorProfile(investor);
   const pendingCriteria = objectOf(pending.criteria);
-  const appetite = clean(pendingCriteria.investment_appetite);
+  const hasAppetite = hasPendingInvestorAppetiteV10(investor);
 
-  if (appetite) {
+  if (hasAppetite) {
     privacy.pending_profile_changes = {
-      criteria: { investment_appetite: appetite },
+      criteria: {
+        investment_appetite: clean(pendingCriteria.investment_appetite),
+      },
     };
   } else {
     delete privacy.pending_profile_changes;
