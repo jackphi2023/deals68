@@ -20,14 +20,18 @@ export default function InvestorAppetiteEditorV10({
   const [warning, setWarning] = useState('');
   const [error, setError] = useState('');
 
+  const approved = approvedInvestorAppetite(investor);
+  const pending = pendingInvestorAppetite(investor);
+
   useEffect(() => {
-    setDraft(
-      pendingInvestorAppetite(investor) || approvedInvestorAppetite(investor),
-    );
+    setDraft(pending || approved);
+  }, [investor.id, pending, approved]);
+
+  useEffect(() => {
     setMessage('');
     setWarning('');
     setError('');
-  }, [investor.id, investor.updated_at]);
+  }, [investor.id]);
 
   async function approve() {
     setBusy(true);
@@ -52,7 +56,6 @@ export default function InvestorAppetiteEditorV10({
     }
   }
 
-  const pending = pendingInvestorAppetite(investor);
   return (
     <section className="d68-admin-card">
       <div className="d68-v10-section-head">
@@ -62,14 +65,14 @@ export default function InvestorAppetiteEditorV10({
         </div>
         {pending ? <span className="d68-admin-badge warn">Đang chờ duyệt</span> : <span className="d68-admin-badge ok">Không có bản chờ</span>}
       </div>
-      {message ? <div className="d68-admin-notice ok">{message}</div> : null}
-      {warning ? <div data-testid="admin-investor-profile-warning" className="d68-admin-notice warn">{warning}</div> : null}
-      {error ? <div data-testid="admin-investor-profile-error" className="d68-admin-notice err">{error}</div> : null}
+      {message ? <div data-testid="admin-investor-appetite-success" className="d68-admin-notice ok">{message}</div> : null}
+      {warning ? <div data-testid="admin-investor-appetite-warning" className="d68-admin-notice warn">{warning}</div> : null}
+      {error ? <div data-testid="admin-investor-appetite-error" className="d68-admin-notice err">{error}</div> : null}
       <div className="d68-v10-appetite-columns">
         <div>
           <span className="d68-v10-field-label">Đang public</span>
           <div className="d68-v10-readonly-box">
-            {approvedInvestorAppetite(investor) || 'Chưa có nội dung public.'}
+            {approved || 'Chưa có nội dung public.'}
           </div>
         </div>
         <label className="d68-admin-field">
