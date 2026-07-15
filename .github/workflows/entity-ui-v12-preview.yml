@@ -6,6 +6,8 @@ on:
       - beta-reference
     paths:
       - '.github/workflows/entity-ui-v12-preview.yml'
+      - 'src/styles/pages/entity-ui-v12.css'
+      - 'scripts/deals68-entity-ui-v12-beta-smoke.mjs'
 
 permissions:
   contents: read
