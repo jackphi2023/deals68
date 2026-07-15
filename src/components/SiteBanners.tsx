@@ -84,8 +84,8 @@ function svgData(
 }
 
 const HERO_FALLBACK = svgData(
-  'Deals68.com',
-  'Upload active Hero banners in Admin',
+  '',
+  '',
   '#0F2A4A',
   '#1596cc',
   600,
@@ -206,11 +206,21 @@ export function HeroBannerSlider({
   }, [lang]);
 
   useEffect(() => {
-    setActive(0);
+    setActive((current) =>
+      rows.length
+        ? Math.min(current, rows.length - 1)
+        : 0,
+    );
   }, [rows.length]);
 
   useEffect(() => {
-    if (rows.length <= 1) return;
+    if (rows.length <= 1) return undefined;
+
+    const reducedMotion = window.matchMedia(
+      '(prefers-reduced-motion: reduce)',
+    );
+
+    if (reducedMotion.matches) return undefined;
 
     const timer = window.setInterval(() => {
       setActive((current) => (current + 1) % rows.length);
@@ -219,47 +229,51 @@ export function HeroBannerSlider({
     return () => window.clearInterval(timer);
   }, [rows.length]);
 
-  const activeBanner = rows[active] || null;
-  const sliderClassName =
-    `d68-hero-slider${
-      cleanUrl(activeBanner?.mobile_image_url)
-        ? ' has-mobile-image'
-        : ''
-    }`;
-
-  if (!loaded || !rows.length) {
+  if (!loaded) {
     return (
-      <div className={sliderClassName} aria-hidden="true">
-        <div className="d68-hero-slide is-active">
-          <HeroBannerMedia
-            banner={HERO_FALLBACK_ROW}
-            fallback={HERO_FALLBACK}
-            alt="Deals68 hero placeholder"
-            eager
-          />
-        </div>
-      </div>
+      <div
+        className={
+          'd68-hero-slider d68-hero-slider--loading'
+        }
+        aria-hidden="true"
+        data-hero-loading="true"
+      />
     );
   }
 
+  if (!rows.length) {
+    return (
+      <div
+        className={
+          'd68-hero-slider d68-hero-slider--empty'
+        }
+        aria-hidden="true"
+      />
+    );
+  }
+
+  const activeBanner = rows[active] || rows[0];
+
   return (
-    <div className={sliderClassName} aria-hidden="true">
-      {rows.map((slide, index) => (
-        <MaybeLink
-          key={slide.id}
-          href={slide.link_url}
-          className={
-            `d68-hero-slide${index === active ? ' is-active' : ''}`
-          }
-        >
-          <HeroBannerMedia
-            banner={slide}
-            fallback={HERO_FALLBACK}
-            alt={slide.title || 'Deals68 banner'}
-            eager={index === 0}
-          />
-        </MaybeLink>
-      ))}
+    <div
+      className={
+        'd68-hero-slider d68-hero-slider--ready'
+      }
+      aria-hidden="true"
+      data-hero-layout="single-active"
+    >
+      <MaybeLink
+        key={activeBanner.id}
+        href={activeBanner.link_url}
+        className="d68-hero-slide is-active"
+      >
+        <HeroBannerMedia
+          banner={activeBanner}
+          fallback={HERO_FALLBACK}
+          alt={activeBanner.title || 'Deals68 banner'}
+          eager
+        />
+      </MaybeLink>
 
       {rows.length > 1 ? (
         <div className="d68-hero-dots">

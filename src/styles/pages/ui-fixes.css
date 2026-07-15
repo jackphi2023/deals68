@@ -1,10 +1,3 @@
-/* Deals68 UI Fixes — Spec v1.3 / Master UI Standard
-   Scope: route-level UI alignment without changing public/private data guards.
-*/
-
-.d68-home-hero__title{color:#fff!important}
-.d68-home-hero__title span{display:block;color:#fff}
-.d68-home-hero__title strong{display:block;color:#F2B51D!important;margin-top:6px}
 .d68-home-industry-card{position:relative}
 .d68-home-industry-card>div{background:linear-gradient(135deg,#E7F6FD,#FEF3D3)}
 .d68-home-investor-card{background:#fff;border:1px solid #E7EDF3;border-radius:18px;padding:24px;box-shadow:0 1px 2px rgba(15,42,74,.04);display:flex;flex-direction:column;min-height:190px;color:#0F2A4A;text-decoration:none;transition:transform .18s,box-shadow .18s}
@@ -54,14 +47,12 @@
 .d68-id-history span{display:block;color:#64748B;font-size:13px;line-height:1.45}
 .d68-id-locked{border-color:#F2B51D;background:#FFFCF3}
 
-.d68-detail-facts .d68-detail-fact,
-.d68-detail-mini-metrics div{min-width:0}
+.d68-detail-facts .d68-detail-fact,.d68-detail-mini-metrics div{min-width:0}
 .d68-detail-summary-card .d68-detail-mini-metrics div:last-child b{color:#F2B51D}
 
 @media(max-width:1180px){.d68-id-cols{grid-template-columns:minmax(0,1fr)320px}.d68-id-left{grid-column:1 / -1;display:grid;grid-template-columns:220px 1fr}}
 @media(max-width:980px){.d68-id-cols{grid-template-columns:1fr}.d68-id-left{display:grid;grid-template-columns:1fr 1fr}.d68-id-history{grid-template-columns:1fr}.d68-sort-label{width:100%;justify-content:space-between}.d68-businesses-toolbar__actions{width:100%;justify-content:space-between}}
 @media(max-width:700px){
-  .d68-home-hero__title span,.d68-home-hero__title strong{display:block}
   .d68-phone-row{grid-template-columns:1fr}
   .d68-id-left{grid-template-columns:1fr}
   .d68-investor-card__actions{flex-direction:column}
@@ -83,18 +74,14 @@
 
 /* /businesses mobile guard — keep filter/tabs/toolbar inside 375px width. */
 @media(max-width:700px){
-  .d68-businesses-page,
-  .d68-businesses-page *{min-width:0}
-  .d68-businesses-page .d68-txbar,
-  .d68-businesses-page .d68-txtabs{max-width:100%;overflow-x:auto}
+  .d68-businesses-page,.d68-businesses-page *{min-width:0}
+  .d68-businesses-page .d68-txbar,.d68-businesses-page .d68-txtabs{max-width:100%;overflow-x:auto}
   .d68-businesses-page .d68-list-cols{width:100%;max-width:100%;padding-left:16px;padding-right:16px}
   .d68-businesses-page .d68-sidebar{width:100%;max-width:100%;position:static;overflow:hidden}
   .d68-businesses-page .d68-filter-scroll{max-height:none;overflow:visible}
   .d68-businesses-page .d68-filter-check{display:grid!important;grid-template-columns:18px minmax(0,1fr)auto;align-items:center}
   .d68-businesses-page .d68-filter-check em{min-width:24px;text-align:right}
-  .d68-businesses-page .d68-filter-select,
-  .d68-businesses-page .d68-businesses-toolbar select,
-  .d68-businesses-page .d68-sort-label select{width:100%;max-width:100%;min-width:0}
+  .d68-businesses-page .d68-filter-select,.d68-businesses-page .d68-businesses-toolbar select,.d68-businesses-page .d68-sort-label select{width:100%;max-width:100%;min-width:0}
   .d68-businesses-page .d68-view-toggle{width:100%}
   .d68-businesses-page .d68-view-toggle button{flex:1}
 }
@@ -277,25 +264,14 @@
 @media(max-width:620px){.d68-home-industries{padding:52px 0 44px!important}.d68-home-industry-grid,.d68-home-investor-grid{grid-template-columns:1fr!important;gap:16px!important}.d68-home-industry-card{min-height:0!important}.d68-home-industry-card>div{height:110px!important}.d68-home-investor-card{min-height:0!important;padding:22px!important}.d68-home-investor-card h3{min-height:0!important}.d68-home-container.d68-home-section:has(.d68-home-investor-grid){padding-top:50px!important;padding-bottom:52px!important}.d68-home-container.d68-home-section:has(.d68-home-investor-grid) .d68-home-title--row{align-items:flex-start!important}.d68-static-hero__inner{padding-top:52px!important;padding-bottom:46px!important}.d68-static-hero h1{font-size:32px!important}.d68-static-hero p{font-size:15.5px!important}}
 
 /* Deals68 public UI polish — 2026-07 */
-*, *::before, *::after{box-sizing:border-box}
+*,*::before,*::after{box-sizing:border-box}
 html,body,#root{max-width:100%;overflow-x:hidden}
 
 /* Business images should fill their approved media frames. */
-.d68-home-business-card__media,
-.d68-business-card__media,
-.d68-detail-hero-media,
-.d68-detail-sim-media,
-.d68-detail-thumbs button{background-color:#EEF6FA}
-.d68-home-business-card__media img,
-.d68-business-card__media img,
-.d68-detail-hero-media img,
-.d68-detail-sim-media img,
-.d68-detail-thumbs img{display:block;width:100%!important;height:100%!important;object-fit:cover!important;object-position:center!important}
+.d68-home-business-card__media,.d68-business-card__media,.d68-detail-hero-media,.d68-detail-sim-media,.d68-detail-thumbs button{background-color:#EEF6FA}
+.d68-home-business-card__media img,.d68-business-card__media img,.d68-detail-hero-media img,.d68-detail-sim-media img,.d68-detail-thumbs img{display:block;width:100%!important;height:100%!important;object-fit:cover!important;object-position:center!important}
 .d68-detail-hero-media{aspect-ratio:16/9;min-height:320px;overflow:hidden}
 .d68-business-card__media{overflow:hidden}
-
-/* Home hero stats: align left and sit lower from the slider controls/dots. */
-.d68-home-hero-stats{margin-top:30px!important;margin-left:0!important;align-self:flex-start;justify-content:flex-start}
 
 /* Home promotion banner spacing. */
 .d68-promo-banner.d68-home-container{padding-top:50px!important;padding-bottom:50px!important}
@@ -314,80 +290,45 @@ html,body,#root{max-width:100%;overflow-x:hidden}
 .d68-businesses-page .d68-txbar{display:none!important}
 
 /* FAQ sections: plain white, no boxed backgrounds/borders for Q&A body. */
-.d68-onsite-faq,
-.d68-onsite-faq-list{background:#fff!important;border:0!important;box-shadow:none!important}
-.d68-onsite-faq-item,
-.d68-onsite-faq-item[open],
-.d68-onsite-faq-item summary,
-.d68-onsite-faq-item p{background:#fff!important;border:0!important;box-shadow:none!important}
+.d68-onsite-faq,.d68-onsite-faq-list{background:#fff!important;border:0!important;box-shadow:none!important}
+.d68-onsite-faq-item,.d68-onsite-faq-item[open],.d68-onsite-faq-item summary,.d68-onsite-faq-item p{background:#fff!important;border:0!important;box-shadow:none!important}
 .d68-onsite-faq-item{border-bottom:1px solid #EEF2F6!important;border-radius:0!important}
 .d68-onsite-faq-item:last-child{border-bottom:0!important}
 
 /* Register CTA hover state. */
-.d68-register-page .d68-auth-submit:hover:not(:disabled),
-.d68-register-page .d68-auth-submit:focus-visible:not(:disabled){background:#F2B51D!important;color:#0F2A4A!important;border-color:#F2B51D!important;box-shadow:0 10px 24px rgba(242,181,29,.28)!important}
+.d68-register-page .d68-auth-submit:hover:not(:disabled),.d68-register-page .d68-auth-submit:focus-visible:not(:disabled){background:#F2B51D!important;color:#0F2A4A!important;border-color:#F2B51D!important;box-shadow:0 10px 24px rgba(242,181,29,.28)!important}
 
 /* Static pages: center hero/title on desktop and mobile. */
-.d68-static-hero__inner,
-.d68-static-title{text-align:center!important;margin-left:auto!important;margin-right:auto!important}
+.d68-static-hero__inner,.d68-static-title{text-align:center!important;margin-left:auto!important;margin-right:auto!important}
 .d68-static-title{max-width:760px}
 
 /* Consistent mobile horizontal rhythm. */
 @media(max-width:700px){
-  .d68-home-container,
-  .d68-businesses-title,
-  .d68-investors-title,
-  .d68-list-cols,
-  .d68-detail-shell,
-  .d68-id-wrap,
-  .d68-static-container,
-  .d68-register-card,
-  .d68-admin-wrap{width:100%!important;max-width:100%!important;padding-left:16px!important;padding-right:16px!important;margin-left:auto!important;margin-right:auto!important}
+  .d68-home-container,.d68-businesses-title,.d68-investors-title,.d68-list-cols,.d68-detail-shell,.d68-id-wrap,.d68-static-container,.d68-register-card,.d68-admin-wrap{width:100%!important;max-width:100%!important;padding-left:16px!important;padding-right:16px!important;margin-left:auto!important;margin-right:auto!important}
 
-  .d68-home-section,
-  .d68-home-deals,
-  .d68-home-investor-grid,
-  .d68-home-role-grid,
-  .d68-grid-view,
-  .d68-business-list-view,
-  .d68-investor-list,
-  .d68-detail-cols,
-  .d68-id-layout{width:100%!important;max-width:100%!important;min-width:0!important;margin-left:0!important;margin-right:0!important}
+  .d68-home-section,.d68-home-deals,.d68-home-investor-grid,.d68-home-role-grid,.d68-grid-view,.d68-business-list-view,.d68-investor-list,.d68-detail-cols,.d68-id-layout{width:100%!important;max-width:100%!important;min-width:0!important;margin-left:0!important;margin-right:0!important}
 
-  .d68-home-title--row,
-  .d68-detail-section-head{width:100%;align-items:flex-start!important}
+  .d68-home-title--row,.d68-detail-section-head{width:100%;align-items:flex-start!important}
 
-  .d68-home-deals,
-  .d68-home-investor-grid,
-  .d68-grid-view{grid-template-columns:minmax(0,1fr)!important}
+  .d68-home-deals,.d68-home-investor-grid,.d68-grid-view{grid-template-columns:minmax(0,1fr)!important}
 
-  .d68-home-business-card,
-  .d68-home-investor-card,
-  .d68-business-card,
-  .d68-investor-card,
-  .d68-detail-card,
-  .d68-detail-image-card,
-  .d68-id-section--card{width:100%!important;max-width:100%!important;min-width:0!important}
+  .d68-home-business-card,.d68-home-investor-card,.d68-business-card,.d68-investor-card,.d68-detail-card,.d68-detail-image-card,.d68-id-section--card{width:100%!important;max-width:100%!important;min-width:0!important}
 
   .d68-detail-hero-media{min-height:220px;aspect-ratio:16/10}
   .d68-detail-thumbs{max-width:100%;overflow-x:auto}
   .d68-promo-banner.d68-home-container{padding-top:50px!important;padding-bottom:50px!important}
-  .d68-home-hero-stats{margin-top:30px!important;width:100%;max-width:100%}
 }
 
 /* G6/G7 — Business + Investor registration desktop payment sizing. */
 @media(min-width:781px){
-  .d68-register-section--business-pricing .d68-bizreg-paygrid,
-  .d68-register-section--investor-pricing .d68-bizreg-paygrid{
+  .d68-register-section--business-pricing .d68-bizreg-paygrid,.d68-register-section--investor-pricing .d68-bizreg-paygrid{
     grid-template-columns:minmax(0,1fr) 350px;
   }
-  .d68-register-section--business-pricing .d68-bizreg-promo,
-  .d68-register-section--investor-pricing .d68-bizreg-promo{
+  .d68-register-section--business-pricing .d68-bizreg-promo,.d68-register-section--investor-pricing .d68-bizreg-promo{
     grid-template-columns:200px 88px;
     justify-content:start;
   }
-  .d68-register-section--business-pricing .d68-bizreg-promo input,
-  .d68-register-section--investor-pricing .d68-bizreg-promo input{
+  .d68-register-section--business-pricing .d68-bizreg-promo input,.d68-register-section--investor-pricing .d68-bizreg-promo input{
     width:200px;
   }
 }
