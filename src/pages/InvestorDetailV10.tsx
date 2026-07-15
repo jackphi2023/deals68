@@ -263,7 +263,12 @@ export default function InvestorDetailV10({ lang }: { lang: Lang }) {
                 {sentProposal ? T(lang, 'Đã gửi hồ sơ DN', 'Profile sent') : proposalBusy ? T(lang, 'Đang gửi...', 'Sending...') : T(lang, 'Gửi hồ sơ DN', 'Send business profile')}
               </button>
             </div>
-            <div className="d68-id-access"><h3>{T(lang, 'Ai được xem gì', 'Who can see what')}</h3><p>👤 {T(lang, 'Khách chỉ xem được hồ sơ công khai', 'Guests can only view the public profile.')}</p><p>✅ {T(lang, 'Sau khi kết nối: mở thông tin liên hệ do nhà đầu tư cài đặt.', 'After connection: contact details set by the investor are unlocked.')}</p></div>
+            <div className="d68-id-access">
+              <h3>{T(lang, 'Ai được xem gì', 'Who can see what')}</h3>
+              <p>👤 {T(lang, 'Khách chỉ xem được hồ sơ công khai', 'Guests can only view the public profile.')}</p>
+              <p>🏢 {T(lang, 'Doanh nghiệp đã đăng nhập có thể gửi Hồ sơ DN/Proposal', 'Signed-in businesses can send their Business Profile/Proposal.')}</p>
+              <p>✅ {T(lang, 'Sau khi kết nối/duyệt: mở thông tin liên hệ do Nhà đầu tư cài đặt (SĐT, Email)', 'After connection/approval: contact details configured by the investor are unlocked (phone and email).')}</p>
+            </div>
             {message ? <div className="d68-id-msg">{message}</div> : null}
           </aside>
         </div>
