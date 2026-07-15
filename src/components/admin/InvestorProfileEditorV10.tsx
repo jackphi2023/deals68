@@ -18,6 +18,12 @@ function lines(value: unknown) {
   return valueList(value).join('\n');
 }
 
+function submitModeFromEvent(event: FormEvent<HTMLFormElement>): SubmitMode {
+  const submitter = (event.nativeEvent as SubmitEvent)
+    .submitter as HTMLButtonElement | null;
+  return submitter?.value === 'approve' ? 'approve' : 'save';
+}
+
 export default function InvestorProfileEditorV10({
   investor,
   onRefresh,
@@ -26,7 +32,6 @@ export default function InvestorProfileEditorV10({
   onRefresh: () => Promise<void>;
 }) {
   const [busy, setBusy] = useState(false);
-  const [mode, setMode] = useState<SubmitMode>('save');
   const [message, setMessage] = useState('');
   const [warning, setWarning] = useState('');
   const [error, setError] = useState('');
@@ -35,11 +40,11 @@ export default function InvestorProfileEditorV10({
     setMessage('');
     setWarning('');
     setError('');
-    setMode('save');
   }, [investor.id]);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    const mode = submitModeFromEvent(event);
     setBusy(true);
     setMessage('');
     setWarning('');
@@ -113,7 +118,6 @@ export default function InvestorProfileEditorV10({
       setError(saveError?.message || 'Không lưu được hồ sơ Investor.');
     } finally {
       setBusy(false);
-      setMode('save');
     }
   }
 
@@ -170,8 +174,8 @@ export default function InvestorProfileEditorV10({
       </div>
 
       <div className="d68-admin-actions">
-        <button type="submit" className="d68-admin-btn green" disabled={busy} onClick={() => setMode('save')}>Lưu hồ sơ</button>
-        <button type="submit" className="d68-admin-btn blue" disabled={busy} onClick={() => setMode('approve')}>Duyệt hồ sơ khác & Public</button>
+        <button type="submit" name="submit_mode" value="save" className="d68-admin-btn green" disabled={busy}>Lưu hồ sơ</button>
+        <button type="submit" name="submit_mode" value="approve" className="d68-admin-btn blue" disabled={busy}>Duyệt hồ sơ khác & Public</button>
         {investor.code ? <Link className="d68-admin-btn" to={`/investors/${investor.code}`} target="_blank" rel="noreferrer">Xem public ↗</Link> : null}
       </div>
     </form>
