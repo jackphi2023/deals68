@@ -18,6 +18,7 @@ const requiredFiles = [
   'src/components/investor/InvestorPublicHeroV10.tsx',
   'src/components/investor/InvestorPublicSectionsV10.tsx',
   'src/styles/pages/investor-profile-v10.css',
+  'src/styles/pages/entity-ui-v12.css',
   'public/assets/investor-cover-default.svg',
   'supabase/migrations/20260715045336_investor_profile_cover_appetite_v1.sql',
   'supabase/migrations/20260715071812_investor_profile_cover_appetite_v2.sql',
@@ -165,9 +166,10 @@ for (const sidebarToken of [
   'onClick={sendProposal}',
   "T(lang, 'Ai được xem gì', 'Who can see what')",
   "T(lang, 'Khách chỉ xem được hồ sơ công khai'",
-  "T(lang, 'Sau khi kết nối: mở thông tin liên hệ do nhà đầu tư cài đặt.'",
+  "T(lang, 'Doanh nghiệp đã đăng nhập có thể gửi Hồ sơ DN/Proposal'",
+  "T(lang, 'Sau khi kết nối/duyệt: mở thông tin liên hệ do Nhà đầu tư cài đặt (SĐT, Email)'",
 ]) {
-  if (!detail.includes(sidebarToken)) failures.push(`Existing sidebar contract changed: ${sidebarToken}`);
+  if (!detail.includes(sidebarToken)) failures.push(`Sidebar access contract missing: ${sidebarToken}`);
 }
 
 const sections = read('src/components/investor/InvestorPublicSectionsV10.tsx');
@@ -184,7 +186,14 @@ if (sections.includes('d68-v10-appetite-public')) failures.push('Investment appe
 if (/data-testid="investor-industries"/.test(sections)) failures.push('Industries must not be a separate card');
 if (!sections.includes("label={T(lang, 'Khẩu vị đầu tư'")) failures.push('Appetite row is missing from Investment criteria');
 if (!sections.includes('d68-id-sector-block')) failures.push('Industries are not nested in Investment criteria');
+if (!sections.includes('d68-id-sector-tags')) failures.push('Sector tags are not explicitly scoped');
 if (!sections.includes('countryFlag(item)')) failures.push('Market chips must include country flags');
+for (const icon of ['Info', 'Target', 'Globe2', 'History', 'LockKeyhole']) {
+  if (!sections.includes(`<${icon} `)) failures.push(`Line icon ${icon} is missing`);
+}
+for (const obsoleteIcon of ['icon="ⓘ"', 'icon="◎"', 'icon="🌐"', 'icon="◷"', 'icon="🔒"']) {
+  if (sections.includes(obsoleteIcon)) failures.push(`Obsolete character icon remains: ${obsoleteIcon}`);
+}
 
 const css = read('src/styles/pages/investor-profile-v10.css');
 for (const token of [
@@ -198,6 +207,28 @@ for (const token of [
   if (!css.includes(token)) failures.push(`Public CSS contract missing ${token}`);
 }
 if (!css.includes('@media (max-width:1050px)')) failures.push('Tablet/mobile one-column breakpoint is missing');
+
+const entityCss = read('src/styles/pages/entity-ui-v12.css');
+for (const token of [
+  'background:#f8fdfa!important',
+  'background:#fffef8!important',
+  '-webkit-line-clamp:3',
+  '.d68-id-cover__eyebrow',
+  'top:26px',
+  '.d68-id-section-title > span svg',
+  '.d68-id-sector-tags span',
+  'background:#e7f6fd!important',
+  'color:#1596cc!important',
+  '.d68-id-timeline--proposal > div::before',
+  'left:9px',
+  '.d68-dashboard-page .d68-dashboard-head h1:hover',
+  '.d68-admin-page .d68-admin-business-table tbody tr:hover',
+]) {
+  if (!entityCss.includes(token)) failures.push(`Entity UI V12 CSS contract missing ${token}`);
+}
+if (!read('src/styles/index.css').includes("@import './pages/entity-ui-v12.css' layer(d68-overrides);")) {
+  failures.push('Entity UI V12 stylesheet is not registered');
+}
 
 const cover = read('public/assets/investor-cover-default.svg');
 if (!cover.startsWith('<svg')) failures.push('Default Investor cover is not valid SVG text');
@@ -224,14 +255,15 @@ for (const obsolete of [
 }
 
 if (failures.length) {
-  console.error('✗ Deals68 Investor Profile V10 check failed:');
+  console.error('✗ Deals68 Investor Profile V12 check failed:');
   failures.forEach((item) => console.error(`  - ${item}`));
   process.exit(1);
 }
 
-console.log('✓ Deals68 Investor Profile V10 check: PASS');
-console.log('✓ Hero is the first item in the main column and contains no duplicate description.');
-console.log('✓ Introduction, criteria, markets, proposal history and contact follow the approved order.');
-console.log('✓ Existing Send Proposal and Who can see what sidebar is preserved.');
-console.log('✓ Country badge uses the ISO regional-indicator flag instead of the obsolete location pin.');
+console.log('✓ Deals68 Investor Profile V12 check: PASS');
+console.log('✓ Hero remains first in the main column and its ID eyebrow is pinned near the top.');
+console.log('✓ Introduction, criteria, markets, proposal history and contact keep the approved order.');
+console.log('✓ Access sidebar now states guest, signed-in business and connected/approved visibility levels.');
+console.log('✓ Section icons are single-stroke Lucide icons and sector tags use Deals blue.');
+console.log('✓ Homepage/list/dashboard/admin entity-name hover contracts are scoped.');
 console.log('✓ Cover source remains 1600x560 while desktop display is constrained to 300–350px.');
