@@ -32,7 +32,7 @@ jobs:
 
       - name: Wait for exact Netlify Deploy Preview and run V12 smoke
         env:
-          D68_BETA_URLS: https://deploy-preview-${{ github.event.pull_request.number }}--deals68.netlify.app
+          D68_BETA_URLS: https://deploy-preview-${{ github.event.pull_request.number }}--beta-reference-deals68.netlify.app
           D68_DEPLOY_TIMEOUT_MS: 1200000
         run: node scripts/deals68-entity-ui-v12-beta-smoke.mjs
 
