@@ -34,14 +34,17 @@ jobs:
         env:
           D68_BETA_URLS: https://deploy-preview-${{ github.event.pull_request.number }}--beta-reference-deals68.netlify.app
           D68_DEPLOY_TIMEOUT_MS: 1200000
-        run: node scripts/deals68-entity-ui-v12-beta-smoke.mjs
+        run: |
+          set -o pipefail
+          node scripts/deals68-entity-ui-v12-beta-smoke.mjs 2>&1 | tee /tmp/deals68-entity-ui-v12-preview.log
 
-      - name: Upload V12 preview screenshots
+      - name: Upload V12 preview diagnostics
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: entity-ui-v12-preview-${{ github.sha }}
           path: |
+            /tmp/deals68-entity-ui-v12-preview.log
             /tmp/deals68-entity-ui-v12-home.png
             /tmp/deals68-entity-ui-v12-listings.png
             /tmp/deals68-entity-ui-v12-detail-desktop.png
