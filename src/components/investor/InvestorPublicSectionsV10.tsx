@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react';
+import { Globe2, History, Info, LockKeyhole, Target } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import type { Lang } from '../../lib/i18n';
 import {
@@ -54,7 +56,7 @@ function countryFlag(raw: string) {
   return String.fromCodePoint(...[...code].map((char) => 127397 + char.charCodeAt(0)));
 }
 
-function SectionTitle({ icon, children }: { icon: string; children: string }) {
+function SectionTitle({ icon, children }: { icon: ReactNode; children: string }) {
   return (
     <div className="d68-id-section-title">
       <span aria-hidden="true">{icon}</span>
@@ -131,7 +133,7 @@ export default function InvestorPublicSectionsV10({
   return (
     <>
       <section className="d68-id-section d68-id-section--card d68-id-introduction" data-testid="investor-introduction">
-        <SectionTitle icon="ⓘ">{T(lang, 'Giới thiệu', 'Introduction')}</SectionTitle>
+        <SectionTitle icon={<Info size={22} strokeWidth={2.15} />}>{T(lang, 'Giới thiệu', 'Introduction')}</SectionTitle>
         {description ? <p className="d68-id-introduction__copy">{description}</p> : null}
         <div className="d68-id-introduction__facts">
           <CriteriaRow label={T(lang, 'Quốc gia trụ sở', 'HQ country')} value={labelCountry(country, lang)} />
@@ -140,7 +142,7 @@ export default function InvestorPublicSectionsV10({
       </section>
 
       <section className="d68-id-section d68-id-section--card" data-testid="investor-criteria">
-        <SectionTitle icon="◎">{T(lang, 'Tiêu chí đầu tư', 'Investment criteria')}</SectionTitle>
+        <SectionTitle icon={<Target size={22} strokeWidth={2.15} />}>{T(lang, 'Tiêu chí đầu tư', 'Investment criteria')}</SectionTitle>
         {hasCriteria ? (
           <>
             <div className="d68-id-criteria-table">
@@ -155,7 +157,7 @@ export default function InvestorPublicSectionsV10({
             {industries.length ? (
               <div className="d68-id-sector-block">
                 <h3>{T(lang, 'Ngành quan tâm', 'Sectors of interest')}</h3>
-                <div className="d68-id-tags">
+                <div className="d68-id-tags d68-id-sector-tags">
                   {industries.map((item) => <span key={item}>{labelIndustry(item, lang)}</span>)}
                 </div>
               </div>
@@ -167,7 +169,7 @@ export default function InvestorPublicSectionsV10({
       </section>
 
       <section className="d68-id-section d68-id-section--card" data-testid="investor-markets">
-        <SectionTitle icon="🌐">{T(lang, 'Thị trường quan tâm', 'Target investment markets')}</SectionTitle>
+        <SectionTitle icon={<Globe2 size={22} strokeWidth={2.15} />}>{T(lang, 'Thị trường quan tâm', 'Target investment markets')}</SectionTitle>
         {markets.length ? (
           <div className="d68-id-tags d68-id-market-tags">
             {markets.map((item) => (
@@ -180,7 +182,7 @@ export default function InvestorPublicSectionsV10({
       </section>
 
       <section className="d68-id-section d68-id-section--card" data-testid="investor-proposal-history">
-        <SectionTitle icon="◷">{T(lang, 'Lịch sử nhận Proposal', 'Proposal history')}</SectionTitle>
+        <SectionTitle icon={<History size={22} strokeWidth={2.15} />}>{T(lang, 'Lịch sử nhận Proposal', 'Proposal history')}</SectionTitle>
         {publicHistory.length ? (
           <div className="d68-id-timeline d68-id-timeline--proposal">
             {publicHistory.map((item, index) => (
@@ -201,7 +203,7 @@ export default function InvestorPublicSectionsV10({
       </section>
 
       <section className="d68-id-section d68-id-section--card" data-testid="investor-contact">
-        <SectionTitle icon="🔒">{T(lang, 'Thông tin liên hệ', 'Contact information')}</SectionTitle>
+        <SectionTitle icon={<LockKeyhole size={22} strokeWidth={2.15} />}>{T(lang, 'Thông tin liên hệ', 'Contact information')}</SectionTitle>
         <p className="d68-id-muted">{T(lang, 'Chỉ Doanh nghiệp đã kết nối với Nhà đầu tư mới được xem.', 'Only businesses connected with this investor can view contact details.')}</p>
         <div className="d68-id-contact-list">
           <ContactRow label={T(lang, 'Người liên hệ', 'Contact person')} value={contact?.name} unlocked={connected && Boolean(contact?.name)} />
