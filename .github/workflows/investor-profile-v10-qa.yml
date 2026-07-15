@@ -86,7 +86,7 @@ jobs:
             "repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
             -f state=pending \
             -f context='deals68/investor-v10-beta-smoke' \
-            -f description='Waiting for Netlify Beta and real public smoke' \
+            -f description='Waiting for exact Netlify Beta Investor V11 deployment' \
             -f target_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
 
       - name: Checkout deployed Beta commit
@@ -104,9 +104,9 @@ jobs:
       - name: Install Playwright Chromium and Linux dependencies
         run: npx playwright install --with-deps chromium
 
-      - name: Poll Netlify Beta and run real public Investor smoke
+      - name: Resolve Netlify Beta and run real Investor V11 smoke
         env:
-          D68_BETA_URL: https://beta-reference-deals68.netlify.app
+          D68_BETA_URLS: https://beta-reference-deals68.netlify.app,https://beta-reference--deals68.netlify.app
           D68_RELEASE_SHA: ${{ github.sha }}
         run: node scripts/deals68-investor-v10-beta-smoke.mjs
 
@@ -119,7 +119,7 @@ jobs:
             "repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
             -f state=success \
             -f context='deals68/investor-v10-beta-smoke' \
-            -f description='Real Netlify Beta Investor V10 smoke passed' \
+            -f description='Real Netlify Beta Investor V11 smoke passed' \
             -f target_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
 
       - name: Publish failed Beta smoke status
@@ -131,18 +131,18 @@ jobs:
             "repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
             -f state=failure \
             -f context='deals68/investor-v10-beta-smoke' \
-            -f description='Real Netlify Beta Investor V10 smoke failed; inspect diagnostic artifact' \
+            -f description='Real Netlify Beta Investor V11 smoke failed; inspect diagnostics' \
             -f target_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
 
       - name: Upload Beta smoke diagnostics
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: investor-v10-beta-smoke-${{ github.sha }}
+          name: investor-v11-beta-smoke-${{ github.sha }}
           path: |
-            /tmp/deals68-investor-v10-beta-desktop.png
-            /tmp/deals68-investor-v10-beta-mobile.png
-            /tmp/deals68-investor-v10-beta-failure.png
-            /tmp/deals68-investor-v10-beta-diagnostic.json
+            /tmp/deals68-investor-v11-beta-desktop.png
+            /tmp/deals68-investor-v11-beta-mobile.png
+            /tmp/deals68-investor-v11-beta-failure.png
+            /tmp/deals68-investor-v11-beta-diagnostic.json
           if-no-files-found: ignore
           retention-days: 7
