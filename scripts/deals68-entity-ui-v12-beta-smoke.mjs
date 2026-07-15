@@ -170,12 +170,14 @@ async function inspectListings(browser, base) {
 
     await investorCard.hover();
     await settleHover(page);
-    const hoverState = await investorCard.evaluate((node) => ({
-      background: getComputedStyle(node).backgroundColor,
-      title: getComputedStyle(node.querySelector('.d68-investor-card__title-link')).color,
-    }));
-    assert.equal(rgb(hoverState.background), 'rgb(255,254,248)', 'Investor list hover background');
-    assert.equal(rgb(hoverState.title), 'rgb(27,173,234)', 'Investor list title hover color');
+    const hoverBackground = await investorCard.evaluate((node) => getComputedStyle(node).backgroundColor);
+    assert.equal(rgb(hoverBackground), 'rgb(255,254,248)', 'Investor list hover background');
+
+    const investorTitle = investorCard.locator('.d68-investor-card__title-link');
+    await investorTitle.hover();
+    await settleHover(page);
+    const investorTitleColor = await investorTitle.evaluate((node) => getComputedStyle(node).color);
+    assert.equal(rgb(investorTitleColor), 'rgb(27,173,234)', 'Investor list title hover color');
 
     await goto(page, `${base}/businesses`);
     const businessCard = page.locator('.d68-business-card').filter({ has: page.locator('h3') }).first();
