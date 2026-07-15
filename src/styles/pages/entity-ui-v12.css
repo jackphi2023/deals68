@@ -37,6 +37,10 @@
 }
 
 /* Investor listing — concise introduction and warm hover surface. */
+.d68-investors-page {
+  --d68-investor-meta-line-limit:2;
+}
+
 .d68-investors-page .d68-investor-card {
   transition:
     background-color .18s ease,
