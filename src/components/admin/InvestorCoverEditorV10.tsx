@@ -106,6 +106,7 @@ export default function InvestorCoverEditorV10({
           src={investorCoverUrl(investor, defaultCover)}
           alt={`Cover ${investor.code}`}
           onError={(event) => {
+            event.currentTarget.onerror = null;
             event.currentTarget.src = DEFAULT_INVESTOR_COVER;
           }}
         />
