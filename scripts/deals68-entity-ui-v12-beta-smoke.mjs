@@ -145,10 +145,7 @@ async function inspectListings(browser, base) {
     );
     assert.equal(pageMarker, '2', 'Investor metadata V12 CSS marker');
 
-    const industryMeta = page
-      .locator('.d68-investor-card__meta > span')
-      .filter({ hasText: /^(Ngành|Industries):/i })
-      .first();
+    const industryMeta = page.locator('.d68-investor-card__industries').first();
     await industryMeta.waitFor({ state: 'visible', timeout: 30_000 });
     const industryClamp = await industryMeta.evaluate((node) => {
       const style = getComputedStyle(node);
