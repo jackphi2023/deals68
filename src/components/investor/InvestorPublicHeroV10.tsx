@@ -26,6 +26,7 @@ export default function InvestorPublicHeroV10({
         src={investorCoverUrl(investor, defaultCover)}
         alt={title}
         onError={(event) => {
+          event.currentTarget.onerror = null;
           event.currentTarget.src = DEFAULT_INVESTOR_COVER;
         }}
       />
