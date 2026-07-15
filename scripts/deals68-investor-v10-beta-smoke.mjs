@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import { chromium } from '@playwright/test';
 
 const base = String(
@@ -7,25 +8,92 @@ const base = String(
 ).replace(/\/+$/, '');
 const release = String(process.env.D68_RELEASE_SHA || Date.now());
 const investorUrl = `${base}/investors/INV-0603?v10=${encodeURIComponent(release)}`;
-const deadline = Date.now() + 20 * 60 * 1000;
+const assetUrl = `${base}/assets/investor-cover-default.svg?v10=${encodeURIComponent(release)}`;
+const deployDeadline = Date.now() + 12 * 60 * 1000;
+const diagnosticPath = '/tmp/deals68-investor-v10-beta-diagnostic.json';
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-async function pageSnapshot(page) {
-  return page.evaluate(() => ({
+function serializeError(error) {
+  return {
+    name: error?.name || 'Error',
+    message: error?.message || String(error),
+    stack: error?.stack || '',
+  };
+}
+
+async function pageSnapshot(page, events = []) {
+  const dom = await page.evaluate(() => ({
     url: location.href,
     title: document.title,
     rootChildren: document.querySelector('#root')?.childElementCount || 0,
-    bodyText: (document.body?.innerText || '').slice(0, 1800),
+    bodyText: (document.body?.innerText || '').slice(0, 2400),
+    bodyHtml: (document.body?.innerHTML || '').slice(0, 5000),
     coverCount: document.querySelectorAll('.d68-id-cover').length,
+    errorState: document.querySelector('.d68-id-state h1')?.textContent?.trim() || '',
     h1: document.querySelector('.d68-id-cover h1')?.textContent?.trim() || '',
-  }));
+  })).catch(() => null);
+  return { dom, events: events.slice(-40) };
+}
+
+async function writeDiagnostic(payload) {
+  fs.writeFileSync(diagnosticPath, `${JSON.stringify(payload, null, 2)}\n`, 'utf8');
+  console.error('BETA_SMOKE_DIAGNOSTIC');
+  console.error(JSON.stringify(payload, null, 2));
+}
+
+async function waitForDeployedAsset(request) {
+  let attempt = 0;
+  let last = null;
+  while (Date.now() < deployDeadline) {
+    attempt += 1;
+    try {
+      const response = await request.get(assetUrl, {
+        headers: { 'cache-control': 'no-cache' },
+        timeout: 30_000,
+      });
+      const text = await response.text();
+      last = {
+        attempt,
+        status: response.status(),
+        contentType: response.headers()['content-type'] || '',
+        length: text.length,
+        hasSvg: /^<svg[\s>]/.test(text),
+        hasWidth: /width="1600"/.test(text),
+        hasHeight: /height="560"/.test(text),
+        hasArtwork: /data:image\/webp;base64,/.test(text),
+      };
+      console.log(`Deploy asset probe ${attempt}: ${JSON.stringify(last)}`);
+      if (
+        response.ok() &&
+        last.hasSvg &&
+        last.hasWidth &&
+        last.hasHeight &&
+        last.hasArtwork
+      ) {
+        return last;
+      }
+    } catch (error) {
+      last = { attempt, error: serializeError(error) };
+      console.log(`Deploy asset probe ${attempt}: ${error?.message || error}`);
+    }
+    await delay(10_000);
+  }
+  const error = new Error('Netlify Beta did not serve the V10 default cover asset within 12 minutes.');
+  error.probe = last;
+  throw error;
 }
 
 async function inspectInvestor(page, viewportName) {
-  const browserErrors = [];
-  page.on('pageerror', (error) => browserErrors.push(error.message));
+  const events = [];
+  page.on('pageerror', (error) => events.push(`pageerror:${error.message}`));
   page.on('console', (message) => {
-    if (message.type() === 'error') browserErrors.push(`console: ${message.text()}`);
+    if (message.type() === 'error') events.push(`console:${message.text()}`);
+  });
+  page.on('requestfailed', (request) => {
+    events.push(`requestfailed:${request.method()}:${request.url()}:${request.failure()?.errorText || ''}`);
+  });
+  page.on('response', (response) => {
+    if (response.status() >= 400) events.push(`response:${response.status()}:${response.url()}`);
   });
 
   const response = await page.goto(investorUrl, {
@@ -35,16 +103,21 @@ async function inspectInvestor(page, viewportName) {
   assert.ok(response, `${viewportName}: navigation returned no response`);
   assert.ok(response.status() < 400, `${viewportName}: HTTP ${response.status()}`);
 
-  await page.locator('.d68-id-cover img').waitFor({
-    state: 'visible',
-    timeout: 30_000,
-  });
+  await page.waitForFunction(() => (
+    Boolean(document.querySelector('.d68-id-cover img')) ||
+    Boolean(document.querySelector('.d68-id-state h1'))
+  ), null, { timeout: 45_000 });
+
+  const errorState = await page.locator('.d68-id-state h1').count();
+  if (errorState) {
+    const snapshot = await pageSnapshot(page, events);
+    throw Object.assign(new Error(`${viewportName}: Investor page rendered an error state`), { snapshot });
+  }
+
+  await page.locator('.d68-id-cover img').waitFor({ state: 'visible', timeout: 15_000 });
   await page.waitForFunction(() => {
     const image = document.querySelector('.d68-id-cover img');
-    return image instanceof HTMLImageElement &&
-      image.complete &&
-      image.naturalWidth > 0 &&
-      image.naturalHeight > 0;
+    return image instanceof HTMLImageElement && image.complete && image.naturalWidth > 0 && image.naturalHeight > 0;
   }, null, { timeout: 30_000 });
 
   const state = await page.evaluate(() => {
@@ -74,6 +147,7 @@ async function inspectInvestor(page, viewportName) {
   assert.ok(state.imageWidth > 0 && state.imageHeight > 0, `${viewportName}: Cover image failed to load`);
   assert.ok(state.sideExists, `${viewportName}: Investor CTA sidebar is missing`);
   assert.ok(state.overflow <= 2, `${viewportName}: Horizontal overflow ${state.overflow}px`);
+
   for (const expected of [
     /Tổng quan đầu tư|Investment overview/i,
     /Giới thiệu|Introduction/i,
@@ -96,75 +170,62 @@ async function inspectInvestor(page, viewportName) {
     assert.ok(state.coverHeight >= 400, `mobile: cover height ${state.coverHeight}`);
   }
 
-  assert.equal(
-    browserErrors.length,
-    0,
-    `${viewportName}: browser errors: ${browserErrors.join(' | ')}`,
-  );
-  return state;
+  const pageErrors = events.filter((event) => event.startsWith('pageerror:'));
+  assert.equal(pageErrors.length, 0, `${viewportName}: page errors: ${pageErrors.join(' | ')}`);
+  return { ...state, events };
 }
 
 const browser = await chromium.launch({ headless: true });
-let lastError = null;
-let attempt = 0;
-
+let assetProbe = null;
 try {
-  while (Date.now() < deadline) {
-    attempt += 1;
-    const context = await browser.newContext({
-      viewport: { width: 1440, height: 1100 },
-      extraHTTPHeaders: { 'cache-control': 'no-cache' },
-    });
-    const page = await context.newPage();
-    try {
-      console.log(`Beta smoke attempt ${attempt}: ${investorUrl}`);
-      const desktop = await inspectInvestor(page, 'desktop');
+  const deployContext = await browser.newContext();
+  assetProbe = await waitForDeployedAsset(deployContext.request);
+  await deployContext.close();
 
-      const assetResponse = await context.request.get(
-        `${base}/assets/investor-cover-default.svg?v10=${encodeURIComponent(release)}`,
-        { headers: { 'cache-control': 'no-cache' } },
-      );
-      assert.ok(assetResponse.ok(), `Default cover asset HTTP ${assetResponse.status()}`);
-      const assetText = await assetResponse.text();
-      assert.match(assetText, /^<svg[\s>]/, 'Default cover asset is not SVG');
-      assert.match(assetText, /width="1600"/, 'Default cover width is not 1600');
-      assert.match(assetText, /height="560"/, 'Default cover height is not 560');
-      assert.match(assetText, /data:image\/webp;base64,/, 'Founder cover artwork is not embedded');
-
-      await page.screenshot({
-        path: '/tmp/deals68-investor-v10-beta-desktop.png',
-        fullPage: true,
-      });
-      await context.close();
-
-      const mobileContext = await browser.newContext({
-        viewport: { width: 390, height: 844 },
-        extraHTTPHeaders: { 'cache-control': 'no-cache' },
-      });
-      const mobilePage = await mobileContext.newPage();
-      const mobile = await inspectInvestor(mobilePage, 'mobile');
-      await mobilePage.screenshot({
-        path: '/tmp/deals68-investor-v10-beta-mobile.png',
-        fullPage: true,
-      });
-      await mobileContext.close();
-
-      console.log(JSON.stringify({ desktop, mobile }, null, 2));
-      console.log('✓ Netlify Beta Investor Profile V10 real public smoke: PASS');
-      process.exit(0);
-    } catch (error) {
-      lastError = error;
-      const snapshot = await pageSnapshot(page).catch(() => null);
-      console.log(`Attempt ${attempt} not ready: ${error?.message || error}`);
-      if (snapshot) console.log(JSON.stringify(snapshot));
-      await context.close();
-      await delay(10_000);
-    }
+  const desktopContext = await browser.newContext({
+    viewport: { width: 1440, height: 1100 },
+    extraHTTPHeaders: { 'cache-control': 'no-cache' },
+  });
+  const desktopPage = await desktopContext.newPage();
+  let desktop;
+  try {
+    desktop = await inspectInvestor(desktopPage, 'desktop');
+    await desktopPage.screenshot({ path: '/tmp/deals68-investor-v10-beta-desktop.png', fullPage: true });
+  } catch (error) {
+    await desktopPage.screenshot({ path: '/tmp/deals68-investor-v10-beta-failure.png', fullPage: true }).catch(() => undefined);
+    const snapshot = error?.snapshot || await pageSnapshot(desktopPage).catch(() => null);
+    await writeDiagnostic({ phase: 'desktop', release, base, investorUrl, assetProbe, error: serializeError(error), snapshot });
+    throw error;
+  } finally {
+    await desktopContext.close();
   }
+
+  const mobileContext = await browser.newContext({
+    viewport: { width: 390, height: 844 },
+    extraHTTPHeaders: { 'cache-control': 'no-cache' },
+  });
+  const mobilePage = await mobileContext.newPage();
+  let mobile;
+  try {
+    mobile = await inspectInvestor(mobilePage, 'mobile');
+    await mobilePage.screenshot({ path: '/tmp/deals68-investor-v10-beta-mobile.png', fullPage: true });
+  } catch (error) {
+    await mobilePage.screenshot({ path: '/tmp/deals68-investor-v10-beta-failure.png', fullPage: true }).catch(() => undefined);
+    const snapshot = error?.snapshot || await pageSnapshot(mobilePage).catch(() => null);
+    await writeDiagnostic({ phase: 'mobile', release, base, investorUrl, assetProbe, error: serializeError(error), snapshot });
+    throw error;
+  } finally {
+    await mobileContext.close();
+  }
+
+  console.log(JSON.stringify({ assetProbe, desktop, mobile }, null, 2));
+  console.log('✓ Netlify Beta Investor Profile V10 real public smoke: PASS');
+} catch (error) {
+  if (!fs.existsSync(diagnosticPath)) {
+    await writeDiagnostic({ phase: 'deploy', release, base, investorUrl, assetUrl, assetProbe, error: serializeError(error), probe: error?.probe || null });
+  }
+  console.error(error?.stack || error);
+  process.exitCode = 1;
 } finally {
   await browser.close();
 }
-
-console.error('✗ Netlify Beta Investor Profile V10 smoke timed out.');
-console.error(lastError?.stack || lastError || 'Unknown error');
-process.exit(1);
