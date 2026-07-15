@@ -60,6 +60,19 @@
   line-clamp:3;
 }
 
+/* Metadata values remain compact; long industry lists resolve to two lines with an ellipsis. */
+.d68-investors-page .d68-investor-card__meta > span {
+  display:-webkit-box;
+  overflow:hidden;
+  max-width:100%;
+  max-height:3em;
+  line-height:1.5;
+  text-overflow:ellipsis;
+  -webkit-box-orient:vertical;
+  -webkit-line-clamp:2;
+  line-clamp:2;
+}
+
 /* Investor Detail Hero — keep the ID/profile eyebrow at the top. */
 .d68-v10-investor-detail .d68-id-cover__eyebrow {
   position:absolute;
