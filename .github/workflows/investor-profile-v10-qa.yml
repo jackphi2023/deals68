@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - feature/investor-profile-v10
+      - beta-reference
   pull_request:
     branches:
       - beta-reference
@@ -21,6 +22,7 @@ on:
       - 'src/styles/index.css'
       - 'src/styles/pages/investor-profile-v10.css'
       - 'scripts/deals68-investor-profile-v10-check.mjs'
+      - 'scripts/deals68-investor-v10-beta-smoke.mjs'
       - 'scripts/deals68-package-checks.mjs'
       - 'scripts/deals68-migration-state-check.mjs'
       - 'supabase/migrations/20260715045336_investor_profile_cover_appetite_v1.sql'
@@ -65,3 +67,41 @@ jobs:
 
       - name: Migration state QA
         run: npm run qa:migrations
+
+  beta-public-smoke:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/beta-reference'
+    needs: build-and-package-qa
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout deployed Beta commit
+        uses: actions/checkout@v4
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Install Playwright Chromium and Linux dependencies
+        run: npx playwright install --with-deps chromium
+
+      - name: Poll Netlify Beta and run real public Investor smoke
+        env:
+          D68_BETA_URL: https://beta-reference-deals68.netlify.app
+          D68_RELEASE_SHA: ${{ github.sha }}
+        run: node scripts/deals68-investor-v10-beta-smoke.mjs
+
+      - name: Upload Beta smoke screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: investor-v10-beta-smoke-${{ github.sha }}
+          path: |
+            /tmp/deals68-investor-v10-beta-desktop.png
+            /tmp/deals68-investor-v10-beta-mobile.png
+          if-no-files-found: ignore
+          retention-days: 7
