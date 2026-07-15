@@ -32,6 +32,7 @@ on:
 
 permissions:
   contents: read
+  statuses: write
 
 jobs:
   build-and-package-qa:
@@ -74,6 +75,17 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
+      - name: Publish pending Beta smoke status
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api --method POST \
+            "repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
+            -f state=pending \
+            -f context='deals68/investor-v10-beta-smoke' \
+            -f description='Waiting for Netlify Beta and real public smoke' \
+            -f target_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+
       - name: Checkout deployed Beta commit
         uses: actions/checkout@v4
 
@@ -94,6 +106,30 @@ jobs:
           D68_BETA_URL: https://beta-reference-deals68.netlify.app
           D68_RELEASE_SHA: ${{ github.sha }}
         run: node scripts/deals68-investor-v10-beta-smoke.mjs
+
+      - name: Publish successful Beta smoke status
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api --method POST \
+            "repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
+            -f state=success \
+            -f context='deals68/investor-v10-beta-smoke' \
+            -f description='Real Netlify Beta Investor V10 smoke passed' \
+            -f target_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+
+      - name: Publish failed Beta smoke status
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api --method POST \
+            "repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
+            -f state=failure \
+            -f context='deals68/investor-v10-beta-smoke' \
+            -f description='Real Netlify Beta Investor V10 smoke failed' \
+            -f target_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
 
       - name: Upload Beta smoke screenshots
         if: always()
