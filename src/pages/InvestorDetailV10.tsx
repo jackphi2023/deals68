@@ -10,8 +10,8 @@ import {
 } from '../lib/data';
 import type { Lang } from '../lib/i18n';
 import { toLocalizedPath } from '../lib/i18nRoutes';
+import { approvedInvestorReviewCriteria } from '../lib/investorCriteriaReviewService';
 import {
-  approvedInvestorAppetite,
   getDefaultInvestorCover,
   type InvestorCoverBanner,
 } from '../lib/investorProfileService';
@@ -159,7 +159,10 @@ export default function InvestorDetailV10({ lang }: { lang: Lang }) {
     [investor, criteriaSource],
   );
   const markets = useMemo(() => investorTargetCountries(investor), [investor]);
-  const appetite = approvedInvestorAppetite(investor);
+  const reviewedCriteria = useMemo(
+    () => approvedInvestorReviewCriteria(investor),
+    [investor],
+  );
   const ticket = investor ? investorTicketLabel(lang, investor) : '';
 
   useEffect(() => {
@@ -242,7 +245,10 @@ export default function InvestorDetailV10({ lang }: { lang: Lang }) {
               dealTypes={dealTypes}
               stage={investor.stage || ''}
               ticket={ticket}
-              appetite={appetite}
+              appetite={reviewedCriteria.investment_appetite}
+              riskAppetite={reviewedCriteria.riskAppetite}
+              returnExpectation={reviewedCriteria.returnExpectation}
+              revenueRange={reviewedCriteria.revenueRange}
               industries={industries}
               markets={markets}
               publicHistory={publicHistory}
