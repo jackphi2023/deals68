@@ -84,6 +84,10 @@ function rgb(value) {
   return String(value || '').replace(/\s+/g, '').toLowerCase();
 }
 
+async function settleHover(page) {
+  await page.waitForTimeout(250);
+}
+
 async function inspectHome(browser, base) {
   const page = await browser.newPage({ viewport: { width: 1440, height: 1100 } });
   try {
@@ -98,12 +102,14 @@ async function inspectHome(browser, base) {
 
     const investorCard = page.locator('.d68-home-investor-card').first();
     await investorCard.hover();
+    await settleHover(page);
     const investorTitleColor = await investorCard.locator('h3').evaluate((node) => getComputedStyle(node).color);
     assert.equal(rgb(investorTitleColor), 'rgb(27,173,234)', 'Homepage investor name hover color');
 
     const businessCard = page.locator('.d68-home-business-card').first();
     if (await businessCard.locator('h3').count()) {
       await businessCard.hover();
+      await settleHover(page);
       const businessTitleColor = await businessCard.locator('h3').evaluate((node) => getComputedStyle(node).color);
       assert.equal(rgb(businessTitleColor), 'rgb(27,173,234)', 'Homepage business name hover color');
     }
@@ -163,17 +169,21 @@ async function inspectListings(browser, base) {
     );
 
     await investorCard.hover();
-    const hoverState = await investorCard.evaluate((node) => ({
-      background: getComputedStyle(node).backgroundColor,
-      title: getComputedStyle(node.querySelector('.d68-investor-card__title-link')).color,
-    }));
-    assert.equal(rgb(hoverState.background), 'rgb(255,254,248)', 'Investor list hover background');
-    assert.equal(rgb(hoverState.title), 'rgb(27,173,234)', 'Investor list title hover color');
+    await settleHover(page);
+    const hoverBackground = await investorCard.evaluate((node) => getComputedStyle(node).backgroundColor);
+    assert.equal(rgb(hoverBackground), 'rgb(255,254,248)', 'Investor list hover background');
+
+    const investorTitle = investorCard.locator('.d68-investor-card__title-link');
+    await investorTitle.hover();
+    await settleHover(page);
+    const investorTitleColor = await investorTitle.evaluate((node) => getComputedStyle(node).color);
+    assert.equal(rgb(investorTitleColor), 'rgb(27,173,234)', 'Investor list title hover color');
 
     await goto(page, `${base}/businesses`);
     const businessCard = page.locator('.d68-business-card').filter({ has: page.locator('h3') }).first();
     await businessCard.waitFor({ state: 'visible', timeout: 30_000 });
     await businessCard.hover();
+    await settleHover(page);
     const businessTitleColor = await businessCard.locator('h3').evaluate((node) => getComputedStyle(node).color);
     assert.equal(rgb(businessTitleColor), 'rgb(27,173,234)', 'Business list title hover color');
 
