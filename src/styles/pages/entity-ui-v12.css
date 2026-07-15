@@ -15,7 +15,6 @@
 }
 
 .d68-home-page .d68-home-business-card:hover h3,
-.d68-home-page .d68-home-investor-card:hover h3,
 .d68-businesses-page .d68-business-card:hover h3,
 .d68-investors-page .d68-investor-card__title-link:hover,
 .d68-dashboard-page .d68-dashboard-head h1:hover,
@@ -27,12 +26,16 @@
   color:rgb(27,173,234)!important;
 }
 
+.d68-home-page .d68-home-investor-grid > article.d68-home-investor-card:hover > h3 {
+  color:rgb(27,173,234)!important;
+}
+
 /* Homepage cards — match the approved light reference surfaces. */
 .d68-home-page .d68-home-role-card {
   background:#f8fdfa!important;
 }
 
-.d68-home-page .d68-home-investor-card {
+.d68-home-page .d68-home-investor-grid > article.d68-home-investor-card {
   background:#fffef8!important;
 }
 
