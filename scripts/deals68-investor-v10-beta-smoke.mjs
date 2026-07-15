@@ -75,6 +75,92 @@ async function waitForDeployedAsset(request) {
   throw error;
 }
 
+async function waitForDeployedDocument(request) {
+  const deadline = Date.now() + 8 * 60 * 1000;
+  let attempt = 0;
+  let last = null;
+  while (Date.now() < deadline) {
+    attempt += 1;
+    try {
+      const response = await request.get(investorUrl, {
+        headers: {
+          'cache-control': 'no-cache',
+          accept: 'text/html,application/xhtml+xml',
+        },
+        timeout: 30_000,
+      });
+      const html = await response.text();
+      const contentType = response.headers()['content-type'] || '';
+      last = {
+        attempt,
+        status: response.status(),
+        contentType,
+        length: html.length,
+        hasHtml: /<html[\s>]/i.test(html),
+        hasRoot: /id=["']root["']/i.test(html),
+        hasModuleScript: /<script[^>]+type=["']module["']/i.test(html),
+      };
+      console.log(`Deploy document probe ${attempt}: ${JSON.stringify(last)}`);
+      if (
+        response.ok() &&
+        /text\/html/i.test(contentType) &&
+        last.hasHtml &&
+        last.hasRoot &&
+        last.hasModuleScript
+      ) {
+        return last;
+      }
+    } catch (error) {
+      last = { attempt, error: serializeError(error) };
+      console.log(`Deploy document probe ${attempt}: ${error?.message || error}`);
+    }
+    await delay(10_000);
+  }
+  const error = new Error('Netlify Beta did not serve a valid Investor application document within 8 minutes.');
+  error.probe = last;
+  throw error;
+}
+
+async function navigateToInvestor(page, viewportName, events) {
+  let lastError = null;
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
+    try {
+      events.push(`navigation:${attempt}:start`);
+      const response = await page.goto(investorUrl, {
+        waitUntil: 'commit',
+        timeout: 30_000,
+      });
+      assert.ok(response, `${viewportName}: navigation returned no response`);
+      assert.ok(response.status() < 400, `${viewportName}: HTTP ${response.status()}`);
+
+      await page.locator('#root').waitFor({ state: 'attached', timeout: 15_000 });
+      await page.waitForFunction(() => (
+        Boolean(document.querySelector('.d68-id-cover img')) ||
+        Boolean(document.querySelector('.d68-id-state h1'))
+      ), null, { timeout: 45_000 });
+
+      events.push(`navigation:${attempt}:ready:${response.status()}`);
+      return { attempt, status: response.status(), url: response.url() };
+    } catch (error) {
+      lastError = error;
+      events.push(`navigation:${attempt}:error:${error?.message || error}`);
+      if (attempt < 3) {
+        await page.goto('about:blank', {
+          waitUntil: 'commit',
+          timeout: 10_000,
+        }).catch(() => undefined);
+        await delay(attempt * 2500);
+      }
+    }
+  }
+
+  const snapshot = await pageSnapshot(page, events);
+  throw Object.assign(
+    new Error(`${viewportName}: Investor browser navigation failed after 3 attempts: ${lastError?.message || lastError}`),
+    { snapshot, cause: lastError },
+  );
+}
+
 async function inspectInvestor(page, viewportName) {
   const events = [];
   page.on('pageerror', (error) => events.push(`pageerror:${error.message}`));
@@ -88,17 +174,7 @@ async function inspectInvestor(page, viewportName) {
     if (response.status() >= 400) events.push(`response:${response.status()}:${response.url()}`);
   });
 
-  const response = await page.goto(investorUrl, {
-    waitUntil: 'domcontentloaded',
-    timeout: 45_000,
-  });
-  assert.ok(response, `${viewportName}: navigation returned no response`);
-  assert.ok(response.status() < 400, `${viewportName}: HTTP ${response.status()}`);
-
-  await page.waitForFunction(() => (
-    Boolean(document.querySelector('.d68-id-cover img')) ||
-    Boolean(document.querySelector('.d68-id-state h1'))
-  ), null, { timeout: 45_000 });
+  const navigation = await navigateToInvestor(page, viewportName, events);
 
   const errorState = await page.locator('.d68-id-state h1').count();
   if (errorState) {
@@ -194,14 +270,16 @@ async function inspectInvestor(page, viewportName) {
 
   const pageErrors = events.filter((event) => event.startsWith('pageerror:'));
   assert.equal(pageErrors.length, 0, `${viewportName}: page errors: ${pageErrors.join(' | ')}`);
-  return { ...state, events };
+  return { navigation, ...state, events };
 }
 
 const browser = await chromium.launch({ headless: true });
 let assetProbe = null;
+let documentProbe = null;
 try {
   const deployContext = await browser.newContext();
   assetProbe = await waitForDeployedAsset(deployContext.request);
+  documentProbe = await waitForDeployedDocument(deployContext.request);
   await deployContext.close();
 
   const desktopContext = await browser.newContext({
@@ -216,7 +294,7 @@ try {
   } catch (error) {
     await desktopPage.screenshot({ path: '/tmp/deals68-investor-v10-beta-failure.png', fullPage: true }).catch(() => undefined);
     const snapshot = error?.snapshot || await pageSnapshot(desktopPage).catch(() => null);
-    await writeDiagnostic({ phase: 'desktop', release, base, investorUrl, assetProbe, error: serializeError(error), snapshot });
+    await writeDiagnostic({ phase: 'desktop', release, base, investorUrl, assetProbe, documentProbe, error: serializeError(error), snapshot });
     throw error;
   } finally {
     await desktopContext.close();
@@ -234,17 +312,17 @@ try {
   } catch (error) {
     await mobilePage.screenshot({ path: '/tmp/deals68-investor-v10-beta-failure.png', fullPage: true }).catch(() => undefined);
     const snapshot = error?.snapshot || await pageSnapshot(mobilePage).catch(() => null);
-    await writeDiagnostic({ phase: 'mobile', release, base, investorUrl, assetProbe, error: serializeError(error), snapshot });
+    await writeDiagnostic({ phase: 'mobile', release, base, investorUrl, assetProbe, documentProbe, error: serializeError(error), snapshot });
     throw error;
   } finally {
     await mobileContext.close();
   }
 
-  console.log(JSON.stringify({ assetProbe, desktop, mobile }, null, 2));
+  console.log(JSON.stringify({ assetProbe, documentProbe, desktop, mobile }, null, 2));
   console.log('✓ Netlify Beta Investor Profile V11 public layout smoke: PASS');
 } catch (error) {
   if (!fs.existsSync(diagnosticPath)) {
-    await writeDiagnostic({ phase: 'deploy', release, base, investorUrl, assetUrl, assetProbe, error: serializeError(error), probe: error?.probe || null });
+    await writeDiagnostic({ phase: 'deploy', release, base, investorUrl, assetUrl, assetProbe, documentProbe, error: serializeError(error), probe: error?.probe || null });
   }
   console.error(error?.stack || error);
   process.exitCode = 1;
