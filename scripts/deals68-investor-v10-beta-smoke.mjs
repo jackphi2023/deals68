@@ -268,9 +268,14 @@ async function inspectInvestor(page, viewportName) {
     const side = document.querySelector('.d68-id-side');
     const image = document.querySelector('.d68-id-cover img');
     const intro = document.querySelector('.d68-id-introduction__copy');
+    const title = document.querySelector('.d68-id-cover h1');
+    const badges = document.querySelector('.d68-id-cover__badges');
+    const countryBadge = document.querySelector('.d68-id-cover__badges span:nth-child(2)');
+    const layout = document.querySelector('.d68-id-layout');
     const coverRect = cover?.getBoundingClientRect();
     const mainRect = main?.getBoundingClientRect();
     const sideRect = side?.getBoundingClientRect();
+    const badgesRect = badges?.getBoundingClientRect();
     const introText = intro?.textContent?.trim() || '';
     const bodyText = document.body?.innerText || '';
     const occurrenceCount = introText ? bodyText.split(introText).length - 1 : 0;
@@ -279,17 +284,21 @@ async function inspectInvestor(page, viewportName) {
     return {
       layoutMarker: document.querySelector('[data-investor-layout]')?.getAttribute('data-investor-layout') || '',
       rootChildren: document.querySelector('#root')?.childElementCount || 0,
-      h1: document.querySelector('.d68-id-cover h1')?.textContent?.trim() || '',
+      h1: title?.textContent?.trim() || '',
       eyebrow: document.querySelector('.d68-id-cover__eyebrow')?.textContent?.trim() || '',
       heroParagraphCount: document.querySelectorAll('.d68-id-cover p').length,
       badgeCount: document.querySelectorAll('.d68-id-cover__badges span').length,
       activeBadge: document.querySelector('.d68-id-cover__badges .active')?.textContent?.trim() || '',
+      countryBadge: countryBadge?.textContent?.trim() || '',
       coverWidth: coverRect?.width || 0,
       coverHeight: coverRect?.height || 0,
       mainWidth: mainRect?.width || 0,
       sideWidth: sideRect?.width || 0,
       sideTopDelta: coverRect && sideRect ? Math.abs(coverRect.top - sideRect.top) : 9999,
       sideBelowMain: mainRect && sideRect ? sideRect.top >= mainRect.bottom - 2 : false,
+      titleClipped: title instanceof HTMLElement ? title.scrollHeight > title.clientHeight + 2 : true,
+      badgesClipped: coverRect && badgesRect ? badgesRect.bottom > coverRect.bottom + 2 : true,
+      gridTemplateColumns: layout ? getComputedStyle(layout).gridTemplateColumns : '',
       imageSrc: image instanceof HTMLImageElement ? image.currentSrc || image.src : '',
       imageWidth: image instanceof HTMLImageElement ? image.naturalWidth : 0,
       imageHeight: image instanceof HTMLImageElement ? image.naturalHeight : 0,
@@ -315,6 +324,9 @@ async function inspectInvestor(page, viewportName) {
   assert.equal(state.descriptionOccurrences, 1, `${viewportName}: Introduction description occurrence count ${state.descriptionOccurrences}`);
   assert.ok(state.badgeCount >= 3, `${viewportName}: Cover badges are incomplete`);
   assert.match(state.activeBadge, /hoạt động|active/i, `${viewportName}: Active badge is missing`);
+  assert.ok(state.countryBadge && !state.countryBadge.includes('📍'), `${viewportName}: country badge still uses a location pin`);
+  assert.equal(state.titleClipped, false, `${viewportName}: Hero title is clipped`);
+  assert.equal(state.badgesClipped, false, `${viewportName}: Hero badges are clipped`);
   assert.ok(state.imageWidth > 0 && state.imageHeight > 0, `${viewportName}: Cover image failed to load`);
   assert.equal(state.overviewCount, 0, `${viewportName}: obsolete Investment overview card remains`);
   assert.ok(state.criteriaRows >= 2, `${viewportName}: criteria table is incomplete`);
@@ -338,6 +350,11 @@ async function inspectInvestor(page, viewportName) {
     assert.ok(state.coverHeight >= 300 && state.coverHeight <= 351, `desktop: cover height ${state.coverHeight}`);
     assert.ok(state.sideWidth >= 320 && state.sideWidth <= 340, `desktop: sidebar width ${state.sideWidth}`);
     assert.ok(state.sideTopDelta <= 3, `desktop: sidebar is not aligned with Hero (${state.sideTopDelta}px)`);
+    assert.notEqual(state.gridTemplateColumns, 'none', 'desktop: grid columns are missing');
+  } else if (viewportName === 'tablet') {
+    assert.ok(state.coverWidth >= 700, `tablet: cover width ${state.coverWidth}`);
+    assert.ok(state.coverHeight >= 300 && state.coverHeight <= 341, `tablet: cover height ${state.coverHeight}`);
+    assert.ok(state.sideBelowMain, 'tablet: sidebar must stack below the full main column');
   } else {
     assert.ok(state.coverWidth >= 350, `mobile: cover width ${state.coverWidth}`);
     assert.ok(state.coverHeight >= 300 && state.coverHeight <= 341, `mobile: cover height ${state.coverHeight}`);
@@ -347,6 +364,26 @@ async function inspectInvestor(page, viewportName) {
   const pageErrors = events.filter((event) => event.startsWith('pageerror:'));
   assert.equal(pageErrors.length, 0, `${viewportName}: page errors: ${pageErrors.join(' | ')}`);
   return { ...state, events };
+}
+
+async function runViewport(browser, viewportName, viewport, screenshotPath) {
+  const context = await browser.newContext({
+    viewport,
+    extraHTTPHeaders: { 'cache-control': 'no-cache, no-store, max-age=0' },
+  });
+  const page = await context.newPage();
+  try {
+    const result = await inspectInvestor(page, viewportName);
+    if (screenshotPath) await page.screenshot({ path: screenshotPath, fullPage: true });
+    return result;
+  } catch (error) {
+    await page.screenshot({ path: '/tmp/deals68-investor-v11-beta-failure.png', fullPage: true }).catch(() => undefined);
+    const snapshot = error?.snapshot || await pageSnapshot(page).catch(() => null);
+    await writeDiagnostic({ phase: viewportName, release, baseCandidates, base, investorUrl, deployProbe, error: serializeError(error), snapshot });
+    throw error;
+  } finally {
+    await context.close();
+  }
 }
 
 const browser = await chromium.launch({ headless: true });
@@ -361,44 +398,27 @@ try {
   assetUrl = deployProbe.selected.assetUrl;
   console.log(`Selected Netlify Beta candidate: ${base}`);
 
-  const desktopContext = await browser.newContext({
-    viewport: { width: 1440, height: 1100 },
-    extraHTTPHeaders: { 'cache-control': 'no-cache, no-store, max-age=0' },
-  });
-  const desktopPage = await desktopContext.newPage();
-  let desktop;
-  try {
-    desktop = await inspectInvestor(desktopPage, 'desktop');
-    await desktopPage.screenshot({ path: '/tmp/deals68-investor-v11-beta-desktop.png', fullPage: true });
-  } catch (error) {
-    await desktopPage.screenshot({ path: '/tmp/deals68-investor-v11-beta-failure.png', fullPage: true }).catch(() => undefined);
-    const snapshot = error?.snapshot || await pageSnapshot(desktopPage).catch(() => null);
-    await writeDiagnostic({ phase: 'desktop', release, baseCandidates, base, investorUrl, deployProbe, error: serializeError(error), snapshot });
-    throw error;
-  } finally {
-    await desktopContext.close();
-  }
+  const desktop = await runViewport(
+    browser,
+    'desktop',
+    { width: 1440, height: 1100 },
+    '/tmp/deals68-investor-v11-beta-desktop.png',
+  );
+  const tablet = await runViewport(
+    browser,
+    'tablet',
+    { width: 820, height: 1180 },
+    '/tmp/deals68-investor-v11-beta-tablet.png',
+  );
+  const mobile = await runViewport(
+    browser,
+    'mobile',
+    { width: 390, height: 844 },
+    '/tmp/deals68-investor-v11-beta-mobile.png',
+  );
 
-  const mobileContext = await browser.newContext({
-    viewport: { width: 390, height: 844 },
-    extraHTTPHeaders: { 'cache-control': 'no-cache, no-store, max-age=0' },
-  });
-  const mobilePage = await mobileContext.newPage();
-  let mobile;
-  try {
-    mobile = await inspectInvestor(mobilePage, 'mobile');
-    await mobilePage.screenshot({ path: '/tmp/deals68-investor-v11-beta-mobile.png', fullPage: true });
-  } catch (error) {
-    await mobilePage.screenshot({ path: '/tmp/deals68-investor-v11-beta-failure.png', fullPage: true }).catch(() => undefined);
-    const snapshot = error?.snapshot || await pageSnapshot(mobilePage).catch(() => null);
-    await writeDiagnostic({ phase: 'mobile', release, baseCandidates, base, investorUrl, deployProbe, error: serializeError(error), snapshot });
-    throw error;
-  } finally {
-    await mobileContext.close();
-  }
-
-  console.log(JSON.stringify({ deployProbe, selectedBase: base, desktop, mobile }, null, 2));
-  console.log('✓ Netlify Beta Investor Profile V11 public layout smoke: PASS');
+  console.log(JSON.stringify({ deployProbe, selectedBase: base, desktop, tablet, mobile }, null, 2));
+  console.log('✓ Netlify Beta Investor Profile V11 desktop/tablet/mobile smoke: PASS');
 } catch (error) {
   if (!fs.existsSync(diagnosticPath)) {
     await writeDiagnostic({
