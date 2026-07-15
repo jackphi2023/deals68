@@ -24,14 +24,18 @@ export default function InvestorAppetiteFormV10({
   const [warning, setWarning] = useState('');
   const [error, setError] = useState('');
 
+  const approved = approvedInvestorAppetite(investor);
+  const pending = pendingInvestorAppetite(investor);
+
   useEffect(() => {
-    setDraft(
-      pendingInvestorAppetite(investor) || approvedInvestorAppetite(investor),
-    );
+    setDraft(pending || approved);
+  }, [investor.id, pending, approved]);
+
+  useEffect(() => {
     setMessage('');
     setWarning('');
     setError('');
-  }, [investor.id, investor.updated_at]);
+  }, [investor.id]);
 
   async function submit(event: FormEvent) {
     event.preventDefault();
@@ -69,9 +73,6 @@ export default function InvestorAppetiteFormV10({
     }
   }
 
-  const approved = approvedInvestorAppetite(investor);
-  const pending = pendingInvestorAppetite(investor);
-
   return (
     <form
       className="d68-dashboard-card d68-v10-appetite-card"
@@ -85,9 +86,9 @@ export default function InvestorAppetiteFormV10({
           'Describe the businesses, models, sizes and deal characteristics you prefer. It is public only after administrator approval.',
         )}
       </p>
-      {message ? <div className="d68-dashboard-notice ok">{message}</div> : null}
-      {warning ? <div className="d68-dashboard-notice warn">{warning}</div> : null}
-      {error ? <div className="d68-dashboard-notice err">{error}</div> : null}
+      {message ? <div data-testid="investor-appetite-success" className="d68-dashboard-notice ok">{message}</div> : null}
+      {warning ? <div data-testid="investor-appetite-warning" className="d68-dashboard-notice warn">{warning}</div> : null}
+      {error ? <div data-testid="investor-appetite-error" className="d68-dashboard-notice err">{error}</div> : null}
 
       <div className="d68-v10-appetite-status">
         <small>{T(lang, 'Đang public', 'Currently public')}</small>
