@@ -22,8 +22,10 @@ on:
       - 'src/pages/InvestorProfileV10.tsx'
       - 'src/styles/index.css'
       - 'src/styles/pages/investor-profile-v10.css'
+      - 'src/styles/pages/entity-ui-v12.css'
       - 'scripts/deals68-investor-profile-v10-check.mjs'
       - 'scripts/deals68-investor-v10-beta-smoke.mjs'
+      - 'scripts/deals68-entity-ui-v12-beta-smoke.mjs'
       - 'scripts/deals68-package-checks.mjs'
       - 'scripts/deals68-migration-state-check.mjs'
       - 'supabase/migrations/20260715045336_investor_profile_cover_appetite_v1.sql'
@@ -58,11 +60,13 @@ jobs:
           VITE_SUPABASE_ANON_KEY: local-test-anon-key
         run: npm run build
 
-      - name: Investor Profile V10 semantic QA
+      - name: Investor Profile V12 semantic QA
         run: node scripts/deals68-investor-profile-v10-check.mjs
 
       - name: Beta smoke parser QA
-        run: node --check scripts/deals68-investor-v10-beta-smoke.mjs
+        run: |
+          node --check scripts/deals68-investor-v10-beta-smoke.mjs
+          node --check scripts/deals68-entity-ui-v12-beta-smoke.mjs
 
       - name: Font CSP contract QA
         run: |
@@ -82,7 +86,7 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/beta-reference'
     needs: build-and-package-qa
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 30
     steps:
       - name: Publish pending Beta smoke status
         env:
@@ -92,7 +96,7 @@ jobs:
             "repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
             -f state=pending \
             -f context='deals68/investor-v10-beta-smoke' \
-            -f description='Waiting for exact Netlify Beta Investor V11 deployment' \
+            -f description='Waiting for exact Netlify Beta Investor V11 and Entity UI V12 deployment' \
             -f target_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
 
       - name: Checkout deployed Beta commit
@@ -116,6 +120,12 @@ jobs:
           D68_RELEASE_SHA: ${{ github.sha }}
         run: node scripts/deals68-investor-v10-beta-smoke.mjs
 
+      - name: Run real Entity UI V12 Beta smoke
+        env:
+          D68_BETA_URLS: https://beta-reference-deals68.netlify.app,https://beta-reference--deals68.netlify.app
+          D68_RELEASE_SHA: ${{ github.sha }}
+        run: node scripts/deals68-entity-ui-v12-beta-smoke.mjs
+
       - name: Publish successful Beta smoke status
         if: success()
         env:
@@ -125,7 +135,7 @@ jobs:
             "repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
             -f state=success \
             -f context='deals68/investor-v10-beta-smoke' \
-            -f description='Real Netlify Beta Investor V11 smoke passed' \
+            -f description='Real Netlify Beta Investor V11 and Entity UI V12 smokes passed' \
             -f target_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
 
       - name: Publish failed Beta smoke status
@@ -137,18 +147,23 @@ jobs:
             "repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
             -f state=failure \
             -f context='deals68/investor-v10-beta-smoke' \
-            -f description='Real Netlify Beta Investor V11 smoke failed; inspect diagnostics' \
+            -f description='Real Netlify Beta Investor or Entity UI smoke failed; inspect diagnostics' \
             -f target_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
 
       - name: Upload Beta smoke diagnostics
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: investor-v11-beta-smoke-${{ github.sha }}
+          name: investor-v12-beta-smoke-${{ github.sha }}
           path: |
             /tmp/deals68-investor-v11-beta-desktop.png
+            /tmp/deals68-investor-v11-beta-tablet.png
             /tmp/deals68-investor-v11-beta-mobile.png
             /tmp/deals68-investor-v11-beta-failure.png
             /tmp/deals68-investor-v11-beta-diagnostic.json
+            /tmp/deals68-entity-ui-v12-home.png
+            /tmp/deals68-entity-ui-v12-listings.png
+            /tmp/deals68-entity-ui-v12-detail-desktop.png
+            /tmp/deals68-entity-ui-v12-detail-mobile.png
           if-no-files-found: ignore
           retention-days: 7
