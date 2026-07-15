@@ -144,7 +144,7 @@ const asideIndex = detail.indexOf('<aside className="d68-id-side d68-id-side--st
 if (!(mainIndex >= 0 && heroIndex > mainIndex && sectionsIndex > heroIndex && asideIndex > sectionsIndex)) {
   failures.push('Public detail must order main → Hero → sections → unchanged sidebar');
 }
-if (/<InvestorPublicHeroV10[\s\S]*?description=/.test(detail)) failures.push('Description is still passed to Public Hero');
+if (/<InvestorPublicHeroV10\b[^>]*\bdescription=/.test(detail)) failures.push('Description is still passed to Public Hero');
 if (detail.includes("'Tổng quan đầu tư'")) failures.push('Obsolete Investment overview card remains');
 for (const sidebarToken of [
   "T(lang, 'Gửi Hồ sơ Doanh nghiệp', 'Send business profile')",
