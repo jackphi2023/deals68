@@ -17,6 +17,7 @@ const scripts = [
   'scripts/deals68-business-dashboard-overview-spacing-check.mjs',
   'scripts/deals68-investor-detail-localization-check.mjs',
   'scripts/deals68-investor-profile-v10-check.mjs',
+  'scripts/deals68-investor-profile-v11-fields-check.mjs',
   'scripts/deals68-css-architecture-check.mjs',
   'scripts/deals68-migration-state-check.mjs',
 ];
