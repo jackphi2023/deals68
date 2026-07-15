@@ -1,0 +1,67 @@
+name: Investor Profile V10 QA
+
+on:
+  push:
+    branches:
+      - feature/investor-profile-v10
+  pull_request:
+    branches:
+      - beta-reference
+    paths:
+      - 'public/assets/investor-cover-default.svg'
+      - 'src/App.tsx'
+      - 'src/components/admin/**'
+      - 'src/components/investor/**'
+      - 'src/lib/investorAdminV10.ts'
+      - 'src/lib/investorProfileService.ts'
+      - 'src/pages/AdminBannersV10.tsx'
+      - 'src/pages/AdminInvestorsV10.tsx'
+      - 'src/pages/InvestorDetailV10.tsx'
+      - 'src/pages/InvestorProfileV10.tsx'
+      - 'src/styles/index.css'
+      - 'src/styles/pages/investor-profile-v10.css'
+      - 'scripts/deals68-investor-profile-v10-check.mjs'
+      - 'scripts/deals68-package-checks.mjs'
+      - 'scripts/deals68-migration-state-check.mjs'
+      - 'supabase/migrations/20260715045336_investor_profile_cover_appetite_v1.sql'
+      - 'supabase/migrations/20260715071812_investor_profile_cover_appetite_v2.sql'
+      - 'supabase/migrations/20260715085429_investor_profile_cover_appetite_v3_privilege_hardening.sql'
+      - '.github/workflows/investor-profile-v10-qa.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-package-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: TypeScript and Vite production build
+        env:
+          VITE_SUPABASE_URL: https://local-test.supabase.co
+          VITE_SUPABASE_ANON_KEY: local-test-anon-key
+        run: npm run build
+
+      - name: Investor Profile V10 semantic QA
+        run: node scripts/deals68-investor-profile-v10-check.mjs
+
+      - name: Full package QA
+        run: npm run qa:packages
+
+      - name: CSS architecture QA
+        run: npm run qa:css
+
+      - name: Migration state QA
+        run: npm run qa:migrations
