@@ -14,6 +14,8 @@ const required = [
   '20260715045336_investor_profile_cover_appetite_v1.sql',
   '20260715071812_investor_profile_cover_appetite_v2.sql',
   '20260715085429_investor_profile_cover_appetite_v3_privilege_hardening.sql',
+  '20260716013000_investor_profile_review_fields_v4.sql',
+  '20260716014500_investor_criteria_pending_dedup_v5.sql',
 ];
 const forbidden = [
   '20260711103000_normalize_investor_taxonomy_on_write_v1.sql',
