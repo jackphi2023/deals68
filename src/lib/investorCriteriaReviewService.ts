@@ -1,3 +1,8 @@
+import {
+  REVENUE_RANGE_OPTIONS,
+  RISK_APPETITE_OPTIONS,
+  optionValue,
+} from './investorCriteriaOptions';
 import { INVESTOR_APPETITE_MAX_LENGTH } from './investorProfileService';
 import { supabase } from './supabase';
 
@@ -23,6 +28,20 @@ function objectOf(value: unknown): AnyRow {
 
 function clean(value: unknown) {
   return String(value ?? '').trim();
+}
+
+function normalizeSelectValue(
+  key: InvestorReviewCriteriaKey,
+  value: unknown,
+) {
+  const raw = clean(value);
+  if (key === 'riskAppetite') {
+    return optionValue(raw, RISK_APPETITE_OPTIONS, raw);
+  }
+  if (key === 'revenueRange') {
+    return optionValue(raw, REVENUE_RANGE_OPTIONS, raw);
+  }
+  return raw;
 }
 
 export function approvedInvestorReviewCriteria(
@@ -59,7 +78,12 @@ export function investorReviewCriteriaDraft(
 ): InvestorReviewCriteria {
   const approved = approvedInvestorReviewCriteria(investor);
   const pending = pendingInvestorReviewCriteria(investor);
-  return { ...approved, ...pending };
+  const merged = { ...approved, ...pending };
+  return {
+    ...merged,
+    riskAppetite: normalizeSelectValue('riskAppetite', merged.riskAppetite),
+    revenueRange: normalizeSelectValue('revenueRange', merged.revenueRange),
+  };
 }
 
 export function pendingInvestorReviewKeys(investor: unknown) {
@@ -83,7 +107,7 @@ function normalizePatch(
   const next: Partial<InvestorReviewCriteria> = {};
   for (const key of INVESTOR_REVIEW_CRITERIA_KEYS) {
     if (!Object.prototype.hasOwnProperty.call(patch, key)) continue;
-    const value = clean(patch[key]);
+    const value = normalizeSelectValue(key, patch[key]);
     if (key === 'investment_appetite' && value.length > INVESTOR_APPETITE_MAX_LENGTH) {
       throw new Error('Khẩu vị đầu tư không được vượt quá 5.000 ký tự.');
     }
