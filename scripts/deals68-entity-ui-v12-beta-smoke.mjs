@@ -14,6 +14,10 @@ const requiredBundleTokens = [
   'd68-id-sector-tags',
   'Doanh nghiệp đã đăng nhập có thể gửi Hồ sơ DN/Proposal',
 ];
+const requiredCssTokens = [
+  '--d68-investor-meta-line-limit:2',
+  '-webkit-line-clamp:2',
+];
 
 function absolute(base, value) {
   return new URL(value, `${base}/`).href;
@@ -32,7 +36,10 @@ async function deployedCandidate(request) {
         const html = await htmlResponse.text();
         const scripts = [...html.matchAll(/<script[^>]+src=["']([^"']+)["']/gi)]
           .map((match) => absolute(base, match[1]));
+        const styles = [...html.matchAll(/<link[^>]+href=["']([^"']+\.css(?:\?[^"']*)?)["']/gi)]
+          .map((match) => absolute(base, match[1]));
         let bundle = '';
+        let cssBundle = '';
         for (const script of scripts) {
           const response = await request.get(script, {
             headers: { 'cache-control': 'no-cache, no-store, max-age=0' },
@@ -40,9 +47,24 @@ async function deployedCandidate(request) {
           });
           if (response.ok()) bundle += await response.text();
         }
+        for (const style of styles) {
+          const response = await request.get(style, {
+            headers: { 'cache-control': 'no-cache, no-store, max-age=0' },
+            timeout: 20_000,
+          });
+          if (response.ok()) cssBundle += await response.text();
+        }
         const missing = requiredBundleTokens.filter((token) => !bundle.includes(token));
-        last.push({ base, status: htmlResponse.status(), scripts: scripts.length, missing });
-        if (htmlResponse.ok() && scripts.length && !missing.length) return base;
+        const missingCss = requiredCssTokens.filter((token) => !cssBundle.includes(token));
+        last.push({
+          base,
+          status: htmlResponse.status(),
+          scripts: scripts.length,
+          styles: styles.length,
+          missing,
+          missingCss,
+        });
+        if (htmlResponse.ok() && scripts.length && styles.length && !missing.length && !missingCss.length) return base;
       } catch (error) {
         last.push({ base, error: error?.message || String(error) });
       }
@@ -110,6 +132,34 @@ async function inspectListings(browser, base) {
     assert.equal(clamp.lineClamp.trim(), '3', 'Investor description must clamp at three lines');
     assert.equal(clamp.overflow, 'hidden', 'Investor description overflow');
     assert.ok(clamp.height <= clamp.lineHeight * 3 + 2, `Investor description height ${clamp.height}`);
+
+    const pageMarker = await page.locator('.d68-investors-page').evaluate((node) =>
+      getComputedStyle(node).getPropertyValue('--d68-investor-meta-line-limit').trim(),
+    );
+    assert.equal(pageMarker, '2', 'Investor metadata V12 CSS marker');
+
+    const industryMeta = page
+      .locator('.d68-investor-card__meta > span')
+      .filter({ hasText: /^(Ngành|Industries):/i })
+      .first();
+    await industryMeta.waitFor({ state: 'visible', timeout: 30_000 });
+    const industryClamp = await industryMeta.evaluate((node) => {
+      const style = getComputedStyle(node);
+      return {
+        lineClamp: style.getPropertyValue('-webkit-line-clamp'),
+        overflow: style.overflow,
+        textOverflow: style.textOverflow,
+        lineHeight: parseFloat(style.lineHeight),
+        height: node.getBoundingClientRect().height,
+      };
+    });
+    assert.equal(industryClamp.lineClamp.trim(), '2', 'Investor industries must clamp at two lines');
+    assert.equal(industryClamp.overflow, 'hidden', 'Investor industries overflow');
+    assert.equal(industryClamp.textOverflow, 'ellipsis', 'Investor industries ellipsis');
+    assert.ok(
+      industryClamp.height <= industryClamp.lineHeight * 2 + 2,
+      `Investor industries height ${industryClamp.height}`,
+    );
 
     await investorCard.hover();
     const hoverState = await investorCard.evaluate((node) => ({
