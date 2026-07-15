@@ -5,7 +5,8 @@ import { getPublicDealValueSummary, type PublicDealValueSummary } from '../lib/p
 import { toLocalizedPath } from '../lib/i18nRoutes';
 import { formatMoneyForLang, labelIndustry, labelInvestorType, labelCountry, T } from '../lib/labels';
 import type { Lang } from '../lib/i18n';
-import { HeroBannerSlider, PromotionBanner } from '../components/SiteBanners';
+import { PromotionBanner } from '../components/SiteBanners';
+import HomepageHeroSlider from '../components/HomepageHeroSlider';
 
 type SearchMode = 'business' | 'investor';
 type Deal = { id: string; slug: string; title: string; industry: string; city: string; revenue: string; ask: string; image: string | null; featured: boolean };
@@ -156,12 +157,12 @@ export default function Home({ lang }: { lang: Lang }) {
   return (
     <main className="d68-home-page">
       <section className="d68-home-hero">
-        <HeroBannerSlider lang={lang} />
+        <HomepageHeroSlider lang={lang} />
         <span className="d68-home-hero__orb" aria-hidden="true" />
         <div className="d68-home-container d68-home-hero__inner">
           <div className="d68-home-eyebrow"><span />{T(lang, 'Kết nối thương vụ, khai mở lộc phát', 'Connecting Deals, Unlocking Prosperity')}</div>
           <h1 className="d68-home-hero__title"><span>{T(lang, 'Nơi Doanh nghiệp gặp gỡ', 'Where Businesses Meet')}</span><strong>{T(lang, 'Nhà đầu tư', 'Investors')}</strong></h1>
-<div className="d68-home-hero-stats">
+          <div className="d68-home-hero-stats">
             <div><b>{bizCount ?? (loading ? '…' : deals.length)}</b><span>{T(lang, 'Doanh nghiệp đang chào', 'Active business listings')}</span></div>
             <div><b>{invCount ?? (loading ? '…' : investors.length)}</b><span>{T(lang, 'Nhà đầu tư hoạt động', 'Active investors')}</span></div>
             <div><b>{dealValueLabel}</b><span>{T(lang, 'Tổng giá trị thương vụ', 'Total deal value')}</span></div>
@@ -193,6 +194,6 @@ export default function Home({ lang }: { lang: Lang }) {
       <section className="d68-home-container d68-home-section d68-home-investor-band"><div className="d68-home-title d68-home-title--row"><div><span className="d68-home-badge d68-home-badge--blue">◆ {T(lang, 'Nhà đầu tư tiêu biểu', 'Featured investors')}</span><h2>{T(lang, 'Nhà đầu tư đang tìm thương vụ', 'Investors looking for deals')}</h2></div><Link to={nav('/investors')}>{T(lang, 'Xem tất cả', 'View all')} →</Link></div>{loading ? <div className="d68-home-investor-grid">{Array.from({ length: 4 }).map((_, i) => <div key={i} className="d68-home-investor-card" aria-hidden="true" />)}</div> : investors.length ? <div className="d68-home-investor-grid">{investors.map((i) => <article key={i.id || i.code} className="d68-home-investor-card"><div className="d68-home-investor-card__icon">$</div><h3>{T(lang, i.title_vi || i.title_en || i.code, i.title_en || i.title_vi || i.code)}</h3><p>{labelInvestorType(i.type, lang)} · {investorTargetCountries(i).slice(0, 3).map((c) => labelCountry(c, lang)).join(', ')}</p><div className="d68-home-investor-card__meta"><span><b>{T(lang, 'Quy mô đầu tư', 'Investment size')}:</b> {homeInvestorTicket(lang, i)}</span><span><b>{T(lang, 'Ngành', 'Industries')}:</b> {homeInvestorIndustries(lang, i)}</span></div><Link className="d68-home-investor-cta" to={nav(`/investors/${i.code}`)}>{T(lang, 'Xem chi tiết', 'View detail')} →</Link></article>)}</div> : <div className="d68-home-empty">{T(lang, 'Chưa có nhà đầu tư đang hiển thị.', 'No active investor listings yet.')}</div>}</section>
 
       <section className="d68-home-how"><div className="d68-home-container"><div className="d68-home-title d68-home-title--center"><h2 style={{ color: '#0F2A4A' }}>{T(lang, 'Cách hoạt động', 'How it works')}</h2><p>{T(lang, 'Ba bước để bắt đầu một thương vụ trên Deals68.', 'Three steps to start a deal on Deals68.')}</p></div><div className="d68-home-steps">{steps.map((s) => <div key={s.n}><b>{s.n}</b><h3>{s.title}</h3><p>{s.desc}</p></div>)}</div></div></section>
-</main>
+    </main>
   );
 }
