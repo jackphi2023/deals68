@@ -1,0 +1,129 @@
+/* Deals68 Entity UI V12 — route-scoped visual refinements only.
+   This file does not redefine grid/card primitives or shared layout utilities. */
+
+/* Shared entity-name interaction across public, dashboard and admin surfaces. */
+.d68-home-page .d68-home-business-card h3,
+.d68-home-page .d68-home-investor-card h3,
+.d68-businesses-page .d68-business-card h3,
+.d68-investors-page .d68-investor-card__title-link,
+.d68-dashboard-page .d68-dashboard-head h1,
+.d68-v10-investor-list__rows button b,
+.d68-admin-page .d68-admin-business-table tbody td:first-child > b,
+.d68-admin-page .d68-admin-table td a > b,
+.d68-v10-investor-detail .d68-id-cover__content h1 {
+  transition:color .18s ease;
+}
+
+.d68-home-page .d68-home-business-card:hover h3,
+.d68-home-page .d68-home-investor-card:hover h3,
+.d68-businesses-page .d68-business-card:hover h3,
+.d68-investors-page .d68-investor-card__title-link:hover,
+.d68-dashboard-page .d68-dashboard-head h1:hover,
+.d68-v10-investor-list__rows button:hover b,
+.d68-v10-investor-list__rows button.active b,
+.d68-admin-page .d68-admin-business-table tbody tr:hover td:first-child > b,
+.d68-admin-page .d68-admin-table td a:hover > b,
+.d68-v10-investor-detail .d68-id-cover__content h1:hover {
+  color:rgb(27,173,234)!important;
+}
+
+/* Homepage cards — match the approved light reference surfaces. */
+.d68-home-page .d68-home-role-card {
+  background:#f8fdfa!important;
+}
+
+.d68-home-page .d68-home-investor-card {
+  background:#fffef8!important;
+}
+
+/* Investor listing — concise introduction and warm hover surface. */
+.d68-investors-page .d68-investor-card {
+  transition:
+    background-color .18s ease,
+    transform .18s ease,
+    box-shadow .18s ease,
+    border-color .18s ease;
+}
+
+.d68-investors-page .d68-investor-card:hover {
+  background:#fffef8!important;
+}
+
+.d68-investors-page .d68-investor-card__body > p {
+  display:-webkit-box;
+  overflow:hidden;
+  max-height:4.5em;
+  line-height:1.5;
+  text-overflow:ellipsis;
+  -webkit-box-orient:vertical;
+  -webkit-line-clamp:3;
+  line-clamp:3;
+}
+
+/* Investor Detail Hero — keep the ID/profile eyebrow at the top. */
+.d68-v10-investor-detail .d68-id-cover__eyebrow {
+  position:absolute;
+  top:26px;
+  left:34px;
+  z-index:2;
+}
+
+/* Investor Detail section icons — single-stroke gold icons, no circle. */
+.d68-v10-investor-detail .d68-id-section-title > span {
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  flex:0 0 auto;
+  width:auto;
+  height:auto;
+  border:0!important;
+  border-radius:0!important;
+  color:#f2b51d!important;
+  background:transparent!important;
+  font-size:0;
+  line-height:1;
+}
+
+.d68-v10-investor-detail .d68-id-section-title > span svg {
+  display:block;
+  width:22px;
+  height:22px;
+  fill:none;
+  stroke:currentColor;
+}
+
+/* Sectors use the approved Deals-blue tag treatment. */
+.d68-v10-investor-detail .d68-id-sector-tags span {
+  border:0!important;
+  background:#e7f6fd!important;
+  color:#1596cc!important;
+}
+
+/* Proposal timeline — center the vertical line through every bullet. */
+.d68-v10-investor-detail .d68-id-timeline--proposal > div {
+  grid-template-columns:18px minmax(0,1fr);
+}
+
+.d68-v10-investor-detail .d68-id-timeline--proposal > div::before {
+  left:9px;
+  width:2px;
+  border:0;
+  background:#dceaf5;
+  transform:translateX(-50%);
+}
+
+.d68-v10-investor-detail .d68-id-timeline--proposal i {
+  justify-self:center;
+  margin:5px 0 0;
+}
+
+.d68-v10-investor-detail .d68-id-access p {
+  margin:9px 0;
+}
+
+@media (max-width:760px) {
+  .d68-v10-investor-detail .d68-id-cover__eyebrow {
+    top:22px;
+    left:19px;
+  }
+}
