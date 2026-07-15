@@ -94,6 +94,7 @@ function DefaultInvestorCoverManager() {
           src={cover?.image_url || DEFAULT_INVESTOR_COVER}
           alt="Investor cover mặc định"
           onError={(event) => {
+            event.currentTarget.onerror = null;
             event.currentTarget.src = DEFAULT_INVESTOR_COVER;
           }}
         />
