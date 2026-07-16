@@ -51,6 +51,7 @@ for (const [label, path] of Object.entries(files)) {
 const app = read(files.app);
 requireTokens('App routes', app, [
   'import InvestorRegisterV14',
+  'data-investor-workflow="v14-visibility-independent"',
   '<Route path="/register/investor" element={<InvestorRegisterV14 lang="vi"/>}/>',
   '<Route path="/en/register/investor" element={<InvestorRegisterV14 lang="en"/>}/>',
   '<Route path="/dashboard/investor/profile" element={<DashboardGate role="investor"><InvestorProfileV10/></DashboardGate>}/>',
