@@ -43,11 +43,17 @@ if (fs.existsSync(cssPath)) {
   const scopedSelector = '.d68-investors-page .d68-investor-card__industries';
   const broadSelector = '.d68-investors-page .d68-investor-card__meta > span';
   const staticDetailHoverSelector = '.d68-v10-investor-detail .d68-id-cover__content h1:hover';
-  const staticDetailTransitionSelector = '.d68-v10-investor-detail .d68-id-cover__content h1';
+  const staticDetailTitleSelector = '.d68-v10-investor-detail .d68-id-cover__content h1';
   const selectorIndex = css.indexOf(scopedSelector);
   const nextBlockEnd = selectorIndex >= 0 ? css.indexOf('}', selectorIndex) : -1;
   const block = selectorIndex >= 0 && nextBlockEnd > selectorIndex
     ? css.slice(selectorIndex, nextBlockEnd + 1)
+    : '';
+
+  const interactionStart = css.indexOf('/* Shared entity-name interaction');
+  const interactionEnd = css.indexOf('/* Homepage cards');
+  const interactionCss = interactionStart >= 0 && interactionEnd > interactionStart
+    ? css.slice(interactionStart, interactionEnd)
     : '';
 
   if (!block) failures.push('Scoped Investor industries CSS block is missing');
@@ -67,7 +73,9 @@ if (fs.existsSync(cssPath)) {
   if (css.includes(staticDetailHoverSelector)) {
     failures.push('Static Investor Detail title must not change color on hover');
   }
-  if (css.includes(`${staticDetailTransitionSelector},`) || css.includes(`${staticDetailTransitionSelector} {`)) {
+  if (!interactionCss) {
+    failures.push('Shared entity-name interaction block is missing');
+  } else if (interactionCss.includes(staticDetailTitleSelector)) {
     failures.push('Static Investor Detail title must not be grouped into linked-title interactions');
   }
 }
