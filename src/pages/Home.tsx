@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { countBusinesses, countInvestors, listHomepageBusinesses, listInvestors, investorTargetCountries } from '../lib/data';
 import { getPublicDealValueSummary, type PublicDealValueSummary } from '../lib/publicMetrics';
 import { toLocalizedPath } from '../lib/i18nRoutes';
@@ -8,7 +8,6 @@ import type { Lang } from '../lib/i18n';
 import { PromotionBanner } from '../components/SiteBanners';
 import HomepageHeroSlider from '../components/HomepageHeroSlider';
 
-type SearchMode = 'business' | 'investor';
 type Deal = { id: string; slug: string; title: string; industry: string; city: string; revenue: string; ask: string; image: string | null; featured: boolean };
 
 function normalizeDeal(b: any, lang: Lang): Deal {
@@ -94,20 +93,12 @@ function dealValueText(lang: Lang, value: PublicDealValueSummary | null, loading
 }
 
 export default function Home({ lang }: { lang: Lang }) {
-  const navigate = useNavigate();
   const [bizCount, setBizCount] = useState<number | null>(null);
   const [invCount, setInvCount] = useState<number | null>(null);
   const [dealValue, setDealValue] = useState<PublicDealValueSummary | null>(null);
   const [deals, setDeals] = useState<Deal[]>([]);
   const [investors, setInvestors] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-
-  const [mode, setMode] = useState<SearchMode>('business');
-  const [keyword, setKeyword] = useState('');
-  const [industry, setIndustry] = useState('');
-  const [country, setCountry] = useState('');
-  const [dealType, setDealType] = useState('');
-  const [investorType, setInvestorType] = useState('');
 
   useEffect(() => {
     let live = true;
@@ -131,10 +122,6 @@ export default function Home({ lang }: { lang: Lang }) {
     return () => { live = false; };
   }, [lang]);
 
-  const searchUrl = mode === 'business'
-    ? buildPath('/businesses', lang, { search: keyword, industry, country, dealType })
-    : buildPath('/investors', lang, { search: keyword, industry, country, type: investorType });
-  const submitSearch = (e: React.FormEvent) => { e.preventDefault(); navigate(searchUrl); };
   const nav = (path: string) => toLocalizedPath(path, lang);
 
   const roleCards = [
