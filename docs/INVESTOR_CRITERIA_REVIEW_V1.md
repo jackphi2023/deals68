@@ -70,6 +70,7 @@ Industries use the existing industry taxonomy keys. Countries use uppercase ISO-
 3. New profiles remain `pending_admin_review` and hidden.
 4. Database, not the frontend, allocates the unique `INV-XXXXXX` public code.
 5. Existing valid public codes are not renamed by this feature.
+6. A Vietnamese registration writes only `desc_vi` and `investment_appetite_vi`; the EN pair remains empty. An English registration does the inverse. The frontend does not translate or copy into a shared legacy appetite field.
 
 ## Dashboard flow
 
@@ -88,6 +89,7 @@ Industries use the existing industry taxonomy keys. Countries use uppercase ISO-
 4. Admin can edit the proposed public values before approval.
 5. `admin_approve_investor_profile_changes` validates, normalizes, mirrors legacy fields, clears pending data and optionally publishes.
 6. Admin contact fields remain private and are not exposed by public queries.
+7. Dashboard and Admin always expose independent VN and EN fields for both Introduction and Investment appetite.
 
 ## Public and filters
 
@@ -95,6 +97,7 @@ Industries use the existing industry taxonomy keys. Countries use uppercase ISO-
 2. Legacy records are normalized at read time.
 3. A filter matches when any approved array value matches.
 4. Proposal quota, duplicate state, contact unlock, proposal history and SEO routes remain unchanged.
+5. Investor Detail selects the field matching the route language, then falls back only to the other language field when the selected field is blank. Labels and surrounding UI always remain in the route language.
 
 ## ID contract
 

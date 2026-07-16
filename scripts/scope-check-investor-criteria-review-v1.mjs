@@ -134,6 +134,9 @@ const model = requireTokens('src/lib/investorCriteria.ts', [
 if (model.includes('pending_profile_changes')) {
   failures.push('Public criteria model must not read pending_profile_changes.');
 }
+if (model.includes('criteria.investment_appetite ||')) {
+  failures.push('Public appetite must fall back only between the VI/EN fields.');
+}
 
 requireTokens('src/components/investor/InvestorCriteriaTagPickers.tsx', [
   'CriteriaTagPicker',
@@ -203,6 +206,9 @@ const register = requireTokens('src/pages/Register.tsx', [
 ]);
 if (register.includes('INV-NEW-')) {
   failures.push('Register must not generate temporary Investor public codes.');
+}
+if (register.includes('investment_appetite: appetiteDesc')) {
+  failures.push('Register must not copy the route-language appetite into the legacy shared field.');
 }
 
 requireTokens('src/pages/InvestorDashboard.tsx', [
@@ -293,6 +299,18 @@ if (/where\s+code\s+!~/i.test(migration)) {
 }
 if (!migration.includes("or code ilike 'INV-NEW-%'")) {
   failures.push('Migration must restrict code backfill to placeholders.');
+}
+if (!migration.includes("perform pg_advisory_xact_lock(hashtext('deals68.investor_public_code')::bigint)")) {
+  failures.push('Investor code generation must be serialized against concurrent inserts.');
+}
+if (!migration.includes("revoke all on function public.ensure_investor_public_code() from public")) {
+  failures.push('Investor code trigger function must not remain executable by PUBLIC.');
+}
+if (!migration.includes("jsonb_build_object(") || !migration.includes("when jsonb_typeof(i.criteria) = 'object' then i.criteria")) {
+  failures.push('Canonical criteria backfill must preserve existing JSON object keys.');
+}
+if (/v_profile_criteria\s*->\s*'investment_appetite'[\s\S]{0,250}'\{investment_appetite_vi\}'/i.test(migration)) {
+  failures.push('Migration must not copy the legacy appetite into the Vietnamese field.');
 }
 if (migration.includes('drop table public.investors')) {
   failures.push('Migration must not replace the investors table.');

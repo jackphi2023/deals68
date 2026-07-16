@@ -1,4 +1,4 @@
-import { FormEvent, useMemo, useState } from 'react';
+import { FormEvent, useMemo, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import {
@@ -43,6 +43,27 @@ type Props = {
   profiles: Row[];
   payments?: Row[];
   search?: string;
+  reviewFilter: string;
+  visibilityFilter: string;
+  officeCountryFilter: string;
+  targetCountryFilter: string;
+  industryFilter: string;
+  typeFilter: string;
+  page: number;
+  pageSize?: number;
+  officeCountryLabel?: string;
+  renderPagination?: (
+    page: number,
+    pageCount: number,
+    onPage: (value: number) => void,
+  ) => ReactNode;
+  onReviewFilterChange: (value: string) => void;
+  onVisibilityFilterChange: (value: string) => void;
+  onOfficeCountryFilterChange: (value: string) => void;
+  onTargetCountryFilterChange: (value: string) => void;
+  onIndustryFilterChange: (value: string) => void;
+  onTypeFilterChange: (value: string) => void;
+  onPageChange: (value: number) => void;
   onReload: () => void | Promise<void>;
   setMessage: (value: string) => void;
   setError: (value: string) => void;
@@ -335,7 +356,7 @@ function InvestorReviewEditor({
       ) : null}
 
       <div className="d68-admin-investor-summary-grid">
-        <div><b>Tài khoản đăng nhập</b><span>{profile.username || investor.username || '—'}</span><span>{profile.email || investor.private_email || '—'}</span></div>
+        <div><b>Tài khoản đăng nhập</b><span>{profile.username || investor.username || '—'}</span><span>{profile.email || investor.private_email || '—'}</span><span>Mật khẩu: Quản lý bằng Supabase Auth · không lưu trong database</span></div>
         <div><b>Gói dịch vụ gần nhất</b><span>{payment?.title || payment?.price?.planLabel || 'Chưa có đơn'}</span><span>{payment?.status || '—'} {payment?.created_at ? `· ${new Date(payment.created_at).toLocaleDateString('vi-VN')}` : ''}</span></div>
         <div><b>Ticket size</b><span>{Number(investor.ticket_min || 0).toLocaleString('en-US')} – {Number(investor.ticket_max || 0).toLocaleString('en-US')} USD</span><span>{investor.membership_expires_at ? `Hết hạn ${new Date(investor.membership_expires_at).toLocaleDateString('vi-VN')}` : 'Chưa có ngày hết hạn'}</span></div>
       </div>
@@ -412,19 +433,29 @@ export default function InvestorAdminReviewPanel({
   profiles,
   payments = [],
   search = '',
+  reviewFilter,
+  visibilityFilter,
+  officeCountryFilter,
+  targetCountryFilter,
+  industryFilter,
+  typeFilter,
+  page,
+  pageSize = PAGE_SIZE,
+  officeCountryLabel = 'Quốc gia trụ sở',
+  renderPagination,
+  onReviewFilterChange,
+  onVisibilityFilterChange,
+  onOfficeCountryFilterChange,
+  onTargetCountryFilterChange,
+  onIndustryFilterChange,
+  onTypeFilterChange,
+  onPageChange,
   onReload,
   setMessage,
   setError,
 }: Props) {
-  const [reviewFilter, setReviewFilter] = useState('');
-  const [visibilityFilter, setVisibilityFilter] = useState('');
-  const [officeCountryFilter, setOfficeCountryFilter] = useState('');
-  const [targetCountryFilter, setTargetCountryFilter] = useState('');
-  const [industryFilter, setIndustryFilter] = useState('');
-  const [typeFilter, setTypeFilter] = useState('');
   const [stageFilter, setStageFilter] = useState('');
   const [dealFilter, setDealFilter] = useState('');
-  const [page, setPage] = useState(1);
 
   const queueStats = useMemo(() => {
     const result = { total: 0, newAccount: 0, intro: 0, appetite: 0, criteria: 0 };
@@ -473,9 +504,9 @@ export default function InvestorAdminReviewPanel({
       });
   }, [investors, search, reviewFilter, visibilityFilter, officeCountryFilter, targetCountryFilter, industryFilter, typeFilter, stageFilter, dealFilter]);
 
-  const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
   const safePage = Math.min(page, pageCount);
-  const rows = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+  const rows = filtered.slice((safePage - 1) * pageSize, safePage * pageSize);
 
   const officeCountries = unique(investors.map((item) => String(item.country_iso2 || '').toUpperCase()).filter(Boolean));
   const targetCountries = unique(investors.flatMap(approvedInvestorCountries));
@@ -485,7 +516,7 @@ export default function InvestorAdminReviewPanel({
   const deals = unique(investors.flatMap(approvedInvestorDealTypes));
 
   function resetPage() {
-    setPage(1);
+    onPageChange(1);
   }
 
   return (
@@ -494,7 +525,7 @@ export default function InvestorAdminReviewPanel({
         <div className="d68-admin-row-head">
           <div>
             <h3>Quản trị Nhà đầu tư</h3>
-            <div className="d68-admin-subtle">Hiển thị {rows.length}/{filtered.length} kết quả · 30/trang · Giữ nguyên Admin shell MAIN</div>
+            <div className="d68-admin-subtle">Hiển thị {rows.length}/{filtered.length} kết quả · {pageSize}/trang · Giữ nguyên Admin shell MAIN</div>
           </div>
           {queueStats.total ? <span className="d68-admin-badge warn">⚠️ {queueStats.total} cần duyệt</span> : <span className="d68-admin-badge ok">Không có hồ sơ cần duyệt</span>}
         </div>
@@ -506,13 +537,13 @@ export default function InvestorAdminReviewPanel({
         ) : null}
 
         <div className="d68-admin-investor-filter-grid">
-          <label>Hàng chờ<select value={reviewFilter} onChange={(event) => { setReviewFilter(event.target.value); resetPage(); }} className="d68-admin-input"><option value="">Tất cả hồ sơ</option><option value="pending">Tất cả cần duyệt</option><option value="new">Tài khoản mới</option><option value="intro">Giới thiệu vừa sửa</option><option value="appetite">Khẩu vị vừa sửa</option><option value="criteria">Tiêu chí vừa sửa</option></select></label>
-          <label>Trạng thái<select value={visibilityFilter} onChange={(event) => { setVisibilityFilter(event.target.value); resetPage(); }} className="d68-admin-input"><option value="">Tất cả</option><option value="visible">Hiển thị</option><option value="hidden">Ẩn</option></select></label>
-          <label>Quốc gia trụ sở<select value={officeCountryFilter} onChange={(event) => { setOfficeCountryFilter(event.target.value); resetPage(); }} className="d68-admin-input"><option value="">Tất cả</option>{officeCountries.map((value) => <option key={value} value={value}>{labelCountry(value, 'vi')}</option>)}</select></label>
-          <label>Thị trường quan tâm<select value={targetCountryFilter} onChange={(event) => { setTargetCountryFilter(event.target.value); resetPage(); }} className="d68-admin-input"><option value="">Tất cả</option>{targetCountries.map((value) => <option key={value} value={value}>{labelCountry(value, 'vi')}</option>)}</select></label>
-          <label>Loại hình<select value={typeFilter} onChange={(event) => { setTypeFilter(event.target.value); resetPage(); }} className="d68-admin-input"><option value="">Tất cả</option>{types.map((value) => <option key={value} value={value}>{labelInvestorType(value, 'vi')}</option>)}</select></label>
+          <label>Hàng chờ<select value={reviewFilter} onChange={(event) => onReviewFilterChange(event.target.value)} className="d68-admin-input"><option value="">Tất cả hồ sơ</option><option value="pending">Tất cả cần duyệt</option><option value="new">Tài khoản mới</option><option value="intro">Giới thiệu vừa sửa</option><option value="appetite">Khẩu vị vừa sửa</option><option value="criteria">Tiêu chí vừa sửa</option></select></label>
+          <label>Trạng thái<select value={visibilityFilter} onChange={(event) => onVisibilityFilterChange(event.target.value)} className="d68-admin-input"><option value="">Tất cả</option><option value="visible">Hiển thị</option><option value="hidden">Ẩn</option></select></label>
+          <label>{officeCountryLabel}<select value={officeCountryFilter} onChange={(event) => onOfficeCountryFilterChange(event.target.value)} className="d68-admin-input"><option value="">Tất cả</option>{officeCountries.map((value) => <option key={value} value={value}>{labelCountry(value, 'vi')}</option>)}</select></label>
+          <label>Thị trường quan tâm<select value={targetCountryFilter} onChange={(event) => onTargetCountryFilterChange(event.target.value)} className="d68-admin-input"><option value="">Tất cả</option>{targetCountries.map((value) => <option key={value} value={value}>{labelCountry(value, 'vi')}</option>)}</select></label>
+          <label>Loại hình<select value={typeFilter} onChange={(event) => onTypeFilterChange(event.target.value)} className="d68-admin-input"><option value="">Tất cả</option>{types.map((value) => <option key={value} value={value}>{labelInvestorType(value, 'vi')}</option>)}</select></label>
           <label>Giai đoạn<select value={stageFilter} onChange={(event) => { setStageFilter(event.target.value); resetPage(); }} className="d68-admin-input"><option value="">Tất cả</option>{stages.map((value) => <option key={value} value={value}>{labelStage(value, 'vi')}</option>)}</select></label>
-          <label>Ngành<select value={industryFilter} onChange={(event) => { setIndustryFilter(event.target.value); resetPage(); }} className="d68-admin-input"><option value="">Tất cả</option>{industries.map((value) => <option key={value} value={value}>{labelIndustryTaxonomy(value, 'vi')}</option>)}</select></label>
+          <label>Ngành<select value={industryFilter} onChange={(event) => onIndustryFilterChange(event.target.value)} className="d68-admin-input"><option value="">Tất cả</option>{industries.map((value) => <option key={value} value={value}>{labelIndustryTaxonomy(value, 'vi')}</option>)}</select></label>
           <label>Loại giao dịch<select value={dealFilter} onChange={(event) => { setDealFilter(event.target.value); resetPage(); }} className="d68-admin-input"><option value="">Tất cả</option>{deals.map((value) => <option key={value} value={value}>{labelDealType(value, 'vi', true)}</option>)}</select></label>
         </div>
       </div>
@@ -531,11 +562,15 @@ export default function InvestorAdminReviewPanel({
 
       {!rows.length ? <div className="d68-admin-empty">Không có nhà đầu tư phù hợp bộ lọc.</div> : null}
 
-      <div className="d68-admin-pagination">
-        <button className="d68-admin-btn" disabled={safePage <= 1} onClick={() => setPage((value) => Math.max(1, value - 1))}>← Trang trước</button>
-        <span>{safePage} / {pageCount}</span>
-        <button className="d68-admin-btn" disabled={safePage >= pageCount} onClick={() => setPage((value) => Math.min(pageCount, value + 1))}>Trang sau →</button>
-      </div>
+      {renderPagination
+        ? renderPagination(safePage, pageCount, onPageChange)
+        : (
+          <div className="d68-admin-pagination">
+            <button className="d68-admin-btn" disabled={safePage <= 1} onClick={() => onPageChange(Math.max(1, safePage - 1))}>← Trang trước</button>
+            <span>{safePage} / {pageCount}</span>
+            <button className="d68-admin-btn" disabled={safePage >= pageCount} onClick={() => onPageChange(Math.min(pageCount, safePage + 1))}>Trang sau →</button>
+          </div>
+        )}
     </>
   );
 }

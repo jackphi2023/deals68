@@ -380,6 +380,8 @@ function paymentAmountLabel(row: Row) {
   return `${amount || '—'} ${currency || ''}`.trim();
 }
 
+const INVESTOR_PAGE_SIZE = 30;
+
 export default function Admin() {
   const { profile, loading } = useAuth();
   const location = useLocation();
@@ -403,6 +405,27 @@ export default function Admin() {
   const [busy, setBusy] = useState(false);
   const [lastRefreshedAt, setLastRefreshedAt] = useState('');
   const [search, setSearch] = useState(() => initialQuery.get('q') || '');
+  const [investorVisibilityFilter, setInvestorVisibilityFilter] = useState(
+    () => initialQuery.get('iv') || '',
+  );
+  const [investorReviewFilter, setInvestorReviewFilter] = useState(
+    () => initialQuery.get('review') || '',
+  );
+  const [investorTypeFilter, setInvestorTypeFilter] = useState(
+    () => initialQuery.get('it') || '',
+  );
+  const [investorOfficeCountryFilter, setInvestorOfficeCountryFilter] = useState(
+    () => initialQuery.get('io') || '',
+  );
+  const [investorCountryFilter, setInvestorCountryFilter] = useState(
+    () => initialQuery.get('ic') || '',
+  );
+  const [investorIndustryFilter, setInvestorIndustryFilter] = useState(
+    () => initialQuery.get('ii') || '',
+  );
+  const [investorPage, setInvestorPage] = useState(
+    () => Math.max(1, Number(initialQuery.get('ip') || 1)),
+  );
   const [businessStatusFilter, setBusinessStatusFilter] = useState(
     () => initialQuery.get('bs') || '',
   );
@@ -421,6 +444,13 @@ export default function Admin() {
   useEffect(() => {
     const query = new URLSearchParams(location.search);
     setSearch(query.get('q') || '');
+    setInvestorVisibilityFilter(query.get('iv') || '');
+    setInvestorReviewFilter(query.get('review') || '');
+    setInvestorTypeFilter(query.get('it') || '');
+    setInvestorOfficeCountryFilter(query.get('io') || '');
+    setInvestorCountryFilter(query.get('ic') || '');
+    setInvestorIndustryFilter(query.get('ii') || '');
+    setInvestorPage(Math.max(1, Number(query.get('ip') || 1)));
     setBusinessStatusFilter(query.get('bs') || '');
     setBusinessIndustryFilter(query.get('bi') || '');
     setPaymentStatusFilter(query.get('ps') || 'pending');
@@ -443,7 +473,14 @@ export default function Admin() {
 
   function updateSearch(value: string) {
     setSearch(value);
-    replaceAdminQuery({ q: value });
+    setInvestorPage(1);
+    replaceAdminQuery({ q: value, ip: null });
+  }
+
+  function updateInvestorPage(value: number) {
+    const page = Math.max(1, value);
+    setInvestorPage(page);
+    replaceAdminQuery({ ip: page > 1 ? page : null });
   }
 
   async function load() {
@@ -911,33 +948,29 @@ export default function Admin() {
                 refreshedAt={lastRefreshedAt}
               />
             )}
-            {tab === 'payments' && (
-              <Payments
-                payments={filteredPayments}
-                profiles={profiles}
-                markPayment={markPayment}
-                statusFilter={paymentStatusFilter}
-                setStatusFilter={(value: string) => {
-                  setPaymentStatusFilter(value);
-                  replaceAdminQuery({ ps: value });
-                }}
-                total={payments.length}
-                pending={pendingPayments.length}
-              />
-            )}
-            {tab === 'proposals' && (
-              <ProposalList
-                proposals={filteredProposals}
-                markProposal={markProposal}
-                statusFilter={proposalStatusFilter}
-                setStatusFilter={(value: string) => {
-                  setProposalStatusFilter(value);
-                  replaceAdminQuery({ prs: value });
-                }}
-                total={proposals.length}
-                pending={pendingProposals.length}
-              />
-            )}
+            {tab === 'payments' && <Payments
+        payments={filteredPayments}
+              profiles={profiles}
+              markPayment={markPayment}
+              statusFilter={paymentStatusFilter}
+              setStatusFilter={(value: string) => {
+                setPaymentStatusFilter(value);
+                replaceAdminQuery({ ps: value });
+              }}
+              total={payments.length}
+              pending={pendingPayments.length}
+            />}
+            {tab === 'proposals' && <ProposalList
+        proposals={filteredProposals}
+              markProposal={markProposal}
+              statusFilter={proposalStatusFilter}
+              setStatusFilter={(value: string) => {
+                setProposalStatusFilter(value);
+                replaceAdminQuery({ prs: value });
+              }}
+              total={proposals.length}
+              pending={pendingProposals.length}
+            />}
             {tab === 'banners' && <AdminBannerManager />}
             {tab === 'business_review' && (
               <BusinessReviewList
@@ -1005,15 +1038,63 @@ export default function Admin() {
               </div>
             )}
             {tab === 'investors' && (
-              <InvestorAdminReviewPanel
-                investors={investors}
-                profiles={profiles}
-                payments={payments}
-                search={search}
-                onReload={load}
-                setMessage={setMsg}
-                setError={setError}
-              />
+              <div>
+                <p className="d68-admin-subtle">
+                  Mật khẩu Investor: Quản lý bằng Supabase Auth · không lưu trong database
+                </p>
+                <InvestorAdminReviewPanel
+                  investors={investors}
+                  profiles={profiles}
+                  payments={payments}
+                  search={search}
+                  reviewFilter={investorReviewFilter}
+                  visibilityFilter={investorVisibilityFilter}
+                  officeCountryFilter={investorOfficeCountryFilter}
+                  targetCountryFilter={investorCountryFilter}
+                  industryFilter={investorIndustryFilter}
+                  typeFilter={investorTypeFilter}
+                  page={investorPage}
+                  pageSize={INVESTOR_PAGE_SIZE}
+                  officeCountryLabel="Quốc gia trụ sở"
+                  renderPagination={(page, pageCount, onPage) => (
+                    <AdminPagination page={page} pageCount={pageCount} onPage={onPage} />
+                  )}
+                  onReviewFilterChange={(value) => {
+                    setInvestorReviewFilter(value);
+                    setInvestorPage(1);
+                    replaceAdminQuery({ review: value, ip: null });
+                  }}
+                  onVisibilityFilterChange={(value) => {
+                    setInvestorVisibilityFilter(value);
+                    setInvestorPage(1);
+                    replaceAdminQuery({ iv: value, ip: null });
+                  }}
+                  onOfficeCountryFilterChange={(value) => {
+                    setInvestorOfficeCountryFilter(value);
+                    setInvestorPage(1);
+                    replaceAdminQuery({ io: value, ip: null });
+                  }}
+                  onTargetCountryFilterChange={(value) => {
+                    setInvestorCountryFilter(value);
+                    setInvestorPage(1);
+                    replaceAdminQuery({ ic: value, ip: null });
+                  }}
+                  onIndustryFilterChange={(value) => {
+                    setInvestorIndustryFilter(value);
+                    setInvestorPage(1);
+                    replaceAdminQuery({ ii: value, ip: null });
+                  }}
+                  onTypeFilterChange={(value) => {
+                    setInvestorTypeFilter(value);
+                    setInvestorPage(1);
+                    replaceAdminQuery({ it: value, ip: null });
+                  }}
+                  onPageChange={updateInvestorPage}
+                  onReload={load}
+                  setMessage={setMsg}
+                  setError={setError}
+                />
+              </div>
             )}
             {tab === 'promos' && <Promos promos={promos} createPromo={createPromo} />}
             {tab === 'requests' && <Requests requests={requests} markRequest={markRequest} />}
@@ -1055,6 +1136,25 @@ function Metric({
       <div className="d68-admin-metric-label">{label}</div>
       <div className="d68-admin-metric-value" style={{ color }}>{value}</div>
     </Card>
+  );
+}
+
+function AdminPagination({
+  page,
+  pageCount,
+  onPage,
+}: {
+  page: number;
+  pageCount: number;
+  onPage: (page: number) => void;
+}) {
+  if (pageCount <= 1) return null;
+  return (
+    <div className="d68-admin-pagination">
+      <button className="d68-admin-btn light" disabled={page <= 1} onClick={() => onPage(Math.max(1, page - 1))}>&lt; Trang trước</button>
+      <span>{page} / {pageCount}</span>
+      <button className="d68-admin-btn light" disabled={page >= pageCount} onClick={() => onPage(Math.min(pageCount, page + 1))}>Trang tiếp &gt;</button>
+    </div>
   );
 }
 
@@ -1112,12 +1212,12 @@ function Payments({
         <label className="d68-admin-queue-filter">Trạng thái<select className="d68-admin-input" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}><option value="pending">Chờ xác nhận</option><option value="confirmed">Đã xác nhận</option><option value="rejected">Đã từ chối</option><option value="all">Tất cả</option></select></label>
       </div>
       {rows.length ? (
-        <div className="d68-admin-table-wrap"><table className="d68-admin-table"><thead><tr><th>Order</th><th>Status</th><th>Profile</th><th>Amount</th><th>Action</th></tr></thead><tbody>{rows.map((payment: Row) => {
-          const account = profiles.find((item: Row) => item.id === (payment.profile_id || payment.created_by));
-          const amount = payment.payload?.price?.total || payment.payload?.total || '';
-          const currency = payment.payload?.price?.currency || payment.payload?.currency || '';
-          const status = String(payment.status || '').toLowerCase();
-          return <tr key={payment.id} className={isPendingAdminPayment(payment) ? 'd68-admin-row-pending' : ''}><td><b>{payment.title || payment.id}</b><br/><code>{paymentOrderCode(payment) || '—'}</code><br/><span className="d68-admin-badge warn">{new Date(payment.created_at).toLocaleString('vi-VN')}</span></td><td><span className={`d68-admin-badge ${status === 'confirmed' ? 'ok' : status === 'rejected' ? 'err' : 'warn'}`}>{payment.status}</span></td><td>{account?.email || payment.profile_id || payment.created_by || '—'}<br/>{account?.role}</td><td>{amount} {currency}</td><td><div className="d68-admin-actions"><button className="d68-admin-btn green" onClick={() => markPayment(payment, 'confirmed')}>Xác nhận thanh toán & mở dashboard</button><button className="d68-admin-btn red" onClick={() => markPayment(payment, 'rejected')}>Từ chối</button></div></td></tr>;
+        <div className="d68-admin-table-wrap"><table className="d68-admin-table"><thead><tr><th>Order</th><th>Status</th><th>Profile</th><th>Amount</th><th>Action</th></tr></thead><tbody>{rows.map((p: Row) => {
+          const account = profiles.find((item: Row) => item.id === (p.profile_id || p.created_by));
+          const amount = p.payload?.price?.total || p.payload?.total || '';
+          const currency = p.payload?.price?.currency || p.payload?.currency || '';
+          const status = String(p.status || '').toLowerCase();
+          return <tr key={p.id} className={isPendingAdminPayment(p) ? 'd68-admin-row-pending' : ''}><td><b>{p.title || p.id}</b><br/><code>{paymentOrderCode(p) || '—'}</code><br/><span className="d68-admin-badge warn">{new Date(p.created_at).toLocaleString('vi-VN')}</span></td><td><span className={`d68-admin-badge ${status === 'confirmed' ? 'ok' : status === 'rejected' ? 'err' : 'warn'}`}>{p.status}</span></td><td>{account?.email || p.profile_id || p.created_by || '—'}<br/>{account?.role}</td><td>{amount} {currency}</td><td><div className="d68-admin-actions"><button className="d68-admin-btn green" onClick={() => markPayment(p, 'confirmed')}>Xác nhận thanh toán & mở dashboard</button><button className="d68-admin-btn red" onClick={() => markPayment(p, 'rejected')}>Từ chối</button></div></td></tr>;
         })}</tbody></table></div>
       ) : <Empty text="Không có payment order phù hợp bộ lọc." />}
     </Card>
@@ -1166,7 +1266,7 @@ function BusinessQuotaManager({ business, updateBusinessQuota, adjustBusinessQuo
 
 function BusinessPaymentPanel({ business, payments, profiles, markPayment, updateBusinessQuota, adjustBusinessQuota }: any) {
   const rows = payments.filter((payment: Row) => String(payment.business_id || '') === String(business.id));
-  return <div className="d68-admin-detail-stack"><Card><div className="d68-admin-grid4"><Metric label="Gói dịch vụ" value={businessPlanLabel(business)} color="#1596cc"/><Metric label="Quota proposal" value={`${Number(business.quota_used || 0)} / ${Number(business.quota_total || 0)}`} color="#B8860B"/><Metric label="Trạng thái" value={businessAdminStatusLabel(business, [], [], payments).label} color="#0F2A4A"/><Metric label="Public" value={business.visible ? 'Đang hiển thị' : 'Đang ẩn'} color={business.visible ? '#16A34A' : '#DC2626'}/></div><BusinessQuotaManager business={business} updateBusinessQuota={updateBusinessQuota} adjustBusinessQuota={adjustBusinessQuota} /></Card><Card><h3>Lịch sử thanh toán</h3>{rows.length ? <div className="d68-admin-table-wrap"><table className="d68-admin-table"><thead><tr><th>Order</th><th>Status</th><th>Profile</th><th>Amount</th><th>Cập nhật</th><th>Action</th></tr></thead><tbody>{rows.map((payment: Row) => { const account = profiles.find((item: Row) => item.id === (payment.profile_id || payment.created_by)); return <tr key={payment.id}><td><b>{payment.title || payment.id}</b><br/><code>{paymentOrderCode(payment) || '—'}</code><br/><span className="d68-admin-subtle">{payment.payload?.orderType || payment.payload?.businessPlan || 'payment'}</span></td><td><span className={`d68-admin-badge ${String(payment.status).toLowerCase() === 'confirmed' ? 'ok' : 'warn'}`}>{payment.status}</span></td><td>{account?.email || payment.profile_id || payment.created_by || '—'}</td><td>{paymentAmountLabel(payment)}</td><td>{new Date(payment.updated_at || payment.created_at || Date.now()).toLocaleString('vi-VN')}</td><td><div className="d68-admin-actions"><button className="d68-admin-btn green" onClick={() => markPayment(payment, 'confirmed')}>Xác nhận</button><button className="d68-admin-btn red" onClick={() => markPayment(payment, 'rejected')}>Từ chối</button></div></td></tr>; })}</tbody></table></div> : <Empty text="Business này chưa có payment order." />}</Card></div>;
+  return <div className="d68-admin-detail-stack"><Card><div className="d68-admin-grid4"><Metric label="Gói dịch vụ" value={businessPlanLabel(business)} color="#1596cc"/><Metric label="Quota proposal" value={`${Number(business.quota_used || 0)} / ${Number(business.quota_total || 0)}`} color="#B8860B"/><Metric label="Trạng thái" value={businessAdminStatusLabel(business, [], [], payments).label} color="#0F2A4A"/><Metric label="Public" value={business.visible ? 'Đang hiển thị' : 'Đang ẩn'} color={business.visible ? '#16A34A' : '#DC2626'}/></div><BusinessQuotaManager business={business} updateBusinessQuota={updateBusinessQuota} adjustBusinessQuota={adjustBusinessQuota} /></Card><Card><h3>Lịch sử thanh toán</h3>{rows.length ? <div className="d68-admin-table-wrap"><table className="d68-admin-table"><thead><tr><th>Order</th><th>Status</th><th>Profile</th><th>Amount</th><th>Cập nhật</th><th>Action</th></tr></thead><tbody>{rows.map((p: Row) => { const account = profiles.find((item: Row) => item.id === (p.profile_id || p.created_by)); return <tr key={p.id}><td><b>{p.title || p.id}</b><br/><code>{paymentOrderCode(p) || '—'}</code><br/><span className="d68-admin-subtle">{p.payload?.orderType || p.payload?.businessPlan || 'payment'}</span></td><td><span className={`d68-admin-badge ${String(p.status).toLowerCase() === 'confirmed' ? 'ok' : 'warn'}`}>{p.status}</span></td><td>{account?.email || p.profile_id || p.created_by || '—'}</td><td>{paymentAmountLabel(p)}</td><td>{new Date(p.updated_at || p.created_at || Date.now()).toLocaleString('vi-VN')}</td><td><div className="d68-admin-actions"><button className="d68-admin-btn green" onClick={() => markPayment(p, 'confirmed')}>Xác nhận</button><button className="d68-admin-btn red" onClick={() => markPayment(p, 'rejected')}>Từ chối</button></div></td></tr>; })}</tbody></table></div> : <Empty text="Business này chưa có payment order." />}</Card></div>;
 }
 
 function BusinessAdminDetail({

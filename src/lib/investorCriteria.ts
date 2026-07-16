@@ -252,21 +252,18 @@ export function approvedInvestorCountries(source: InvestorCriteriaSource) {
 
 export function approvedInvestorAppetite(source: InvestorCriteriaSource, lang: Lang) {
   const criteria = sourceCriteria(source);
+  const vi = String(
+    criteria.investment_appetite_vi || criteria.investmentAppetiteVi || '',
+  ).trim();
+  const en = String(
+    criteria.investment_appetite_en || criteria.investmentAppetiteEn || '',
+  ).trim();
+
   if (lang === 'en') {
-    return String(
-      criteria.investment_appetite_en ||
-        criteria.investmentAppetiteEn ||
-        criteria.investment_appetite ||
-        '',
-    ).trim();
+    return en || vi;
   }
 
-  return String(
-    criteria.investment_appetite_vi ||
-      criteria.investmentAppetiteVi ||
-      criteria.investment_appetite ||
-      '',
-  ).trim();
+  return vi || en;
 }
 
 export function canonicalInvestorCriteria(

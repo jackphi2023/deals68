@@ -107,11 +107,9 @@ export function investorPublicTitle(row: AnyRow, lang: Lang) {
 }
 
 export function investorPublicDescription(row: AnyRow, lang: Lang) {
-  const edited = cleanPublicText(
-    lang === 'en'
-      ? row?.desc_en || row?.desc_vi
-      : row?.desc_vi || row?.desc_en,
-  );
+  const primary = cleanPublicText(lang === 'en' ? row?.desc_en : row?.desc_vi);
+  const fallback = cleanPublicText(lang === 'en' ? row?.desc_vi : row?.desc_en);
+  const edited = primary || fallback;
   if (edited) return edited;
 
   const industries = investorPublicIndustryLabels(row, lang).slice(0, 4);

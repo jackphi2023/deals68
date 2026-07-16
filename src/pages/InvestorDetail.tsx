@@ -65,6 +65,12 @@ function objectOf(value: any): Record<string, any> {
     : {};
 }
 
+function criteriaList(investor: any) {
+  return {
+    approvedCriteria: objectOf(investor?.criteria),
+  };
+}
+
 function proposalHistory(investor: any): string[] {
   const raw =
     investor?.criteria?.proposal_history ||
@@ -375,7 +381,8 @@ export default function InvestorDetail({ lang }: { lang: Lang }) {
     });
   }, [code, coverUrl, desc, error, inv, lang, loading, title]);
 
-  const approvedCriteria = useMemo(() => objectOf(inv?.criteria), [inv]);
+  const criteria = useMemo(() => criteriaList(inv), [inv]);
+  const { approvedCriteria } = criteria;
   const investorTypes = useMemo(
     () => investorPublicTypeLabels(inv, lang),
     [inv, lang],
@@ -707,8 +714,8 @@ export default function InvestorDetail({ lang }: { lang: Lang }) {
               <SectionTitle icon="markets">
                 {T(
                   lang,
-                  'Nước quan tâm đầu tư',
-                  'Target investment countries',
+                  'Thị trường quan tâm đầu tư',
+                  'Target investment markets',
                 )}
               </SectionTitle>
               <p className="d68-id-muted">

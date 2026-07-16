@@ -884,7 +884,6 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
             targetCountriesCache: preferredCountries,
             investment_appetite_vi: lang === 'vi' ? appetiteDesc : '',
             investment_appetite_en: lang === 'en' ? appetiteDesc : '',
-            investment_appetite: appetiteDesc,
           },
           privacy: {
             shareEmail: false,

@@ -120,6 +120,9 @@ declare
   candidate text;
   attempt integer;
 begin
+  -- Serialize generators so concurrent inserts cannot select the same code.
+  perform pg_advisory_xact_lock(hashtext('deals68.investor_public_code')::bigint);
+
   for attempt in 1..200 loop
     candidate := 'INV-' || lpad((floor(random() * 1000000)::integer)::text, 6, '0');
     exit when not exists (
@@ -166,37 +169,25 @@ where code is null
 
 -- Add canonical arrays without deleting legacy criteria keys.
 update public.investors i
-set criteria = jsonb_set(
-  jsonb_set(
-    jsonb_set(
-      jsonb_set(
-        coalesce(i.criteria, '{}'::jsonb),
-        '{investorTypes}',
-        to_jsonb(
-          case
-            when public.normalize_investor_type(i.type) is null then array[]::text[]
-            else array[public.normalize_investor_type(i.type)]
-          end
-        ),
-        true
-      ),
-      '{stages}',
-      to_jsonb(
-        case
-          when public.normalize_investor_stage(i.stage) is null then array[]::text[]
-          else array[public.normalize_investor_stage(i.stage)]
-        end
-      ),
-      true
-    ),
-    '{sectors}',
-    to_jsonb(coalesce(i.industries, array[]::text[])),
-    true
+set criteria = jsonb_build_object(
+  'investorTypes', to_jsonb(
+    case
+      when public.normalize_investor_type(i.type) is null then array[]::text[]
+      else array[public.normalize_investor_type(i.type)]
+    end
   ),
-  '{dealTypes}',
-  to_jsonb(coalesce(i.deal_types, array[]::text[])),
-  true
-)
+  'stages', to_jsonb(
+    case
+      when public.normalize_investor_stage(i.stage) is null then array[]::text[]
+      else array[public.normalize_investor_stage(i.stage)]
+    end
+  ),
+  'sectors', to_jsonb(coalesce(i.industries, array[]::text[])),
+  'dealTypes', to_jsonb(coalesce(i.deal_types, array[]::text[]))
+) || case
+  when jsonb_typeof(i.criteria) = 'object' then i.criteria
+  else '{}'::jsonb
+end
 where not (coalesce(i.criteria, '{}'::jsonb) ? 'investorTypes')
    or not (coalesce(i.criteria, '{}'::jsonb) ? 'stages')
    or not (coalesce(i.criteria, '{}'::jsonb) ? 'sectors')
@@ -400,16 +391,6 @@ begin
     end if;
   end loop;
 
-  if (v_profile_criteria ? 'investment_appetite')
-     and not (v_profile_criteria ? 'investment_appetite_vi') then
-    v_pending_criteria := jsonb_set(
-      v_pending_criteria,
-      '{investment_appetite_vi}',
-      v_profile_criteria -> 'investment_appetite',
-      true
-    );
-  end if;
-
   if description_patch ? 'desc_vi' then
     v_pending := jsonb_set(
       v_pending,
@@ -462,7 +443,7 @@ $$;
 create or replace function public.admin_approve_investor_profile_changes(
   investor_uuid uuid,
   admin_patch jsonb default '{}'::jsonb,
-  publish_profile boolean default true
+  publish_profile boolean default false
 )
 returns jsonb
 language plpgsql
@@ -651,6 +632,7 @@ end;
 $$;
 
 revoke all on function public.generate_investor_public_code() from public;
+revoke all on function public.ensure_investor_public_code() from public;
 revoke all on function public.update_my_investor_profile(jsonb, jsonb) from public;
 revoke all on function public.admin_approve_investor_profile_changes(uuid, jsonb, boolean) from public;
 
