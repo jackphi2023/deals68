@@ -1,10 +1,13 @@
 import { type FormEvent, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
+  InvestorCountryTagPicker,
   InvestorDealTypeTagPicker,
-  InvestorStageTagPicker,
-  InvestorTypeTagPicker,
+  InvestorRegionTagPicker,
+  InvestorStageMultiTagPicker,
+  InvestorTypeMultiTagPicker,
 } from '../investor/InvestorCriteriaTagPickers';
+import { IndustryTagPicker } from '../investor/IndustryTagPicker';
 import type { InvestorRow } from '../../lib/investorAdminV10';
 import {
   clean,
@@ -14,19 +17,28 @@ import {
   privacyAfterInvestorProfileApproval,
   valueList,
 } from '../../lib/investorAdminV10';
+import { countryOptions } from '../../lib/labels';
 import { parseFormattedNumber } from '../../lib/numberFormat';
 import { supabase } from '../../lib/supabase';
 
- type SubmitMode = 'save' | 'approve';
-
-function lines(value: unknown) {
-  return valueList(value).join('\n');
-}
+type SubmitMode = 'save' | 'approve';
 
 function submitModeFromEvent(event: FormEvent<HTMLFormElement>): SubmitMode {
   const submitter = (event.nativeEvent as SubmitEvent)
     .submitter as HTMLButtonElement | null;
   return submitter?.value === 'approve' ? 'approve' : 'save';
+}
+
+function first(values: string[], fallback = '') {
+  return values.find(Boolean) || fallback;
+}
+
+function officeRegion(iso2: string) {
+  if (['US', 'CA', 'BR'].includes(iso2)) return 'americas';
+  if (['DE', 'GB', 'CZ'].includes(iso2)) return 'europe';
+  if (['AU'].includes(iso2)) return 'oceania';
+  if (['AE'].includes(iso2)) return 'middle_east';
+  return 'asia';
 }
 
 export default function InvestorProfileEditorV10({
@@ -58,20 +70,33 @@ export default function InvestorProfileEditorV10({
     try {
       const form = new FormData(event.currentTarget);
       const currentCriteria = objectOf(investor.criteria);
-      const targetCountries = valueList(form.get('target_countries')).map(
-        (item) => item.toUpperCase(),
-      );
+      const investorTypes = valueList(form.get('investor_types'));
+      const stages = valueList(form.get('stages'));
+      const targetRegions = valueList(form.get('target_regions'));
+      const targetCountries = valueList(form.get('target_countries')).map((item) => item.toUpperCase());
       const industries = valueList(form.get('industries'));
       const dealTypes = valueList(form.get('deal_types'));
-      const stage = clean(form.get('stage'));
+      const countryIso2 = clean(form.get('country_iso2')).toUpperCase() || 'VN';
+      const country = countryOptions.find((item) => item.iso2 === countryIso2);
+      const ticketMin = parseFormattedNumber(form.get('ticket_min'));
+      const ticketMax = parseFormattedNumber(form.get('ticket_max'));
+
+      if (!investorTypes.length) throw new Error('Chọn ít nhất một loại hình Nhà đầu tư.');
+      if (!stages.length) throw new Error('Chọn ít nhất một giai đoạn phù hợp.');
+      if (!industries.length) throw new Error('Chọn ít nhất một ngành quan tâm.');
+      if (!dealTypes.length) throw new Error('Chọn ít nhất một loại giao dịch.');
+      if (ticketMin > ticketMax) throw new Error('Ticket tối thiểu không được lớn hơn Ticket tối đa.');
+
       const criteria = {
         ...currentCriteria,
-        sectors: industries,
-        stage,
-        dealTypes,
+        investorTypes,
+        stages,
+        targetRegions,
         targetCountries,
         preferredCountries: targetCountries,
         targetCountriesCache: targetCountries,
+        sectors: industries,
+        dealTypes,
       };
       const visible = mode === 'approve' || form.get('visible') === 'on';
       const patch: InvestorRow = {
@@ -83,15 +108,15 @@ export default function InvestorProfileEditorV10({
         title_en: clean(form.get('title_en')),
         desc_vi: clean(form.get('desc_vi')),
         desc_en: clean(form.get('desc_en')),
-        type: clean(form.get('type')),
-        country: clean(form.get('country')),
-        country_iso2: clean(form.get('country_iso2')).toUpperCase(),
-        region: clean(form.get('region')),
+        type: first(investorTypes, investor.type || 'Individual/Angel'),
+        country: country?.en || clean(form.get('country')) || investor.country || countryIso2,
+        country_iso2: countryIso2,
+        region: officeRegion(countryIso2),
         industries,
         deal_types: dealTypes,
-        stage,
-        ticket_min: parseFormattedNumber(form.get('ticket_min')),
-        ticket_max: parseFormattedNumber(form.get('ticket_max')),
+        stage: first(stages, investor.stage || 'Any'),
+        ticket_min: ticketMin,
+        ticket_max: ticketMax,
         criteria,
         verified: form.get('verified') === 'on',
         admin_priority: form.get('admin_priority') === 'on',
@@ -112,8 +137,8 @@ export default function InvestorProfileEditorV10({
 
       setMessage(
         mode === 'approve'
-          ? 'Đã duyệt hồ sơ khác. Các tiêu chí khẩu vị vẫn được duyệt riêng.'
-          : 'Đã lưu hồ sơ Investor.',
+          ? 'Đã duyệt hồ sơ public. Khẩu vị và tiêu chí chờ duyệt vẫn được xử lý riêng.'
+          : 'Đã lưu hồ sơ Nhà đầu tư.',
       );
       try {
         await onRefresh();
@@ -124,7 +149,7 @@ export default function InvestorProfileEditorV10({
         );
       }
     } catch (saveError: any) {
-      setError(saveError?.message || 'Không lưu được hồ sơ Investor.');
+      setError(saveError?.message || 'Không lưu được hồ sơ Nhà đầu tư.');
     } finally {
       setBusy(false);
     }
@@ -132,6 +157,13 @@ export default function InvestorProfileEditorV10({
 
   const criteria = objectOf(investor.criteria);
   const pending = pendingInvestorProfile(investor);
+  const pendingCriteria = objectOf(pending.criteria);
+  const investorTypes = pendingCriteria.investorTypes || criteria.investorTypes || [investor.type].filter(Boolean);
+  const stages = pendingCriteria.stages || criteria.stages || [investor.stage].filter(Boolean);
+  const targetRegions = pendingCriteria.targetRegions || criteria.targetRegions || [];
+  const targetCountries = pendingCriteria.targetCountries || criteria.targetCountries || criteria.preferredCountries || [];
+  const industries = pending.industries || pendingCriteria.sectors || investor.industries || criteria.sectors || [];
+  const dealTypes = pending.deal_types || pendingCriteria.dealTypes || investor.deal_types || criteria.dealTypes || [];
 
   return (
     <form
@@ -142,8 +174,8 @@ export default function InvestorProfileEditorV10({
     >
       <div className="d68-v10-section-head">
         <div>
-          <h2>Hồ sơ Investor</h2>
-          <p>Admin chỉnh sửa thông tin public và thông tin nội bộ.</p>
+          <h2>Hồ sơ Nhà đầu tư</h2>
+          <p>Admin chỉnh sửa thông tin nội bộ, thông tin public và cấu trúc đầu tư.</p>
         </div>
         {investorNeedsReviewV10(investor) ? (
           <span className="d68-admin-badge warn">Cần duyệt</span>
@@ -153,54 +185,49 @@ export default function InvestorProfileEditorV10({
       {warning ? <div data-testid="admin-investor-profile-warning" className="d68-admin-notice warn">{warning}</div> : null}
       {error ? <div data-testid="admin-investor-profile-error" className="d68-admin-notice err">{error}</div> : null}
 
-      <div className="d68-admin-form2">
-        <label className="d68-admin-field"><span>Tên nội bộ</span><input name="private_name" className="d68-admin-input" defaultValue={investor.private_name || ''} /></label>
-        <label className="d68-admin-field"><span>Website nội bộ</span><input name="private_website" className="d68-admin-input" defaultValue={investor.private_website || ''} /></label>
-        <label className="d68-admin-field"><span>Email nội bộ</span><input name="private_email" className="d68-admin-input" defaultValue={investor.private_email || ''} /></label>
-        <label className="d68-admin-field"><span>Điện thoại nội bộ</span><input name="private_phone" className="d68-admin-input" defaultValue={investor.private_phone || ''} /></label>
-        <label className="d68-admin-field"><span>Tiêu đề public VN</span><input name="title_vi" className="d68-admin-input" defaultValue={pending.title_vi ?? investor.title_vi ?? ''} /></label>
-        <label className="d68-admin-field"><span>Tiêu đề public EN</span><input name="title_en" className="d68-admin-input" defaultValue={pending.title_en ?? investor.title_en ?? ''} /></label>
-        <label className="d68-admin-field"><span>Quốc gia</span><input name="country" className="d68-admin-input" defaultValue={investor.country || ''} /></label>
-        <label className="d68-admin-field"><span>Mã quốc gia</span><input name="country_iso2" className="d68-admin-input" defaultValue={investor.country_iso2 || ''} /></label>
-        <label className="d68-admin-field"><span>Khu vực</span><input name="region" className="d68-admin-input" defaultValue={investor.region || ''} /></label>
-        <label className="d68-admin-field"><span>Ticket tối thiểu</span><input name="ticket_min" className="d68-admin-input" defaultValue={investor.ticket_min || ''} /></label>
-        <label className="d68-admin-field"><span>Ticket tối đa</span><input name="ticket_max" className="d68-admin-input" defaultValue={investor.ticket_max || ''} /></label>
-        <label className="d68-admin-field"><span>Thị trường quan tâm</span><textarea name="target_countries" className="d68-admin-input d68-v10-textarea" defaultValue={lines(criteria.targetCountries || criteria.preferredCountries)} /></label>
-      </div>
+      <section className="d68-v10-admin-taxonomy-section">
+        <h3>Thông tin nội bộ và public</h3>
+        <div className="d68-admin-form2">
+          <label className="d68-admin-field"><span>Tên nội bộ</span><input name="private_name" className="d68-admin-input" defaultValue={investor.private_name || ''} /></label>
+          <label className="d68-admin-field"><span>Website nội bộ</span><input name="private_website" className="d68-admin-input" defaultValue={investor.private_website || ''} /></label>
+          <label className="d68-admin-field"><span>Email nội bộ</span><input name="private_email" className="d68-admin-input" defaultValue={investor.private_email || ''} /></label>
+          <label className="d68-admin-field"><span>Điện thoại nội bộ</span><input name="private_phone" className="d68-admin-input" defaultValue={investor.private_phone || ''} /></label>
+          <label className="d68-admin-field"><span>Tên hiển thị công khai (VN)</span><input name="title_vi" className="d68-admin-input" defaultValue={pending.title_vi ?? investor.title_vi ?? ''} /></label>
+          <label className="d68-admin-field"><span>Tên hiển thị công khai (EN)</span><input name="title_en" className="d68-admin-input" defaultValue={pending.title_en ?? investor.title_en ?? ''} /></label>
+          <label className="d68-admin-field"><span>Quốc gia trụ sở</span><select name="country_iso2" className="d68-admin-input" defaultValue={pending.country_iso2 ?? investor.country_iso2 ?? 'VN'}>{countryOptions.map((item) => <option key={item.iso2} value={item.iso2}>{item.vi}</option>)}</select></label>
+          <input type="hidden" name="country" value={investor.country || ''} />
+          <label className="d68-admin-field"><span>Ticket tối thiểu (USD)</span><input name="ticket_min" className="d68-admin-input" defaultValue={pending.ticket_min ?? investor.ticket_min ?? ''} /></label>
+          <label className="d68-admin-field"><span>Ticket tối đa (USD)</span><input name="ticket_max" className="d68-admin-input" defaultValue={pending.ticket_max ?? investor.ticket_max ?? ''} /></label>
+        </div>
+      </section>
 
-      <div className="d68-v10-admin-taxonomy-section">
-        <label className="d68-admin-field">
-          <span>Loại hình Nhà đầu tư</span>
-          <small>Chọn một loại hình. Nhãn hiển thị bằng tiếng Việt để Admin dễ kiểm tra.</small>
-          <InvestorTypeTagPicker lang="vi" value={investor.type} />
-        </label>
-        <label className="d68-admin-field">
-          <span>Giai đoạn phù hợp</span>
-          <small>Chọn một giai đoạn chính hoặc Linh hoạt.</small>
-          <InvestorStageTagPicker lang="vi" value={investor.stage || criteria.stage} />
-        </label>
-        <label className="d68-admin-field">
-          <span>Ưu tiên giao dịch</span>
-          <small>Có thể chọn một hoặc nhiều loại giao dịch.</small>
-          <InvestorDealTypeTagPicker lang="vi" values={investor.deal_types || criteria.dealTypes} />
-        </label>
-      </div>
+      <section className="d68-v10-admin-taxonomy-section">
+        <h3>Cấu trúc và tiêu chí đầu tư</h3>
+        <label className="d68-admin-field"><span>Loại hình Nhà đầu tư</span><small>Chọn một hoặc nhiều; giá trị đầu tiên được giữ làm loại hình chính để tương thích dữ liệu cũ.</small><InvestorTypeMultiTagPicker lang="vi" values={investorTypes} /></label>
+        <label className="d68-admin-field"><span>Giai đoạn phù hợp</span><small>Chọn một hoặc nhiều; “Linh hoạt” loại trừ các giai đoạn cụ thể.</small><InvestorStageMultiTagPicker lang="vi" values={stages} /></label>
+        <label className="d68-admin-field"><span>Khu vực đầu tư</span><InvestorRegionTagPicker lang="vi" values={targetRegions} /></label>
+        <label className="d68-admin-field"><span>Thị trường quan tâm</span><InvestorCountryTagPicker lang="vi" values={targetCountries} /></label>
+        <label className="d68-admin-field"><span>Ngành quan tâm</span><IndustryTagPicker lang="vi" name="industries" values={industries} expandVi="Đầy đủ" expandEn="Show all" defaultExpanded /></label>
+        <label className="d68-admin-field"><span>Ưu tiên giao dịch</span><InvestorDealTypeTagPicker lang="vi" values={dealTypes} /></label>
+      </section>
 
-      <div className="d68-admin-form2">
-        <label className="d68-admin-field"><span>Ngành quan tâm</span><textarea name="industries" className="d68-admin-input d68-v10-textarea" defaultValue={lines(investor.industries || criteria.sectors)} /></label>
-        <label className="d68-admin-field"><span>Mô tả public VN</span><textarea name="desc_vi" className="d68-admin-input d68-v10-textarea" defaultValue={pending.desc_vi ?? investor.desc_vi ?? ''} /></label>
-        <label className="d68-admin-field"><span>Mô tả public EN</span><textarea name="desc_en" className="d68-admin-input d68-v10-textarea" defaultValue={pending.desc_en ?? investor.desc_en ?? ''} /></label>
-      </div>
+      <section className="d68-v10-admin-taxonomy-section">
+        <h3>Mô tả public</h3>
+        <div className="d68-admin-form2">
+          <label className="d68-admin-field"><span>Mô tả public (VN)</span><textarea name="desc_vi" className="d68-admin-input d68-v10-textarea" defaultValue={pending.desc_vi ?? investor.desc_vi ?? ''} /></label>
+          <label className="d68-admin-field"><span>Mô tả public (EN)</span><textarea name="desc_en" className="d68-admin-input d68-v10-textarea" defaultValue={pending.desc_en ?? investor.desc_en ?? ''} /></label>
+        </div>
+      </section>
 
       <div className="d68-v10-check-row">
         <label className="d68-admin-check"><input name="verified" type="checkbox" defaultChecked={Boolean(investor.verified)} /> Đã xác minh</label>
         <label className="d68-admin-check"><input name="admin_priority" type="checkbox" defaultChecked={Boolean(investor.admin_priority)} /> Ưu tiên</label>
-        <label className="d68-admin-check"><input name="visible" type="checkbox" defaultChecked={Boolean(investor.visible)} /> Public</label>
+        <label className="d68-admin-check"><input name="visible" type="checkbox" defaultChecked={Boolean(investor.visible)} /> Hiển thị public</label>
       </div>
 
       <div className="d68-admin-actions">
         <button type="submit" name="submit_mode" value="save" className="d68-admin-btn green" disabled={busy}>Lưu hồ sơ</button>
-        <button type="submit" name="submit_mode" value="approve" className="d68-admin-btn blue" disabled={busy}>Duyệt hồ sơ khác & Public</button>
+        <button type="submit" name="submit_mode" value="approve" className="d68-admin-btn blue" disabled={busy}>Duyệt hồ sơ public</button>
         {investor.code ? <Link className="d68-admin-btn" to={`/investors/${investor.code}`} target="_blank" rel="noreferrer">Xem public ↗</Link> : null}
       </div>
     </form>
