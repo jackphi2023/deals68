@@ -2,6 +2,7 @@
 import fs from 'node:fs';
 import { chromium } from '@playwright/test';
 
+// Runs only after the exact Beta deploy smoke has confirmed the release SHA.
 const base = String(process.env.D68_BETA_URL || 'https://beta-reference-deals68.netlify.app').replace(/\/$/, '');
 const results = {};
 
