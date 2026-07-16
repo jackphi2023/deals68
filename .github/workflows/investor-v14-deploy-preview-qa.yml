@@ -1,0 +1,98 @@
+name: Investor V14 Deploy Preview QA
+
+on:
+  pull_request:
+    branches:
+      - beta-reference
+
+permissions:
+  contents: read
+
+jobs:
+  preview-build-and-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout exact PR source
+        uses: actions/checkout@v4
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Production build and release contracts
+        env:
+          VITE_SUPABASE_URL: https://local-test.supabase.co
+          VITE_SUPABASE_ANON_KEY: local-test-anon-key
+        run: |
+          npm run build
+          node scripts/deals68-investor-workflow-v14-check.mjs
+          npm run qa:packages
+          npm run qa:css
+          npm run qa:migrations
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Wait for exact Netlify Deploy Preview
+        env:
+          D68_BETA_URLS: https://deploy-preview-${{ github.event.number }}--deals68.netlify.app,https://deploy-preview-${{ github.event.number }}--beta-reference-deals68.netlify.app
+          D68_RELEASE_SHA: ${{ github.sha }}
+          D68_DEPLOY_TIMEOUT_MS: 1800000
+        run: node scripts/deals68-beta-release-marker-check.mjs
+
+      - name: Run public Investor regression smoke
+        env:
+          D68_BETA_URLS: https://deploy-preview-${{ github.event.number }}--deals68.netlify.app,https://deploy-preview-${{ github.event.number }}--beta-reference-deals68.netlify.app
+          D68_RELEASE_SHA: ${{ github.sha }}
+          D68_DEPLOY_TIMEOUT_MS: 120000
+        run: node scripts/deals68-investor-v10-beta-smoke.mjs
+
+      - name: Run Homepage Hero and Investor mobile smoke
+        env:
+          D68_BETA_URLS: https://deploy-preview-${{ github.event.number }}--deals68.netlify.app,https://deploy-preview-${{ github.event.number }}--beta-reference-deals68.netlify.app
+          D68_RELEASE_SHA: ${{ github.sha }}
+          D68_DEPLOY_TIMEOUT_MS: 120000
+        run: node scripts/deals68-home-mobile-hero-v13-beta-smoke.mjs
+
+      - name: Run Entity UI smoke
+        env:
+          D68_BETA_URLS: https://deploy-preview-${{ github.event.number }}--deals68.netlify.app,https://deploy-preview-${{ github.event.number }}--beta-reference-deals68.netlify.app
+          D68_RELEASE_SHA: ${{ github.sha }}
+        run: node scripts/deals68-entity-ui-v12-beta-smoke.mjs
+
+      - name: Run Investor registration V14 smoke
+        env:
+          D68_BETA_URLS: https://deploy-preview-${{ github.event.number }}--deals68.netlify.app,https://deploy-preview-${{ github.event.number }}--beta-reference-deals68.netlify.app
+          D68_RELEASE_SHA: ${{ github.sha }}
+          D68_DEPLOY_TIMEOUT_MS: 120000
+        run: node scripts/deals68-investor-workflow-v14-beta-smoke.mjs
+
+      - name: Upload preview diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: investor-v14-preview-${{ github.sha }}
+          path: |
+            /tmp/deals68-beta-release-marker.json
+            /tmp/deals68-investor-v11-beta-desktop.png
+            /tmp/deals68-investor-v11-beta-tablet.png
+            /tmp/deals68-investor-v11-beta-mobile.png
+            /tmp/deals68-investor-v11-beta-failure.png
+            /tmp/deals68-investor-v11-beta-diagnostic.json
+            /tmp/deals68-home-mobile-hero-v13-390.png
+            /tmp/deals68-investor-detail-mobile-v13.png
+            /tmp/deals68-entity-ui-v12-home.png
+            /tmp/deals68-entity-ui-v12-listings.png
+            /tmp/deals68-entity-ui-v12-detail-desktop.png
+            /tmp/deals68-entity-ui-v12-detail-mobile.png
+            /tmp/deals68-investor-v14-register-vi-mobile.png
+            /tmp/deals68-investor-v14-register-vi-desktop.png
+            /tmp/deals68-investor-v14-register-en-desktop.png
+          if-no-files-found: ignore
+          retention-days: 7
