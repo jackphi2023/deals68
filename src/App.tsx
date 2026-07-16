@@ -21,6 +21,7 @@ import { langFromPath, stripLangPrefix, toLocalizedPath } from './lib/i18nRoutes
 
 const BusinessDashboard = lazy(() => import('./pages/BusinessDashboard'));
 const InvestorDashboard = lazy(() => import('./pages/InvestorDashboard'));
+const InvestorProfileV10 = lazy(() => import('./pages/InvestorProfileV10'));
 const Admin = lazy(() => import('./pages/Admin'));
 const AdminBannersV10 = lazy(() => import('./pages/AdminBannersV10'));
 const AdminValuation = lazy(() => import('./pages/AdminValuation'));
@@ -141,7 +142,8 @@ export default function App(){
         <Route path="/en/market-partner" element={<MarketPartner lang="en"/>}/>
         <Route path="/en/dashboard/business" element={<DashboardGate role="business"><BusinessDashboard/></DashboardGate>}/>
         <Route path="/en/dashboard/business/*" element={<DashboardGate role="business"><BusinessDashboard/></DashboardGate>}/>
-        <Route path="/en/dashboard/investor" element={<DashboardGate role="investor"><InvestorDashboard/></DashboardGate>}/>
+        <Route path="/en/dashboard/investor" element={<DashboardGate role="investor"><InvestorProfileV10/></DashboardGate>}/>
+        <Route path="/en/dashboard/investor/profile" element={<DashboardGate role="investor"><InvestorProfileV10/></DashboardGate>}/>
         <Route path="/en/dashboard/investor/*" element={<DashboardGate role="investor"><InvestorDashboard/></DashboardGate>}/>
 
         <Route path="/vi" element={<Navigate to="/" replace/>}/>
@@ -150,7 +152,8 @@ export default function App(){
         <Route path="/admin/login" element={<Login lang={lang}/>}/>
         <Route path="/dashboard/business" element={<DashboardGate role="business"><BusinessDashboard/></DashboardGate>}/>
         <Route path="/dashboard/business/*" element={<DashboardGate role="business"><BusinessDashboard/></DashboardGate>}/>
-        <Route path="/dashboard/investor" element={<DashboardGate role="investor"><InvestorDashboard/></DashboardGate>}/>
+        <Route path="/dashboard/investor" element={<DashboardGate role="investor"><InvestorProfileV10/></DashboardGate>}/>
+        <Route path="/dashboard/investor/profile" element={<DashboardGate role="investor"><InvestorProfileV10/></DashboardGate>}/>
         <Route path="/dashboard/investor/*" element={<DashboardGate role="investor"><InvestorDashboard/></DashboardGate>}/>
         <Route path="/admin/valuation" element={<AdminValuation/>}/>
         <Route path="/admin/valuation-config" element={<AdminValuation/>}/>
