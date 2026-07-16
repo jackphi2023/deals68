@@ -93,6 +93,11 @@ jobs:
           D68_BETA_URL: ${{ env.PREVIEW_URL }}
         run: node scripts/deals68-investor-detail-v13-diagnostic.mjs
 
+      - name: Capture Homepage V13 viewport geometry
+        env:
+          D68_BETA_URL: ${{ env.PREVIEW_URL }}
+        run: node scripts/deals68-home-v13-diagnostic.mjs
+
       - name: Run Homepage Hero and Investor mobile V13 smoke
         env:
           D68_BETA_URLS: ${{ env.PREVIEW_URL }}
@@ -111,6 +116,7 @@ jobs:
         with:
           name: home-investor-v13-preview-${{ github.event.pull_request.head.sha }}
           path: |
+            /tmp/deals68-home-v13-diagnostic.json
             /tmp/deals68-home-mobile-hero-v13-390.png
             /tmp/deals68-investor-detail-mobile-v13.png
             /tmp/deals68-investor-detail-v13-diagnostic.json
