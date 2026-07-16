@@ -1,0 +1,117 @@
+/* Deals68 Investor Workflow V14
+   Route-scoped additions only; main dashboard/admin primitives remain authoritative. */
+
+.d68-investor-dashboard-page .d68-v10-investor-profile-content {
+  display:grid;
+  gap:18px;
+  min-width:0;
+}
+
+.d68-investor-dashboard-page .d68-investor-profile-section {
+  display:grid;
+  gap:14px;
+  padding-top:4px;
+}
+
+.d68-investor-dashboard-page .d68-investor-profile-section + .d68-investor-profile-section {
+  margin-top:18px;
+  padding-top:22px;
+  border-top:1px solid #e5edf4;
+}
+
+.d68-investor-dashboard-page .d68-investor-profile-section > h3 {
+  margin:0;
+  color:#0f2a4a;
+  font-size:17px;
+}
+
+.d68-investor-dashboard-page .d68-taxonomy-picker,
+.d68-v10-admin-page .d68-taxonomy-picker {
+  margin-top:8px;
+}
+
+.d68-v10-admin-page .d68-admin-grid2 {
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:18px;
+  margin-bottom:18px;
+}
+
+.d68-v10-admin-page .d68-admin-summary-grid {
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:10px 16px;
+  margin-top:14px;
+}
+
+.d68-v10-admin-page .d68-admin-summary-grid > div {
+  min-width:0;
+  padding:10px 12px;
+  border:1px solid #e5edf4;
+  border-radius:10px;
+  background:#f8fafc;
+}
+
+.d68-v10-admin-page .d68-admin-summary-grid span {
+  display:block;
+  margin-bottom:4px;
+  color:#64748b;
+  font-size:12px;
+}
+
+.d68-v10-admin-page .d68-admin-summary-grid b {
+  display:block;
+  overflow-wrap:anywhere;
+  color:#0f2a4a;
+  font-size:14px;
+}
+
+.d68-v10-admin-page .d68-v14-investor-table td {
+  vertical-align:top;
+}
+
+.d68-v10-admin-page .d68-v14-investor-table code {
+  display:inline-block;
+  margin:4px 0;
+}
+
+.d68-v10-admin-page .d68-v14-investor-table .d68-admin-taglist {
+  max-width:260px;
+}
+
+.d68-v10-admin-page .d68-v10-admin-taxonomy-section {
+  display:grid;
+  gap:14px;
+  padding-top:4px;
+}
+
+.d68-v10-admin-page .d68-v10-admin-taxonomy-section + .d68-v10-admin-taxonomy-section {
+  margin-top:20px;
+  padding-top:22px;
+  border-top:1px solid #e5edf4;
+}
+
+.d68-v10-admin-page .d68-v10-admin-taxonomy-section > h3 {
+  margin:0;
+  color:#0f2a4a;
+  font-size:17px;
+}
+
+@media (max-width:980px) {
+  .d68-v10-admin-page .d68-admin-grid2,
+  .d68-v10-admin-page .d68-admin-summary-grid {
+    grid-template-columns:1fr;
+  }
+}
+
+@media (max-width:760px) {
+  .d68-investor-dashboard-page .d68-investor-profile-section + .d68-investor-profile-section,
+  .d68-v10-admin-page .d68-v10-admin-taxonomy-section + .d68-v10-admin-taxonomy-section {
+    margin-top:12px;
+    padding-top:18px;
+  }
+
+  .d68-v10-admin-page .d68-v14-investor-table {
+    min-width:1060px;
+  }
+}
