@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// PR #24 QA trigger: validate the exact beta-reference Investor Workflow V14 source.
 import fs from 'node:fs';
 import ts from 'typescript';
 
