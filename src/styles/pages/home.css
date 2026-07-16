@@ -1,5 +1,7 @@
 /* Deals68 Home — release-safe page-scoped styles.
    Stable homepage presentation lives here; Home.tsx must not inject runtime CSS. */
+/* Deals68 Home RC1 final layout */
+/* G9 — Homepage hero metric labels. */
 
 .d68-nav-logo{display:flex;align-items:center;flex-shrink:0;background:transparent;line-height:0}
 .d68-nav-logo img{display:block;width:auto;height:34px;background:transparent;mix-blend-mode:normal}
