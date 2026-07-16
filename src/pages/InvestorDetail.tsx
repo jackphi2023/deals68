@@ -5,7 +5,7 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { toLocalizedPath } from '../lib/i18nRoutes';
 import { sendBusinessProposalToInvestor } from '../lib/proposals';
-import { labelCountry, labelDealType, labelIndustry, labelInvestorType, labelRegion, labelStage, T } from '../lib/labels';
+import { labelCountry, labelDealType, labelIndustry, labelInvestorType, labelStage, T } from '../lib/labels';
 import { investorPublicDescription, investorPublicTitle, investorTicketLabel } from '../lib/investorDisplay';
 import type { Lang } from '../lib/i18n';
 import { applySeo, DEFAULT_SOCIAL_IMAGE } from '../lib/seo';
@@ -17,7 +17,6 @@ import {
 } from '../lib/banners';
 
 type ContactAccess = { connected?: boolean; name?: string; email?: string; phone?: string; website?: string } | null;
-
 type SectionIconKind = 'intro' | 'criteria' | 'markets' | 'history' | 'contact';
 
 function arr(v: any): string[] {
@@ -59,6 +58,12 @@ function relativeTime(value: any, lang: Lang) {
   return T(lang, `${months} tháng trước`, `${months} month${months > 1 ? 's' : ''} ago`);
 }
 
+function countryFlag(raw: unknown) {
+  const countryCode = String(raw || '').trim().toUpperCase();
+  if (!/^[A-Z]{2}$/.test(countryCode)) return '🌐';
+  return String.fromCodePoint(...[...countryCode].map((char) => 127397 + char.charCodeAt(0)));
+}
+
 function SectionIcon({ kind }: { kind: SectionIconKind }) {
   const common = { fill: 'none', stroke: 'currentColor', strokeWidth: 1.9, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const };
   if (kind === 'intro') return <svg viewBox="0 0 24 24" aria-hidden="true"><circle {...common} cx="12" cy="8" r="3"/><path {...common} d="M5.5 20c.8-4.2 3-6.2 6.5-6.2s5.7 2 6.5 6.2"/></svg>;
@@ -73,7 +78,13 @@ function SectionTitle({ icon, children }: { icon: SectionIconKind; children: Rea
 }
 
 function TagList({ values, empty }: { values: string[]; empty: string }) {
-  return <div className="d68-id-tags">{values.length ? values.map((value) => <span key={value}>{value}</span>) : <span className="d68-id-tag--empty">{empty}</span>}</div>;
+  return (
+    <div className="d68-id-tags">
+      {values.length
+        ? values.map((value) => <span key={value}>{value}</span>)
+        : <span className="d68-id-tag--empty">{empty}</span>}
+    </div>
+  );
 }
 
 export default function InvestorDetail({ lang }: { lang: Lang }) {
@@ -208,6 +219,18 @@ export default function InvestorDetail({ lang }: { lang: Lang }) {
   const activeLabel = inv?.visible === false
     ? T(lang, 'Hồ sơ công khai', 'Public profile')
     : T(lang, 'Đang hoạt động', 'Active');
+  const emptyLabel = T(lang, 'Đang cập nhật', 'Updating');
+  const dealTypeLabel = dealTypes.map((value) => labelDealType(value, lang, true)).filter(Boolean).join(' · ') || emptyLabel;
+  const stageLabel = stages.map((value) => labelStage(value, lang)).filter(Boolean).join(' · ') || emptyLabel;
+  const ticketLabel = investorTicketLabel(lang, inv) || emptyLabel;
+  const appetiteLabel = String(
+    (lang === 'en'
+      ? approvedCriteria.investment_appetite_en || inv?.investment_appetite_en
+      : approvedCriteria.investment_appetite_vi || inv?.investment_appetite_vi) ||
+    approvedCriteria.investment_appetite ||
+    inv?.investment_appetite ||
+    '',
+  ).trim() || emptyLabel;
 
   async function sendProposal() {
     if (!profile) { navigate(toLocalizedPath(`/register/business?next=/investors/${code}`, lang)); return; }
@@ -235,51 +258,58 @@ export default function InvestorDetail({ lang }: { lang: Lang }) {
   if (loading) return <main className="d68-investor-detail"><div className="d68-id-state">{T(lang, 'Đang tải hồ sơ nhà đầu tư...', 'Loading investor profile...')}</div></main>;
   if (error || !inv) return <main className="d68-investor-detail"><div className="d68-id-state"><h1>{T(lang, 'Không hiển thị được hồ sơ', 'Profile unavailable')}</h1><p>{error}</p><Link to={toLocalizedPath('/investors', lang)}>← {T(lang, 'Quay lại danh sách', 'Back to investors')}</Link></div></main>;
 
+  const country = inv.country_iso2 || inv.country;
+
   return <main className="d68-investor-detail"><section className="d68-id-wrap">
     <div className="d68-id-breadcrumb"><Link to={toLocalizedPath('/', lang)}>{T(lang, 'Trang chủ', 'Home')}</Link> › <Link to={toLocalizedPath('/investors', lang)}>{T(lang, 'Nhà đầu tư', 'Investors')}</Link> › <b>{inv.code}</b></div>
     <div className="d68-id-layout">
       <div className="d68-id-main">
-        <article className="d68-id-cover-card">
-          <div className="d68-id-cover-copy">
-            <div className="d68-id-cover__eyebrow"><span>{inv.code}</span><b>{T(lang, 'Hồ sơ Nhà đầu tư', 'Investor profile')}</b></div>
+        <section className="d68-id-cover" data-cover-source={resolvedCover.source}>
+          <img src={coverUrl} alt={T(lang, `Ảnh cover ${title}`, `${title} cover image`)} onError={(event) => { event.currentTarget.onerror = null; event.currentTarget.src = INVESTOR_COVER_FALLBACK; }} />
+          <div className="d68-id-cover__shade" />
+          <div className="d68-id-cover__content">
+            <div className="d68-id-cover__eyebrow">{inv.code} · {T(lang, 'Hồ sơ Nhà đầu tư', 'Investor profile')}</div>
             <h1>{title}</h1>
-            <div className="d68-id-cover-badges"><span>{labelInvestorType(inv.type, lang)}</span><span>📍 {labelCountry(inv.country_iso2 || inv.country, lang)}</span><span className="active">● {activeLabel}</span></div>
+            <div className="d68-id-cover__badges"><span>{labelInvestorType(inv.type, lang)}</span><span>{countryFlag(country)} {labelCountry(country, lang)}</span><span className="active">● {activeLabel}</span></div>
           </div>
-          <div className="d68-id-cover-media" data-cover-source={resolvedCover.source}><img src={coverUrl} alt={T(lang, `Ảnh cover ${title}`, `${title} cover image`)} onError={(event) => { if (!event.currentTarget.src.endsWith(INVESTOR_COVER_FALLBACK)) event.currentTarget.src = INVESTOR_COVER_FALLBACK; }} /></div>
-        </article>
+        </section>
 
         <section className="d68-id-section d68-id-section--card d68-id-section--intro">
           <SectionTitle icon="intro">{T(lang, 'Giới thiệu', 'Introduction')}</SectionTitle>
           <p className="d68-id-intro-copy">{desc || T(lang, 'Thông tin giới thiệu đang được cập nhật.', 'The introduction is being updated.')}</p>
-          <div className="d68-id-facts d68-id-facts--intro">
-            <Fact k={T(lang, 'Quốc gia trụ sở', 'HQ country')} v={labelCountry(inv.country_iso2 || inv.country, lang)} />
-            <Fact k={T(lang, 'Loại nhà đầu tư', 'Investor type')} v={labelInvestorType(inv.type, lang)} />
-            <Fact k={T(lang, 'Khu vực', 'Region')} v={labelRegion(inv.region, lang)} />
-            <Fact k={T(lang, 'Giai đoạn đầu tư', 'Investment stage')} v={labelStage(inv.stage, lang)} />
-            {investorTicketLabel(lang, inv) ? <Fact k={T(lang, 'Quy mô đầu tư', 'Investment size')} v={investorTicketLabel(lang, inv)} /> : null}
+          <div className="d68-id-introduction__facts">
+            <CriteriaRow label={T(lang, 'Quốc gia trụ sở', 'HQ country')} value={labelCountry(country, lang)} />
+            <CriteriaRow label={T(lang, 'Loại Nhà đầu tư', 'Investor type')} value={labelInvestorType(inv.type, lang)} />
           </div>
         </section>
 
         <section className="d68-id-section d68-id-section--card d68-id-section--criteria">
           <SectionTitle icon="criteria">{T(lang, 'Tiêu chí đầu tư', 'Investment criteria')}</SectionTitle>
-          <div className="d68-id-criteria-grid">
-            <CriteriaGroup label={T(lang, 'Giai đoạn phù hợp', 'Preferred stage')}><TagList values={stages.map((value) => labelStage(value, lang))} empty={T(lang, 'Đang cập nhật', 'Updating')} /></CriteriaGroup>
-            <CriteriaGroup label={T(lang, 'Loại giao dịch quan tâm', 'Preferred deal types')}><TagList values={dealTypes.map((value) => labelDealType(value, lang, true))} empty={T(lang, 'Đang cập nhật', 'Updating')} /></CriteriaGroup>
-            <CriteriaGroup label={T(lang, 'Ngành quan tâm', 'Sectors of interest')}><TagList values={industries.map((value) => labelIndustry(value, lang))} empty={T(lang, 'Đang cập nhật', 'Updating')} /></CriteriaGroup>
-            {approvedCriteria.investment_appetite ? <CriteriaText label={T(lang, 'Khẩu vị đầu tư', 'Investment appetite')} value={String(approvedCriteria.investment_appetite)} /> : null}
-            {approvedCriteria.riskAppetite ? <CriteriaText label={T(lang, 'Khẩu vị rủi ro', 'Risk appetite')} value={String(approvedCriteria.riskAppetite)} /> : null}
-            {approvedCriteria.returnExpectation ? <CriteriaText label={T(lang, 'Kỳ vọng lợi nhuận', 'Return expectation')} value={String(approvedCriteria.returnExpectation)} /> : null}
+          <div className="d68-id-criteria-table">
+            <CriteriaRow label={T(lang, 'Ưu tiên giao dịch', 'Preferred transactions')} value={dealTypeLabel} />
+            <CriteriaRow label={T(lang, 'Giai đoạn phù hợp', 'Preferred stage')} value={stageLabel} />
+            <CriteriaRow label={T(lang, 'Khoản đầu tư', 'Investment size')} value={ticketLabel} />
+            <CriteriaRow label={T(lang, 'Khẩu vị đầu tư', 'Investment appetite')} value={appetiteLabel} />
+          </div>
+          <div className="d68-id-sector-block">
+            <h3>{T(lang, 'Ngành quan tâm', 'Sectors of interest')}</h3>
+            <TagList values={industries.map((value) => labelIndustry(value, lang))} empty={emptyLabel} />
           </div>
         </section>
 
         <section className="d68-id-section d68-id-section--card d68-id-section--markets">
-          <SectionTitle icon="markets">{T(lang, 'Thị trường quan tâm đầu tư', 'Target investment markets')}</SectionTitle>
-          <p className="d68-id-muted">{T(lang, 'Các thị trường mà Nhà đầu tư ưu tiên tìm kiếm và xem xét cơ hội.', 'Markets where this investor prioritises sourcing and reviewing opportunities.')}</p>
-          <TagList values={markets.map((value) => labelCountry(value, lang))} empty={T(lang, 'Đang cập nhật', 'Updating')} />
+          <SectionTitle icon="markets">{T(lang, 'Thị trường quan tâm', 'Target investment markets')}</SectionTitle>
+          {markets.length ? (
+            <div className="d68-id-tags d68-id-market-tags">
+              {markets.map((value) => <span key={value}><i aria-hidden="true">{countryFlag(value)}</i>{labelCountry(value, lang)}</span>)}
+            </div>
+          ) : (
+            <p className="d68-id-muted">{T(lang, 'Chưa công bố thị trường đầu tư.', 'No target investment markets are public yet.')}</p>
+          )}
         </section>
 
         <section className="d68-id-section d68-id-section--card d68-id-section--history">
-          <SectionTitle icon="history">{T(lang, 'Lịch sử nhận proposal', 'Proposal history')}</SectionTitle>
+          <SectionTitle icon="history">{T(lang, 'Lịch sử nhận Proposal', 'Proposal history')}</SectionTitle>
           {publicHistory.length ? <div className="d68-id-timeline d68-id-timeline--proposal">{publicHistory.map((item, idx) => <div key={idx}><i /> <span><small>{relativeTime(item.sent_at, lang)}</small>{item.slug ? <Link to={`/businesses/${item.slug}`} target="_blank" rel="noreferrer">{item.label}</Link> : <b>{item.label}</b>}</span></div>)}</div> : <p className="d68-id-muted">{T(lang, 'Chưa nhận Hồ sơ chào từ doanh nghiệp nào.', 'No business proposal profiles received yet.')}</p>}
         </section>
 
@@ -304,16 +334,8 @@ export default function InvestorDetail({ lang }: { lang: Lang }) {
   </section></main>;
 }
 
-function Fact({ k, v }: { k: string; v: string }) {
-  return <div className="d68-id-fact"><span>{k}</span><b>{v || '—'}</b></div>;
-}
-
-function CriteriaGroup({ label, children }: { label: string; children: React.ReactNode }) {
-  return <div className="d68-id-criteria-group"><h3>{label}</h3>{children}</div>;
-}
-
-function CriteriaText({ label, value }: { label: string; value: string }) {
-  return <div className="d68-id-criteria-text"><h3>{label}</h3><p>{value}</p></div>;
+function CriteriaRow({ label, value }: { label: string; value: string }) {
+  return <div className="d68-id-criteria-row"><span>{label}</span><b>{value || '—'}</b></div>;
 }
 
 function ContactRow({ label, value, unlocked, href }: { label: string; value?: string; unlocked: boolean; href?: string }) {
