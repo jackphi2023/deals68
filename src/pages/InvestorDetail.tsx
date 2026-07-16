@@ -77,11 +77,11 @@ function SectionTitle({ icon, children }: { icon: SectionIconKind; children: Rea
   return <h2 className="d68-id-section-title"><span><SectionIcon kind={icon}/></span>{children}</h2>;
 }
 
-function TagList({ values, empty, markets = false }: { values: string[]; empty: string; markets?: boolean }) {
+function TagList({ values, empty }: { values: string[]; empty: string }) {
   return (
-    <div className={`d68-id-tags${markets ? ' d68-id-market-tags' : ''}`}>
+    <div className="d68-id-tags">
       {values.length
-        ? values.map((value) => <span key={value}>{markets ? <i aria-hidden="true">{countryFlag(value)}</i> : null}{value}</span>)
+        ? values.map((value) => <span key={value}>{value}</span>)
         : <span className="d68-id-tag--empty">{empty}</span>}
     </div>
   );
@@ -299,7 +299,13 @@ export default function InvestorDetail({ lang }: { lang: Lang }) {
 
         <section className="d68-id-section d68-id-section--card d68-id-section--markets">
           <SectionTitle icon="markets">{T(lang, 'Thị trường quan tâm', 'Target investment markets')}</SectionTitle>
-          <TagList values={markets.map((value) => labelCountry(value, lang))} empty={T(lang, 'Chưa công bố thị trường đầu tư.', 'No target investment markets are public yet.')} markets />
+          {markets.length ? (
+            <div className="d68-id-tags d68-id-market-tags">
+              {markets.map((value) => <span key={value}><i aria-hidden="true">{countryFlag(value)}</i>{labelCountry(value, lang)}</span>)}
+            </div>
+          ) : (
+            <p className="d68-id-muted">{T(lang, 'Chưa công bố thị trường đầu tư.', 'No target investment markets are public yet.')}</p>
+          )}
         </section>
 
         <section className="d68-id-section d68-id-section--card d68-id-section--history">
