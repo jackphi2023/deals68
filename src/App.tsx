@@ -13,6 +13,7 @@ import Login from './pages/Login';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import Register from './pages/Register';
+import InvestorRegisterV14 from './pages/InvestorRegisterV14';
 import Valuation from './pages/Valuation';
 import ModuleScreen from './pages/ModuleScreen';
 import NotFound from './pages/NotFound';
@@ -114,6 +115,7 @@ export default function App(){
         <Route path="/login" element={<Login lang="vi"/>}/>
         <Route path="/forgot-password" element={<ForgotPassword lang="vi"/>}/>
         <Route path="/reset-password" element={<ResetPassword lang="vi"/>}/>
+        <Route path="/register/investor" element={<InvestorRegisterV14 lang="vi"/>}/>
         <Route path="/register/:role" element={<Register lang="vi"/>}/>
         <Route path="/register" element={<Navigate to="/pricing" replace/>}/>
         <Route path="/about" element={<About lang="vi"/>}/>
@@ -133,6 +135,7 @@ export default function App(){
         <Route path="/en/login" element={<Login lang="en"/>}/>
         <Route path="/en/forgot-password" element={<ForgotPassword lang="en"/>}/>
         <Route path="/en/reset-password" element={<ResetPassword lang="en"/>}/>
+        <Route path="/en/register/investor" element={<InvestorRegisterV14 lang="en"/>}/>
         <Route path="/en/register/:role" element={<Register lang="en"/>}/>
         <Route path="/en/register" element={<Navigate to="/en/pricing" replace/>}/>
         <Route path="/en/about" element={<About lang="en"/>}/>
