@@ -18,40 +18,14 @@ on:
       - 'scripts/visual-diff-routes.mjs'
       - '.github/workflows/visual-ui-pilots.yml'
 
-permissions:
-  contents: write
-
 jobs:
   visual-diff:
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
     steps:
-      - name: Checkout feature branch
+      - name: Checkout
         uses: actions/checkout@v4
-        with:
-          ref: feature/investor-criteria-review-v1
-
-      - name: Apply exact Admin prop fix
-        run: |
-          python - <<'PY'
-          from pathlib import Path
-          path = Path('src/pages/Admin.tsx')
-          source = path.read_text()
-          old = '<AssetEditor key={business.id} b={business} adminId={profile.id} onRefresh={load} />'
-          new = '<AssetEditor key={business.id} business={business} adminId={profile.id} onRefresh={load} />'
-          if old in source:
-              path.write_text(source.replace(old, new, 1))
-          elif new not in source:
-              raise SystemExit('Expected AssetEditor call site was not found')
-          PY
-          if ! git diff --quiet -- src/pages/Admin.tsx; then
-            git config user.name github-actions[bot]
-            git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-            git add src/pages/Admin.tsx
-            git commit -m "fix(admin): pass business prop to asset editor"
-            git push origin HEAD:feature/investor-criteria-review-v1
-          fi
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -64,27 +38,8 @@ jobs:
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
 
-      - name: Build diagnostics
-        run: |
-          mkdir -p visual-diff
-          set +e
-          npm run build > visual-diff/pr3-build.log 2>&1
-          code=$?
-          echo "$code" > visual-diff/pr3-build-exit-code.txt
-          exit 0
-
-      - name: Upload build diagnostics
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: pr3-build-diagnostics
-          path: |
-            visual-diff/pr3-build.log
-            visual-diff/pr3-build-exit-code.txt
-          if-no-files-found: error
-
-      - name: Stop when build failed
-        run: test "$(cat visual-diff/pr3-build-exit-code.txt)" = "0"
+      - name: Build
+        run: npm run build
 
       - name: Start preview server
         run: |
