@@ -18,6 +18,7 @@ const requiredFiles = [
   'src/styles/pages/investor-criteria-v11.css',
   'supabase/migrations/20260716013000_investor_profile_review_fields_v4.sql',
   'supabase/migrations/20260716014500_investor_criteria_pending_dedup_v5.sql',
+  'supabase/migrations/20260716190000_investor_public_profile_pending_v6.sql',
 ];
 
 for (const path of requiredFiles) {
@@ -47,7 +48,7 @@ for (const token of [
   "'riskAppetite'",
   "'returnExpectation'",
   "'revenueRange'",
-  "v_profile_criteria := v_profile_criteria",
+  'v_profile_criteria := v_profile_criteria',
   "- 'investment_appetite'",
   "criteria -> 'revenueRange'",
 ]) {
@@ -66,6 +67,17 @@ for (const token of [
   if (!dedup.includes(token)) failures.push(`V5 migration missing ${token}`);
 }
 
+const profilePending = read('supabase/migrations/20260716190000_investor_public_profile_pending_v6.sql');
+for (const token of [
+  'update_my_investor_profile',
+  "'investorTypes','stages','targetRegions','targetCountries'",
+  "'{pending_profile_changes}'",
+  'private_name = case',
+  'private_website = case',
+]) {
+  if (!profilePending.includes(token)) failures.push(`V6 migration missing ${token}`);
+}
+
 const loadingCopy = read('src/lib/labelsBase.ts');
 if (!loadingCopy.includes("'Đang tải dữ liệu thật...': 'Đang tải…'")) {
   failures.push('Investor listing loading copy is not normalized to Đang tải…');
@@ -78,6 +90,7 @@ const options = read('src/lib/investorCriteriaOptions.ts');
 for (const token of [
   'INVESTOR_TYPE_OPTIONS',
   'INVESTOR_STAGE_OPTIONS',
+  'INVESTOR_REGION_OPTIONS',
   'INVESTOR_DEAL_OPTIONS',
   'RISK_APPETITE_OPTIONS',
   'REVENUE_RANGE_OPTIONS',
@@ -112,11 +125,17 @@ for (const token of [
 
 const adminProfile = read('src/components/admin/InvestorProfileEditorV10.tsx');
 for (const token of [
-  'InvestorTypeTagPicker',
-  'InvestorStageTagPicker',
+  'InvestorTypeMultiTagPicker',
+  'InvestorStageMultiTagPicker',
+  'InvestorRegionTagPicker',
+  'InvestorCountryTagPicker',
+  'IndustryTagPicker',
   'InvestorDealTypeTagPicker',
   'Loại hình Nhà đầu tư',
   'Giai đoạn phù hợp',
+  'Khu vực đầu tư',
+  'Thị trường quan tâm',
+  'Ngành quan tâm',
   'Ưu tiên giao dịch',
 ]) {
   if (!adminProfile.includes(token)) failures.push(`Admin Investor profile tags missing ${token}`);
@@ -165,13 +184,13 @@ for (const token of [
 }
 
 if (failures.length) {
-  console.error('✗ Deals68 Investor Profile V11 fields check failed:');
+  console.error('✗ Deals68 Investor Profile V14 fields check failed:');
   failures.forEach((item) => console.error(`  - ${item}`));
   process.exit(1);
 }
 
-console.log('✓ Deals68 Investor Profile V11 fields check: PASS');
+console.log('✓ Deals68 Investor Profile V14 fields check: PASS');
 console.log('✓ New signup codes are database-owned INV-###### values.');
-console.log('✓ Dashboard criteria changes remain pending until Admin approval.');
-console.log('✓ Admin uses Vietnamese tag pickers and explicit change warnings.');
+console.log('✓ Dashboard public-profile changes remain pending until Admin approval.');
+console.log('✓ Admin and Dashboard share Vietnamese multi-select taxonomy tags.');
 console.log('✓ Default cover remains a fallback and never overwrites a custom cover.');
