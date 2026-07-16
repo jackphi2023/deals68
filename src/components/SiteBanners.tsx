@@ -52,6 +52,16 @@ const PLACEMENTS: {
     slotCount: 2,
     size: '1600×550px',
   },
+  {
+    id: 'investor_cover_default',
+    label: 'Ảnh cover mặc định Nhà đầu tư',
+    note:
+      'Một ảnh cover mặc định dùng cho các hồ sơ Nhà đầu tư chưa có ' +
+      'cover riêng đã được duyệt. Thay ảnh mặc định không ghi đè ' +
+      'cover riêng của từng Nhà đầu tư.',
+    slotCount: 1,
+    size: '1600×560px',
+  },
 ];
 
 function svgData(
