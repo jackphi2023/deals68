@@ -5,46 +5,47 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { toLocalizedPath } from '../lib/i18nRoutes';
 import { sendBusinessProposalToInvestor } from '../lib/proposals';
-import { formatMoneyForLang, labelCountry, labelDealType, labelIndustry, labelInvestorType, labelRegion, labelStage, T } from '../lib/labels';
+import { labelCountry, labelDealType, labelIndustry, labelInvestorType, labelRegion, labelStage, T } from '../lib/labels';
 import { investorPublicDescription, investorPublicTitle, investorTicketLabel } from '../lib/investorDisplay';
 import type { Lang } from '../lib/i18n';
 import { applySeo, DEFAULT_SOCIAL_IMAGE } from '../lib/seo';
 
 type ContactAccess = { connected?: boolean; name?: string; email?: string; phone?: string; website?: string } | null;
 
+type SectionIconKind = 'intro' | 'criteria' | 'markets' | 'history' | 'contact';
+
+const DEFAULT_INVESTOR_COVER = '/assets/investor-cover-default.svg';
+
 function arr(v: any): string[] {
   if (Array.isArray(v)) return v.filter(Boolean).map(String).map((x) => x.trim()).filter(Boolean);
   if (!v) return [];
   return String(v).split(/[;,\n]/).map((x) => x.trim()).filter(Boolean);
 }
-function clean(v: any) { return String(v ?? '').trim(); }
-function ticket(lang: Lang, min: any, max: any) {
-  const a = Number(min || 0), b = Number(max || 0);
-  if (!a && !b) return T(lang, 'Đang cập nhật', 'Updating');
-  if (a && b) return `${formatMoneyForLang(a, 'USD', lang)} – ${formatMoneyForLang(b, 'USD', lang)}`;
-  return b ? `≤ ${formatMoneyForLang(b, 'USD', lang)}` : `≥ ${formatMoneyForLang(a, 'USD', lang)}`;
+
+function objectOf(value: any): Record<string, any> {
+  return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
 }
-function criteriaList(inv: any, lang: Lang): string[] {
-  const criteria = inv?.criteria && typeof inv.criteria === 'object' ? inv.criteria : {};
-  const out: string[] = [];
-  const deals = arr(inv?.deal_types || criteria.dealTypes);
-  const sectors = arr(inv?.industries || criteria.sectors);
-  if (deals.length) out.push(`${T(lang, 'Ưu tiên giao dịch', 'Preferred transactions')}: ${deals.map((x) => labelDealType(x, lang, true)).join(', ')}`);
-  if (inv?.stage) out.push(`${T(lang, 'Giai đoạn phù hợp', 'Preferred stage')}: ${labelStage(inv.stage, lang)}`);
-  if (sectors.length) out.push(`${T(lang, 'Ngành quan tâm', 'Target sectors')}: ${sectors.map((x) => labelIndustry(x, lang)).join(', ')}`);
-  if (criteria.investment_appetite) out.push(`${T(lang, 'Khẩu vị đầu tư', 'Investment appetite')}: ${criteria.investment_appetite}`);
-  if (criteria.riskAppetite) out.push(`${T(lang, 'Khẩu vị rủi ro', 'Risk appetite')}: ${criteria.riskAppetite}`);
-  if (criteria.returnExpectation) out.push(`${T(lang, 'Kỳ vọng lợi nhuận', 'Return expectation')}: ${criteria.returnExpectation}`);
-  return out;
+
+function unique(values: string[]) {
+  return Array.from(new Set(values.filter(Boolean)));
 }
+
+function investorCoverUrl(inv: any) {
+  const criteria = objectOf(inv?.criteria);
+  return String(
+    criteria.cover_image_url ||
+    criteria.coverImageUrl ||
+    inv?.cover_image_url ||
+    inv?.hero_image_url ||
+    '',
+  ).trim() || DEFAULT_INVESTOR_COVER;
+}
+
 function proposalHistory(inv: any): string[] {
   const raw = inv?.criteria?.proposal_history || inv?.criteria?.proposalHistory || [];
   return arr(raw).map(String).filter(Boolean);
 }
-function fmtDate(value: any, lang: Lang) {
-  const d = value ? new Date(value) : new Date();
-  return Number.isNaN(d.getTime()) ? '' : d.toLocaleDateString(lang === 'en' ? 'en-US' : 'vi-VN');
-}
+
 function relativeTime(value: any, lang: Lang) {
   const d = value ? new Date(value) : new Date();
   const diffDays = Math.max(0, Math.floor((Date.now() - d.getTime()) / 86400000));
@@ -53,6 +54,23 @@ function relativeTime(value: any, lang: Lang) {
   if (diffDays < 30) return T(lang, `${diffDays} ngày trước`, `${diffDays} day${diffDays > 1 ? 's' : ''} ago`);
   const months = Math.max(1, Math.floor(diffDays / 30));
   return T(lang, `${months} tháng trước`, `${months} month${months > 1 ? 's' : ''} ago`);
+}
+
+function SectionIcon({ kind }: { kind: SectionIconKind }) {
+  const common = { fill: 'none', stroke: 'currentColor', strokeWidth: 1.9, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const };
+  if (kind === 'intro') return <svg viewBox="0 0 24 24" aria-hidden="true"><circle {...common} cx="12" cy="8" r="3"/><path {...common} d="M5.5 20c.8-4.2 3-6.2 6.5-6.2s5.7 2 6.5 6.2"/></svg>;
+  if (kind === 'criteria') return <svg viewBox="0 0 24 24" aria-hidden="true"><path {...common} d="M5 4h14v16H5zM8 8h8M8 12h8M8 16h5"/></svg>;
+  if (kind === 'markets') return <svg viewBox="0 0 24 24" aria-hidden="true"><circle {...common} cx="12" cy="12" r="9"/><path {...common} d="M3 12h18M12 3c3 3.2 3 14.8 0 18M12 3c-3 3.2-3 14.8 0 18"/></svg>;
+  if (kind === 'history') return <svg viewBox="0 0 24 24" aria-hidden="true"><path {...common} d="M4 12a8 8 0 1 0 2.3-5.7L4 8.5M4 4v4.5h4.5M12 7v5l3 2"/></svg>;
+  return <svg viewBox="0 0 24 24" aria-hidden="true"><path {...common} d="M4 5h16v14H4zM4 7l8 6 8-6"/></svg>;
+}
+
+function SectionTitle({ icon, children }: { icon: SectionIconKind; children: React.ReactNode }) {
+  return <h2 className="d68-id-section-title"><span><SectionIcon kind={icon}/></span>{children}</h2>;
+}
+
+function TagList({ values, empty }: { values: string[]; empty: string }) {
+  return <div className="d68-id-tags">{values.length ? values.map((value) => <span key={value}>{value}</span>) : <span className="d68-id-tag--empty">{empty}</span>}</div>;
 }
 
 export default function InvestorDetail({ lang }: { lang: Lang }) {
@@ -131,27 +149,15 @@ export default function InvestorDetail({ lang }: { lang: Lang }) {
 
   useEffect(() => {
     if (loading) return;
-
-    const canonicalPath =
-      lang === 'en'
-        ? `/en/investors/${encodeURIComponent(code)}`
-        : `/investors/${encodeURIComponent(code)}`;
+    const canonicalPath = lang === 'en'
+      ? `/en/investors/${encodeURIComponent(code)}`
+      : `/investors/${encodeURIComponent(code)}`;
 
     if (!inv) {
       applySeo({
         lang,
-        pageName: T(
-          lang,
-          'Không tìm thấy hồ sơ Nhà đầu tư',
-          'Investor Profile Not Found',
-        ),
-        description:
-          error ||
-          T(
-            lang,
-            'Hồ sơ Nhà đầu tư không tồn tại hoặc chưa được duyệt công khai.',
-            'The investor profile does not exist or is not approved for public display.',
-          ),
+        pageName: T(lang, 'Không tìm thấy hồ sơ Nhà đầu tư', 'Investor Profile Not Found'),
+        description: error || T(lang, 'Hồ sơ Nhà đầu tư không tồn tại hoặc chưa được duyệt công khai.', 'The investor profile does not exist or is not approved for public display.'),
         canonicalPath,
         image: DEFAULT_SOCIAL_IMAGE,
         type: 'article',
@@ -170,12 +176,17 @@ export default function InvestorDetail({ lang }: { lang: Lang }) {
       noindex: false,
     });
   }, [code, desc, error, inv, lang, loading, title]);
-  const industries = useMemo(() => arr(inv?.industries), [inv]);
-  const criteria = useMemo(() => criteriaList(inv, lang), [inv, lang]);
-  const markets = useMemo(() => {
-    return investorTargetCountries(inv);
-  }, [inv]);
+
+  const approvedCriteria = useMemo(() => objectOf(inv?.criteria), [inv]);
+  const industries = useMemo(() => unique([...arr(inv?.industries), ...arr(approvedCriteria.sectors)]), [inv, approvedCriteria]);
+  const dealTypes = useMemo(() => unique([...arr(inv?.deal_types), ...arr(approvedCriteria.dealTypes)]), [inv, approvedCriteria]);
+  const stages = useMemo(() => unique([...arr(approvedCriteria.stages), ...arr(inv?.stage)]), [inv, approvedCriteria]);
+  const markets = useMemo(() => investorTargetCountries(inv), [inv]);
   const connected = !!contact?.connected;
+  const coverUrl = investorCoverUrl(inv);
+  const activeLabel = inv?.visible === false
+    ? T(lang, 'Hồ sơ công khai', 'Public profile')
+    : T(lang, 'Đang hoạt động', 'Active');
 
   async function sendProposal() {
     if (!profile) { navigate(toLocalizedPath(`/register/business?next=/investors/${code}`, lang)); return; }
@@ -207,23 +218,62 @@ export default function InvestorDetail({ lang }: { lang: Lang }) {
     <div className="d68-id-breadcrumb"><Link to={toLocalizedPath('/', lang)}>{T(lang, 'Trang chủ', 'Home')}</Link> › <Link to={toLocalizedPath('/investors', lang)}>{T(lang, 'Nhà đầu tư', 'Investors')}</Link> › <b>{inv.code}</b></div>
     <div className="d68-id-layout">
       <div className="d68-id-main">
-        <article className="d68-id-hero d68-id-section--card">
-          <div className="d68-id-badges"><span>{labelInvestorType(inv.type, lang)}</span><span>📍 {labelCountry(inv.country_iso2 || inv.country, lang)}</span></div>
-          <h1>{title}</h1><p>{desc}</p>
-          <div className="d68-id-facts d68-id-facts--top">
+        <article className="d68-id-cover-card">
+          <div className="d68-id-cover-copy">
+            <div className="d68-id-cover__eyebrow"><span>{inv.code}</span><b>{T(lang, 'Hồ sơ Nhà đầu tư', 'Investor profile')}</b></div>
+            <h1>{title}</h1>
+            <div className="d68-id-cover-badges"><span>{labelInvestorType(inv.type, lang)}</span><span>📍 {labelCountry(inv.country_iso2 || inv.country, lang)}</span><span className="active">● {activeLabel}</span></div>
+          </div>
+          <div className="d68-id-cover-media"><img src={coverUrl} alt={T(lang, `Ảnh cover ${title}`, `${title} cover image`)} onError={(event) => { if (!event.currentTarget.src.endsWith(DEFAULT_INVESTOR_COVER)) event.currentTarget.src = DEFAULT_INVESTOR_COVER; }} /></div>
+        </article>
+
+        <section className="d68-id-section d68-id-section--card d68-id-section--intro">
+          <SectionTitle icon="intro">{T(lang, 'Giới thiệu', 'Introduction')}</SectionTitle>
+          <p className="d68-id-intro-copy">{desc || T(lang, 'Thông tin giới thiệu đang được cập nhật.', 'The introduction is being updated.')}</p>
+          <div className="d68-id-facts d68-id-facts--intro">
             <Fact k={T(lang, 'Quốc gia trụ sở', 'HQ country')} v={labelCountry(inv.country_iso2 || inv.country, lang)} />
             <Fact k={T(lang, 'Loại nhà đầu tư', 'Investor type')} v={labelInvestorType(inv.type, lang)} />
             <Fact k={T(lang, 'Khu vực', 'Region')} v={labelRegion(inv.region, lang)} />
             <Fact k={T(lang, 'Giai đoạn đầu tư', 'Investment stage')} v={labelStage(inv.stage, lang)} />
             {investorTicketLabel(lang, inv) ? <Fact k={T(lang, 'Quy mô đầu tư', 'Investment size')} v={investorTicketLabel(lang, inv)} /> : null}
-            <Fact k={T(lang, 'Thị trường quan tâm đầu tư', 'Target investment markets')} v={markets.map((x) => labelCountry(x, lang)).join(', ')} />
           </div>
-        </article>
-        <section className="d68-id-section d68-id-section--card"><h2>{T(lang, 'Tiêu chí đầu tư', 'Investment criteria')}</h2><ul className="d68-id-bullets">{criteria.length ? criteria.map((x, i) => <li key={i}>{x}</li>) : <li>{T(lang, 'Chưa có tiêu chí chi tiết được Admin duyệt public.', 'No detailed Admin-approved criteria yet.')}</li>}</ul></section>
-        <section className="d68-id-section d68-id-section--card"><h2>{T(lang, 'Ngành quan tâm', 'Sectors of interest')}</h2><div className="d68-id-tags">{industries.length ? industries.map((x) => <span key={x}>{labelIndustry(x, lang)}</span>) : <span>{T(lang, 'Đang cập nhật', 'Updating')}</span>}</div></section>
-        <section className="d68-id-section d68-id-section--card"><h2>{T(lang, 'Lịch sử nhận proposal', 'Proposal history')}</h2>{publicHistory.length ? <div className="d68-id-timeline d68-id-timeline--proposal">{publicHistory.map((item, idx) => <div key={idx}><i /> <span><small>{relativeTime(item.sent_at, lang)}</small>{item.slug ? <Link to={`/businesses/${item.slug}`} target="_blank" rel="noreferrer">{item.label}</Link> : <b>{item.label}</b>}</span></div>)}</div> : <p className="d68-id-muted">{T(lang, 'Chưa nhận Hồ sơ chào từ doanh nghiệp nào.', 'No business proposal profiles received yet.')}</p>}</section>
-        <section className="d68-id-section d68-id-section--card"><h2>{T(lang, 'Thông tin liên hệ', 'Contact information')}</h2><p className="d68-id-muted">{T(lang, 'Chỉ Doanh nghiệp đã kết nối với Nhà đầu tư mới được xem.', 'Only businesses connected with this investor can view contact details.')}</p><div className="d68-id-contact-list"><ContactRow label={T(lang, 'Người liên hệ', 'Contact person')} value={contact?.name} unlocked={connected && !!contact?.name} /><ContactRow label="Email" value={contact?.email} unlocked={connected && !!contact?.email} /><ContactRow label={T(lang, 'Website', 'Website')} value={contact?.website} unlocked={connected && !!contact?.website} href={contact?.website} /></div></section>
+        </section>
+
+        <section className="d68-id-section d68-id-section--card d68-id-section--criteria">
+          <SectionTitle icon="criteria">{T(lang, 'Tiêu chí đầu tư', 'Investment criteria')}</SectionTitle>
+          <div className="d68-id-criteria-grid">
+            <CriteriaGroup label={T(lang, 'Giai đoạn phù hợp', 'Preferred stage')}><TagList values={stages.map((value) => labelStage(value, lang))} empty={T(lang, 'Đang cập nhật', 'Updating')} /></CriteriaGroup>
+            <CriteriaGroup label={T(lang, 'Loại giao dịch quan tâm', 'Preferred deal types')}><TagList values={dealTypes.map((value) => labelDealType(value, lang, true))} empty={T(lang, 'Đang cập nhật', 'Updating')} /></CriteriaGroup>
+            <CriteriaGroup label={T(lang, 'Ngành quan tâm', 'Sectors of interest')}><TagList values={industries.map((value) => labelIndustry(value, lang))} empty={T(lang, 'Đang cập nhật', 'Updating')} /></CriteriaGroup>
+            {approvedCriteria.investment_appetite ? <CriteriaText label={T(lang, 'Khẩu vị đầu tư', 'Investment appetite')} value={String(approvedCriteria.investment_appetite)} /> : null}
+            {approvedCriteria.riskAppetite ? <CriteriaText label={T(lang, 'Khẩu vị rủi ro', 'Risk appetite')} value={String(approvedCriteria.riskAppetite)} /> : null}
+            {approvedCriteria.returnExpectation ? <CriteriaText label={T(lang, 'Kỳ vọng lợi nhuận', 'Return expectation')} value={String(approvedCriteria.returnExpectation)} /> : null}
+          </div>
+        </section>
+
+        <section className="d68-id-section d68-id-section--card d68-id-section--markets">
+          <SectionTitle icon="markets">{T(lang, 'Nước quan tâm đầu tư', 'Target investment countries')}</SectionTitle>
+          <p className="d68-id-muted">{T(lang, 'Các thị trường mà Nhà đầu tư ưu tiên tìm kiếm và xem xét cơ hội.', 'Markets where this investor prioritises sourcing and reviewing opportunities.')}</p>
+          <TagList values={markets.map((value) => labelCountry(value, lang))} empty={T(lang, 'Đang cập nhật', 'Updating')} />
+        </section>
+
+        <section className="d68-id-section d68-id-section--card d68-id-section--history">
+          <SectionTitle icon="history">{T(lang, 'Lịch sử nhận proposal', 'Proposal history')}</SectionTitle>
+          {publicHistory.length ? <div className="d68-id-timeline d68-id-timeline--proposal">{publicHistory.map((item, idx) => <div key={idx}><i /> <span><small>{relativeTime(item.sent_at, lang)}</small>{item.slug ? <Link to={`/businesses/${item.slug}`} target="_blank" rel="noreferrer">{item.label}</Link> : <b>{item.label}</b>}</span></div>)}</div> : <p className="d68-id-muted">{T(lang, 'Chưa nhận Hồ sơ chào từ doanh nghiệp nào.', 'No business proposal profiles received yet.')}</p>}
+        </section>
+
+        <section className="d68-id-section d68-id-section--card d68-id-section--contact">
+          <SectionTitle icon="contact">{T(lang, 'Thông tin liên hệ', 'Contact information')}</SectionTitle>
+          <p className="d68-id-muted">{T(lang, 'Chỉ Doanh nghiệp đã kết nối với Nhà đầu tư mới được xem.', 'Only businesses connected with this investor can view contact details.')}</p>
+          <div className="d68-id-contact-list">
+            <ContactRow label={T(lang, 'Người liên hệ', 'Contact person')} value={contact?.name} unlocked={connected && !!contact?.name} />
+            <ContactRow label={T(lang, 'Số điện thoại', 'Phone')} value={contact?.phone} unlocked={connected && !!contact?.phone} />
+            <ContactRow label="Email" value={contact?.email} unlocked={connected && !!contact?.email} />
+            <ContactRow label={T(lang, 'Website', 'Website')} value={contact?.website} unlocked={connected && !!contact?.website} href={contact?.website} />
+          </div>
+        </section>
       </div>
+
       <aside className="d68-id-side d68-id-side--sticky">
         <div className="d68-id-cta"><span>{T(lang, 'Gửi Hồ sơ Doanh nghiệp', 'Send business profile')}</span><p>{T(lang, 'Gửi hồ sơ doanh nghiệp của bạn tới nhà đầu tư này để bắt đầu kết nối.', 'Send your business profile to this investor to start the connection workflow.')}</p><button onClick={sendProposal} disabled={proposalBusy || !!sentProposal}>{sentProposal ? T(lang, 'Đã gửi hồ sơ DN', 'Profile sent') : proposalBusy ? T(lang, 'Đang gửi...', 'Sending...') : T(lang, 'Gửi hồ sơ DN', 'Send business profile')}</button>{sentProposal ? <small>{T(lang, 'Đã gửi. Theo dõi tại Dashboard DN → Proposal.', 'Sent. Track it in Business Dashboard → Proposals.')}</small> : null}</div>
         <div className="d68-id-access"><h3>{T(lang, 'Ai được xem gì', 'Who can see what')}</h3><p>👤 {T(lang, 'Khách chỉ xem được hồ sơ công khai', 'Guests can only view the public profile.')}</p><p>🏢 {T(lang, 'Doanh nghiệp đã đăng nhập có thể gửi Hồ sơ DN/proposal', 'Logged-in businesses can send a business profile/proposal.')}</p><p>✅ {T(lang, 'Sau khi kết nối/duyệt: mở thông tin liên hệ do nhà đầu tư cài đặt (SĐT, Email)', 'After approval/connection: contact details set by the investor are unlocked (phone, email).')}</p></div>
@@ -233,7 +283,18 @@ export default function InvestorDetail({ lang }: { lang: Lang }) {
   </section></main>;
 }
 
-function Fact({ k, v }: { k: string; v: string }) { return <div className="d68-id-fact"><span>{k}</span><b>{v || '—'}</b></div>; }
+function Fact({ k, v }: { k: string; v: string }) {
+  return <div className="d68-id-fact"><span>{k}</span><b>{v || '—'}</b></div>;
+}
+
+function CriteriaGroup({ label, children }: { label: string; children: React.ReactNode }) {
+  return <div className="d68-id-criteria-group"><h3>{label}</h3>{children}</div>;
+}
+
+function CriteriaText({ label, value }: { label: string; value: string }) {
+  return <div className="d68-id-criteria-text"><h3>{label}</h3><p>{value}</p></div>;
+}
+
 function ContactRow({ label, value, unlocked, href }: { label: string; value?: string; unlocked: boolean; href?: string }) {
   const display = unlocked ? (href ? <a href={href.startsWith('http') ? href : `https://${href}`} target="_blank" rel="noreferrer">{value}</a> : value) : '';
   return <div className={`d68-id-contact-row${unlocked ? ' unlocked' : ''}`}><span>{unlocked ? '✅' : '🔒'}</span><b>{label}</b><em>{display}</em></div>;
