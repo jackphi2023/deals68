@@ -1,21 +1,13 @@
 import { useEffect, useState } from 'react';
-import { Link, Navigate, useLocation } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import InvestorAppetiteFormV10 from '../components/investor/InvestorAppetiteFormV10';
+import InvestorDashboardNav from '../components/investor/InvestorDashboardNav';
 import InvestorProfileFormV10 from '../components/investor/InvestorProfileFormV10';
 import { useAuth } from '../contexts/AuthContext';
 import { getInvestorByOwner } from '../lib/data';
 import type { InvestorRow } from '../lib/investorAdminV10';
 import { langFromPath, toLocalizedPath } from '../lib/i18nRoutes';
 import { T } from '../lib/labels';
-
-const LINKS = [
-  ['/dashboard/investor/profile', 'Hồ sơ', 'Profile'],
-  ['/dashboard/investor/matches', 'Tiêu chí & Gợi ý', 'Criteria & Matches'],
-  ['/dashboard/investor/saved', 'Đã lưu', 'Saved'],
-  ['/dashboard/investor/proposals', 'Proposal', 'Proposals'],
-  ['/dashboard/investor/contact', 'Liên hệ & Bảo mật', 'Contact & Privacy'],
-  ['/dashboard/investor/payments', 'Invoice/Thanh toán', 'Invoices/Payments'],
-] as const;
 
 export default function InvestorProfileV10() {
   const { profile, loading } = useAuth();
@@ -82,27 +74,7 @@ export default function InvestorProfileV10() {
         </header>
 
         <div className="d68-dashboard-cols">
-          <nav className="d68-dashboard-side">
-            {LINKS.map(([href, vi, en]) => (
-              <Link
-                key={href}
-                to={toLocalizedPath(href, lang)}
-                className={href.endsWith('/profile') ? 'active' : ''}
-              >
-                {T(lang, vi, en)}
-              </Link>
-            ))}
-            {publicPath ? (
-              <Link
-                className="d68-dashboard-public-link"
-                to={publicPath}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                {T(lang, 'Xem Hồ sơ hiển thị', 'View displayed profile')} ↗
-              </Link>
-            ) : null}
-          </nav>
+          <InvestorDashboardNav lang={lang} publicInvestorPath={publicPath} />
           <section className="d68-v10-investor-profile-content">
             {error ? <div className="d68-dashboard-notice err">{error}</div> : null}
             <InvestorAppetiteFormV10
