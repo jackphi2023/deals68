@@ -9,6 +9,7 @@ const allowed = new Set([
   'src/lib/investorDisplay.ts',
   'src/components/investor/InvestorCriteriaTagPickers.tsx',
   'src/components/investor/IndustryTagPicker.tsx',
+  'src/components/admin/InvestorAdminReviewPanel.tsx',
   'src/pages/Register.tsx',
   'src/pages/InvestorDashboard.tsx',
   'src/pages/Admin.tsx',
@@ -33,7 +34,6 @@ const forbiddenExact = new Set([
   'package.json',
   'package-lock.json',
 ]);
-
 const forbiddenPrefixes = [
   '.github/workflows/',
   'src/contexts/',
@@ -42,6 +42,7 @@ const forbiddenPrefixes = [
   'src/pages/InvestorDetailV10',
   'src/pages/InvestorProfileV10',
   'src/pages/AdminInvestorsV10',
+  'src/pages/AdminBannersV10',
   'src/pages/InvestorRegisterV14',
 ];
 
@@ -67,10 +68,9 @@ function resolveBase() {
       git(['rev-parse', '--verify', candidate]);
       return candidate;
     } catch {
-      // Continue to the next explicit stacked base.
+      // Try the next explicit stacked base.
     }
   }
-
   throw new Error(
     'Không xác định được stacked base PR 2. Fetch ' +
       'release-safe/investor-cover-admin-v1 hoặc đặt D68_SCOPE_BASE_SHA.',
@@ -186,6 +186,87 @@ if (investors.includes('pending_profile_changes')) {
   failures.push('Investor List must not read pending changes.');
 }
 
+const register = requireTokens('src/pages/Register.tsx', [
+  'InvestorTypeTagPicker',
+  'InvestorStageTagPicker',
+  'InvestorMarketTagPicker',
+  'InvestorDealTypeTagPicker',
+  'investment_appetite_vi',
+  'investment_appetite_en',
+  "desc_vi: lang === 'vi' ? generalDesc : ''",
+  "desc_en: lang === 'en' ? generalDesc : ''",
+  "investment_appetite_vi: lang === 'vi' ? appetiteDesc : ''",
+  "investment_appetite_en: lang === 'en' ? appetiteDesc : ''",
+  'investorTypes',
+  'stages: investorStages',
+  'createSignupBundle',
+]);
+if (register.includes('INV-NEW-')) {
+  failures.push('Register must not generate temporary Investor public codes.');
+}
+
+requireTokens('src/pages/InvestorDashboard.tsx', [
+  'InvestorTypeTagPicker',
+  'InvestorStageTagPicker',
+  'InvestorMarketTagPicker',
+  'InvestorDealTypeTagPicker',
+  'update_my_investor_profile',
+  'investment_appetite_vi',
+  'investment_appetite_en',
+  'Giới thiệu (VN)',
+  'Giới thiệu (EN)',
+  'Khẩu vị đầu tư (VN)',
+  'Khẩu vị đầu tư (EN)',
+  'pending_profile_changes',
+  'd68-dashboard-nav-icon',
+  'InvestorBillingPanel',
+  'updateProposalStatus',
+]);
+
+const adminPage = requireTokens('src/pages/Admin.tsx', [
+  'InvestorAdminReviewPanel',
+  "tab === 'investors'",
+  'AdminBannerManager',
+  'AdminOperationsOverview',
+  'updateProposalStatus',
+  'adminSetPaymentOrderStatus',
+  'd68-admin-side',
+]);
+for (const forbidden of [
+  'InvestorDetailV10',
+  'InvestorProfileV10',
+  'AdminInvestorsV10',
+  'AdminBannersV10',
+]) {
+  if (adminPage.includes(forbidden)) {
+    failures.push(`Admin shell must not reference ${forbidden}.`);
+  }
+}
+
+const adminInvestor = requireTokens(
+  'src/components/admin/InvestorAdminReviewPanel.tsx',
+  [
+    'pending_profile_changes',
+    'admin_approve_investor_profile_changes',
+    'publish_profile: false',
+    'InvestorTypeTagPicker',
+    'InvestorStageTagPicker',
+    'InvestorMarketTagPicker',
+    'InvestorDealTypeTagPicker',
+    'Giới thiệu (VN)',
+    'Giới thiệu (EN)',
+    'Khẩu vị đầu tư (VN)',
+    'Khẩu vị đầu tư (EN)',
+    'investment_appetite_vi',
+    'investment_appetite_en',
+    'Khẩu vị đầu tư vừa sửa',
+    'visible',
+  ],
+);
+if (adminInvestor.includes('publish_profile: true')) {
+  failures.push('Admin approval must not force public visibility.');
+}
+
 const migration = requireTokens(
   'supabase/migrations/20260716124500_investor_criteria_review_v1.sql',
   [
@@ -202,9 +283,11 @@ const migration = requireTokens(
     "'{sectors}'",
     "'{dealTypes}'",
     "'{targetCountries}'",
+    'investment_appetite_vi',
+    'investment_appetite_en',
+    'publish_profile boolean default false',
   ],
 );
-
 if (/where\s+code\s+!~/i.test(migration)) {
   failures.push('Migration must not rewrite every legacy Investor code.');
 }
@@ -213,61 +296,6 @@ if (!migration.includes("or code ilike 'INV-NEW-%'")) {
 }
 if (migration.includes('drop table public.investors')) {
   failures.push('Migration must not replace the investors table.');
-}
-
-const register = read('src/pages/Register.tsx');
-if (changed.includes('src/pages/Register.tsx')) {
-  for (const token of [
-    'InvestorTypeTagPicker',
-    'InvestorStageTagPicker',
-    'InvestorMarketTagPicker',
-    'investment_appetite_vi',
-    'investorTypes',
-    'stages',
-    'createSignupBundle',
-  ]) {
-    if (!register.includes(token)) {
-      failures.push(`Register missing ${token}`);
-    }
-  }
-}
-
-const dashboard = read('src/pages/InvestorDashboard.tsx');
-if (changed.includes('src/pages/InvestorDashboard.tsx')) {
-  for (const token of [
-    'InvestorTypeTagPicker',
-    'InvestorStageTagPicker',
-    'InvestorMarketTagPicker',
-    'update_my_investor_profile',
-    'investment_appetite_vi',
-    'pending_profile_changes',
-    'd68-dashboard-nav-icon',
-  ]) {
-    if (!dashboard.includes(token)) {
-      failures.push(`Investor Dashboard missing ${token}`);
-    }
-  }
-}
-
-const admin = read('src/pages/Admin.tsx');
-if (changed.includes('src/pages/Admin.tsx')) {
-  for (const token of [
-    'admin_approve_investor_profile_changes',
-    'pending_profile_changes',
-    'Quản trị Nhà đầu tư',
-    'investorNeedsReview',
-  ]) {
-    if (!admin.includes(token)) failures.push(`Admin missing ${token}`);
-  }
-}
-
-for (const required of [
-  'src/pages/Register.tsx',
-  'src/pages/InvestorDashboard.tsx',
-  'src/pages/Admin.tsx',
-]) {
-  if (changed.includes(required)) continue;
-  console.log(`Pending UI wiring: ${required}`);
 }
 
 if (!changed.length) failures.push('No PR 3 changed files detected.');
@@ -280,6 +308,8 @@ if (failures.length) {
 
 console.log('✓ Investor Criteria Review V1 scope check: PASS');
 console.log(`✓ ${changed.length} changed files are inside the stacked whitelist.`);
+console.log('✓ Register stores Introduction/Appetite in the selected UI language only.');
+console.log('✓ Dashboard/Admin expose independent VI and EN review fields.');
 console.log('✓ Public pages use approved canonical criteria only.');
-console.log('✓ Proposal, Payment, Auth route and Netlify files remain out of scope.');
-console.log('✓ Migration preserves valid legacy codes and moderates public edits.');
+console.log('✓ Existing Dashboard/Admin shells and Proposal/Payment flows remain mounted.');
+console.log('✓ Migration preserves valid codes and approval does not force visibility.');
