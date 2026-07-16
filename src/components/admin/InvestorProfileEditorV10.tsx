@@ -98,7 +98,7 @@ export default function InvestorProfileEditorV10({
         sectors: industries,
         dealTypes,
       };
-      const visible = mode === 'approve' || form.get('visible') === 'on';
+      const visible = form.get('visible') === 'on';
       const patch: InvestorRow = {
         private_name: clean(form.get('private_name')),
         private_website: clean(form.get('private_website')),
@@ -137,8 +137,8 @@ export default function InvestorProfileEditorV10({
 
       setMessage(
         mode === 'approve'
-          ? 'Đã duyệt hồ sơ public. Khẩu vị và tiêu chí chờ duyệt vẫn được xử lý riêng.'
-          : 'Đã lưu hồ sơ Nhà đầu tư.',
+          ? `Đã duyệt hồ sơ và giữ trạng thái ${visible ? 'hiển thị' : 'ẩn'} theo lựa chọn. Khẩu vị và tiêu chí chờ duyệt vẫn được xử lý riêng.`
+          : `Đã lưu hồ sơ Nhà đầu tư với trạng thái ${visible ? 'hiển thị' : 'ẩn'}.`,
       );
       try {
         await onRefresh();
@@ -224,10 +224,11 @@ export default function InvestorProfileEditorV10({
         <label className="d68-admin-check"><input name="admin_priority" type="checkbox" defaultChecked={Boolean(investor.admin_priority)} /> Ưu tiên</label>
         <label className="d68-admin-check"><input name="visible" type="checkbox" defaultChecked={Boolean(investor.visible)} /> Hiển thị public</label>
       </div>
+      <div className="d68-admin-notice">Duyệt hồ sơ không tự bật hiển thị. Trạng thái Public/Ẩn luôn theo checkbox “Hiển thị public”.</div>
 
       <div className="d68-admin-actions">
         <button type="submit" name="submit_mode" value="save" className="d68-admin-btn green" disabled={busy}>Lưu hồ sơ</button>
-        <button type="submit" name="submit_mode" value="approve" className="d68-admin-btn blue" disabled={busy}>Duyệt hồ sơ public</button>
+        <button type="submit" name="submit_mode" value="approve" className="d68-admin-btn blue" disabled={busy}>Duyệt hồ sơ & lưu trạng thái</button>
         {investor.code ? <Link className="d68-admin-btn" to={`/investors/${investor.code}`} target="_blank" rel="noreferrer">Xem public ↗</Link> : null}
       </div>
     </form>
