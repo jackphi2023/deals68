@@ -46,7 +46,7 @@ async function deployedBase(request) {
         }
         const markers = {
           registration: bundle.includes('investor_register_v14'),
-          canonicalProfile: bundle.includes('Tên hiển thị công khai (VN)'),
+          canonicalFlow: bundle.includes('Dữ liệu lựa chọn được dùng thống nhất tại Dashboard và Admin.'),
           taxonomy: bundle.includes('Nhà đầu tư cá nhân / Thiên thần'),
         };
         diagnostics.push({ base, status: response.status(), scripts: scripts.length, markers });
