@@ -1000,7 +1000,7 @@ export default function Admin() {
             {tab === 'assets' && (
               <div>
                 {filteredBusinesses.map((business) => (
-                  <AssetEditor key={business.id} b={business} adminId={profile.id} onRefresh={load} />
+                  <AssetEditor key={business.id} business={business} adminId={profile.id} onRefresh={load} />
                 ))}
               </div>
             )}
