@@ -175,7 +175,13 @@ requireTokens('Admin Investor editor', adminEditor, [
   'IndustryTagPicker',
   'InvestorDealTypeTagPicker',
   'privacyAfterInvestorProfileApproval',
-  'Duyệt hồ sơ public',
+  "const visible = form.get('visible') === 'on';",
+  'Duyệt hồ sơ & lưu trạng thái',
+  'Duyệt hồ sơ không tự bật hiển thị',
+]);
+rejectTokens('Admin Investor visibility approval', adminEditor, [
+  "mode === 'approve' || form.get('visible') === 'on'",
+  "const visible = mode === 'approve'",
 ]);
 
 const migration = read(files.migration);
@@ -216,4 +222,5 @@ console.log('✓ Deals68 Investor Workflow V14 check: PASS');
 console.log('✓ Registration, Dashboard and Admin use the same canonical taxonomy.');
 console.log('✓ Dashboard Profile inherits the main menu, icons and layout classes.');
 console.log('✓ Admin keeps list filters and opens a full Investor detail workflow.');
+console.log('✓ Investor approval preserves the explicit Public/Hidden selection.');
 console.log('✓ Investor public profile changes remain pending until Admin approval.');
