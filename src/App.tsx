@@ -98,7 +98,7 @@ export default function App(){
   const location = useLocation();
   const lang = langFromPath(location.pathname);
 
-  return <div data-lang={lang}>
+  return <div data-lang={lang} data-investor-workflow="v14-visibility-independent">
     <ScrollToTop />
     <LanguageMemory />
     <SeoManager />
