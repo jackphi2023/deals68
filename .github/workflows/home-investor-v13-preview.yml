@@ -26,15 +26,20 @@ jobs:
       - name: Install dependencies
         run: npm ci --no-audit --no-fund
 
-      - name: Production build and static contracts
+      - name: Production build
         env:
           VITE_SUPABASE_URL: https://local-test.supabase.co
           VITE_SUPABASE_ANON_KEY: local-test-anon-key
-        run: |
-          npm run build
-          node scripts/deals68-home-mobile-hero-v13-check.mjs
-          node scripts/deals68-investor-profile-v10-check.mjs
-          node scripts/deals68-investor-list-v12-check.mjs
+        run: npm run build
+
+      - name: Homepage Mobile Hero V13 contract
+        run: node scripts/deals68-home-mobile-hero-v13-check.mjs
+
+      - name: Investor Profile V12 contract
+        run: node scripts/deals68-investor-profile-v10-check.mjs
+
+      - name: Investor List V12 contract
+        run: node scripts/deals68-investor-list-v12-check.mjs
 
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
