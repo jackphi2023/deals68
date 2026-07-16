@@ -144,4 +144,34 @@
     top:22px;
     left:19px;
   }
+
+  /* Mobile cover stays full-height and visually anchored on the right. */
+  .d68-v10-investor-detail .d68-id-cover > img {
+    inset:0!important;
+    width:100%!important;
+    height:100%!important;
+    object-fit:cover!important;
+    object-position:right center!important;
+  }
+
+  .d68-v10-investor-detail .d68-id-cover__shade {
+    background:
+      linear-gradient(90deg,rgba(5,22,40,.96) 0%,rgba(5,22,40,.82) 48%,rgba(5,22,40,.18) 100%),
+      linear-gradient(0deg,rgba(5,22,40,.88) 0%,rgba(5,22,40,.28) 58%,rgba(5,22,40,.08) 100%)!important;
+  }
+
+  .d68-v10-investor-detail .d68-id-cover__content {
+    justify-content:flex-end!important;
+    align-items:flex-start!important;
+    width:82%!important;
+    max-width:82%!important;
+    padding:22px 19px 20px!important;
+    text-align:left;
+  }
+
+  .d68-v10-investor-detail .d68-id-cover__content h1,
+  .d68-v10-investor-detail .d68-id-cover__badges {
+    justify-content:flex-start;
+    text-align:left;
+  }
 }
