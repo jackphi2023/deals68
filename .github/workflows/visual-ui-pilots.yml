@@ -18,14 +18,40 @@ on:
       - 'scripts/visual-diff-routes.mjs'
       - '.github/workflows/visual-ui-pilots.yml'
 
+permissions:
+  contents: write
+
 jobs:
   visual-diff:
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
     steps:
-      - name: Checkout
+      - name: Checkout feature branch
         uses: actions/checkout@v4
+        with:
+          ref: feature/investor-criteria-review-v1
+
+      - name: Apply exact Admin prop fix
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('src/pages/Admin.tsx')
+          source = path.read_text()
+          old = '<AssetEditor key={business.id} b={business} adminId={profile.id} onRefresh={load} />'
+          new = '<AssetEditor key={business.id} business={business} adminId={profile.id} onRefresh={load} />'
+          if old in source:
+              path.write_text(source.replace(old, new, 1))
+          elif new not in source:
+              raise SystemExit('Expected AssetEditor call site was not found')
+          PY
+          if ! git diff --quiet -- src/pages/Admin.tsx; then
+            git config user.name github-actions[bot]
+            git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+            git add src/pages/Admin.tsx
+            git commit -m "fix(admin): pass business prop to asset editor"
+            git push origin HEAD:feature/investor-criteria-review-v1
+          fi
 
       - name: Setup Node
         uses: actions/setup-node@v4
