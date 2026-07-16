@@ -99,7 +99,7 @@ function InvestorCard({ inv, lang, onProposal, proposalState, quotaExceeded, bus
 
         <div className="d68-investor-card__meta">
           {ticket ? <span><b>{T(lang, 'Quy mô đầu tư', 'Investment size')}:</b> {ticket}</span> : null}
-          {inv.industries.length ? <span><b>{T(lang, 'Ngành', 'Industries')}:</b> {inv.industries.map((x) => labelIndustry(x, lang)).join(', ')}</span> : null}
+          {inv.industries.length ? <span className="d68-investor-card__industries"><b>{T(lang, 'Ngành', 'Industries')}:</b> {inv.industries.map((x) => labelIndustry(x, lang)).join(', ')}</span> : null}
           {inv.dealTypes.length ? <span><b>{T(lang, 'Loại giao dịch', 'Deal type')}:</b> {inv.dealTypes.map((x) => labelDealType(x, lang, true)).join(', ')}</span> : null}
           {inv.stage && inv.stage !== 'Any' ? <span><b>{T(lang, 'Giai đoạn', 'Stage')}:</b> {labelStage(inv.stage, lang)}</span> : null}
         </div>
@@ -313,7 +313,7 @@ export default function Investors({ lang }: { lang: Lang }) {
 
         <div className="d68-investors-results">
           <div className="d68-investors-toolbar">
-            <span>{loading ? T(lang, 'Đang tải dữ liệu thật...', 'Loading live data...') : resultRangeText}</span>
+            <span>{loading ? T(lang, 'Đang tải…', 'Loading…') : resultRangeText}</span>
             {myBusiness ? <span>{`${T(lang, 'Proposal đã gửi', 'Proposals sent')}: ${quotaUsed}/${quotaTotal}`}</span> : null}
           </div>
 
