@@ -7,9 +7,10 @@ const read = (path) => fs.existsSync(path) ? fs.readFileSync(path, 'utf8') : '';
 const componentPath = 'src/components/HomepageHeroSlider.tsx';
 const homePath = 'src/pages/Home.tsx';
 const cssPath = 'src/styles/pages/home-hero-mobile-fix.css';
+const entityCssPath = 'src/styles/pages/entity-ui-v12.css';
 const indexPath = 'src/styles/index.css';
 
-for (const path of [componentPath, homePath, cssPath, indexPath]) {
+for (const path of [componentPath, homePath, cssPath, entityCssPath, indexPath]) {
   if (!fs.existsSync(path)) failures.push(`Missing ${path}`);
 }
 
@@ -31,7 +32,7 @@ const component = read(componentPath);
 for (const token of [
   "const MOBILE_QUERY = '(max-width: 700px)'",
   'window.matchMedia(MOBILE_QUERY)',
-  "data-hero-variant={variant}",
+  'data-hero-variant={variant}',
   'd68-home-hero-media__image',
   'data-hero-layout="single-active"',
   'const activeBanner = rows[active] || rows[0]',
@@ -65,6 +66,20 @@ for (const token of [
 }
 if (!css.includes('.d68-home-page')) failures.push('Homepage Hero CSS is not route scoped');
 
+const entityCss = read(entityCssPath);
+for (const token of [
+  '.d68-v10-investor-detail .d68-id-cover > img',
+  'object-position:right center!important',
+  '.d68-v10-investor-detail .d68-id-cover__content',
+  'justify-content:flex-end!important',
+  'align-items:flex-start!important',
+]) {
+  if (!entityCss.includes(token)) failures.push(`Investor Detail mobile CSS missing ${token}`);
+}
+if (entityCss.includes('.d68-v10-investor-detail .d68-id-cover__content h1:hover')) {
+  failures.push('Static Investor Detail title must not change color on hover');
+}
+
 const index = read(indexPath).trimEnd();
 const importToken = "@import './pages/home-hero-mobile-fix.css' layer(d68-overrides);";
 if (!index.includes(importToken)) failures.push('Homepage Hero mobile stylesheet is not registered');
@@ -81,3 +96,4 @@ console.log('✓ Mobile image selection uses matchMedia with desktop fallback.')
 console.log('✓ Loading and empty states do not render the legacy SVG placeholder.');
 console.log('✓ Only the active Hero banner is rendered in the DOM.');
 console.log('✓ Mobile Hero uses a 3:4 frame and three statistics remain on one row.');
+console.log('✓ Investor Detail mobile cover is anchored right; static title has no hover color.');
