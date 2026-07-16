@@ -77,12 +77,12 @@ export default function InvestorProfileV10() {
           <InvestorDashboardNav lang={lang} publicInvestorPath={publicPath} />
           <section className="d68-v10-investor-profile-content">
             {error ? <div className="d68-dashboard-notice err">{error}</div> : null}
-            <InvestorAppetiteFormV10
+            <InvestorProfileFormV10
               investor={investor}
               lang={lang}
               onRefresh={async () => { await loadInvestor(); }}
             />
-            <InvestorProfileFormV10
+            <InvestorAppetiteFormV10
               investor={investor}
               lang={lang}
               onRefresh={async () => { await loadInvestor(); }}
