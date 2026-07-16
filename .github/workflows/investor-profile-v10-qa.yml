@@ -20,6 +20,7 @@ on:
       - 'src/pages/Home.tsx'
       - 'src/pages/AdminBannersV10.tsx'
       - 'src/pages/AdminInvestorsV10.tsx'
+      - 'src/pages/InvestorDashboard.tsx'
       - 'src/pages/InvestorDetailV10.tsx'
       - 'src/pages/InvestorProfileV10.tsx'
       - 'src/pages/Investors.tsx'
@@ -29,6 +30,7 @@ on:
       - 'src/styles/pages/entity-ui-v12.css'
       - 'scripts/deals68-home-mobile-hero-v13-check.mjs'
       - 'scripts/deals68-home-mobile-hero-v13-beta-smoke.mjs'
+      - 'scripts/deals68-investor-dashboard-main-shell-check.mjs'
       - 'scripts/deals68-investor-detail-v13-diagnostic.mjs'
       - 'scripts/deals68-investor-profile-v10-check.mjs'
       - 'scripts/deals68-investor-list-v12-check.mjs'
@@ -70,6 +72,9 @@ jobs:
 
       - name: Investor Profile V12 semantic QA
         run: node scripts/deals68-investor-profile-v10-check.mjs
+
+      - name: Investor Dashboard main-shell QA
+        run: node scripts/deals68-investor-dashboard-main-shell-check.mjs
 
       - name: Investor List V12 scoped metadata QA
         run: node scripts/deals68-investor-list-v12-check.mjs
