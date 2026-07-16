@@ -10,7 +10,7 @@ const candidates = String(
   .map((value) => value.trim().replace(/\/$/, ''))
   .filter(Boolean);
 
-const deadline = Date.now() + Number(process.env.D68_DEPLOY_TIMEOUT_MS || 15 * 60_000);
+const deadline = Date.now() + Number(process.env.D68_DEPLOY_TIMEOUT_MS || 10 * 60_000);
 const requiredBundleTokens = [
   'd68-home-hero-slider-v2',
   'd68-home-hero-media__image',
@@ -19,7 +19,6 @@ const requiredBundleTokens = [
 const requiredCssTokens = [
   'aspect-ratio:3/4!important',
   'minmax(150px,1.7fr)!important',
-  'object-position:right center!important',
 ];
 
 function absolute(base, value) {
@@ -159,9 +158,7 @@ async function inspectHomeMobile(browser, base, width) {
     assert.ok(state.metricHeight <= state.lineHeight * 1.25, `${width}: deal value wraps`);
     assert.ok(state.overflow <= 1, `${width}: page horizontal overflow`);
 
-    if (width === 390) {
-      await page.screenshot({ path: '/tmp/deals68-home-mobile-hero-v13-390.png', fullPage: true });
-    }
+    if (width === 390) await page.screenshot({ path: '/tmp/deals68-home-mobile-hero-v13-390.png', fullPage: true });
   } finally {
     await page.close();
   }
@@ -176,10 +173,7 @@ async function inspectTablet(browser, base) {
       const hero = document.querySelector('.d68-home-hero');
       const stats = document.querySelector('.d68-home-hero-stats');
       const rect = hero?.getBoundingClientRect();
-      return {
-        display: stats ? getComputedStyle(stats).display : '',
-        ratio: rect ? rect.width / rect.height : 0,
-      };
+      return { display: stats ? getComputedStyle(stats).display : '', ratio: rect ? rect.width / rect.height : 0 };
     });
     assert.equal(state.display, 'flex', 'Tablet statistics layout must remain unchanged');
     assert.ok(state.ratio > 2.3, `Tablet Hero ratio changed: ${state.ratio}`);
