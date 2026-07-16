@@ -20,6 +20,7 @@
 @import './pages/investor-detail.css' layer(d68-overrides);
 @import './pages/investor-profile-v10.css' layer(d68-overrides);
 @import './pages/investor-criteria-v11.css' layer(d68-overrides);
+@import './pages/investor-workflow-v14.css' layer(d68-overrides);
 @import './pages/pricing.css' layer(d68-overrides);
 @import './pages/valuation.css' layer(d68-overrides);
 @import './pages/auth.css' layer(d68-overrides);
