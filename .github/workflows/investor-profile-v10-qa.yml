@@ -39,6 +39,7 @@ on:
       - 'scripts/deals68-investor-profile-v10-check.mjs'
       - 'scripts/deals68-investor-list-v12-check.mjs'
       - 'scripts/deals68-investor-workflow-v14-check.mjs'
+      - 'scripts/deals68-investor-workflow-v14-beta-smoke.mjs'
       - 'scripts/deals68-investor-v10-beta-smoke.mjs'
       - 'scripts/deals68-entity-ui-v12-beta-smoke.mjs'
       - 'scripts/deals68-package-checks.mjs'
@@ -97,6 +98,7 @@ jobs:
           node --check scripts/deals68-entity-ui-v12-beta-smoke.mjs
           node --check scripts/deals68-home-mobile-hero-v13-beta-smoke.mjs
           node --check scripts/deals68-investor-detail-v13-diagnostic.mjs
+          node --check scripts/deals68-investor-workflow-v14-beta-smoke.mjs
 
       - name: Font CSP contract QA
         run: |
@@ -116,7 +118,7 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/beta-reference'
     needs: build-and-package-qa
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 40
     steps:
       - name: Publish pending Beta smoke status
         env:
@@ -126,7 +128,7 @@ jobs:
             "repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
             -f state=pending \
             -f context='deals68/investor-v10-beta-smoke' \
-            -f description='Waiting for exact Netlify Beta Investor and Homepage Hero deployment' \
+            -f description='Waiting for exact Netlify Beta Investor Workflow V14 deployment' \
             -f target_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
 
       - name: Checkout deployed Beta commit
@@ -167,6 +169,12 @@ jobs:
           D68_RELEASE_SHA: ${{ github.sha }}
         run: node scripts/deals68-entity-ui-v12-beta-smoke.mjs
 
+      - name: Run real Investor Workflow V14 registration smoke
+        env:
+          D68_BETA_URLS: https://beta-reference-deals68.netlify.app,https://beta-reference--deals68.netlify.app
+          D68_RELEASE_SHA: ${{ github.sha }}
+        run: node scripts/deals68-investor-workflow-v14-beta-smoke.mjs
+
       - name: Publish successful Beta smoke status
         if: success()
         env:
@@ -176,7 +184,7 @@ jobs:
             "repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
             -f state=success \
             -f context='deals68/investor-v10-beta-smoke' \
-            -f description='Real Netlify Beta Investor, Entity UI and Homepage Hero smokes passed' \
+            -f description='Real Netlify Beta Investor Workflow V14 smokes passed' \
             -f target_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
 
       - name: Publish failed Beta smoke status
@@ -188,7 +196,7 @@ jobs:
             "repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
             -f state=failure \
             -f context='deals68/investor-v10-beta-smoke' \
-            -f description='Real Netlify Beta Investor, Entity UI or Homepage Hero smoke failed' \
+            -f description='Real Netlify Beta Investor Workflow V14 smoke failed' \
             -f target_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
 
       - name: Upload Beta smoke diagnostics
@@ -211,5 +219,8 @@ jobs:
             /tmp/deals68-investor-detail-v13-diagnostic.json
             /tmp/deals68-investor-detail-v13-diagnostic-desktop.png
             /tmp/deals68-investor-detail-v13-diagnostic-mobile.png
+            /tmp/deals68-investor-v14-register-vi-mobile.png
+            /tmp/deals68-investor-v14-register-vi-desktop.png
+            /tmp/deals68-investor-v14-register-en-desktop.png
           if-no-files-found: ignore
           retention-days: 7
