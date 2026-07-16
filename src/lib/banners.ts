@@ -4,10 +4,15 @@ import type { Lang } from './i18n';
 export type BannerPlacement =
   | 'home_hero'
   | 'home_promotion'
-  | 'listing_promotion';
+  | 'listing_promotion'
+  | 'investor_cover_default';
 
 export type BannerLangMode = 'vi' | 'en' | 'both';
 export type BannerImageVariant = 'desktop' | 'mobile';
+export type InvestorCoverSource = 'investor' | 'site_banner' | 'fallback';
+
+export const INVESTOR_COVER_FALLBACK =
+  '/assets/investor-cover-default.svg';
 
 export type SiteBanner = {
   id: string;
@@ -29,8 +34,24 @@ export type SiteBanner = {
   updated_at?: string;
 };
 
+export type ResolvedInvestorCover = {
+  url: string;
+  source: InvestorCoverSource;
+  banner: SiteBanner | null;
+};
+
 function todayIso() {
   return new Date().toISOString().slice(0, 10);
+}
+
+function cleanUrl(value?: string | null) {
+  return String(value || '').trim();
+}
+
+function objectOf(value: unknown): Record<string, unknown> {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
 }
 
 function bannerSlotKey(row: SiteBanner) {
@@ -92,6 +113,68 @@ export async function listSiteBanners(
     seen.add(key);
     return true;
   });
+}
+
+export function investorApprovedCoverUrl(investor: unknown) {
+  const row = objectOf(investor);
+  const criteria = objectOf(row.criteria);
+
+  return cleanUrl(
+    (criteria.cover_image_url as string | null | undefined) ||
+      (criteria.coverImageUrl as string | null | undefined) ||
+      (row.cover_image_url as string | null | undefined) ||
+      (row.hero_image_url as string | null | undefined),
+  );
+}
+
+export async function getActiveInvestorDefaultCover(
+  lang: Lang,
+): Promise<SiteBanner | null> {
+  const rows = await listSiteBanners(
+    'investor_cover_default',
+    lang,
+  );
+
+  return rows[0] || null;
+}
+
+export function resolveInvestorCover(
+  investor: unknown,
+  defaultBanner?: SiteBanner | string | null,
+  fallback = INVESTOR_COVER_FALLBACK,
+): ResolvedInvestorCover {
+  const approved = investorApprovedCoverUrl(investor);
+  if (approved) {
+    return {
+      url: approved,
+      source: 'investor',
+      banner: null,
+    };
+  }
+
+  const banner =
+    defaultBanner && typeof defaultBanner === 'object'
+      ? defaultBanner
+      : null;
+  const defaultUrl = cleanUrl(
+    typeof defaultBanner === 'string'
+      ? defaultBanner
+      : banner?.image_url,
+  );
+
+  if (defaultUrl) {
+    return {
+      url: defaultUrl,
+      source: 'site_banner',
+      banner,
+    };
+  }
+
+  return {
+    url: fallback,
+    source: 'fallback',
+    banner: null,
+  };
 }
 
 export async function uploadSiteBannerImage(
