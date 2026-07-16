@@ -32,6 +32,7 @@ on:
       - 'src/styles/pages/investor-profile-v10.css'
       - 'src/styles/pages/investor-workflow-v14.css'
       - 'src/styles/pages/entity-ui-v12.css'
+      - 'scripts/deals68-beta-release-marker-check.mjs'
       - 'scripts/deals68-home-mobile-hero-v13-check.mjs'
       - 'scripts/deals68-home-mobile-hero-v13-beta-smoke.mjs'
       - 'scripts/deals68-investor-dashboard-main-shell-check.mjs'
@@ -94,6 +95,7 @@ jobs:
 
       - name: Beta smoke parser QA
         run: |
+          node --check scripts/deals68-beta-release-marker-check.mjs
           node --check scripts/deals68-investor-v10-beta-smoke.mjs
           node --check scripts/deals68-entity-ui-v12-beta-smoke.mjs
           node --check scripts/deals68-home-mobile-hero-v13-beta-smoke.mjs
@@ -114,9 +116,41 @@ jobs:
       - name: Migration state QA
         run: npm run qa:migrations
 
-  beta-public-smoke:
+  beta-release-gate:
     if: github.event_name == 'push' && github.ref == 'refs/heads/beta-reference'
     needs: build-and-package-qa
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Checkout exact Beta commit
+        uses: actions/checkout@v4
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Wait for exact Netlify Beta bundle
+        env:
+          D68_BETA_URLS: https://beta-reference-deals68.netlify.app,https://beta-reference--deals68.netlify.app
+          D68_RELEASE_SHA: ${{ github.sha }}
+          D68_DEPLOY_TIMEOUT_MS: 1800000
+        run: node scripts/deals68-beta-release-marker-check.mjs
+
+      - name: Upload Beta release diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: beta-release-marker-${{ github.sha }}
+          path: /tmp/deals68-beta-release-marker.json
+          if-no-files-found: error
+          retention-days: 7
+
+  beta-public-smoke:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/beta-reference'
+    needs:
+      - build-and-package-qa
+      - beta-release-gate
     runs-on: ubuntu-latest
     timeout-minutes: 40
     steps:
@@ -128,7 +162,7 @@ jobs:
             "repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
             -f state=pending \
             -f context='deals68/investor-v10-beta-smoke' \
-            -f description='Waiting for exact Netlify Beta Investor Workflow V14 deployment' \
+            -f description='Running exact Netlify Beta Investor Workflow V14 browser smokes' \
             -f target_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
 
       - name: Checkout deployed Beta commit
@@ -161,6 +195,7 @@ jobs:
         env:
           D68_BETA_URLS: https://beta-reference-deals68.netlify.app,https://beta-reference--deals68.netlify.app
           D68_RELEASE_SHA: ${{ github.sha }}
+          D68_DEPLOY_TIMEOUT_MS: 120000
         run: node scripts/deals68-home-mobile-hero-v13-beta-smoke.mjs
 
       - name: Run real Entity UI V12 Beta smoke
@@ -173,6 +208,7 @@ jobs:
         env:
           D68_BETA_URLS: https://beta-reference-deals68.netlify.app,https://beta-reference--deals68.netlify.app
           D68_RELEASE_SHA: ${{ github.sha }}
+          D68_DEPLOY_TIMEOUT_MS: 120000
         run: node scripts/deals68-investor-workflow-v14-beta-smoke.mjs
 
       - name: Publish successful Beta smoke status
