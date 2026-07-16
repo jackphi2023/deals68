@@ -7,6 +7,22 @@ export const INVESTOR_REVIEW_CRITERIA_KEYS = [
   'revenueRange',
 ] as const;
 
+export const INVESTOR_PUBLIC_PROFILE_KEYS = [
+  'title_vi',
+  'title_en',
+  'desc_vi',
+  'desc_en',
+  'country',
+  'country_iso2',
+  'region',
+  'ticket_min',
+  'ticket_max',
+  'industries',
+  'deal_types',
+  'type',
+  'stage',
+] as const;
+
 export function objectOf(value: unknown): InvestorRow {
   return value && typeof value === 'object' && !Array.isArray(value)
     ? (value as InvestorRow)
@@ -22,7 +38,7 @@ export function valueList(value: unknown): string[] {
     return value.map(String).map((item) => item.trim()).filter(Boolean);
   }
   return String(value || '')
-    .split(/[;,\n]/)
+    .split(/[;,\n|]/)
     .map((item) => item.trim())
     .filter(Boolean);
 }
@@ -61,12 +77,35 @@ export function hasPendingInvestorAppetiteV10(investor: InvestorRow) {
   );
 }
 
-export function investorNeedsReviewV10(investor: InvestorRow) {
-  return (
-    ['draft', 'payment_pending', 'pending_admin_review'].includes(
-      clean(investor.status),
-    ) || Object.keys(pendingInvestorProfile(investor)).length > 0
+export function investorReviewReasonsV10(investor: InvestorRow) {
+  const pending = pendingInvestorProfile(investor);
+  const pendingCriteria = objectOf(pending.criteria);
+  const criteriaKeys = Object.keys(pendingCriteria);
+  const reviewedCriteriaKeys = new Set<string>(INVESTOR_REVIEW_CRITERIA_KEYS);
+  const profileCriteriaKeys = criteriaKeys.filter((key) => !reviewedCriteriaKeys.has(key));
+  const topLevelKeys = Object.keys(pending).filter((key) => key !== 'criteria');
+  const newAccount = ['draft', 'payment_pending', 'pending_admin_review'].includes(
+    clean(investor.status),
   );
+  const descriptionUpdated = ['desc_vi', 'desc_en'].some((key) =>
+    Object.prototype.hasOwnProperty.call(pending, key),
+  );
+  const criteriaUpdated = pendingInvestorCriteriaKeysV10(investor).length > 0;
+  const profileUpdated = topLevelKeys.length > 0 || profileCriteriaKeys.length > 0;
+
+  return {
+    newAccount,
+    profileUpdated,
+    criteriaUpdated,
+    descriptionUpdated,
+    pendingKeys: topLevelKeys,
+    pendingCriteriaKeys: criteriaKeys,
+    any: newAccount || profileUpdated || criteriaUpdated,
+  };
+}
+
+export function investorNeedsReviewV10(investor: InvestorRow) {
+  return investorReviewReasonsV10(investor).any;
 }
 
 export function investorDisplayNameV10(investor: InvestorRow) {
@@ -81,7 +120,6 @@ export function investorDisplayNameV10(investor: InvestorRow) {
 
 export function privacyAfterInvestorProfileApproval(investor: InvestorRow) {
   const privacy = { ...objectOf(investor.privacy) };
-  const pending = pendingInvestorProfile(investor);
   const pendingCriteria = pendingInvestorCriteriaV10(investor);
   const preservedCriteria: InvestorRow = {};
 
