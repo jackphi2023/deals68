@@ -42,6 +42,8 @@ if (fs.existsSync(cssPath)) {
   const css = read(cssPath);
   const scopedSelector = '.d68-investors-page .d68-investor-card__industries';
   const broadSelector = '.d68-investors-page .d68-investor-card__meta > span';
+  const staticDetailHoverSelector = '.d68-v10-investor-detail .d68-id-cover__content h1:hover';
+  const staticDetailTransitionSelector = '.d68-v10-investor-detail .d68-id-cover__content h1';
   const selectorIndex = css.indexOf(scopedSelector);
   const nextBlockEnd = selectorIndex >= 0 ? css.indexOf('}', selectorIndex) : -1;
   const block = selectorIndex >= 0 && nextBlockEnd > selectorIndex
@@ -62,6 +64,12 @@ if (fs.existsSync(cssPath)) {
   if (css.includes(broadSelector)) {
     failures.push('Two-line clamp must not apply to every Investor metadata row');
   }
+  if (css.includes(staticDetailHoverSelector)) {
+    failures.push('Static Investor Detail title must not change color on hover');
+  }
+  if (css.includes(`${staticDetailTransitionSelector},`) || css.includes(`${staticDetailTransitionSelector} {`)) {
+    failures.push('Static Investor Detail title must not be grouped into linked-title interactions');
+  }
 }
 
 if (failures.length) {
@@ -75,3 +83,4 @@ console.log('✓ Description is capped separately at three lines.');
 console.log('✓ Only Industries is capped at two lines with an ellipsis.');
 console.log('✓ Other Investor metadata rows remain unaffected.');
 console.log('✓ Listing loading text remains concise.');
+console.log('✓ Static Investor Detail title has no hover-color interaction.');
