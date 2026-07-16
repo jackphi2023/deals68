@@ -1,4 +1,5 @@
 name: Home and Investor V13 Preview QA
+# Temporary QA only; never merge this workflow into beta-reference.
 
 on:
   pull_request:
