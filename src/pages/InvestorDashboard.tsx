@@ -29,7 +29,6 @@ import type { Lang } from '../lib/i18n';
 import {
   T,
   countryOptions,
-  labelStage,
 } from '../lib/labels';
 import {
   industryKeyFromLabel,
@@ -42,13 +41,33 @@ import {
   parseFormattedNumber,
 } from '../lib/numberFormat';
 import { computeFitScore } from '../lib/scoring';
-import { proposalStatusLabel, updateProposalStatus, type ProposalStatus } from '../lib/proposals';
+import {
+  proposalStatusLabel,
+  updateProposalStatus,
+  type ProposalStatus,
+} from '../lib/proposals';
 import { supabase } from '../lib/supabase';
 import {
-  DealTypeTagPicker,
+  InvestorDealTypeTagPicker,
   IndustryTagPicker,
   normalizeIndustryKeys,
 } from '../components/investor/IndustryTagPicker';
+import {
+  InvestorMarketTagPicker,
+  InvestorStageTagPicker,
+  InvestorTypeTagPicker,
+} from '../components/investor/InvestorCriteriaTagPickers';
+import {
+  approvedInvestorCountries,
+  approvedInvestorDealTypes,
+  approvedInvestorSectors,
+  approvedInvestorStages,
+  approvedInvestorTypes,
+  normalizeInvestorCountries,
+  normalizeInvestorDealTypes,
+  normalizeInvestorStages,
+  normalizeInvestorTypes,
+} from '../lib/investorCriteria';
 import InvestorBillingPanel from '../components/investor/InvestorBillingPanel';
 import BusinessTitleLink from '../components/investor/BusinessTitleLink';
 
@@ -130,25 +149,6 @@ const tabAliases: Record<string, Tab> = {
   billing: 'billing',
 };
 
-const investorTypes = [
-  { value: 'Nhà đầu tư cá nhân', vi: 'Nhà đầu tư cá nhân', en: 'Individual / Angel' },
-  { value: 'VC', vi: 'Quỹ đầu tư mạo hiểm', en: 'Venture Capital' },
-  { value: 'PE', vi: 'Quỹ đầu tư tư nhân', en: 'Private Equity' },
-  { value: 'Institutional', vi: 'Nhà đầu tư tổ chức', en: 'Institutional investor' },
-  { value: 'Corporate/Strategic', vi: 'Nhà đầu tư chiến lược', en: 'Corporate / Strategic' },
-  { value: 'Family Office', vi: 'Văn phòng gia đình', en: 'Family Office' },
-  { value: 'Lender/Debt', vi: 'Tổ chức cho vay / Nợ', en: 'Lender / Debt' },
-];
-
-const stages = [
-  'Seed',
-  'Series A',
-  'Growth',
-  'Mature',
-  'Buyout',
-  'Any',
-];
-
 const riskOptions = [
   { value: 'conservative', vi: 'Thận trọng', en: 'Conservative' },
   { value: 'balanced', vi: 'Cân bằng', en: 'Balanced' },
@@ -199,11 +199,28 @@ function unique(values: string[]) {
   return Array.from(new Set(values.filter(Boolean)));
 }
 
+function pendingProfile(investor: any) {
+  const pending = investor?.privacy?.pending_profile_changes;
+  return pending && typeof pending === 'object' && !Array.isArray(pending)
+    ? pending
+    : {};
+}
+
+function countryEnglishName(iso2: string) {
+  return countryOptions.find((item) => item.iso2 === iso2)?.en || iso2;
+}
+
+function regionForCountry(iso2: string) {
+  if (['US', 'CA', 'BR'].includes(iso2)) return 'americas';
+  if (['DE', 'GB', 'CZ'].includes(iso2)) return 'europe';
+  if (['AU'].includes(iso2)) return 'oceania';
+  if (['AE'].includes(iso2)) return 'mideast';
+  return 'asia';
+}
+
 function revenueUsd(business: any) {
   const value = Number(business?.revenue_2025 || 0);
-  const currency = String(
-    business?.revenue_currency || 'VND',
-  ).toUpperCase();
+  const currency = String(business?.revenue_currency || 'VND').toUpperCase();
   return currency === 'USD' ? value : value / 26_000;
 }
 
@@ -211,12 +228,8 @@ function matchesRevenueBand(business: any, band: string) {
   if (!band) return true;
   const value = revenueUsd(business);
   if (band === 'under_1m') return value < 1_000_000;
-  if (band === '1_10m') {
-    return value >= 1_000_000 && value < 10_000_000;
-  }
-  if (band === '10_100m') {
-    return value >= 10_000_000 && value < 100_000_000;
-  }
+  if (band === '1_10m') return value >= 1_000_000 && value < 10_000_000;
+  if (band === '10_100m') return value >= 10_000_000 && value < 100_000_000;
   if (band === 'over_100m') return value >= 100_000_000;
   return true;
 }
@@ -228,27 +241,6 @@ function matchesEbitdaBand(business: any, band: string) {
   if (band === '10_20') return margin >= 10 && margin <= 20;
   if (band === 'over_20') return margin > 20;
   return true;
-}
-
-function pendingDescriptions(investor: any) {
-  const pending = investor?.privacy?.pending_profile_changes;
-  return pending && typeof pending === 'object' && !Array.isArray(pending)
-    ? pending
-    : {};
-}
-
-function countryEnglishName(iso2: string) {
-  return (
-    countryOptions.find((item) => item.iso2 === iso2)?.en || iso2
-  );
-}
-
-function regionForCountry(iso2: string) {
-  if (['US', 'CA', 'BR'].includes(iso2)) return 'americas';
-  if (['DE', 'GB', 'CZ'].includes(iso2)) return 'europe';
-  if (['AU'].includes(iso2)) return 'oceania';
-  if (['AE'].includes(iso2)) return 'mideast';
-  return 'asia';
 }
 
 function statusText(lang: Lang, status: unknown) {
@@ -270,9 +262,7 @@ function FormattedNumberInput({
   value: unknown;
   placeholder?: string;
 }) {
-  const [display, setDisplay] = useState(() =>
-    formatInitialNumber(value),
-  );
+  const [display, setDisplay] = useState(() => formatInitialNumber(value));
 
   useEffect(() => {
     setDisplay(formatInitialNumber(value));
@@ -285,9 +275,7 @@ function FormattedNumberInput({
       inputMode="numeric"
       value={display}
       placeholder={placeholder}
-      onChange={(event) =>
-        setDisplay(formatNumberTyping(event.target.value))
-      }
+      onChange={(event) => setDisplay(formatNumberTyping(event.target.value))}
     />
   );
 }
@@ -333,20 +321,14 @@ function MatchCard({
         <div className="d68-match-card__metrics">
           <div>
             <small>{T(lang, 'Doanh thu', 'Revenue')}</small>
-            <b>
-              {formatCompactMoney(
-                business.revenue_2025,
-                business.revenue_currency,
-              )}
-            </b>
+            <b>{formatCompactMoney(business.revenue_2025, business.revenue_currency)}</b>
           </div>
           <div>
             <small>{T(lang, 'Nhu cầu', 'Ask')}</small>
             <b>
               {formatCompactMoney(
                 business.ask_amount,
-                business.ask_currency ||
-                  business.revenue_currency,
+                business.ask_currency || business.revenue_currency,
               )}
             </b>
           </div>
@@ -354,10 +336,7 @@ function MatchCard({
         <div className="d68-investor-card-actions">
           <Link
             className="d68-dashboard-btn light"
-            to={toLocalizedPath(
-              `/businesses/${business.slug}`,
-              lang,
-            )}
+            to={toLocalizedPath(`/businesses/${business.slug}`, lang)}
           >
             {T(lang, 'Xem doanh nghiệp', 'View business')}
           </Link>
@@ -381,13 +360,7 @@ function MatchCard({
   );
 }
 
-function InterestRows({
-  lang,
-  rows,
-}: {
-  lang: Lang;
-  rows: any[];
-}) {
+function InterestRows({ lang, rows }: { lang: Lang; rows: any[] }) {
   if (!rows.length) {
     return (
       <div className="d68-dashboard-empty">
@@ -406,14 +379,9 @@ function InterestRows({
         const business = row.businesses || {};
         const title =
           lang === 'en'
-            ? business.title_en ||
-              business.title_vi ||
-              business.public_code
-            : business.title_vi ||
-              business.title_en ||
-              business.public_code;
+            ? business.title_en || business.title_vi || business.public_code
+            : business.title_vi || business.title_en || business.public_code;
         const image = business.hero_image_url || business.image_url;
-
         return (
           <article key={row.id} className="d68-investor-interest-row">
             <div className="d68-investor-interest-row__media">
@@ -442,20 +410,14 @@ function InterestRows({
               <div className="d68-investor-interest-row__metrics">
                 <div>
                   <small>{T(lang, 'Doanh thu', 'Revenue')}</small>
-                  <b>
-                    {formatCompactMoney(
-                      business.revenue_2025,
-                      business.revenue_currency,
-                    )}
-                  </b>
+                  <b>{formatCompactMoney(business.revenue_2025, business.revenue_currency)}</b>
                 </div>
                 <div>
                   <small>{T(lang, 'Nhu cầu', 'Ask')}</small>
                   <b>
                     {formatCompactMoney(
                       business.ask_amount,
-                      business.ask_currency ||
-                        business.revenue_currency,
+                      business.ask_currency || business.revenue_currency,
                     )}
                   </b>
                 </div>
@@ -468,10 +430,7 @@ function InterestRows({
             {business.slug ? (
               <Link
                 className="d68-dashboard-btn light"
-                to={toLocalizedPath(
-                  `/businesses/${business.slug}`,
-                  lang,
-                )}
+                to={toLocalizedPath(`/businesses/${business.slug}`, lang)}
               >
                 {T(lang, 'Xem chi tiết', 'View details')}
               </Link>
@@ -483,139 +442,76 @@ function InterestRows({
   );
 }
 
-function ProposalRows({
-  lang,
-  proposals,
-  onMark,
-  onRequestData,
-}: any) {
-  const newCount = proposals.filter(
-    (proposal: any) => proposal.status === 'sent',
-  ).length;
+function ProposalRows({ lang, proposals, onMark, onRequestData }: any) {
+  const newCount = proposals.filter((proposal: any) => proposal.status === 'sent').length;
   const approved = proposals.filter((proposal: any) =>
     ['approved', 'connected'].includes(proposal.status),
   ).length;
-  const declined = proposals.filter(
-    (proposal: any) => proposal.status === 'declined',
-  ).length;
+  const declined = proposals.filter((proposal: any) => proposal.status === 'declined').length;
 
   return (
     <div className="d68-dashboard-card">
       <h2>{T(lang, 'Proposal đã nhận', 'Received proposals')}</h2>
       <div className="d68-dashboard-grid4" style={{ margin: '14px 0' }}>
-        <div className="d68-proposal-metric">
-          <b>{newCount}</b>
-          <span>{T(lang, 'Proposal mới', 'New')}</span>
-        </div>
-        <div className="d68-proposal-metric">
-          <b>{approved}</b>
-          <span>{T(lang, 'Đã duyệt', 'Approved')}</span>
-        </div>
-        <div className="d68-proposal-metric">
-          <b>{declined}</b>
-          <span>{T(lang, 'Bỏ qua', 'Declined')}</span>
-        </div>
-        <div className="d68-proposal-metric">
-          <b>{proposals.length}</b>
-          <span>{T(lang, 'Tổng', 'Total')}</span>
-        </div>
+        <div className="d68-proposal-metric"><b>{newCount}</b><span>{T(lang, 'Proposal mới', 'New')}</span></div>
+        <div className="d68-proposal-metric"><b>{approved}</b><span>{T(lang, 'Đã duyệt', 'Approved')}</span></div>
+        <div className="d68-proposal-metric"><b>{declined}</b><span>{T(lang, 'Bỏ qua', 'Declined')}</span></div>
+        <div className="d68-proposal-metric"><b>{proposals.length}</b><span>{T(lang, 'Tổng', 'Total')}</span></div>
       </div>
 
-      {proposals.length ? (
-        proposals.map((row: any) => {
-          const business = row.businesses || {};
-          const status = proposalStatusLabel(row.status, lang);
-          return (
-            <div
-              key={row.id}
-              className="d68-dashboard-row d68-proposal-row"
-            >
-              <div style={{ flex: 1 }}>
-                <b>
-                  <BusinessTitleLink business={business} lang={lang}>
-                    {business.title_vi ||
-                      business.title_en ||
-                      business.public_code ||
-                      row.business_id}
-                  </BusinessTitleLink>
-                </b>
-                <div className="d68-dashboard-mini">
-                  {new Date(
-                    row.sent_at || row.created_at,
-                  ).toLocaleString(
-                    lang === 'vi' ? 'vi-VN' : 'en-US',
-                  )}{' '}
-                  · {business.city || '—'} ·{' '}
-                  {labelIndustryTaxonomy(
-                    business.industry_key || business.industry,
-                    lang,
+      {proposals.length ? proposals.map((row: any) => {
+        const business = row.businesses || {};
+        const status = proposalStatusLabel(row.status, lang);
+        return (
+          <div key={row.id} className="d68-dashboard-row d68-proposal-row">
+            <div style={{ flex: 1 }}>
+              <b>
+                <BusinessTitleLink business={business} lang={lang}>
+                  {business.title_vi || business.title_en || business.public_code || row.business_id}
+                </BusinessTitleLink>
+              </b>
+              <div className="d68-dashboard-mini">
+                {new Date(row.sent_at || row.created_at).toLocaleString(
+                  lang === 'vi' ? 'vi-VN' : 'en-US',
+                )}{' '}· {business.city || '—'} ·{' '}
+                {labelIndustryTaxonomy(
+                  business.industry_key || business.industry,
+                  lang,
+                )}
+              </div>
+              <p>
+                {T(lang, 'Nhu cầu vốn/giá chào', 'Ask')}: <b>
+                  {formatCompactMoney(
+                    business.ask_amount,
+                    business.ask_currency || business.revenue_currency,
                   )}
-                </div>
-                <p>
-                  {T(lang, 'Nhu cầu vốn/giá chào', 'Ask')}:{' '}
-                  <b>
-                    {formatCompactMoney(
-                      business.ask_amount,
-                      business.ask_currency ||
-                        business.revenue_currency,
-                    )}
-                  </b>{' '}
-                  ·{' '}
-                  <span
-                    className={`d68-dashboard-badge ${status.cls}`}
-                  >
-                    {status.label}
-                  </span>
-                </p>
-                {business.slug ? (
-                  <Link
-                    to={toLocalizedPath(
-                      `/businesses/${business.slug}`,
-                      lang,
-                    )}
-                    className="d68-dashboard-btn light"
-                  >
-                    {T(
-                      lang,
-                      'Xem hồ sơ doanh nghiệp',
-                      'View business profile',
-                    )}
-                  </Link>
-                ) : null}
-              </div>
-              <div className="d68-dashboard-actions">
-                <button
-                  type="button"
-                  onClick={() => onMark(row, 'approved')}
-                  className="d68-dashboard-btn green"
+                </b>{' '}· <span className={`d68-dashboard-badge ${status.cls}`}>{status.label}</span>
+              </p>
+              {business.slug ? (
+                <Link
+                  to={toLocalizedPath(`/businesses/${business.slug}`, lang)}
+                  className="d68-dashboard-btn light"
                 >
-                  {T(lang, 'Duyệt', 'Approve')}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => onMark(row, 'declined')}
-                  className="d68-dashboard-btn red"
-                >
-                  {T(lang, 'Bỏ qua', 'Decline')}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => onRequestData(row)}
-                  className="d68-dashboard-btn gold"
-                >
-                  {T(lang, 'Yêu cầu tài liệu', 'Request data')}
-                </button>
-              </div>
+                  {T(lang, 'Xem hồ sơ doanh nghiệp', 'View business profile')}
+                </Link>
+              ) : null}
             </div>
-          );
-        })
-      ) : (
+            <div className="d68-dashboard-actions">
+              <button type="button" onClick={() => onMark(row, 'approved')} className="d68-dashboard-btn green">
+                {T(lang, 'Duyệt', 'Approve')}
+              </button>
+              <button type="button" onClick={() => onMark(row, 'declined')} className="d68-dashboard-btn red">
+                {T(lang, 'Bỏ qua', 'Decline')}
+              </button>
+              <button type="button" onClick={() => onRequestData(row)} className="d68-dashboard-btn gold">
+                {T(lang, 'Yêu cầu tài liệu', 'Request data')}
+              </button>
+            </div>
+          </div>
+        );
+      }) : (
         <div className="d68-dashboard-empty">
-          {T(
-            lang,
-            'Chưa có proposal nào gửi tới bạn.',
-            'No received proposals yet.',
-          )}
+          {T(lang, 'Chưa có proposal nào gửi tới bạn.', 'No received proposals yet.')}
         </div>
       )}
     </div>
@@ -626,9 +522,7 @@ export default function InvestorDashboard() {
   const { profile, loading } = useAuth();
   const location = useLocation();
   const lang = langFromPath(location.pathname);
-  const [tab, setTab] = useState<Tab>(() =>
-    resolveTab(location.pathname),
-  );
+  const [tab, setTab] = useState<Tab>(() => resolveTab(location.pathname));
   const [investor, setInvestor] = useState<any>(null);
   const [businesses, setBusinesses] = useState<any[]>([]);
   const [facets, setFacets] = useState<any[]>([]);
@@ -649,7 +543,6 @@ export default function InvestorDashboard() {
   async function load() {
     if (!profile) return;
     setBusy(true);
-
     try {
       const currentInvestor = await getInvestorByOwner(profile.id);
       if (!currentInvestor) {
@@ -657,12 +550,7 @@ export default function InvestorDashboard() {
         return;
       }
 
-      const [
-        nextBusinesses,
-        nextFacets,
-        relationResult,
-        paymentResult,
-      ] = await Promise.all([
+      const [nextBusinesses, nextFacets, relationResult, paymentResult] = await Promise.all([
         listBusinesses({ limit: 120, sort: 'featured' }),
         listBusinessFacets(),
         supabase.rpc('get_my_investor_dashboard_relations', {
@@ -678,43 +566,25 @@ export default function InvestorDashboard() {
           .order('created_at', { ascending: false }),
       ]);
 
-      if (
-        relationResult.error ||
-        paymentResult.error
-      ) {
-        throw (
-          relationResult.error ||
-          paymentResult.error
-        );
+      if (relationResult.error || paymentResult.error) {
+        throw relationResult.error || paymentResult.error;
       }
 
-      const selectedKeys = normalizeIndustryKeys([
-        ...asArray(currentInvestor.industries),
-        ...asArray(currentInvestor.criteria?.sectors),
-      ]);
+      const selectedKeys = approvedInvestorSectors(currentInvestor);
       const availableKeys = unique(
         nextFacets
-          .map((item) =>
-            industryKeyFromLabel(
-              item.industry_key || item.industry,
-            ),
-          )
+          .map((item) => industryKeyFromLabel(item.industry_key || item.industry))
           .filter(Boolean),
-      );
-      const selectedAvailable = selectedKeys.filter((key) =>
-        availableKeys.includes(key),
       );
 
       setInvestor(currentInvestor);
       setBusinesses(nextBusinesses);
       setFacets(nextFacets);
-      const relations = relationResult.data && typeof relationResult.data === 'object'
-        ? relationResult.data as Record<string, any>
-        : {};
+      const relations = asObject(relationResult.data);
       setInterests(Array.isArray(relations.interests) ? relations.interests : []);
       setProposals(Array.isArray(relations.proposals) ? relations.proposals : []);
       setPayments(paymentResult.data || []);
-      setFilterIndustries(selectedAvailable);
+      setFilterIndustries(selectedKeys.filter((key) => availableKeys.includes(key)));
     } catch {
       setNoticeType('err');
       setNotice(T(lang, 'Có lỗi', 'Something went wrong'));
@@ -728,143 +598,129 @@ export default function InvestorDashboard() {
   }, [profile?.id]);
 
   const investorIndustries = useMemo(
-    () =>
-      normalizeIndustryKeys([
-        ...asArray(investor?.industries),
-        ...asArray(investor?.criteria?.sectors),
-      ]),
-    [investor?.industries, investor?.criteria],
+    () => approvedInvestorSectors(investor),
+    [investor],
   );
-
   const businessIndustryKeys = useMemo(
-    () =>
-      unique(
-        facets
-          .map((item) =>
-            industryKeyFromLabel(
-              item.industry_key || item.industry,
-            ),
-          )
-          .filter(Boolean),
-      ),
+    () => unique(
+      facets
+        .map((item) => industryKeyFromLabel(item.industry_key || item.industry))
+        .filter(Boolean),
+    ),
     [facets],
   );
-
   const criteriaIndustries = useMemo(
-    () =>
-      investorIndustries.filter((key) =>
-        businessIndustryKeys.includes(key),
-      ),
+    () => investorIndustries.filter((key) => businessIndustryKeys.includes(key)),
     [investorIndustries, businessIndustryKeys],
   );
-
   const recommended = useMemo(() => {
     if (!investor) return [];
     return businesses
       .filter((business) => {
-        const key = industryKeyFromLabel(
-          business.industry_key || business.industry,
-        );
+        const key = industryKeyFromLabel(business.industry_key || business.industry);
         return (
-          (!filterIndustries.length ||
-            filterIndustries.includes(key)) &&
+          (!filterIndustries.length || filterIndustries.includes(key)) &&
           matchesRevenueBand(business, revenueBand) &&
           matchesEbitdaBand(business, ebitdaBand)
         );
       })
-      .map((business) => ({
-        ...business,
-        fit: computeFitScore(business, investor),
-      }))
+      .map((business) => ({ ...business, fit: computeFitScore(business, investor) }))
       .sort((left, right) => right.fit - left.fit)
       .slice(0, 24);
-  }, [
-    businesses,
-    investor,
-    filterIndustries,
-    revenueBand,
-    ebitdaBand,
-  ]);
+  }, [businesses, investor, filterIndustries, revenueBand, ebitdaBand]);
 
-  const pending = pendingDescriptions(investor);
-  const hasPendingDescription =
-    Object.keys(pending).length > 0;
+  const pending = pendingProfile(investor);
+  const pendingCriteria = asObject(pending.criteria);
+  const hasPending = Object.keys(pending).length > 0;
 
   async function saveProfile(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!investor) return;
     const form = new FormData(event.currentTarget);
-    const industries = asArray(form.get('industries'));
-    const dealTypes = asArray(form.get('deal_types'));
-    const iso2 = String(form.get('country_iso2') || 'VN');
-    const returnExpectation = Number(
-      form.get('returnExpectation') || 0,
-    );
-    const selectedRevenueBand = String(
-      form.get('revenueBand') || '',
-    );
+    const industries = normalizeIndustryKeys(asArray(form.get('industries')));
+    const dealTypes = normalizeInvestorDealTypes(asArray(form.get('deal_types')));
+    const investorTypes = normalizeInvestorTypes(asArray(form.get('investor_types')));
+    const stages = normalizeInvestorStages(asArray(form.get('stages')));
+    const targetCountries = normalizeInvestorCountries(asArray(form.get('target_countries')));
+    const iso2 = String(form.get('country_iso2') || 'VN').toUpperCase();
+    const returnExpectation = Number(form.get('returnExpectation') || 0);
+    const selectedRevenueBand = String(form.get('revenueBand') || '');
+
+    if (!investorTypes.length || !stages.length || !industries.length || !dealTypes.length || !targetCountries.length) {
+      setNoticeType('err');
+      setNotice(
+        T(
+          lang,
+          'Vui lòng chọn đầy đủ loại hình, giai đoạn, ngành, loại giao dịch và thị trường quan tâm.',
+          'Select at least one investor type, stage, industry, deal type and target market.',
+        ),
+      );
+      return;
+    }
 
     const profilePatch = {
       private_name: String(form.get('private_name') || '').trim(),
-      private_website: String(
-        form.get('private_website') || '',
-      ).trim(),
-      type: String(form.get('type') || '').trim(),
+      private_website: String(form.get('private_website') || '').trim(),
+      investor_types: investorTypes,
+      type: investorTypes[0],
+      stages,
+      stage: stages[0],
       country_iso2: iso2,
       country: countryEnglishName(iso2),
       region: regionForCountry(iso2),
       industries,
       deal_types: dealTypes,
-      stage: String(form.get('stage') || '').trim(),
+      target_countries: targetCountries,
       ticket_min: parseFormattedNumber(form.get('ticket_min')),
       ticket_max: parseFormattedNumber(form.get('ticket_max')),
       criteria: {
-        riskAppetite: String(
-          form.get('riskAppetite') || 'balanced',
-        ),
+        investorTypes,
+        stages,
+        sectors: industries,
+        dealTypes,
+        targetCountries,
+        preferredCountries: targetCountries,
+        targetCountriesCache: targetCountries,
+        investment_appetite_vi: String(form.get('investment_appetite_vi') || '').trim(),
+        investment_appetite_en: String(form.get('investment_appetite_en') || '').trim(),
+        riskAppetite: String(form.get('riskAppetite') || 'balanced'),
         returnExpectation:
           Number.isFinite(returnExpectation) && returnExpectation >= 0
             ? returnExpectation
             : null,
+        revenueRange: selectedRevenueBand,
         revenueBand: selectedRevenueBand,
       },
     };
 
     const descriptionPatch = {
-      desc_vi: String(form.get('desc_vi') || ''),
-      desc_en: String(form.get('desc_en') || ''),
+      desc_vi: String(form.get('desc_vi') || '').trim(),
+      desc_en: String(form.get('desc_en') || '').trim(),
     };
 
-    const { data, error } = await supabase.rpc(
-      'update_my_investor_profile',
-      {
-        profile_patch: profilePatch,
-        description_patch: descriptionPatch,
-      },
-    );
+    const { data, error } = await supabase.rpc('update_my_investor_profile', {
+      profile_patch: profilePatch,
+      description_patch: descriptionPatch,
+    });
 
     if (error) {
       setNoticeType('err');
-      setNotice(T(lang, 'Có lỗi', 'Something went wrong'));
+      setNotice(error.message || T(lang, 'Có lỗi', 'Something went wrong'));
       return;
     }
 
-    const descriptionPending = Boolean(
-      data?.description_pending,
+    const requiresReview = Boolean(
+      data?.profile_pending || data?.criteria_pending || data?.description_pending,
     );
-    setNoticeType(descriptionPending ? 'warn' : 'ok');
+    setNoticeType(requiresReview ? 'warn' : 'ok');
     setNotice(
-      descriptionPending
+      requiresReview
         ? T(
             lang,
-            'Thông tin cần được quản trị Deals68 duyệt trước khi hiển thị.',
-            'This information requires Deals68 administrator approval before it is displayed.',
+            'Thay đổi đã được gửi và đang chờ quản trị Deals68 duyệt trước khi hiển thị công khai.',
+            'Your changes were submitted and are awaiting Deals68 administrator approval before public display.',
           )
-        : T(
-            lang,
-            'Cập nhật Hồ sơ thành công',
-            'Profile updated successfully',
-          ),
+        : T(lang, 'Cập nhật Hồ sơ thành công', 'Profile updated successfully'),
     );
     await load();
   }
@@ -872,63 +728,40 @@ export default function InvestorDashboard() {
   async function saveContact(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
-
-    const { error } = await supabase.rpc(
-      'update_my_investor_contact',
-      {
-        contact_patch: {
-          email: String(form.get('email') || '').trim(),
-          phone: String(form.get('phone') || '').trim(),
-          website: String(form.get('website') || '').trim(),
-          shareEmail: form.get('shareEmail') === 'on',
-          sharePhone: form.get('sharePhone') === 'on',
-          shareWebsite: form.get('shareWebsite') === 'on',
-        },
+    const { error } = await supabase.rpc('update_my_investor_contact', {
+      contact_patch: {
+        email: String(form.get('email') || '').trim(),
+        phone: String(form.get('phone') || '').trim(),
+        website: String(form.get('website') || '').trim(),
+        shareEmail: form.get('shareEmail') === 'on',
+        sharePhone: form.get('sharePhone') === 'on',
+        shareWebsite: form.get('shareWebsite') === 'on',
       },
-    );
-
+    });
     if (error) {
       setNoticeType('err');
       setNotice(T(lang, 'Có lỗi', 'Something went wrong'));
       return;
     }
-
     setNoticeType('ok');
-    setNotice(
-      T(
-        lang,
-        'Cập nhật thông tin liên hệ thành công',
-        'Contact details updated successfully',
-      ),
-    );
+    setNotice(T(lang, 'Cập nhật thông tin liên hệ thành công', 'Contact details updated successfully'));
     await load();
   }
 
   async function expressInterest(business: any) {
     if (!investor?.id || !business?.id) return;
-    const { error } = await supabase.rpc(
-      'express_investor_interest',
-      {
-        investor_uuid: investor.id,
-        business_uuid: business.id,
-        interest_note: 'Expressed from Investor Dashboard.',
-      },
-    );
-
+    const { error } = await supabase.rpc('express_investor_interest', {
+      investor_uuid: investor.id,
+      business_uuid: business.id,
+      interest_note: 'Expressed from Investor Dashboard.',
+    });
     if (error) {
       setNoticeType('err');
       setNotice(T(lang, 'Có lỗi', 'Something went wrong'));
       return;
     }
-
     setNoticeType('ok');
-    setNotice(
-      T(
-        lang,
-        'Đã ghi nhận quan tâm.',
-        'Interest recorded.',
-      ),
-    );
+    setNotice(T(lang, 'Đã ghi nhận quan tâm.', 'Interest recorded.'));
     await load();
   }
 
@@ -941,38 +774,21 @@ export default function InvestorDashboard() {
       note: 'Investor requested data from Investor Dashboard.',
       status: 'pending',
     });
-
     if (error) {
       setNoticeType('err');
       setNotice(T(lang, 'Có lỗi', 'Something went wrong'));
       return false;
     }
-
     setNoticeType('ok');
-    setNotice(
-      T(
-        lang,
-        'Đã gửi yêu cầu dữ liệu.',
-        'Data request sent.',
-      ),
-    );
+    setNotice(T(lang, 'Đã gửi yêu cầu dữ liệu.', 'Data request sent.'));
     return true;
   }
 
-  async function markProposal(
-    row: any,
-    status: ProposalStatus,
-  ) {
+  async function markProposal(row: any, status: ProposalStatus) {
     try {
       await updateProposalStatus(row.id, status);
       setNoticeType('ok');
-      setNotice(
-        T(
-          lang,
-          'Đã cập nhật Proposal.',
-          'Proposal updated.',
-        ),
-      );
+      setNotice(T(lang, 'Đã cập nhật Proposal.', 'Proposal updated.'));
       await load();
     } catch {
       setNoticeType('err');
@@ -983,9 +799,7 @@ export default function InvestorDashboard() {
   async function requestProposalData(row: any) {
     const business = row.businesses || {};
     try {
-      const requested = await requestData({
-        id: row.business_id || business.id,
-      });
+      const requested = await requestData({ id: row.business_id || business.id });
       if (!requested) return;
       await updateProposalStatus(row.id, 'request_data');
       await load();
@@ -995,12 +809,10 @@ export default function InvestorDashboard() {
     }
   }
 
-  if (loading) {
+  if (loading || (busy && !investor)) {
     return (
       <main className="d68-dashboard-page">
-        <div className="d68-dashboard-wrap">
-          {T(lang, 'Đang tải…', 'Loading…')}
-        </div>
+        <div className="d68-dashboard-wrap">{T(lang, 'Đang tải…', 'Loading…')}</div>
       </main>
     );
   }
@@ -1008,21 +820,9 @@ export default function InvestorDashboard() {
   if (!profile) {
     return (
       <Navigate
-        to={`/login?next=${encodeURIComponent(
-          location.pathname,
-        )}`}
+        to={`/login?next=${encodeURIComponent(location.pathname)}`}
         replace
       />
-    );
-  }
-
-  if (busy && !investor) {
-    return (
-      <main className="d68-dashboard-page">
-        <div className="d68-dashboard-wrap">
-          {T(lang, 'Đang tải…', 'Loading…')}
-        </div>
-      </main>
     );
   }
 
@@ -1031,13 +831,7 @@ export default function InvestorDashboard() {
       <main className="d68-dashboard-page">
         <div className="d68-dashboard-wrap">
           <div className="d68-dashboard-card">
-            <h1>
-              {T(
-                lang,
-                'Không tìm thấy hồ sơ Nhà đầu tư',
-                'Investor profile not found',
-              )}
-            </h1>
+            <h1>{T(lang, 'Không tìm thấy hồ sơ Nhà đầu tư', 'Investor profile not found')}</h1>
           </div>
         </div>
       </main>
@@ -1046,9 +840,7 @@ export default function InvestorDashboard() {
 
   const criteria = asObject(investor.criteria);
   const privacy = asObject(investor.privacy);
-  const formKey = `${investor.id}:${investor.updated_at || ''}:${
-    privacy.pending_submitted_at || ''
-  }`;
+  const formKey = `${investor.id}:${investor.updated_at || ''}:${privacy.pending_submitted_at || ''}`;
   const privateInvestorName = String(
     investor.private_name ||
       privacy.private_name ||
@@ -1062,19 +854,46 @@ export default function InvestorDashboard() {
     ? toLocalizedPath(`/investors/${investor.code}`, lang)
     : '';
 
+  const formInvestorTypes = normalizeInvestorTypes(
+    pendingCriteria.investorTypes || pending.investor_types || approvedInvestorTypes(investor),
+  );
+  const formStages = normalizeInvestorStages(
+    pendingCriteria.stages || pending.stages || approvedInvestorStages(investor),
+  );
+  const formIndustries = normalizeIndustryKeys(
+    pending.industries || pendingCriteria.sectors || approvedInvestorSectors(investor),
+  );
+  const formDealTypes = normalizeInvestorDealTypes(
+    pending.deal_types || pendingCriteria.dealTypes || approvedInvestorDealTypes(investor),
+  );
+  const formTargetCountries = normalizeInvestorCountries(
+    pendingCriteria.targetCountries || approvedInvestorCountries(investor),
+  );
+  const formCountryIso2 = String(pending.country_iso2 || investor.country_iso2 || 'VN');
+  const formTicketMin = pending.ticket_min ?? investor.ticket_min;
+  const formTicketMax = pending.ticket_max ?? investor.ticket_max;
+  const formDescVi = pending.desc_vi ?? investor.desc_vi ?? '';
+  const formDescEn = pending.desc_en ?? investor.desc_en ?? '';
+  const formAppetiteVi =
+    pendingCriteria.investment_appetite_vi ??
+    criteria.investment_appetite_vi ??
+    criteria.investmentAppetiteVi ??
+    '';
+  const formAppetiteEn =
+    pendingCriteria.investment_appetite_en ??
+    criteria.investment_appetite_en ??
+    criteria.investmentAppetiteEn ??
+    '';
+
   return (
     <main className="d68-dashboard-page d68-investor-dashboard-page">
       <div className="d68-dashboard-wrap">
         <header className="d68-dashboard-head">
           <div>
-            <div className="d68-dashboard-kicker">
-              Investor Dashboard
-            </div>
+            <div className="d68-dashboard-kicker">Investor Dashboard</div>
             <div className="d68-investor-dashboard-title-row">
               <h1>{privateInvestorName}</h1>
-              <span className="d68-investor-dashboard-id">
-                {investor.code}
-              </span>
+              <span className="d68-investor-dashboard-id">{investor.code}</span>
             </div>
           </div>
         </header>
@@ -1088,9 +907,7 @@ export default function InvestorDashboard() {
                 className={tab === item.id ? 'active' : ''}
                 onClick={() => setTab(item.id)}
               >
-                <span className="d68-dashboard-nav-icon">
-                  <item.Icon size={16} />
-                </span>
+                <span className="d68-dashboard-nav-icon"><item.Icon size={16} /></span>
                 {T(lang, item.vi, item.en)}
               </Link>
             ))}
@@ -1101,29 +918,19 @@ export default function InvestorDashboard() {
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                {T(
-                  lang,
-                  'Xem Hồ sơ hiển thị',
-                  'View displayed profile',
-                )}{' '}
-                ↗
+                {T(lang, 'Xem Hồ sơ hiển thị', 'View displayed profile')} ↗
               </a>
             ) : null}
           </nav>
 
           <section>
-            {notice ? (
-              <div className={`d68-dashboard-notice ${noticeType}`}>
-                {notice}
-              </div>
-            ) : null}
-
-            {hasPendingDescription ? (
+            {notice ? <div className={`d68-dashboard-notice ${noticeType}`}>{notice}</div> : null}
+            {hasPending ? (
               <div className="d68-dashboard-notice warn">
                 {T(
                   lang,
-                  'Thông tin cần được quản trị Deals68 duyệt trước khi hiển thị.',
-                  'This information requires Deals68 administrator approval before it is displayed.',
+                  'Hồ sơ có thay đổi đang chờ quản trị Deals68 duyệt. Dữ liệu công khai hiện tại chưa bị thay thế.',
+                  'Your profile has changes awaiting Deals68 administrator approval. The current public data remains unchanged.',
                 )}
               </div>
             ) : null}
@@ -1137,301 +944,124 @@ export default function InvestorDashboard() {
                 <div className="d68-dashboard-row-head">
                   <div>
                     <h2>{T(lang, 'Hồ sơ Nhà đầu tư', 'Investor profile')}</h2>
-                    <p>
-                      {T(
-                        lang,
-                        'Thông tin hồ sơ và tiêu chí đầu tư của bạn.',
-                        'Your profile and investment criteria.',
-                      )}
-                    </p>
+                    <p>{T(lang, 'Thông tin hồ sơ và tiêu chí đầu tư của bạn.', 'Your profile and investment criteria.')}</p>
                   </div>
                 </div>
 
                 <div className="d68-dashboard-form2">
                   <label className="d68-dashboard-field">
-                    <span>
-                      {T(
-                        lang,
-                        'Tên Quỹ đầu tư / Nhà đầu tư — nội bộ, không công khai',
-                        'Fund / Investor name — internal, not public',
-                      )}
-                    </span>
-                    <input
-                      name="private_name"
-                      className="d68-dashboard-input"
-                      defaultValue={investor.private_name || ''}
-                    />
+                    <span>{T(lang, 'Tên Quỹ đầu tư / Nhà đầu tư — nội bộ, không công khai', 'Fund / Investor name — internal, not public')}</span>
+                    <input name="private_name" className="d68-dashboard-input" defaultValue={investor.private_name || ''} />
                   </label>
-
                   <label className="d68-dashboard-field">
-                    <span>{T(lang, 'Website', 'Website')}</span>
-                    <input
-                      name="private_website"
-                      className="d68-dashboard-input"
-                      defaultValue={investor.private_website || ''}
-                    />
+                    <span>{T(lang, 'Website nội bộ', 'Internal website')}</span>
+                    <input name="private_website" className="d68-dashboard-input" defaultValue={investor.private_website || ''} />
                   </label>
-
                   <label className="d68-dashboard-field">
-                    <span>
-                      {T(
-                        lang,
-                        'Tên nhà đầu tư hiển thị công khai',
-                        'Publicly displayed investor name',
-                      )}
-                    </span>
-                    <input
-                      className="d68-dashboard-input d68-dashboard-input--locked"
-                      value={investor.title_vi || ''}
-                      disabled
-                      readOnly
-                    />
-                    <small>
-                      {T(
-                        lang,
-                        'Chỉ quản trị Deals68 được cập nhật trường này.',
-                        'Only Deals68 administrators can update this field.',
-                      )}
-                    </small>
+                    <span>{T(lang, 'Tên hiển thị công khai (VN)', 'Public display name (VI)')}</span>
+                    <input className="d68-dashboard-input d68-dashboard-input--locked" value={investor.title_vi || ''} disabled readOnly />
+                    <small>{T(lang, 'Chỉ quản trị Deals68 được cập nhật trường này.', 'Only Deals68 administrators can update this field.')}</small>
                   </label>
-
                   <label className="d68-dashboard-field">
-                    <span>
-                      {T(
-                        lang,
-                        'Tên nhà đầu tư hiển thị bằng tiếng Anh',
-                        'Investor display name in English',
-                      )}
-                    </span>
-                    <input
-                      className="d68-dashboard-input d68-dashboard-input--locked"
-                      value={investor.title_en || ''}
-                      disabled
-                      readOnly
-                    />
-                    <small>
-                      {T(
-                        lang,
-                        'Chỉ quản trị Deals68 được cập nhật trường này.',
-                        'Only Deals68 administrators can update this field.',
-                      )}
-                    </small>
+                    <span>{T(lang, 'Tên hiển thị công khai (EN)', 'Public display name (EN)')}</span>
+                    <input className="d68-dashboard-input d68-dashboard-input--locked" value={investor.title_en || ''} disabled readOnly />
+                    <small>{T(lang, 'Chỉ quản trị Deals68 được cập nhật trường này.', 'Only Deals68 administrators can update this field.')}</small>
                   </label>
-
                   <label className="d68-dashboard-field">
-                    <span>
-                      {T(lang, 'Loại nhà đầu tư', 'Investor type')}
-                    </span>
-                    <select
-                      name="type"
-                      className="d68-dashboard-input"
-                      defaultValue={investor.type || 'Nhà đầu tư cá nhân'}
-                    >
-                      {investorTypes.map((item) => (
-                        <option key={item.value} value={item.value}>
-                          {T(lang, item.vi, item.en)}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-
-                  <label className="d68-dashboard-field">
-                    <span>{T(lang, 'Quốc gia', 'Country')}</span>
-                    <select
-                      name="country_iso2"
-                      className="d68-dashboard-input"
-                      defaultValue={investor.country_iso2 || 'VN'}
-                    >
+                    <span>{T(lang, 'Quốc gia trụ sở', 'Headquarters country')}</span>
+                    <select name="country_iso2" className="d68-dashboard-input" defaultValue={formCountryIso2}>
                       {countryOptions.map((item) => (
-                        <option key={item.iso2} value={item.iso2}>
-                          {T(lang, item.vi, item.en)}
-                        </option>
+                        <option key={item.iso2} value={item.iso2}>{T(lang, item.vi, item.en)}</option>
                       ))}
                     </select>
                   </label>
-
                   <label className="d68-dashboard-field">
-                    <span>
-                      {T(
-                        lang,
-                        'Khoảng đầu tư tối thiểu',
-                        'Minimum investment',
-                      )}
-                    </span>
-                    <FormattedNumberInput
-                      name="ticket_min"
-                      value={investor.ticket_min}
-                    />
+                    <span>{T(lang, 'Khoản đầu tư tối thiểu (USD)', 'Minimum ticket (USD)')}</span>
+                    <FormattedNumberInput name="ticket_min" value={formTicketMin} />
                   </label>
-
                   <label className="d68-dashboard-field">
-                    <span>
-                      {T(
-                        lang,
-                        'Khoảng đầu tư tối đa',
-                        'Maximum investment',
-                      )}
-                    </span>
-                    <FormattedNumberInput
-                      name="ticket_max"
-                      value={investor.ticket_max}
-                    />
+                    <span>{T(lang, 'Khoản đầu tư tối đa (USD)', 'Maximum ticket (USD)')}</span>
+                    <FormattedNumberInput name="ticket_max" value={formTicketMax} />
                   </label>
                 </div>
 
-                <label className="d68-dashboard-field">
+                <div className="d68-dashboard-field">
+                  <span>{T(lang, 'Loại hình nhà đầu tư', 'Investor types')}</span>
+                  <InvestorTypeTagPicker lang={lang} values={formInvestorTypes} name="investor_types" />
+                </div>
+                <div className="d68-dashboard-field">
+                  <span>{T(lang, 'Giai đoạn phù hợp', 'Preferred stages')}</span>
+                  <InvestorStageTagPicker lang={lang} values={formStages} name="stages" />
+                </div>
+                <div className="d68-dashboard-field">
                   <span>{T(lang, 'Ngành quan tâm', 'Industries of interest')}</span>
-                  <IndustryTagPicker
-                    lang={lang}
-                    values={investorIndustries}
-                    name="industries"
-                    expandVi="Đầy đủ"
-                    expandEn="Show all"
-                  />
-                </label>
-
-                <label className="d68-dashboard-field">
-                  <span>
-                    {T(
-                      lang,
-                      'Loại giao dịch quan tâm',
-                      'Transaction types of interest',
-                    )}
-                  </span>
-                  <DealTypeTagPicker
-                    lang={lang}
-                    values={investor.deal_types || criteria.dealTypes}
-                    name="deal_types"
-                  />
-                </label>
+                  <IndustryTagPicker lang={lang} values={formIndustries} name="industries" expandVi="Đầy đủ" expandEn="Show all" />
+                </div>
+                <div className="d68-dashboard-field">
+                  <span>{T(lang, 'Loại giao dịch quan tâm', 'Transaction types of interest')}</span>
+                  <InvestorDealTypeTagPicker lang={lang} values={formDealTypes} name="deal_types" />
+                </div>
+                <div className="d68-dashboard-field">
+                  <span>{T(lang, 'Thị trường quan tâm', 'Target investment markets')}</span>
+                  <InvestorMarketTagPicker lang={lang} values={formTargetCountries} name="target_countries" />
+                </div>
 
                 <div className="d68-dashboard-form2">
                   <label className="d68-dashboard-field">
-                    <span>
-                      {T(lang, 'Giai đoạn ưu tiên', 'Preferred stage')}
-                    </span>
-                    <select
-                      name="stage"
-                      className="d68-dashboard-input"
-                      defaultValue={investor.stage || 'Any'}
-                    >
-                      {stages.map((stage) => (
-                        <option key={stage} value={stage}>
-                          {labelStage(stage, lang)}
-                        </option>
-                      ))}
+                    <span>{T(lang, 'Khẩu vị rủi ro', 'Risk appetite')}</span>
+                    <select name="riskAppetite" className="d68-dashboard-input" defaultValue={pendingCriteria.riskAppetite || criteria.riskAppetite || 'balanced'}>
+                      {riskOptions.map((item) => <option key={item.value} value={item.value}>{T(lang, item.vi, item.en)}</option>)}
                     </select>
                   </label>
-
                   <label className="d68-dashboard-field">
-                    <span>
-                      {T(lang, 'Khẩu vị rủi ro', 'Risk appetite')}
-                    </span>
-                    <select
-                      name="riskAppetite"
-                      className="d68-dashboard-input"
-                      defaultValue={
-                        criteria.riskAppetite || 'balanced'
-                      }
-                    >
-                      {riskOptions.map((item) => (
-                        <option key={item.value} value={item.value}>
-                          {T(lang, item.vi, item.en)}
-                        </option>
-                      ))}
-                    </select>
+                    <span>{T(lang, 'Kỳ vọng lợi nhuận (%)', 'Expected return (%)')}</span>
+                    <input name="returnExpectation" type="number" inputMode="decimal" min="0" step="0.1" className="d68-dashboard-input" defaultValue={pendingCriteria.returnExpectation ?? criteria.returnExpectation ?? ''} />
                   </label>
-
                   <label className="d68-dashboard-field">
-                    <span>
-                      {T(
-                        lang,
-                        'Kỳ vọng lợi nhuận (%)',
-                        'Expected return (%)',
-                      )}
-                    </span>
-                    <input
-                      name="returnExpectation"
-                      type="number"
-                      inputMode="decimal"
-                      min="0"
-                      step="0.1"
-                      className="d68-dashboard-input"
-                      defaultValue={criteria.returnExpectation ?? ''}
-                    />
-                  </label>
-
-                  <label className="d68-dashboard-field">
-                    <span>
-                      {T(
-                        lang,
-                        'Quy mô Doanh thu DN',
-                        'Business revenue size',
-                      )}
-                    </span>
-                    <select
-                      name="revenueBand"
-                      className="d68-dashboard-input"
-                      defaultValue={
-                        criteria.revenueBand ||
-                        criteria.preferredDealSize ||
-                        ''
-                      }
-                    >
-                      {revenueBandOptions.map((item) => (
-                        <option key={item.value} value={item.value}>
-                          {T(lang, item.vi, item.en)}
-                        </option>
-                      ))}
+                    <span>{T(lang, 'Quy mô Doanh thu DN', 'Business revenue size')}</span>
+                    <select name="revenueBand" className="d68-dashboard-input" defaultValue={pendingCriteria.revenueRange || pendingCriteria.revenueBand || criteria.revenueRange || criteria.revenueBand || criteria.preferredDealSize || ''}>
+                      {revenueBandOptions.map((item) => <option key={item.value} value={item.value}>{T(lang, item.vi, item.en)}</option>)}
                     </select>
                   </label>
                 </div>
 
                 <div className="d68-dashboard-form2">
                   <label className="d68-dashboard-field">
-                    <span>
-                      {T(
-                        lang,
-                        'Mô tả ẩn danh công khai',
-                        'Public anonymous description',
-                      )}
-                    </span>
-                    <textarea
-                      name="desc_vi"
-                      className="d68-dashboard-input d68-dashboard-textarea"
-                      defaultValue={pending.desc_vi ?? investor.desc_vi ?? ''}
-                    />
+                    <span>{T(lang, 'Giới thiệu (VN)', 'Introduction (VI)')}</span>
+                    <textarea name="desc_vi" className="d68-dashboard-input d68-dashboard-textarea" defaultValue={formDescVi} />
+                    <small>{T(lang, 'Nội dung tiếng Việt, chờ Admin duyệt trước khi công khai.', 'Vietnamese content; Admin approval is required before public display.')}</small>
                   </label>
                   <label className="d68-dashboard-field">
-                    <span>
-                      {T(
-                        lang,
-                        'Mô tả ẩn danh công khai bằng tiếng Anh',
-                        'Public anonymous description in English',
-                      )}
-                    </span>
-                    <textarea
-                      name="desc_en"
-                      className="d68-dashboard-input d68-dashboard-textarea"
-                      defaultValue={pending.desc_en ?? investor.desc_en ?? ''}
-                    />
+                    <span>{T(lang, 'Giới thiệu (EN)', 'Introduction (EN)')}</span>
+                    <textarea name="desc_en" className="d68-dashboard-input d68-dashboard-textarea" defaultValue={formDescEn} />
+                    <small>{T(lang, 'Nội dung tiếng Anh độc lập, không tự dịch từ bản VN.', 'Independent English content; it is not auto-translated from Vietnamese.')}</small>
+                  </label>
+                </div>
+
+                <div className="d68-dashboard-form2">
+                  <label className="d68-dashboard-field">
+                    <span>{T(lang, 'Khẩu vị đầu tư (VN)', 'Investment appetite (VI)')}</span>
+                    <textarea name="investment_appetite_vi" className="d68-dashboard-input d68-dashboard-textarea" defaultValue={formAppetiteVi} />
+                    <small>{T(lang, 'Mô tả loại doanh nghiệp, mô hình và điều kiện đầu tư ưu tiên bằng tiếng Việt.', 'Describe preferred businesses, models and investment conditions in Vietnamese.')}</small>
+                  </label>
+                  <label className="d68-dashboard-field">
+                    <span>{T(lang, 'Khẩu vị đầu tư (EN)', 'Investment appetite (EN)')}</span>
+                    <textarea name="investment_appetite_en" className="d68-dashboard-input d68-dashboard-textarea" defaultValue={formAppetiteEn} />
+                    <small>{T(lang, 'Nội dung tiếng Anh độc lập; để trống nếu chưa có bản EN.', 'Independent English content; leave blank until an English version is available.')}</small>
                   </label>
                 </div>
 
                 <div className="d68-investor-profile-review-note">
                   {T(
                     lang,
-                    'Thông tin Mô tả (Tiếng Việt/Tiếng Anh) thay đổi cần quản trị duyệt để đảm bảo luôn ẩn danh tên/thương hiệu khi hiển thị',
-                    'Changes to the public description (Vietnamese/English) require administrator approval to ensure names and brands remain anonymous when displayed.',
+                    'Giới thiệu, Khẩu vị đầu tư và các tiêu chí public thay đổi đều cần quản trị Deals68 duyệt trước khi hiển thị.',
+                    'Changes to the Introduction, Investment Appetite and public criteria require Deals68 administrator approval before display.',
                   )}
                 </div>
 
                 <div className="d68-dashboard-actions">
-                  <button
-                    className="d68-dashboard-btn blue"
-                    disabled={busy}
-                  >
-                    {T(lang, 'Lưu hồ sơ', 'Save profile')}
+                  <button className="d68-dashboard-btn blue" disabled={busy}>
+                    {T(lang, 'Gửi cập nhật để duyệt', 'Submit updates for review')}
                   </button>
                 </div>
               </form>
@@ -1439,134 +1069,57 @@ export default function InvestorDashboard() {
 
             {tab === 'recommended' ? (
               <div className="d68-dashboard-card">
-                <h2>
-                  {T(
-                    lang,
-                    'Tiêu chí & Doanh nghiệp gợi ý',
-                    'Criteria & Suggested businesses',
-                  )}
-                </h2>
-                <p>
-                  {T(
-                    lang,
-                    'Chọn bộ lọc để tìm doanh nghiệp phù hợp',
-                    'Choose filters to find matching businesses',
-                  )}
-                </p>
-
+                <h2>{T(lang, 'Tiêu chí & Doanh nghiệp gợi ý', 'Criteria & Suggested businesses')}</h2>
+                <p>{T(lang, 'Chọn bộ lọc để tìm doanh nghiệp phù hợp', 'Choose filters to find matching businesses')}</p>
                 <div className="d68-investor-filter-grid">
                   <div className="d68-dashboard-field">
                     <span>{T(lang, 'Danh mục', 'Categories')}</span>
                     <div className="d68-chip-select">
-                      {criteriaIndustries.length ? (
-                        criteriaIndustries.map((key) => {
-                          const option = industryOptions.find(
-                            (item) => item.key === key,
-                          );
-                          return (
-                            <button
-                              type="button"
-                              key={key}
-                              className={
-                                filterIndustries.includes(key)
-                                  ? 'active'
-                                  : ''
-                              }
-                              onClick={() =>
-                                setFilterIndustries((current) =>
-                                  current.includes(key)
-                                    ? current.filter(
-                                        (item) => item !== key,
-                                      )
-                                    : [...current, key],
-                                )
-                              }
-                            >
-                              {option
-                                ? T(lang, option.vi, option.en)
-                                : key}
-                            </button>
-                          );
-                        })
-                      ) : (
+                      {criteriaIndustries.length ? criteriaIndustries.map((key) => {
+                        const option = industryOptions.find((item) => item.key === key);
+                        return (
+                          <button
+                            type="button"
+                            key={key}
+                            className={filterIndustries.includes(key) ? 'active' : ''}
+                            onClick={() => setFilterIndustries((current) =>
+                              current.includes(key)
+                                ? current.filter((item) => item !== key)
+                                : [...current, key],
+                            )}
+                          >
+                            {option ? T(lang, option.vi, option.en) : key}
+                          </button>
+                        );
+                      }) : (
                         <span className="d68-dashboard-mini">
-                          {T(
-                            lang,
-                            'Chưa có danh mục quan tâm nào đang có doanh nghiệp.',
-                            'None of your selected categories currently has a business.',
-                          )}
+                          {T(lang, 'Chưa có danh mục quan tâm nào đang có doanh nghiệp.', 'None of your selected categories currently has a business.')}
                         </span>
                       )}
                     </div>
                   </div>
-
                   <label className="d68-dashboard-field">
-                    <span>
-                      {T(
-                        lang,
-                        'Quy mô doanh thu',
-                        'Revenue size',
-                      )}
-                    </span>
-                    <select
-                      className="d68-dashboard-input"
-                      value={revenueBand}
-                      onChange={(event) =>
-                        setRevenueBand(event.target.value)
-                      }
-                    >
-                      {revenueBandOptions.map((item) => (
-                        <option key={item.value} value={item.value}>
-                          {T(lang, item.vi, item.en)}
-                        </option>
-                      ))}
+                    <span>{T(lang, 'Quy mô doanh thu', 'Revenue size')}</span>
+                    <select className="d68-dashboard-input" value={revenueBand} onChange={(event) => setRevenueBand(event.target.value)}>
+                      {revenueBandOptions.map((item) => <option key={item.value} value={item.value}>{T(lang, item.vi, item.en)}</option>)}
                     </select>
                   </label>
-
                   <label className="d68-dashboard-field">
-                    <span>
-                      {T(
-                        lang,
-                        'Biên lợi nhuận (% EBITDA)',
-                        'EBITDA margin (%)',
-                      )}
-                    </span>
-                    <select
-                      className="d68-dashboard-input"
-                      value={ebitdaBand}
-                      onChange={(event) =>
-                        setEbitdaBand(event.target.value)
-                      }
-                    >
-                      {ebitdaBandOptions.map((item) => (
-                        <option key={item.value} value={item.value}>
-                          {T(lang, item.vi, item.en)}
-                        </option>
-                      ))}
+                    <span>{T(lang, 'Biên lợi nhuận (% EBITDA)', 'EBITDA margin (%)')}</span>
+                    <select className="d68-dashboard-input" value={ebitdaBand} onChange={(event) => setEbitdaBand(event.target.value)}>
+                      {ebitdaBandOptions.map((item) => <option key={item.value} value={item.value}>{T(lang, item.vi, item.en)}</option>)}
                     </select>
                   </label>
                 </div>
-
                 {recommended.length ? (
                   <div className="d68-dashboard-grid3">
                     {recommended.map((business) => (
-                      <MatchCard
-                        key={business.id}
-                        business={business}
-                        investor={investor}
-                        lang={lang}
-                        onInterest={expressInterest}
-                        onRequest={requestData}
-                      />
+                      <MatchCard key={business.id} business={business} investor={investor} lang={lang} onInterest={expressInterest} onRequest={requestData} />
                     ))}
                   </div>
                 ) : (
                   <div className="d68-dashboard-empty">
-                    {T(
-                      lang,
-                      'Chưa có doanh nghiệp phù hợp. Hãy quay lại sau khi có doanh nghiệp mới',
-                      'No matching businesses yet. Please return when new businesses are added.',
-                    )}
+                    {T(lang, 'Chưa có doanh nghiệp phù hợp. Hãy quay lại sau khi có doanh nghiệp mới', 'No matching businesses yet. Please return when new businesses are added.')}
                   </div>
                 )}
               </div>
@@ -1574,121 +1127,36 @@ export default function InvestorDashboard() {
 
             {tab === 'watchlist' ? (
               <div className="d68-dashboard-card">
-                <h2>
-                  {T(
-                    lang,
-                    'Doanh nghiệp đã bày tỏ quan tâm',
-                    'Businesses you expressed interest in',
-                  )}
-                </h2>
+                <h2>{T(lang, 'Doanh nghiệp đã bày tỏ quan tâm', 'Businesses you expressed interest in')}</h2>
                 <InterestRows lang={lang} rows={interests} />
               </div>
             ) : null}
 
             {tab === 'proposals' ? (
-              <ProposalRows
-                lang={lang}
-                proposals={proposals}
-                onMark={markProposal}
-                onRequestData={requestProposalData}
-              />
+              <ProposalRows lang={lang} proposals={proposals} onMark={markProposal} onRequestData={requestProposalData} />
             ) : null}
 
             {tab === 'contacts' ? (
-              <form
-                key={`contact:${formKey}`}
-                onSubmit={saveContact}
-                className="d68-dashboard-card"
-              >
-                <h2>
-                  {T(
-                    lang,
-                    'Liên hệ và Bảo mật',
-                    'Contact and Privacy',
-                  )}
-                </h2>
-
+              <form key={`contact:${formKey}`} onSubmit={saveContact} className="d68-dashboard-card">
+                <h2>{T(lang, 'Liên hệ và Bảo mật', 'Contact and Privacy')}</h2>
                 <div className="d68-dashboard-form2">
                   <label className="d68-dashboard-field">
                     <span>Email</span>
-                    <input
-                      name="email"
-                      type="email"
-                      className="d68-dashboard-input"
-                      defaultValue={
-                        investor.private_email ||
-                        privacy.email ||
-                        ''
-                      }
-                    />
-                    <label className="d68-investor-share-check">
-                      <input
-                        name="shareEmail"
-                        type="checkbox"
-                        defaultChecked={!!privacy.shareEmail}
-                      />
-                      {T(
-                        lang,
-                        'Cho phép doanh nghiệp xem sau khi đã kết nối',
-                        'Allow the business to view it after connection',
-                      )}
-                    </label>
+                    <input name="email" type="email" className="d68-dashboard-input" defaultValue={investor.private_email || privacy.email || ''} />
+                    <label className="d68-investor-share-check"><input name="shareEmail" type="checkbox" defaultChecked={!!privacy.shareEmail} />{T(lang, 'Cho phép doanh nghiệp xem sau khi đã kết nối', 'Allow the business to view it after connection')}</label>
                   </label>
-
                   <label className="d68-dashboard-field">
                     <span>{T(lang, 'Số điện thoại', 'Phone')}</span>
-                    <input
-                      name="phone"
-                      className="d68-dashboard-input"
-                      defaultValue={
-                        investor.private_phone ||
-                        privacy.phone ||
-                        ''
-                      }
-                    />
-                    <label className="d68-investor-share-check">
-                      <input
-                        name="sharePhone"
-                        type="checkbox"
-                        defaultChecked={!!privacy.sharePhone}
-                      />
-                      {T(
-                        lang,
-                        'Cho phép doanh nghiệp xem sau khi đã kết nối',
-                        'Allow the business to view it after connection',
-                      )}
-                    </label>
+                    <input name="phone" className="d68-dashboard-input" defaultValue={investor.private_phone || privacy.phone || ''} />
+                    <label className="d68-investor-share-check"><input name="sharePhone" type="checkbox" defaultChecked={!!privacy.sharePhone} />{T(lang, 'Cho phép doanh nghiệp xem sau khi đã kết nối', 'Allow the business to view it after connection')}</label>
                   </label>
-
                   <label className="d68-dashboard-field">
                     <span>Website</span>
-                    <input
-                      name="website"
-                      className="d68-dashboard-input"
-                      defaultValue={
-                        investor.private_website ||
-                        privacy.website ||
-                        ''
-                      }
-                    />
-                    <label className="d68-investor-share-check">
-                      <input
-                        name="shareWebsite"
-                        type="checkbox"
-                        defaultChecked={privacy.shareWebsite !== false}
-                      />
-                      {T(
-                        lang,
-                        'Cho phép chia sẻ website sau khi kết nối được duyệt',
-                        'Allow the website to be shared after an approved connection',
-                      )}
-                    </label>
+                    <input name="website" className="d68-dashboard-input" defaultValue={investor.private_website || privacy.website || ''} />
+                    <label className="d68-investor-share-check"><input name="shareWebsite" type="checkbox" defaultChecked={privacy.shareWebsite !== false} />{T(lang, 'Cho phép chia sẻ website sau khi kết nối được duyệt', 'Allow the website to be shared after an approved connection')}</label>
                   </label>
                 </div>
-
-                <button className="d68-dashboard-btn blue">
-                  {T(lang, 'Lưu liên hệ', 'Save contact details')}
-                </button>
+                <button className="d68-dashboard-btn blue">{T(lang, 'Lưu liên hệ', 'Save contact details')}</button>
               </form>
             ) : null}
 
@@ -1699,14 +1167,8 @@ export default function InvestorDashboard() {
                 profile={profile}
                 payments={payments}
                 onReload={load}
-                setMessage={(value) => {
-                  setNoticeType('ok');
-                  setNotice(value);
-                }}
-                setError={(value) => {
-                  setNoticeType('err');
-                  setNotice(value);
-                }}
+                setMessage={(value) => { setNoticeType('ok'); setNotice(value); }}
+                setError={(value) => { setNoticeType('err'); setNotice(value); }}
               />
             ) : null}
           </section>
