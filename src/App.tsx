@@ -24,6 +24,7 @@ const InvestorDashboard = lazy(() => import('./pages/InvestorDashboard'));
 const InvestorProfileV10 = lazy(() => import('./pages/InvestorProfileV10'));
 const Admin = lazy(() => import('./pages/Admin'));
 const AdminBannersV10 = lazy(() => import('./pages/AdminBannersV10'));
+const AdminInvestorsV10 = lazy(() => import('./pages/AdminInvestorsV10'));
 const AdminValuation = lazy(() => import('./pages/AdminValuation'));
 const About = lazy(() => import('./pages/StaticPages').then((m) => ({ default: m.About })));
 const Terms = lazy(() => import('./pages/StaticPages').then((m) => ({ default: m.Terms })));
@@ -159,6 +160,8 @@ export default function App(){
         <Route path="/admin/valuation-config" element={<AdminValuation/>}/>
         <Route path="/admin/proposals" element={<Admin/>}/>
         <Route path="/admin/banners" element={<AdminBannersV10/>}/>
+        <Route path="/admin/investors" element={<AdminInvestorsV10/>}/>
+        <Route path="/admin/investors/:code" element={<AdminInvestorsV10/>}/>
         <Route path="/admin" element={<Admin/>}/>
         <Route path="/admin/*" element={<Admin/>}/>
 
