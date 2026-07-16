@@ -30,6 +30,16 @@ function unique(values: string[]) {
   return Array.from(new Set(values.filter(Boolean)));
 }
 
+function criteriaList(inv: any) {
+  const approvedCriteria = objectOf(inv?.criteria);
+  return {
+    approvedCriteria,
+    industries: unique([...arr(inv?.industries), ...arr(approvedCriteria.sectors)]),
+    dealTypes: unique([...arr(inv?.deal_types), ...arr(approvedCriteria.dealTypes)]),
+    stages: unique([...arr(approvedCriteria.stages), ...arr(inv?.stage)]),
+  };
+}
+
 function investorCoverUrl(inv: any) {
   const criteria = objectOf(inv?.criteria);
   return String(
@@ -177,10 +187,8 @@ export default function InvestorDetail({ lang }: { lang: Lang }) {
     });
   }, [code, desc, error, inv, lang, loading, title]);
 
-  const approvedCriteria = useMemo(() => objectOf(inv?.criteria), [inv]);
-  const industries = useMemo(() => unique([...arr(inv?.industries), ...arr(approvedCriteria.sectors)]), [inv, approvedCriteria]);
-  const dealTypes = useMemo(() => unique([...arr(inv?.deal_types), ...arr(approvedCriteria.dealTypes)]), [inv, approvedCriteria]);
-  const stages = useMemo(() => unique([...arr(approvedCriteria.stages), ...arr(inv?.stage)]), [inv, approvedCriteria]);
+  const criteria = useMemo(() => criteriaList(inv), [inv]);
+  const { approvedCriteria, industries, dealTypes, stages } = criteria;
   const markets = useMemo(() => investorTargetCountries(inv), [inv]);
   const connected = !!contact?.connected;
   const coverUrl = investorCoverUrl(inv);
@@ -252,7 +260,7 @@ export default function InvestorDetail({ lang }: { lang: Lang }) {
         </section>
 
         <section className="d68-id-section d68-id-section--card d68-id-section--markets">
-          <SectionTitle icon="markets">{T(lang, 'Nước quan tâm đầu tư', 'Target investment countries')}</SectionTitle>
+          <SectionTitle icon="markets">{T(lang, 'Thị trường quan tâm đầu tư', 'Target investment markets')}</SectionTitle>
           <p className="d68-id-muted">{T(lang, 'Các thị trường mà Nhà đầu tư ưu tiên tìm kiếm và xem xét cơ hội.', 'Markets where this investor prioritises sourcing and reviewing opportunities.')}</p>
           <TagList values={markets.map((value) => labelCountry(value, lang))} empty={T(lang, 'Đang cập nhật', 'Updating')} />
         </section>
