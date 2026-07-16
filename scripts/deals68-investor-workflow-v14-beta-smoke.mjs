@@ -45,6 +45,7 @@ async function deployedBase(request) {
           if (asset.ok()) bundle += await asset.text();
         }
         const markers = {
+          release: bundle.includes('v14-visibility-independent'),
           registration: bundle.includes('investor_register_v14'),
           canonicalFlow: bundle.includes('Dữ liệu lựa chọn được dùng thống nhất tại Dashboard và Admin.'),
           taxonomy: bundle.includes('Nhà đầu tư cá nhân / Thiên thần'),
@@ -91,6 +92,7 @@ async function inspectVietnamese(browser, base, viewport, name) {
         .filter(Boolean);
       const text = document.body.innerText;
       return {
+        workflow: document.querySelector('[data-investor-workflow]')?.getAttribute('data-investor-workflow') || '',
         active,
         overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
         hasEnglishInvestorType: /\bInvestor type\b/.test(text),
@@ -100,6 +102,7 @@ async function inspectVietnamese(browser, base, viewport, name) {
       };
     });
 
+    assert.equal(state.workflow, 'v14-visibility-independent', `${name}: release marker`);
     assert.ok(state.active.some((value) => value.includes('Nhà đầu tư cá nhân')), `${name}: default Investor type is not active`);
     assert.ok(state.active.some((value) => value.includes('Giai đoạn tăng trưởng')), `${name}: default stage is not active`);
     assert.ok(state.active.includes('Đầu tư'), `${name}: default deal type is not active`);
@@ -123,8 +126,12 @@ async function inspectEnglish(browser, base) {
     for (const text of ['Investor type', 'Preferred stages', 'Investment regions', 'Target markets', 'Preferred industries', 'Preferred deal types']) {
       assert.ok(await page.getByText(text, { exact: true }).count(), `English registration missing ${text}`);
     }
-    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
-    assert.ok(overflow <= 2, `English registration horizontal overflow ${overflow}`);
+    const state = await page.evaluate(() => ({
+      workflow: document.querySelector('[data-investor-workflow]')?.getAttribute('data-investor-workflow') || '',
+      overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    }));
+    assert.equal(state.workflow, 'v14-visibility-independent', 'English registration release marker');
+    assert.ok(state.overflow <= 2, `English registration horizontal overflow ${state.overflow}`);
     await page.screenshot({ path: '/tmp/deals68-investor-v14-register-en-desktop.png', fullPage: true });
   } finally {
     await page.close();
