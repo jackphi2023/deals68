@@ -212,10 +212,10 @@ async function inspectInvestorDetailMobile(browser, base) {
         objectPosition: image ? getComputedStyle(image).objectPosition : '',
         fullHeight: !!coverRect && !!imageRect && Math.abs(coverRect.height - imageRect.height) <= 2,
         rightAligned: !!coverRect && !!imageRect && Math.abs(coverRect.right - imageRect.right) <= 2,
-        contentLeft: !!coverRect && !!contentRect && contentRect.left - coverRect.left <= 22,
         contentBottom: !!coverRect && !!contentRect && coverRect.bottom - contentRect.bottom <= 2,
-        titleLeft: !!contentRect && !!titleRect && Math.abs(contentRect.left - titleRect.left) <= 2,
-        badgesLeft: !!contentRect && !!badgeRect && Math.abs(contentRect.left - badgeRect.left) <= 2,
+        titleLeftInset: !!coverRect && !!titleRect ? titleRect.left - coverRect.left : null,
+        badgeLeftInset: !!coverRect && !!badgeRect ? badgeRect.left - coverRect.left : null,
+        titleBadgeAligned: !!titleRect && !!badgeRect && Math.abs(titleRect.left - badgeRect.left) <= 1,
         badgeCount: badges?.children.length || 0,
         overflow: document.documentElement.scrollWidth - innerWidth,
       };
@@ -224,8 +224,16 @@ async function inspectInvestorDetailMobile(browser, base) {
     assert.match(state.objectPosition, /100%|right/i, `Investor cover object-position: ${state.objectPosition}`);
     assert.ok(state.fullHeight, 'Investor cover image must fill Hero height');
     assert.ok(state.rightAligned, 'Investor cover image must anchor to the right');
-    assert.ok(state.contentLeft && state.contentBottom, 'Investor content must stay bottom-left');
-    assert.ok(state.titleLeft && state.badgesLeft, 'Investor title and badges must align left');
+    assert.ok(state.contentBottom, 'Investor content must stay at the bottom');
+    assert.ok(
+      state.titleLeftInset !== null && state.titleLeftInset >= 16 && state.titleLeftInset <= 24,
+      `Investor title left inset ${state.titleLeftInset}`,
+    );
+    assert.ok(
+      state.badgeLeftInset !== null && state.badgeLeftInset >= 16 && state.badgeLeftInset <= 24,
+      `Investor badges left inset ${state.badgeLeftInset}`,
+    );
+    assert.ok(state.titleBadgeAligned, 'Investor title and badges must share the same left alignment');
     assert.equal(state.badgeCount, 3, 'Investor type, country and active badges must display');
     assert.ok(state.overflow <= 1, `Investor Detail mobile overflow ${state.overflow}`);
 
