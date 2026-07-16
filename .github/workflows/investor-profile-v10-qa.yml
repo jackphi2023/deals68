@@ -12,18 +12,23 @@ on:
       - 'netlify.toml'
       - 'public/assets/investor-cover-default.svg'
       - 'src/App.tsx'
+      - 'src/components/HomepageHeroSlider.tsx'
       - 'src/components/admin/**'
       - 'src/components/investor/**'
       - 'src/lib/investorAdminV10.ts'
       - 'src/lib/investorProfileService.ts'
+      - 'src/pages/Home.tsx'
       - 'src/pages/AdminBannersV10.tsx'
       - 'src/pages/AdminInvestorsV10.tsx'
       - 'src/pages/InvestorDetailV10.tsx'
       - 'src/pages/InvestorProfileV10.tsx'
       - 'src/pages/Investors.tsx'
       - 'src/styles/index.css'
+      - 'src/styles/pages/home-hero-mobile-fix.css'
       - 'src/styles/pages/investor-profile-v10.css'
       - 'src/styles/pages/entity-ui-v12.css'
+      - 'scripts/deals68-home-mobile-hero-v13-check.mjs'
+      - 'scripts/deals68-home-mobile-hero-v13-beta-smoke.mjs'
       - 'scripts/deals68-investor-profile-v10-check.mjs'
       - 'scripts/deals68-investor-list-v12-check.mjs'
       - 'scripts/deals68-investor-v10-beta-smoke.mjs'
@@ -68,10 +73,14 @@ jobs:
       - name: Investor List V12 scoped metadata QA
         run: node scripts/deals68-investor-list-v12-check.mjs
 
+      - name: Homepage Mobile Hero V13 semantic QA
+        run: node scripts/deals68-home-mobile-hero-v13-check.mjs
+
       - name: Beta smoke parser QA
         run: |
           node --check scripts/deals68-investor-v10-beta-smoke.mjs
           node --check scripts/deals68-entity-ui-v12-beta-smoke.mjs
+          node --check scripts/deals68-home-mobile-hero-v13-beta-smoke.mjs
 
       - name: Font CSP contract QA
         run: |
@@ -91,7 +100,7 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/beta-reference'
     needs: build-and-package-qa
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 35
     steps:
       - name: Publish pending Beta smoke status
         env:
@@ -101,7 +110,7 @@ jobs:
             "repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
             -f state=pending \
             -f context='deals68/investor-v10-beta-smoke' \
-            -f description='Waiting for exact Netlify Beta Investor V11 and Entity UI V12 deployment' \
+            -f description='Waiting for exact Netlify Beta Investor and Homepage Hero deployment' \
             -f target_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
 
       - name: Checkout deployed Beta commit
@@ -131,6 +140,12 @@ jobs:
           D68_RELEASE_SHA: ${{ github.sha }}
         run: node scripts/deals68-entity-ui-v12-beta-smoke.mjs
 
+      - name: Run real Homepage Hero and Investor mobile V13 smoke
+        env:
+          D68_BETA_URLS: https://beta-reference-deals68.netlify.app,https://beta-reference--deals68.netlify.app
+          D68_RELEASE_SHA: ${{ github.sha }}
+        run: node scripts/deals68-home-mobile-hero-v13-beta-smoke.mjs
+
       - name: Publish successful Beta smoke status
         if: success()
         env:
@@ -140,7 +155,7 @@ jobs:
             "repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
             -f state=success \
             -f context='deals68/investor-v10-beta-smoke' \
-            -f description='Real Netlify Beta Investor V11 and Entity UI V12 smokes passed' \
+            -f description='Real Netlify Beta Investor, Entity UI and Homepage Hero smokes passed' \
             -f target_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
 
       - name: Publish failed Beta smoke status
@@ -152,14 +167,14 @@ jobs:
             "repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
             -f state=failure \
             -f context='deals68/investor-v10-beta-smoke' \
-            -f description='Real Netlify Beta Investor or Entity UI smoke failed; inspect diagnostics' \
+            -f description='Real Netlify Beta Investor, Entity UI or Homepage Hero smoke failed' \
             -f target_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
 
       - name: Upload Beta smoke diagnostics
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: investor-v12-beta-smoke-${{ github.sha }}
+          name: investor-v13-beta-smoke-${{ github.sha }}
           path: |
             /tmp/deals68-investor-v11-beta-desktop.png
             /tmp/deals68-investor-v11-beta-tablet.png
@@ -170,5 +185,7 @@ jobs:
             /tmp/deals68-entity-ui-v12-listings.png
             /tmp/deals68-entity-ui-v12-detail-desktop.png
             /tmp/deals68-entity-ui-v12-detail-mobile.png
+            /tmp/deals68-home-mobile-hero-v13-390.png
+            /tmp/deals68-investor-detail-mobile-v13.png
           if-no-files-found: ignore
           retention-days: 7
