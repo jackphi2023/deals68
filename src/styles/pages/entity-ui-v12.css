@@ -1,7 +1,7 @@
 /* Deals68 Entity UI V12 — route-scoped visual refinements only.
    This file does not redefine grid/card primitives or shared layout utilities. */
 
-/* Shared entity-name interaction across public, dashboard and admin surfaces. */
+/* Shared entity-name interaction across linked and actionable surfaces. */
 .d68-home-page .d68-home-business-card h3,
 .d68-home-page .d68-home-investor-card h3,
 .d68-businesses-page .d68-business-card h3,
@@ -9,8 +9,7 @@
 .d68-dashboard-page .d68-dashboard-head h1,
 .d68-v10-investor-list__rows button b,
 .d68-admin-page .d68-admin-business-table tbody td:first-child > b,
-.d68-admin-page .d68-admin-table td a > b,
-.d68-v10-investor-detail .d68-id-cover__content h1 {
+.d68-admin-page .d68-admin-table td a > b {
   transition:color .18s ease;
 }
 
@@ -21,8 +20,7 @@
 .d68-v10-investor-list__rows button:hover b,
 .d68-v10-investor-list__rows button.active b,
 .d68-admin-page .d68-admin-business-table tbody tr:hover td:first-child > b,
-.d68-admin-page .d68-admin-table td a:hover > b,
-.d68-v10-investor-detail .d68-id-cover__content h1:hover {
+.d68-admin-page .d68-admin-table td a:hover > b {
   color:rgb(27,173,234)!important;
 }
 
