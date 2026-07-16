@@ -38,8 +38,27 @@ jobs:
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
 
-      - name: Build
-        run: npm run build
+      - name: Build diagnostics
+        run: |
+          mkdir -p visual-diff
+          set +e
+          npm run build > visual-diff/pr3-build.log 2>&1
+          code=$?
+          echo "$code" > visual-diff/pr3-build-exit-code.txt
+          exit 0
+
+      - name: Upload build diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr3-build-diagnostics
+          path: |
+            visual-diff/pr3-build.log
+            visual-diff/pr3-build-exit-code.txt
+          if-no-files-found: error
+
+      - name: Stop when build failed
+        run: test "$(cat visual-diff/pr3-build-exit-code.txt)" = "0"
 
       - name: Start preview server
         run: |
