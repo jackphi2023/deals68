@@ -9,12 +9,16 @@ import { labelCountry, labelDealType, labelIndustry, labelInvestorType, labelReg
 import { investorPublicDescription, investorPublicTitle, investorTicketLabel } from '../lib/investorDisplay';
 import type { Lang } from '../lib/i18n';
 import { applySeo, DEFAULT_SOCIAL_IMAGE } from '../lib/seo';
+import {
+  getActiveInvestorDefaultCover,
+  INVESTOR_COVER_FALLBACK,
+  resolveInvestorCover,
+  type SiteBanner,
+} from '../lib/banners';
 
 type ContactAccess = { connected?: boolean; name?: string; email?: string; phone?: string; website?: string } | null;
 
 type SectionIconKind = 'intro' | 'criteria' | 'markets' | 'history' | 'contact';
-
-const DEFAULT_INVESTOR_COVER = '/assets/investor-cover-default.svg';
 
 function arr(v: any): string[] {
   if (Array.isArray(v)) return v.filter(Boolean).map(String).map((x) => x.trim()).filter(Boolean);
@@ -28,17 +32,6 @@ function objectOf(value: any): Record<string, any> {
 
 function unique(values: string[]) {
   return Array.from(new Set(values.filter(Boolean)));
-}
-
-function investorCoverUrl(inv: any) {
-  const criteria = objectOf(inv?.criteria);
-  return String(
-    criteria.cover_image_url ||
-    criteria.coverImageUrl ||
-    inv?.cover_image_url ||
-    inv?.hero_image_url ||
-    '',
-  ).trim() || DEFAULT_INVESTOR_COVER;
 }
 
 function proposalHistory(inv: any): string[] {
@@ -85,6 +78,7 @@ export default function InvestorDetail({ lang }: { lang: Lang }) {
   const [proposalBusy, setProposalBusy] = useState(false);
   const [sentProposal, setSentProposal] = useState<any>(null);
   const [publicHistory, setPublicHistory] = useState<any[]>([]);
+  const [defaultCoverBanner, setDefaultCoverBanner] = useState<SiteBanner | null>(null);
 
   useEffect(() => {
     let live = true;
@@ -119,6 +113,21 @@ export default function InvestorDetail({ lang }: { lang: Lang }) {
 
   useEffect(() => {
     let live = true;
+    setDefaultCoverBanner(null);
+
+    getActiveInvestorDefaultCover(lang)
+      .then((row) => {
+        if (live) setDefaultCoverBanner(row);
+      })
+      .catch(() => {
+        if (live) setDefaultCoverBanner(null);
+      });
+
+    return () => { live = false; };
+  }, [lang]);
+
+  useEffect(() => {
+    let live = true;
     async function loadContact() {
       if (!profile || !inv?.id) { setContact(null); return; }
       const { data } = await supabase.rpc('get_investor_contact_if_connected', { investor_uuid: inv.id }).catch(() => ({ data: null } as any));
@@ -146,6 +155,11 @@ export default function InvestorDetail({ lang }: { lang: Lang }) {
 
   const title = inv ? investorPublicTitle(inv, lang) : '';
   const desc = inv ? investorPublicDescription(inv, lang) : '';
+  const resolvedCover = useMemo(
+    () => resolveInvestorCover(inv, defaultCoverBanner),
+    [inv, defaultCoverBanner],
+  );
+  const coverUrl = resolvedCover.url;
 
   useEffect(() => {
     if (loading) return;
@@ -171,11 +185,11 @@ export default function InvestorDetail({ lang }: { lang: Lang }) {
       pageName: title,
       description: desc,
       canonicalPath,
-      image: DEFAULT_SOCIAL_IMAGE,
+      image: coverUrl || DEFAULT_SOCIAL_IMAGE,
       type: 'article',
       noindex: false,
     });
-  }, [code, desc, error, inv, lang, loading, title]);
+  }, [code, coverUrl, desc, error, inv, lang, loading, title]);
 
   const approvedCriteria = useMemo(() => objectOf(inv?.criteria), [inv]);
   const industries = useMemo(() => unique([...arr(inv?.industries), ...arr(approvedCriteria.sectors)]), [inv, approvedCriteria]);
@@ -183,7 +197,6 @@ export default function InvestorDetail({ lang }: { lang: Lang }) {
   const stages = useMemo(() => unique([...arr(approvedCriteria.stages), ...arr(inv?.stage)]), [inv, approvedCriteria]);
   const markets = useMemo(() => investorTargetCountries(inv), [inv]);
   const connected = !!contact?.connected;
-  const coverUrl = investorCoverUrl(inv);
   const activeLabel = inv?.visible === false
     ? T(lang, 'Hồ sơ công khai', 'Public profile')
     : T(lang, 'Đang hoạt động', 'Active');
@@ -224,7 +237,7 @@ export default function InvestorDetail({ lang }: { lang: Lang }) {
             <h1>{title}</h1>
             <div className="d68-id-cover-badges"><span>{labelInvestorType(inv.type, lang)}</span><span>📍 {labelCountry(inv.country_iso2 || inv.country, lang)}</span><span className="active">● {activeLabel}</span></div>
           </div>
-          <div className="d68-id-cover-media"><img src={coverUrl} alt={T(lang, `Ảnh cover ${title}`, `${title} cover image`)} onError={(event) => { if (!event.currentTarget.src.endsWith(DEFAULT_INVESTOR_COVER)) event.currentTarget.src = DEFAULT_INVESTOR_COVER; }} /></div>
+          <div className="d68-id-cover-media" data-cover-source={resolvedCover.source}><img src={coverUrl} alt={T(lang, `Ảnh cover ${title}`, `${title} cover image`)} onError={(event) => { if (!event.currentTarget.src.endsWith(INVESTOR_COVER_FALLBACK)) event.currentTarget.src = INVESTOR_COVER_FALLBACK; }} /></div>
         </article>
 
         <section className="d68-id-section d68-id-section--card d68-id-section--intro">
