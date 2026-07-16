@@ -29,6 +29,7 @@ on:
       - 'src/styles/pages/entity-ui-v12.css'
       - 'scripts/deals68-home-mobile-hero-v13-check.mjs'
       - 'scripts/deals68-home-mobile-hero-v13-beta-smoke.mjs'
+      - 'scripts/deals68-investor-detail-v13-diagnostic.mjs'
       - 'scripts/deals68-investor-profile-v10-check.mjs'
       - 'scripts/deals68-investor-list-v12-check.mjs'
       - 'scripts/deals68-investor-v10-beta-smoke.mjs'
@@ -81,6 +82,7 @@ jobs:
           node --check scripts/deals68-investor-v10-beta-smoke.mjs
           node --check scripts/deals68-entity-ui-v12-beta-smoke.mjs
           node --check scripts/deals68-home-mobile-hero-v13-beta-smoke.mjs
+          node --check scripts/deals68-investor-detail-v13-diagnostic.mjs
 
       - name: Font CSP contract QA
         run: |
@@ -134,17 +136,22 @@ jobs:
           D68_RELEASE_SHA: ${{ github.sha }}
         run: node scripts/deals68-investor-v10-beta-smoke.mjs
 
-      - name: Run real Entity UI V12 Beta smoke
+      - name: Capture Investor Detail V13 geometry
         env:
-          D68_BETA_URLS: https://beta-reference-deals68.netlify.app,https://beta-reference--deals68.netlify.app
-          D68_RELEASE_SHA: ${{ github.sha }}
-        run: node scripts/deals68-entity-ui-v12-beta-smoke.mjs
+          D68_BETA_URL: https://beta-reference-deals68.netlify.app
+        run: node scripts/deals68-investor-detail-v13-diagnostic.mjs
 
       - name: Run real Homepage Hero and Investor mobile V13 smoke
         env:
           D68_BETA_URLS: https://beta-reference-deals68.netlify.app,https://beta-reference--deals68.netlify.app
           D68_RELEASE_SHA: ${{ github.sha }}
         run: node scripts/deals68-home-mobile-hero-v13-beta-smoke.mjs
+
+      - name: Run real Entity UI V12 Beta smoke
+        env:
+          D68_BETA_URLS: https://beta-reference-deals68.netlify.app,https://beta-reference--deals68.netlify.app
+          D68_RELEASE_SHA: ${{ github.sha }}
+        run: node scripts/deals68-entity-ui-v12-beta-smoke.mjs
 
       - name: Publish successful Beta smoke status
         if: success()
@@ -187,5 +194,8 @@ jobs:
             /tmp/deals68-entity-ui-v12-detail-mobile.png
             /tmp/deals68-home-mobile-hero-v13-390.png
             /tmp/deals68-investor-detail-mobile-v13.png
+            /tmp/deals68-investor-detail-v13-diagnostic.json
+            /tmp/deals68-investor-detail-v13-diagnostic-desktop.png
+            /tmp/deals68-investor-detail-v13-diagnostic-mobile.png
           if-no-files-found: ignore
           retention-days: 7
