@@ -1,0 +1,117 @@
+name: Home and Investor V13 Preview QA
+
+on:
+  pull_request:
+    branches:
+      - beta-reference
+
+permissions:
+  contents: read
+  statuses: read
+
+jobs:
+  preview-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Production build and static contracts
+        env:
+          VITE_SUPABASE_URL: https://local-test.supabase.co
+          VITE_SUPABASE_ANON_KEY: local-test-anon-key
+        run: |
+          npm run build
+          node scripts/deals68-home-mobile-hero-v13-check.mjs
+          node scripts/deals68-investor-profile-v10-check.mjs
+          node scripts/deals68-investor-list-v12-check.mjs
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Wait for Netlify Deploy Preview
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          preview_url=''
+          for attempt in $(seq 1 72); do
+            status_json="$(
+              curl --fail --silent --show-error \
+                -H "Accept: application/vnd.github+json" \
+                -H "Authorization: Bearer ${GH_TOKEN}" \
+                -H "X-GitHub-Api-Version: 2022-11-28" \
+                "https://api.github.com/repos/${REPOSITORY}/commits/${HEAD_SHA}/status"
+            )"
+
+            failed="$(
+              jq -r '[.statuses[]? | select((.state == "failure" or .state == "error") and (.context | test("deploy-preview"; "i"))) | .context] | join(",")' \
+                <<<"${status_json}"
+            )"
+            if [[ -n "${failed}" ]]; then
+              echo "Netlify Deploy Preview failed: ${failed}"
+              exit 1
+            fi
+
+            preview_url="$(
+              jq -r '[.statuses[]? | select(.state == "success" and (.context | test("deploy-preview"; "i"))) | .target_url][0] // empty' \
+                <<<"${status_json}"
+            )"
+            echo "Attempt ${attempt}/72 — ${preview_url:-waiting for preview}"
+            [[ -n "${preview_url}" ]] && break
+            sleep 10
+          done
+
+          [[ -n "${preview_url}" ]] || {
+            echo 'Netlify Deploy Preview did not become ready.'
+            exit 1
+          }
+          echo "PREVIEW_URL=${preview_url%/}" >> "${GITHUB_ENV}"
+
+      - name: Capture Investor Detail geometry
+        env:
+          D68_BETA_URL: ${{ env.PREVIEW_URL }}
+        run: node scripts/deals68-investor-detail-v13-diagnostic.mjs
+
+      - name: Run Homepage Hero and Investor mobile V13 smoke
+        env:
+          D68_BETA_URLS: ${{ env.PREVIEW_URL }}
+          D68_DEPLOY_TIMEOUT_MS: 120000
+        run: node scripts/deals68-home-mobile-hero-v13-beta-smoke.mjs
+
+      - name: Run Entity UI V12 smoke
+        env:
+          D68_BETA_URLS: ${{ env.PREVIEW_URL }}
+          D68_DEPLOY_TIMEOUT_MS: 120000
+        run: node scripts/deals68-entity-ui-v12-beta-smoke.mjs
+
+      - name: Upload diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: home-investor-v13-preview-${{ github.event.pull_request.head.sha }}
+          path: |
+            /tmp/deals68-home-mobile-hero-v13-390.png
+            /tmp/deals68-investor-detail-mobile-v13.png
+            /tmp/deals68-investor-detail-v13-diagnostic.json
+            /tmp/deals68-investor-detail-v13-diagnostic-desktop.png
+            /tmp/deals68-investor-detail-v13-diagnostic-mobile.png
+            /tmp/deals68-entity-ui-v12-home.png
+            /tmp/deals68-entity-ui-v12-listings.png
+            /tmp/deals68-entity-ui-v12-detail-desktop.png
+            /tmp/deals68-entity-ui-v12-detail-mobile.png
+          if-no-files-found: ignore
+          retention-days: 7
