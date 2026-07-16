@@ -16,6 +16,7 @@ const required = [
   '20260715085429_investor_profile_cover_appetite_v3_privilege_hardening.sql',
   '20260716013000_investor_profile_review_fields_v4.sql',
   '20260716014500_investor_criteria_pending_dedup_v5.sql',
+  '20260716190000_investor_public_profile_pending_v6.sql',
 ];
 const forbidden = [
   '20260711103000_normalize_investor_taxonomy_on_write_v1.sql',
@@ -32,6 +33,12 @@ for (const name of forbidden) {
   if (fs.existsSync(`supabase/migrations/${name}`)) failures.push(`Obsolete filename remains: ${name}`);
 }
 if (!fs.existsSync('docs/release/MIGRATION_STATE.md')) failures.push('MIGRATION_STATE.md missing');
+const state = fs.existsSync('docs/release/MIGRATION_STATE.md')
+  ? fs.readFileSync('docs/release/MIGRATION_STATE.md', 'utf8')
+  : '';
+if (!state.includes('20260716070307') || !state.includes('20260716190000_investor_public_profile_pending_v6.sql')) {
+  failures.push('MIGRATION_STATE.md does not reconcile Investor pending migration V6');
+}
 
 if (failures.length) {
   console.error('✗ Deals68 migration state check failed:');
