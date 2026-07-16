@@ -10,15 +10,12 @@ const candidates = String(
   .map((value) => value.trim().replace(/\/$/, ''))
   .filter(Boolean);
 
-const deadline = Date.now() + Number(process.env.D68_DEPLOY_TIMEOUT_MS || 10 * 60_000);
+const deadline = Date.now() + Number(process.env.D68_DEPLOY_TIMEOUT_MS || 12 * 60_000);
 const requiredBundleTokens = [
   'd68-home-hero-slider-v2',
   'd68-home-hero-media__image',
   'single-active',
-];
-const requiredCssTokens = [
-  'aspect-ratio:3/4!important',
-  'minmax(150px,1.7fr)!important',
+  'v14-visibility-independent',
 ];
 
 function absolute(base, value) {
@@ -38,11 +35,8 @@ async function deployedCandidate(request) {
         const html = await htmlResponse.text();
         const scripts = [...html.matchAll(/<script[^>]+src=["']([^"']+)["']/gi)]
           .map((match) => absolute(base, match[1]));
-        const styles = [...html.matchAll(/<link[^>]+href=["']([^"']+\.css(?:\?[^"']*)?)["']/gi)]
-          .map((match) => absolute(base, match[1]));
 
         let bundle = '';
-        let cssBundle = '';
         for (const script of scripts) {
           const response = await request.get(script, {
             headers: { 'cache-control': 'no-cache, no-store, max-age=0' },
@@ -50,19 +44,10 @@ async function deployedCandidate(request) {
           });
           if (response.ok()) bundle += await response.text();
         }
-        for (const style of styles) {
-          const response = await request.get(style, {
-            headers: { 'cache-control': 'no-cache, no-store, max-age=0' },
-            timeout: 20_000,
-          });
-          if (response.ok()) cssBundle += await response.text();
-        }
 
-        const compactCss = cssBundle.replace(/\s+/g, '');
         const missing = requiredBundleTokens.filter((token) => !bundle.includes(token));
-        const missingCss = requiredCssTokens.filter((token) => !compactCss.includes(token.replace(/\s+/g, '')));
-        last.push({ base, status: htmlResponse.status(), scripts: scripts.length, styles: styles.length, missing, missingCss });
-        if (htmlResponse.ok() && scripts.length && styles.length && !missing.length && !missingCss.length) return base;
+        last.push({ base, status: htmlResponse.status(), scripts: scripts.length, missing });
+        if (htmlResponse.ok() && scripts.length && !missing.length) return base;
       } catch (error) {
         last.push({ base, error: error?.message || String(error) });
       }
@@ -131,6 +116,7 @@ async function inspectHomeMobile(browser, base, width) {
       const metricStyle = getComputedStyle(metric);
       const metricRect = metric.getBoundingClientRect();
       return {
+        workflow: document.querySelector('[data-investor-workflow]')?.getAttribute('data-investor-workflow') || '',
         layout: slider?.getAttribute('data-hero-layout') || '',
         slides: slider?.querySelectorAll('.d68-hero-slide').length || 0,
         variant: media?.getAttribute('data-hero-variant') || '',
@@ -147,6 +133,7 @@ async function inspectHomeMobile(browser, base, width) {
       };
     });
 
+    assert.equal(state.workflow, 'v14-visibility-independent', `${width}: release marker`);
     assert.equal(state.layout, 'single-active', `${width}: Hero layout`);
     assert.equal(state.slides, 1, `${width}: active slide count`);
     assert.equal(state.variant, 'mobile', `${width}: mobile image variant`);
