@@ -7,10 +7,13 @@ const allowed = new Set([
   'src/lib/investorCriteria.ts',
   'src/lib/investorListing.ts',
   'src/lib/investorDisplay.ts',
+  'src/lib/banners.ts',
+  'src/components/HomepageHeroSlider.tsx',
   'src/components/investor/InvestorCriteriaTagPickers.tsx',
   'src/components/investor/IndustryTagPicker.tsx',
   'src/components/admin/InvestorAdminReviewPanel.tsx',
   'src/pages/Register.tsx',
+  'src/pages/Home.tsx',
   'src/pages/InvestorDashboard.tsx',
   'src/pages/Admin.tsx',
   'src/pages/InvestorDetail.tsx',
@@ -20,6 +23,7 @@ const allowed = new Set([
   'src/styles/pages/admin.css',
   'src/styles/pages/investor-detail.css',
   'src/styles/pages/investors.css',
+  'src/styles/final/release-foundation.css',
   'supabase/migrations/20260716124500_investor_criteria_review_v1.sql',
   'docs/INVESTOR_CRITERIA_REVIEW_V1.md',
   'scripts/scope-check-investor-criteria-review-v1.mjs',
@@ -130,6 +134,8 @@ const model = requireTokens('src/lib/investorCriteria.ts', [
   'normalizeInvestorTypes',
   'normalizeInvestorStages',
   'approvedInvestorAppetite',
+  'labelInvestorRiskAppetite',
+  'formatInvestorReturnExpectation',
 ]);
 if (model.includes('pending_profile_changes')) {
   failures.push('Public criteria model must not read pending_profile_changes.');
@@ -168,6 +174,8 @@ const detail = requireTokens('src/pages/InvestorDetail.tsx', [
   'investorPublicTypeLabels',
   'investorPublicStageLabels',
   'approvedInvestorAppetite',
+  'labelInvestorRiskAppetite',
+  'formatInvestorReturnExpectation',
   'data-cover-source={resolvedCover.source}',
   'Ai được xem gì',
 ]);
@@ -200,6 +208,7 @@ const register = requireTokens('src/pages/Register.tsx', [
   "desc_en: lang === 'en' ? generalDesc : ''",
   "investment_appetite_vi: lang === 'vi' ? appetiteDesc : ''",
   "investment_appetite_en: lang === 'en' ? appetiteDesc : ''",
+  "'Public introduction; do not include email or phone.'",
   'investorTypes',
   'stages: investorStages',
   'createSignupBundle',
@@ -211,7 +220,7 @@ if (register.includes('investment_appetite: appetiteDesc')) {
   failures.push('Register must not copy the route-language appetite into the legacy shared field.');
 }
 
-requireTokens('src/pages/InvestorDashboard.tsx', [
+const dashboard = requireTokens('src/pages/InvestorDashboard.tsx', [
   'InvestorTypeTagPicker',
   'InvestorStageTagPicker',
   'InvestorMarketTagPicker',
@@ -227,7 +236,11 @@ requireTokens('src/pages/InvestorDashboard.tsx', [
   'd68-dashboard-nav-icon',
   'InvestorBillingPanel',
   'updateProposalStatus',
+  "<option value=\"\">{T(lang, 'Chưa chọn', 'Not selected')}</option>",
 ]);
+if (dashboard.includes("form.get('riskAppetite') || 'balanced'")) {
+  failures.push('Dashboard must not manufacture a default risk appetite.');
+}
 
 const adminPage = requireTokens('src/pages/Admin.tsx', [
   'InvestorAdminReviewPanel',
@@ -266,12 +279,45 @@ const adminInvestor = requireTokens(
     'investment_appetite_vi',
     'investment_appetite_en',
     'Khẩu vị đầu tư vừa sửa',
+    'uploadInvestorCoverImage',
+    'cover_image_url',
     'visible',
   ],
 );
 if (adminInvestor.includes('publish_profile: true')) {
   failures.push('Admin approval must not force public visibility.');
 }
+if (adminInvestor.includes("approvedCriteria.riskAppetite || 'balanced'")) {
+  failures.push('Admin must not manufacture a default risk appetite.');
+}
+
+requireTokens('src/lib/banners.ts', [
+  'uploadInvestorCoverImage',
+  'investor-covers/',
+  "from('site-banners')",
+  'getPublicUrl(path)',
+]);
+
+requireTokens('src/components/HomepageHeroSlider.tsx', [
+  'HomepageHeroMedia',
+  'data-hero-variant',
+  'mobileUrl',
+  'desktopUrl',
+  'prefers-reduced-motion: reduce',
+]);
+
+requireTokens('src/pages/Home.tsx', [
+  'HomepageHeroSlider',
+  'd68-home-hero-media--mobile',
+  'box-shadow:0 2px 8px',
+]);
+
+requireTokens('src/styles/final/release-foundation.css', [
+  'Card interaction contract',
+  '.d68-investors-page .d68-investor-card:hover',
+  'box-shadow:0 2px 8px',
+  'border-color:#E7EDF3!important',
+]);
 
 const migration = requireTokens(
   'supabase/migrations/20260716124500_investor_criteria_review_v1.sql',

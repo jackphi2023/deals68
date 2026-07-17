@@ -1853,12 +1853,12 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
                 </div>
 
                 <Field
-                  label={T(lang, 'Giới thiệu chung', 'General introduction')}
+                  label={T(lang, 'Giới thiệu', 'Introduction')}
                   wide
                   hint={T(
                     lang,
-                    'Đoạn mô tả ẩn danh công khai, không ghi email/số điện thoại.',
-                    'Anonymous public description; do not include email or phone.',
+                    'Nội dung giới thiệu công khai, không ghi email/số điện thoại.',
+                    'Public introduction; do not include email or phone.',
                   )}
                 >
                   <textarea

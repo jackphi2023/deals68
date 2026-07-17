@@ -19,7 +19,11 @@ import {
   investorPublicTypeLabels,
   investorTicketLabel,
 } from '../lib/investorDisplay';
-import { approvedInvestorAppetite } from '../lib/investorCriteria';
+import {
+  approvedInvestorAppetite,
+  formatInvestorReturnExpectation,
+  labelInvestorRiskAppetite,
+} from '../lib/investorCriteria';
 import type { Lang } from '../lib/i18n';
 import { applySeo, DEFAULT_SOCIAL_IMAGE } from '../lib/seo';
 import {
@@ -407,6 +411,18 @@ export default function InvestorDetail({ lang }: { lang: Lang }) {
     () => approvedInvestorAppetite(inv, lang),
     [inv, lang],
   );
+  const riskAppetite = useMemo(
+    () => labelInvestorRiskAppetite(approvedCriteria.riskAppetite, lang),
+    [approvedCriteria.riskAppetite, lang],
+  );
+  const returnExpectation = useMemo(
+    () =>
+      formatInvestorReturnExpectation(
+        approvedCriteria.returnExpectation,
+        lang,
+      ),
+    [approvedCriteria.returnExpectation, lang],
+  );
   const connected = !!contact?.connected;
   const activeLabel =
     inv?.visible === false
@@ -695,16 +711,16 @@ export default function InvestorDetail({ lang }: { lang: Lang }) {
                     value={investmentAppetite}
                   />
                 ) : null}
-                {approvedCriteria.riskAppetite ? (
+                {riskAppetite ? (
                   <CriteriaText
                     label={T(lang, 'Khẩu vị rủi ro', 'Risk appetite')}
-                    value={String(approvedCriteria.riskAppetite)}
+                    value={riskAppetite}
                   />
                 ) : null}
-                {approvedCriteria.returnExpectation ? (
+                {returnExpectation ? (
                   <CriteriaText
                     label={T(lang, 'Kỳ vọng lợi nhuận', 'Return expectation')}
-                    value={String(approvedCriteria.returnExpectation)}
+                    value={returnExpectation}
                   />
                 ) : null}
               </div>

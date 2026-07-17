@@ -272,6 +272,38 @@ img,svg,video,canvas{max-width:100%}
   }
 }
 
+/* Card interaction contract: keep geometry and borders stable; hover adds only
+   a light 2px lift shadow on the public entity routes. */
+.d68-home-page .d68-home-role-card:hover,
+.d68-home-page .d68-home-business-card:hover,
+.d68-home-page .d68-home-investor-card:hover,
+.d68-home-page .d68-home-industry-card:hover,
+.d68-businesses-page .d68-business-card:hover,
+.d68-investors-page .d68-investor-card:hover,
+.d68-business-detail-page .d68-detail-sim-card:hover{
+  transform:none!important;
+  box-shadow:0 2px 8px rgba(15,42,74,.08)!important;
+}
+.d68-home-page .d68-home-role-card:hover{border-color:#DFEEE5!important}
+.d68-home-page .d68-home-business-card:hover,
+.d68-home-page .d68-home-industry-card:hover,
+.d68-businesses-page .d68-business-card:hover,
+.d68-business-detail-page .d68-detail-sim-card:hover{border-color:#E7EDF3!important}
+.d68-home-page .d68-home-investor-card:hover{border-color:#EEE9CF!important}
+.d68-investors-page .d68-investor-card:hover{
+  border-color:#E7EDF3!important;
+  background:#fff!important;
+}
+.d68-home-page .d68-home-role-card:hover h3,
+.d68-home-page .d68-home-business-card:hover h3,
+.d68-home-page .d68-home-investor-card:hover .d68-home-investor-title-link,
+.d68-home-page .d68-home-industry-card:hover strong,
+.d68-businesses-page .d68-business-card:hover h3,
+.d68-investors-page .d68-investor-card:hover .d68-investor-card__title-link{
+  color:#0F2A4A!important;
+  text-decoration:none!important;
+}
+
 .d68-home-investor-card__icon{
   width:44px!important;
   height:44px!important;

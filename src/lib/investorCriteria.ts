@@ -48,6 +48,60 @@ export type CanonicalInvestorCriteria = {
 
 export type InvestorCriteriaSource = Record<string, any> | null | undefined;
 
+export type InvestorRiskAppetite =
+  | 'conservative'
+  | 'balanced'
+  | 'aggressive';
+
+export function normalizeInvestorRiskAppetite(
+  value: unknown,
+): InvestorRiskAppetite | '' {
+  const normalized = normalizedText(value);
+  if (!normalized) return '';
+  if (normalized === 'conservative' || normalized.includes('than trong')) {
+    return 'conservative';
+  }
+  if (normalized === 'balanced' || normalized.includes('can bang')) {
+    return 'balanced';
+  }
+  if (
+    normalized === 'aggressive' ||
+    normalized.includes('growth oriented') ||
+    normalized.includes('uu tien tang truong')
+  ) {
+    return 'aggressive';
+  }
+  return '';
+}
+
+export function labelInvestorRiskAppetite(value: unknown, lang: Lang) {
+  const normalized = normalizeInvestorRiskAppetite(value);
+  if (!normalized) return '';
+
+  const labels: Record<InvestorRiskAppetite, { vi: string; en: string }> = {
+    conservative: { vi: 'Thận trọng', en: 'Conservative' },
+    balanced: { vi: 'Cân bằng', en: 'Balanced' },
+    aggressive: { vi: 'Ưu tiên tăng trưởng', en: 'Growth-oriented' },
+  };
+
+  return labels[normalized][lang];
+}
+
+export function formatInvestorReturnExpectation(value: unknown, lang: Lang) {
+  if (value === null || value === undefined || String(value).trim() === '') {
+    return '';
+  }
+
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric) || numeric < 0) return '';
+
+  const formatted = new Intl.NumberFormat(lang === 'en' ? 'en-US' : 'vi-VN', {
+    maximumFractionDigits: 2,
+  }).format(numeric);
+
+  return lang === 'en' ? `${formatted} %/year` : `${formatted} %/năm`;
+}
+
 export function investorCriteriaArray(value: unknown): string[] {
   if (Array.isArray(value)) {
     return value
@@ -250,7 +304,7 @@ export function approvedInvestorCountries(source: InvestorCriteriaSource) {
   );
 }
 
-export function approvedInvestorAppetite(source: InvestorCriteriaSource, lang: Lang) {
+export function investorAppetiteFields(source: InvestorCriteriaSource) {
   const criteria = sourceCriteria(source);
   const vi = String(
     criteria.investment_appetite_vi || criteria.investmentAppetiteVi || '',
@@ -258,6 +312,12 @@ export function approvedInvestorAppetite(source: InvestorCriteriaSource, lang: L
   const en = String(
     criteria.investment_appetite_en || criteria.investmentAppetiteEn || '',
   ).trim();
+
+  return { vi, en };
+}
+
+export function approvedInvestorAppetite(source: InvestorCriteriaSource, lang: Lang) {
+  const { vi, en } = investorAppetiteFields(source);
 
   if (lang === 'en') {
     return en || vi;
@@ -269,14 +329,15 @@ export function approvedInvestorAppetite(source: InvestorCriteriaSource, lang: L
 export function canonicalInvestorCriteria(
   source: InvestorCriteriaSource,
 ): CanonicalInvestorCriteria {
+  const appetite = investorAppetiteFields(source);
   return {
     investorTypes: approvedInvestorTypes(source),
     stages: approvedInvestorStages(source),
     sectors: approvedInvestorSectors(source),
     dealTypes: approvedInvestorDealTypes(source),
     targetCountries: approvedInvestorCountries(source),
-    investment_appetite_vi: approvedInvestorAppetite(source, 'vi'),
-    investment_appetite_en: approvedInvestorAppetite(source, 'en'),
+    investment_appetite_vi: appetite.vi,
+    investment_appetite_en: appetite.en,
   };
 }
 

@@ -20,7 +20,11 @@ Approved public criteria live in `investors.criteria`:
   "preferredCountries": ["VN", "SG"],
   "targetCountriesCache": ["VN", "SG"],
   "investment_appetite_vi": "...",
-  "investment_appetite_en": "..."
+  "investment_appetite_en": "...",
+  "riskAppetite": "balanced",
+  "returnExpectation": 15,
+  "cover_image_url": "https://...",
+  "cover_image_path": "investor-covers/..."
 }
 ```
 
@@ -90,6 +94,8 @@ Industries use the existing industry taxonomy keys. Countries use uppercase ISO-
 5. `admin_approve_investor_profile_changes` validates, normalizes, mirrors legacy fields, clears pending data and optionally publishes.
 6. Admin contact fields remain private and are not exposed by public queries.
 7. Dashboard and Admin always expose independent VN and EN fields for both Introduction and Investment appetite.
+8. Risk appetite and expected return remain empty until explicitly entered; empty values are not rendered on the public detail page.
+9. Admin can upload one approved Investor-specific cover. Its URL is stored in approved `criteria`, so later changes to the shared default cover do not replace it.
 
 ## Public and filters
 
@@ -98,6 +104,8 @@ Industries use the existing industry taxonomy keys. Countries use uppercase ISO-
 3. A filter matches when any approved array value matches.
 4. Proposal quota, duplicate state, contact unlock, proposal history and SEO routes remain unchanged.
 5. Investor Detail selects the field matching the route language, then falls back only to the other language field when the selected field is blank. Labels and surrounding UI always remain in the route language.
+6. Risk appetite labels are localized on display. Expected return is formatted with `%/năm` on VN routes and `%/year` on EN routes.
+7. Public cover resolution order is: approved Investor cover → active shared default cover → repository fallback image.
 
 ## ID contract
 

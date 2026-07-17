@@ -1,4 +1,10 @@
-import { FormEvent, useMemo, useState, type ReactNode } from 'react';
+import {
+  FormEvent,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import {
@@ -35,6 +41,10 @@ import {
   formatNumberTyping,
   parseFormattedNumber,
 } from '../../lib/numberFormat';
+import {
+  INVESTOR_COVER_FALLBACK,
+  uploadInvestorCoverImage,
+} from '../../lib/banners';
 
 type Row = Record<string, any>;
 
@@ -222,6 +232,59 @@ function InvestorReviewEditor({
     approvedCriteria.investment_appetite_en ??
     approvedCriteria.investmentAppetiteEn ??
     '';
+  const reviewRiskAppetite =
+    pendingCriteria.riskAppetite ?? approvedCriteria.riskAppetite ?? '';
+  const reviewReturnExpectation = Object.prototype.hasOwnProperty.call(
+    pendingCriteria,
+    'returnExpectation',
+  )
+    ? pendingCriteria.returnExpectation ?? ''
+    : approvedCriteria.returnExpectation ?? '';
+  const approvedCoverUrl = String(
+    approvedCriteria.cover_image_url ||
+      approvedCriteria.coverImageUrl ||
+      investor.cover_image_url ||
+      investor.hero_image_url ||
+      '',
+  ).trim();
+  const approvedCoverPath = String(
+    approvedCriteria.cover_image_path || '',
+  ).trim();
+  const [coverFile, setCoverFile] = useState<File | null>(null);
+  const [coverPreviewUrl, setCoverPreviewUrl] = useState(approvedCoverUrl);
+  const [removeCover, setRemoveCover] = useState(false);
+  const [approving, setApproving] = useState(false);
+
+  useEffect(() => {
+    setCoverFile(null);
+    setCoverPreviewUrl(approvedCoverUrl);
+    setRemoveCover(false);
+  }, [approvedCoverUrl, investor.id]);
+
+  useEffect(() => {
+    return () => {
+      if (coverPreviewUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(coverPreviewUrl);
+      }
+    };
+  }, [coverPreviewUrl]);
+
+  function selectCover(file?: File) {
+    if (!file) return;
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+      setError('Cover chỉ hỗ trợ JPG, PNG hoặc WebP.');
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      setError('Ảnh cover phải nhỏ hơn hoặc bằng 10 MB.');
+      return;
+    }
+
+    setError('');
+    setCoverFile(file);
+    setCoverPreviewUrl(URL.createObjectURL(file));
+    setRemoveCover(false);
+  }
 
   async function savePrivate(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -260,6 +323,26 @@ function InvestorReviewEditor({
       return;
     }
 
+    setApproving(true);
+    setError('');
+
+    let coverImageUrl = removeCover ? '' : approvedCoverUrl;
+    let coverImagePath = removeCover ? '' : approvedCoverPath;
+    try {
+      if (coverFile) {
+        const uploaded = await uploadInvestorCoverImage(
+          coverFile,
+          String(investor.id),
+        );
+        coverImageUrl = uploaded.publicUrl;
+        coverImagePath = uploaded.path;
+      }
+    } catch (uploadError: any) {
+      setApproving(false);
+      setError(uploadError?.message || 'Không upload được cover Investor.');
+      return;
+    }
+
     const adminPatch = {
       title_vi: String(form.get('title_vi') || '').trim(),
       title_en: String(form.get('title_en') || '').trim(),
@@ -289,10 +372,14 @@ function InvestorReviewEditor({
         targetCountriesCache: targetCountries,
         investment_appetite_vi: String(form.get('investment_appetite_vi') || '').trim(),
         investment_appetite_en: String(form.get('investment_appetite_en') || '').trim(),
-        riskAppetite: String(form.get('riskAppetite') || approvedCriteria.riskAppetite || 'balanced'),
-        returnExpectation: Number(form.get('returnExpectation') || 0) || null,
+        riskAppetite: String(form.get('riskAppetite') || ''),
+        returnExpectation: String(form.get('returnExpectation') || '').trim()
+          ? Number(form.get('returnExpectation'))
+          : null,
         revenueRange: String(form.get('revenueRange') || ''),
         revenueBand: String(form.get('revenueRange') || ''),
+        cover_image_url: coverImageUrl,
+        cover_image_path: coverImagePath,
       },
       verified: form.get('verified') === 'on',
       admin_priority: form.get('admin_priority') === 'on',
@@ -310,9 +397,11 @@ function InvestorReviewEditor({
       publish_profile: false,
     });
     if (error) {
+      setApproving(false);
       setError(error.message);
       return;
     }
+    setApproving(false);
     setError('');
     setMessage('Đã duyệt hồ sơ, Giới thiệu và Khẩu vị đầu tư Investor. Trạng thái Ẩn/Hiện được giữ theo lựa chọn Admin.');
     await onReload();
@@ -394,13 +483,44 @@ function InvestorReviewEditor({
         <div className="d68-admin-field"><span>Loại giao dịch quan tâm</span><InvestorDealTypeTagPicker lang="vi" values={reviewDeals} name="deal_types" /></div>
         <div className="d68-admin-field"><span>Thị trường quan tâm</span><InvestorMarketTagPicker lang="vi" values={reviewCountries} name="target_countries" /></div>
 
+        <div className="d68-admin-investor-cover-editor">
+          <div className="d68-admin-investor-cover-preview">
+            <img
+              src={removeCover ? INVESTOR_COVER_FALLBACK : coverPreviewUrl || INVESTOR_COVER_FALLBACK}
+              alt={`Cover ${investor.code || 'Investor'}`}
+            />
+          </div>
+          <div className="d68-admin-investor-cover-controls">
+            <b>Ảnh cover riêng của Nhà đầu tư</b>
+            <span>JPG, PNG hoặc WebP · tối đa 10 MB. Cover riêng đã duyệt luôn ưu tiên hơn cover mặc định chung.</span>
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              onChange={(event) => selectCover(event.target.files?.[0])}
+            />
+            {approvedCoverUrl || coverFile ? (
+              <button
+                type="button"
+                className="d68-admin-btn light"
+                onClick={() => {
+                  setCoverFile(null);
+                  setCoverPreviewUrl('');
+                  setRemoveCover(true);
+                }}
+              >
+                Dùng lại cover mặc định chung
+              </button>
+            ) : null}
+          </div>
+        </div>
+
         <div className="d68-admin-form4">
           <label className="d68-admin-field d68-admin-span2"><span>Giới thiệu (VN)</span><textarea name="desc_vi" className="d68-admin-input textarea" defaultValue={reviewDescVi} /></label>
           <label className="d68-admin-field d68-admin-span2"><span>Giới thiệu (EN)</span><textarea name="desc_en" className="d68-admin-input textarea" defaultValue={reviewDescEn} /></label>
           <label className="d68-admin-field d68-admin-span2"><span>Khẩu vị đầu tư (VN)</span><textarea name="investment_appetite_vi" className="d68-admin-input textarea" defaultValue={reviewAppetiteVi} /></label>
           <label className="d68-admin-field d68-admin-span2"><span>Khẩu vị đầu tư (EN)</span><textarea name="investment_appetite_en" className="d68-admin-input textarea" defaultValue={reviewAppetiteEn} /></label>
-          <label className="d68-admin-field"><span>Khẩu vị rủi ro</span><select name="riskAppetite" className="d68-admin-input" defaultValue={pendingCriteria.riskAppetite || approvedCriteria.riskAppetite || 'balanced'}><option value="conservative">Thận trọng</option><option value="balanced">Cân bằng</option><option value="aggressive">Ưu tiên tăng trưởng</option></select></label>
-          <label className="d68-admin-field"><span>Kỳ vọng lợi nhuận (%)</span><input name="returnExpectation" type="number" min="0" step="0.1" className="d68-admin-input" defaultValue={pendingCriteria.returnExpectation ?? approvedCriteria.returnExpectation ?? ''} /></label>
+          <label className="d68-admin-field"><span>Khẩu vị rủi ro</span><select name="riskAppetite" className="d68-admin-input" defaultValue={reviewRiskAppetite}><option value="">Chưa chọn</option><option value="conservative">Thận trọng</option><option value="balanced">Cân bằng</option><option value="aggressive">Ưu tiên tăng trưởng</option></select></label>
+          <label className="d68-admin-field"><span>Kỳ vọng lợi nhuận (%)</span><input name="returnExpectation" type="number" min="0" step="0.1" className="d68-admin-input" defaultValue={reviewReturnExpectation} /></label>
           <label className="d68-admin-field"><span>Quy mô doanh thu mục tiêu</span><select name="revenueRange" className="d68-admin-input" defaultValue={pendingCriteria.revenueRange || pendingCriteria.revenueBand || approvedCriteria.revenueRange || approvedCriteria.revenueBand || ''}><option value="">Bất kỳ</option><option value="under_1m">Dưới 1 triệu USD</option><option value="1_10m">1–10 triệu USD</option><option value="10_100m">10–100 triệu USD</option><option value="over_100m">Trên 100 triệu USD</option></select></label>
         </div>
 
@@ -412,7 +532,7 @@ function InvestorReviewEditor({
         </div>
 
         <div className="d68-admin-actions">
-          <button className="d68-admin-btn green">Duyệt hồ sơ & tiêu chí</button>
+          <button className="d68-admin-btn green" disabled={approving}>{approving ? 'Đang duyệt…' : 'Duyệt hồ sơ & tiêu chí'}</button>
           <button type="button" onClick={toggleVisible} className={`d68-admin-btn ${investor.visible ? 'red' : 'blue'}`}>{investor.visible ? 'Ẩn public' : 'Bật visible'}</button>
           {investor.code ? <Link to={`/investors/${investor.code}`} target="_blank" className="d68-admin-btn blue">Xem public ↗</Link> : null}
         </div>

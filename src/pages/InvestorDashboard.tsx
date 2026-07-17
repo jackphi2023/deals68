@@ -643,7 +643,12 @@ export default function InvestorDashboard() {
     const stages = normalizeInvestorStages(asArray(form.get('stages')));
     const targetCountries = normalizeInvestorCountries(asArray(form.get('target_countries')));
     const iso2 = String(form.get('country_iso2') || 'VN').toUpperCase();
-    const returnExpectation = Number(form.get('returnExpectation') || 0);
+    const returnExpectationRaw = String(
+      form.get('returnExpectation') || '',
+    ).trim();
+    const returnExpectation = returnExpectationRaw
+      ? Number(returnExpectationRaw)
+      : null;
     const selectedRevenueBand = String(form.get('revenueBand') || '');
 
     if (!investorTypes.length || !stages.length || !industries.length || !dealTypes.length || !targetCountries.length) {
@@ -683,9 +688,11 @@ export default function InvestorDashboard() {
         targetCountriesCache: targetCountries,
         investment_appetite_vi: String(form.get('investment_appetite_vi') || '').trim(),
         investment_appetite_en: String(form.get('investment_appetite_en') || '').trim(),
-        riskAppetite: String(form.get('riskAppetite') || 'balanced'),
+        riskAppetite: String(form.get('riskAppetite') || ''),
         returnExpectation:
-          Number.isFinite(returnExpectation) && returnExpectation >= 0
+          returnExpectation !== null &&
+          Number.isFinite(returnExpectation) &&
+          returnExpectation >= 0
             ? returnExpectation
             : null,
         revenueRange: selectedRevenueBand,
@@ -884,6 +891,14 @@ export default function InvestorDashboard() {
     criteria.investment_appetite_en ??
     criteria.investmentAppetiteEn ??
     '';
+  const formRiskAppetite =
+    pendingCriteria.riskAppetite ?? criteria.riskAppetite ?? '';
+  const formReturnExpectation = Object.prototype.hasOwnProperty.call(
+    pendingCriteria,
+    'returnExpectation',
+  )
+    ? pendingCriteria.returnExpectation ?? ''
+    : criteria.returnExpectation ?? '';
 
   return (
     <main className="d68-dashboard-page d68-investor-dashboard-page">
@@ -1009,13 +1024,14 @@ export default function InvestorDashboard() {
                 <div className="d68-dashboard-form2">
                   <label className="d68-dashboard-field">
                     <span>{T(lang, 'Khẩu vị rủi ro', 'Risk appetite')}</span>
-                    <select name="riskAppetite" className="d68-dashboard-input" defaultValue={pendingCriteria.riskAppetite || criteria.riskAppetite || 'balanced'}>
+                    <select name="riskAppetite" className="d68-dashboard-input" defaultValue={formRiskAppetite}>
+                      <option value="">{T(lang, 'Chưa chọn', 'Not selected')}</option>
                       {riskOptions.map((item) => <option key={item.value} value={item.value}>{T(lang, item.vi, item.en)}</option>)}
                     </select>
                   </label>
                   <label className="d68-dashboard-field">
                     <span>{T(lang, 'Kỳ vọng lợi nhuận (%)', 'Expected return (%)')}</span>
-                    <input name="returnExpectation" type="number" inputMode="decimal" min="0" step="0.1" className="d68-dashboard-input" defaultValue={pendingCriteria.returnExpectation ?? criteria.returnExpectation ?? ''} />
+                    <input name="returnExpectation" type="number" inputMode="decimal" min="0" step="0.1" className="d68-dashboard-input" defaultValue={formReturnExpectation} />
                   </label>
                   <label className="d68-dashboard-field">
                     <span>{T(lang, 'Quy mô Doanh thu DN', 'Business revenue size')}</span>
