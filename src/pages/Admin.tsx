@@ -247,9 +247,17 @@ function businessNeedsReview(business: Row, files: Row[] = [], images: Row[] = [
 }
 
 function investorNeedsReview(investor: Row) {
+  const pending = objectOf(investor.privacy?.pending_profile_changes);
+  const immediateKeys = new Set([
+    'type', 'stage', 'industries', 'deal_types', 'country', 'country_iso2',
+    'region', 'ticket_min', 'ticket_max', 'criteria',
+  ]);
+  const hasModeratedPending = Object.keys(pending).some(
+    (key) => !immediateKeys.has(key),
+  );
   return (
     ['draft', 'payment_pending', 'pending_admin_review'].includes(String(investor.status || '')) ||
-    !!investor.privacy?.pending_profile_changes
+    hasModeratedPending
   );
 }
 
@@ -1374,5 +1382,5 @@ function Logs({ logs }: { logs: Row[] }) {
 }
 
 function Settings() {
-  return <Card><h3>Cài đặt & kiểm thử baseline</h3><p>Không có secret/service_role key trong frontend. Admin chạy bằng Supabase RLS + profile.role=admin.</p><ul className="d68-admin-steps"><li>Public Business phải có visible=true, status=active, public_snapshot_json.</li><li>Business user edit chỉ vào pending_changes_json.</li><li>Investor user edit chỉ vào privacy.pending_profile_changes.</li><li>Admin duyệt mới public.</li><li>Contact và Market Partner leads lưu vào bảng riêng, Admin xem tại /admin/leads.</li></ul></Card>;
+  return <Card><h3>Cài đặt & kiểm thử baseline</h3><p>Không có secret/service_role key trong frontend. Admin chạy bằng Supabase RLS + profile.role=admin.</p><ul className="d68-admin-steps"><li>Public Business phải có visible=true, status=active, public_snapshot_json.</li><li>Business user edit chỉ vào pending_changes_json.</li><li>Investor lưu ngay tiêu chí đầu tư; chỉ Giới thiệu, ảnh và files vào hàng chờ duyệt.</li><li>Admin duyệt nội dung ẩn danh mới public.</li><li>Contact và Market Partner leads lưu vào bảng riêng, Admin xem tại /admin/leads.</li></ul></Card>;
 }

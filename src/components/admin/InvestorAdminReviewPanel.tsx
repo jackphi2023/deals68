@@ -107,26 +107,15 @@ function pendingCriteriaOf(investor: Row) {
 
 function reviewReasons(investor: Row) {
   const pending = pendingOf(investor);
-  const criteria = objectOf(pending.criteria);
   const status = String(investor.status || '').toLowerCase();
   const newAccount = ['draft', 'payment_pending', 'pending_admin_review'].includes(status);
   const introUpdated = Object.prototype.hasOwnProperty.call(pending, 'desc_vi') ||
     Object.prototype.hasOwnProperty.call(pending, 'desc_en');
-  const appetiteUpdated =
-    Object.prototype.hasOwnProperty.call(criteria, 'investment_appetite_vi') ||
-    Object.prototype.hasOwnProperty.call(criteria, 'investment_appetite_en') ||
-    Object.prototype.hasOwnProperty.call(criteria, 'investment_appetite');
-  const criteriaUpdated = Object.keys(criteria).some(
-    (key) => !['investment_appetite_vi', 'investment_appetite_en', 'investment_appetite'].includes(key),
-  ) || ['type', 'stage', 'industries', 'deal_types', 'country', 'country_iso2', 'region', 'ticket_min', 'ticket_max']
-    .some((key) => Object.prototype.hasOwnProperty.call(pending, key));
 
   return {
     newAccount,
     introUpdated,
-    appetiteUpdated,
-    criteriaUpdated,
-    any: newAccount || introUpdated || appetiteUpdated || criteriaUpdated,
+    any: newAccount || introUpdated,
   };
 }
 
@@ -286,31 +275,13 @@ function InvestorReviewEditor({
     setRemoveCover(false);
   }
 
-  async function savePrivate(event: FormEvent<HTMLFormElement>) {
+  async function saveInvestor(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    const submitter = (event.nativeEvent as SubmitEvent).submitter as
+      | HTMLButtonElement
+      | null;
     const form = new FormData(event.currentTarget);
-    const { error } = await supabase
-      .from('investors')
-      .update({
-        private_name: String(form.get('private_name') || '').trim() || null,
-        private_email: String(form.get('private_email') || '').trim() || null,
-        private_phone: String(form.get('private_phone') || '').trim() || null,
-        private_website: String(form.get('private_website') || '').trim() || null,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', investor.id);
-    if (error) {
-      setError(error.message);
-      return;
-    }
-    setError('');
-    setMessage('Đã lưu thông tin nội bộ Investor.');
-    await onReload();
-  }
-
-  async function approve(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const form = new FormData(event.currentTarget);
+    const approveIntroduction = submitter?.value === 'approve_introduction';
     const investorTypes = normalizeInvestorTypes(arrayOf(form.get('investor_types')));
     const stages = normalizeInvestorStages(arrayOf(form.get('stages')));
     const industries = normalizeIndustryKeys(arrayOf(form.get('industries')));
@@ -391,10 +362,10 @@ function InvestorReviewEditor({
       private_website: String(form.get('private_website') || '').trim(),
     };
 
-    const { error } = await supabase.rpc('admin_approve_investor_profile_changes', {
+    const { data, error } = await supabase.rpc('admin_update_investor_profile', {
       investor_uuid: investor.id,
       admin_patch: adminPatch,
-      publish_profile: false,
+      approve_introduction: approveIntroduction,
     });
     if (error) {
       setApproving(false);
@@ -403,7 +374,11 @@ function InvestorReviewEditor({
     }
     setApproving(false);
     setError('');
-    setMessage('Đã duyệt hồ sơ, Giới thiệu và Khẩu vị đầu tư Investor. Trạng thái Ẩn/Hiện được giữ theo lựa chọn Admin.');
+    setMessage(
+      approveIntroduction
+        ? 'Đã lưu hồ sơ và duyệt Giới thiệu Investor. Khẩu vị đầu tư VN/EN đã cập nhật public.'
+        : `Đã lưu thông tin Investor. Khẩu vị đầu tư VN/EN đã cập nhật public${data?.visible ? '' : '; hồ sơ vẫn đang ẩn'}.`,
+    );
     await onReload();
   }
 
@@ -438,9 +413,7 @@ function InvestorReviewEditor({
       {reasons.any ? (
         <div className="d68-admin-notice warn">
           {reasons.newAccount ? 'Tài khoản mới · ' : ''}
-          {reasons.introUpdated ? 'Giới thiệu vừa sửa · ' : ''}
-          {reasons.appetiteUpdated ? 'Khẩu vị đầu tư vừa sửa · ' : ''}
-          {reasons.criteriaUpdated ? 'Tiêu chí đầu tư vừa sửa' : ''}
+          {reasons.introUpdated ? 'Giới thiệu vừa sửa, cần duyệt' : ''}
         </div>
       ) : null}
 
@@ -454,16 +427,10 @@ function InvestorReviewEditor({
         <div className="d68-admin-investor-comparison-grid">
           <Comparison label="Giới thiệu (VN)" approved={investor.desc_vi} pending={pending.desc_vi} />
           <Comparison label="Giới thiệu (EN)" approved={investor.desc_en} pending={pending.desc_en} />
-          <Comparison label="Khẩu vị đầu tư (VN)" approved={approvedCriteria.investment_appetite_vi || approvedCriteria.investmentAppetiteVi} pending={pendingCriteria.investment_appetite_vi} />
-          <Comparison label="Khẩu vị đầu tư (EN)" approved={approvedCriteria.investment_appetite_en || approvedCriteria.investmentAppetiteEn} pending={pendingCriteria.investment_appetite_en} />
-          <Comparison label="Loại hình nhà đầu tư" approved={approvedTypes.map((value) => labelInvestorType(value, 'vi'))} pending={pendingCriteria.investorTypes?.map?.((value: string) => labelInvestorType(value, 'vi'))} />
-          <Comparison label="Giai đoạn phù hợp" approved={approvedStages.map((value) => labelStage(value, 'vi'))} pending={pendingCriteria.stages?.map?.((value: string) => labelStage(value, 'vi'))} />
-          <Comparison label="Ngành quan tâm" approved={approvedIndustries.map((value) => labelIndustryTaxonomy(value, 'vi'))} pending={pendingCriteria.sectors?.map?.((value: string) => labelIndustryTaxonomy(value, 'vi'))} />
-          <Comparison label="Loại giao dịch" approved={approvedDeals.map((value) => labelDealType(value, 'vi', true))} pending={pendingCriteria.dealTypes?.map?.((value: string) => labelDealType(value, 'vi', true))} />
         </div>
       ) : null}
 
-      <form onSubmit={approve} className="d68-admin-investor-review-form">
+      <form onSubmit={saveInvestor} className="d68-admin-investor-review-form">
         <div className="d68-admin-form4">
           <label className="d68-admin-field"><span>Tên hiển thị công khai (VN)</span><input name="title_vi" className="d68-admin-input" defaultValue={investor.title_vi || ''} /></label>
           <label className="d68-admin-field"><span>Tên hiển thị công khai (EN)</span><input name="title_en" className="d68-admin-input" defaultValue={investor.title_en || ''} /></label>
@@ -478,7 +445,7 @@ function InvestorReviewEditor({
         </div>
 
         <div className="d68-admin-field"><span>Loại hình nhà đầu tư</span><InvestorTypeTagPicker lang="vi" values={reviewTypes} name="investor_types" /></div>
-        <div className="d68-admin-field"><span>Giai đoạn phù hợp</span><InvestorStageTagPicker lang="vi" values={reviewStages} name="stages" /></div>
+        <div className="d68-admin-field"><span>Giai đoạn đầu tư</span><InvestorStageTagPicker lang="vi" values={reviewStages} name="stages" /></div>
         <div className="d68-admin-field"><span>Ngành quan tâm</span><IndustryTagPicker lang="vi" values={reviewIndustries} name="industries" expandVi="Mở rộng" expandEn="Expand" /></div>
         <div className="d68-admin-field"><span>Loại giao dịch quan tâm</span><InvestorDealTypeTagPicker lang="vi" values={reviewDeals} name="deal_types" /></div>
         <div className="d68-admin-field"><span>Thị trường quan tâm</span><InvestorMarketTagPicker lang="vi" values={reviewCountries} name="target_countries" /></div>
@@ -532,17 +499,11 @@ function InvestorReviewEditor({
         </div>
 
         <div className="d68-admin-actions">
-          <button className="d68-admin-btn green" disabled={approving}>{approving ? 'Đang duyệt…' : 'Duyệt hồ sơ & tiêu chí'}</button>
+          <button name="action" value="save" className="d68-admin-btn green" disabled={approving}>{approving ? 'Đang lưu…' : 'Lưu thông tin Investor'}</button>
+          <button name="action" value="approve_introduction" className="d68-admin-btn gold" disabled={approving}>{approving ? 'Đang lưu…' : 'Lưu & duyệt Giới thiệu'}</button>
           <button type="button" onClick={toggleVisible} className={`d68-admin-btn ${investor.visible ? 'red' : 'blue'}`}>{investor.visible ? 'Ẩn public' : 'Bật visible'}</button>
           {investor.code ? <Link to={`/investors/${investor.code}`} target="_blank" className="d68-admin-btn blue">Xem public ↗</Link> : null}
         </div>
-      </form>
-
-      <form onSubmit={savePrivate} className="d68-admin-investor-private-save">
-        <input type="hidden" name="private_name" value={investor.private_name || ''} />
-        <input type="hidden" name="private_email" value={investor.private_email || ''} />
-        <input type="hidden" name="private_phone" value={investor.private_phone || ''} />
-        <input type="hidden" name="private_website" value={investor.private_website || ''} />
       </form>
     </article>
   );
@@ -578,14 +539,12 @@ export default function InvestorAdminReviewPanel({
   const [dealFilter, setDealFilter] = useState('');
 
   const queueStats = useMemo(() => {
-    const result = { total: 0, newAccount: 0, intro: 0, appetite: 0, criteria: 0 };
+    const result = { total: 0, newAccount: 0, intro: 0 };
     investors.forEach((investor) => {
       const reasons = reviewReasons(investor);
       if (reasons.any) result.total += 1;
       if (reasons.newAccount) result.newAccount += 1;
       if (reasons.introUpdated) result.intro += 1;
-      if (reasons.appetiteUpdated) result.appetite += 1;
-      if (reasons.criteriaUpdated) result.criteria += 1;
     });
     return result;
   }, [investors]);
@@ -598,8 +557,6 @@ export default function InvestorAdminReviewPanel({
         if (reviewFilter === 'pending' && !reasons.any) return false;
         if (reviewFilter === 'new' && !reasons.newAccount) return false;
         if (reviewFilter === 'intro' && !reasons.introUpdated) return false;
-        if (reviewFilter === 'appetite' && !reasons.appetiteUpdated) return false;
-        if (reviewFilter === 'criteria' && !reasons.criteriaUpdated) return false;
         if (visibilityFilter === 'visible' && !investor.visible) return false;
         if (visibilityFilter === 'hidden' && investor.visible) return false;
         if (officeCountryFilter && String(investor.country_iso2 || '').toUpperCase() !== officeCountryFilter) return false;
@@ -652,12 +609,12 @@ export default function InvestorAdminReviewPanel({
 
         {queueStats.total ? (
           <div className="d68-admin-notice warn">
-            Có {queueStats.total} Investor cần kiểm tra: {queueStats.newAccount} tài khoản mới · {queueStats.intro} Giới thiệu sửa · {queueStats.appetite} Khẩu vị đầu tư sửa · {queueStats.criteria} Tiêu chí sửa.
+            Có {queueStats.total} Investor cần kiểm tra: {queueStats.newAccount} tài khoản mới · {queueStats.intro} Giới thiệu sửa. Khẩu vị và tiêu chí khác được lưu ngay, không vào hàng chờ.
           </div>
         ) : null}
 
         <div className="d68-admin-investor-filter-grid">
-          <label>Hàng chờ<select value={reviewFilter} onChange={(event) => onReviewFilterChange(event.target.value)} className="d68-admin-input"><option value="">Tất cả hồ sơ</option><option value="pending">Tất cả cần duyệt</option><option value="new">Tài khoản mới</option><option value="intro">Giới thiệu vừa sửa</option><option value="appetite">Khẩu vị vừa sửa</option><option value="criteria">Tiêu chí vừa sửa</option></select></label>
+          <label>Hàng chờ<select value={reviewFilter} onChange={(event) => onReviewFilterChange(event.target.value)} className="d68-admin-input"><option value="">Tất cả hồ sơ</option><option value="pending">Tất cả cần duyệt</option><option value="new">Tài khoản mới</option><option value="intro">Giới thiệu vừa sửa</option></select></label>
           <label>Trạng thái<select value={visibilityFilter} onChange={(event) => onVisibilityFilterChange(event.target.value)} className="d68-admin-input"><option value="">Tất cả</option><option value="visible">Hiển thị</option><option value="hidden">Ẩn</option></select></label>
           <label>{officeCountryLabel}<select value={officeCountryFilter} onChange={(event) => onOfficeCountryFilterChange(event.target.value)} className="d68-admin-input"><option value="">Tất cả</option>{officeCountries.map((value) => <option key={value} value={value}>{labelCountry(value, 'vi')}</option>)}</select></label>
           <label>Thị trường quan tâm<select value={targetCountryFilter} onChange={(event) => onTargetCountryFilterChange(event.target.value)} className="d68-admin-input"><option value="">Tất cả</option>{targetCountries.map((value) => <option key={value} value={value}>{labelCountry(value, 'vi')}</option>)}</select></label>

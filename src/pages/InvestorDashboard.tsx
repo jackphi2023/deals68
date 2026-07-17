@@ -631,7 +631,9 @@ export default function InvestorDashboard() {
 
   const pending = pendingProfile(investor);
   const pendingCriteria = asObject(pending.criteria);
-  const hasPending = Object.keys(pending).length > 0;
+  const hasPendingIntroduction =
+    Object.prototype.hasOwnProperty.call(pending, 'desc_vi') ||
+    Object.prototype.hasOwnProperty.call(pending, 'desc_en');
 
   async function saveProfile(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -716,18 +718,16 @@ export default function InvestorDashboard() {
       return;
     }
 
-    const requiresReview = Boolean(
-      data?.profile_pending || data?.criteria_pending || data?.description_pending,
-    );
+    const requiresReview = Boolean(data?.description_pending);
     setNoticeType(requiresReview ? 'warn' : 'ok');
     setNotice(
       requiresReview
         ? T(
             lang,
-            'Thay đổi đã được gửi và đang chờ quản trị Deals68 duyệt trước khi hiển thị công khai.',
-            'Your changes were submitted and are awaiting Deals68 administrator approval before public display.',
+            'Đã lưu thành công các tiêu chí đầu tư. Giới thiệu đang chờ quản trị Deals68 duyệt trước khi công khai.',
+            'Investment criteria saved successfully. The Introduction is awaiting Deals68 administrator approval before public display.',
           )
-        : T(lang, 'Cập nhật Hồ sơ thành công', 'Profile updated successfully'),
+        : T(lang, 'Đã lưu thành công', 'Saved successfully'),
     );
     await load();
   }
@@ -940,12 +940,12 @@ export default function InvestorDashboard() {
 
           <section>
             {notice ? <div className={`d68-dashboard-notice ${noticeType}`}>{notice}</div> : null}
-            {hasPending ? (
+            {hasPendingIntroduction ? (
               <div className="d68-dashboard-notice warn">
                 {T(
                   lang,
-                  'Hồ sơ có thay đổi đang chờ quản trị Deals68 duyệt. Dữ liệu công khai hiện tại chưa bị thay thế.',
-                  'Your profile has changes awaiting Deals68 administrator approval. The current public data remains unchanged.',
+                  'Giới thiệu có thay đổi đang chờ quản trị Deals68 duyệt. Các tiêu chí đầu tư khác đã được lưu ngay.',
+                  'Introduction changes are awaiting Deals68 administrator approval. Other investment criteria were saved immediately.',
                 )}
               </div>
             ) : null}
@@ -1005,7 +1005,7 @@ export default function InvestorDashboard() {
                   <InvestorTypeTagPicker lang={lang} values={formInvestorTypes} name="investor_types" />
                 </div>
                 <div className="d68-dashboard-field">
-                  <span>{T(lang, 'Giai đoạn phù hợp', 'Preferred stages')}</span>
+                    <span>{T(lang, 'Giai đoạn đầu tư', 'Investment stages')}</span>
                   <InvestorStageTagPicker lang={lang} values={formStages} name="stages" />
                 </div>
                 <div className="d68-dashboard-field">
@@ -1070,14 +1070,14 @@ export default function InvestorDashboard() {
                 <div className="d68-investor-profile-review-note">
                   {T(
                     lang,
-                    'Giới thiệu, Khẩu vị đầu tư và các tiêu chí public thay đổi đều cần quản trị Deals68 duyệt trước khi hiển thị.',
-                    'Changes to the Introduction, Investment Appetite and public criteria require Deals68 administrator approval before display.',
+                    'Loại nhà đầu tư, giai đoạn, ngành, thị trường, ticket size và khẩu vị đầu tư được lưu ngay. Chỉ Giới thiệu, ảnh và files cần quản trị Deals68 duyệt để bảo đảm ẩn danh.',
+                    'Investor type, stages, sectors, markets, ticket size and investment appetite are saved immediately. Only the Introduction, images and files require Deals68 review to protect anonymity.',
                   )}
                 </div>
 
                 <div className="d68-dashboard-actions">
                   <button className="d68-dashboard-btn blue" disabled={busy}>
-                    {T(lang, 'Gửi cập nhật để duyệt', 'Submit updates for review')}
+                    {T(lang, 'Lưu thay đổi', 'Save changes')}
                   </button>
                 </div>
               </form>

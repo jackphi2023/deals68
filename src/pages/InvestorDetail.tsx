@@ -648,7 +648,7 @@ export default function InvestorDetail({ lang }: { lang: Lang }) {
                   v={labelRegion(inv.region, lang)}
                 />
                 <Fact
-                  k={T(lang, 'Giai đoạn phù hợp', 'Preferred stages')}
+                  k={T(lang, 'Giai đoạn đầu tư', 'Investment stages')}
                   v={stageSummary}
                 />
                 {investorTicketLabel(lang, inv) ? (
@@ -665,26 +665,6 @@ export default function InvestorDetail({ lang }: { lang: Lang }) {
                 {T(lang, 'Tiêu chí đầu tư', 'Investment criteria')}
               </SectionTitle>
               <div className="d68-id-criteria-grid">
-                <CriteriaGroup
-                  label={T(
-                    lang,
-                    'Loại hình nhà đầu tư',
-                    'Investor types',
-                  )}
-                >
-                  <TagList
-                    values={investorTypes}
-                    empty={T(lang, 'Đang cập nhật', 'Updating')}
-                  />
-                </CriteriaGroup>
-                <CriteriaGroup
-                  label={T(lang, 'Giai đoạn phù hợp', 'Preferred stages')}
-                >
-                  <TagList
-                    values={stages}
-                    empty={T(lang, 'Đang cập nhật', 'Updating')}
-                  />
-                </CriteriaGroup>
                 <CriteriaGroup
                   label={T(
                     lang,
