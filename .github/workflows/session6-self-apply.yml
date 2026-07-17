@@ -1,0 +1,36 @@
+name: Session 6 Self Apply
+
+on:
+  push:
+    branches:
+      - fix/admin-business-financial-moderation-v1
+    paths:
+      - .github/workflows/session6-self-apply.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply-build-and-clean:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Session 6 branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: fix/admin-business-financial-moderation-v1
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Apply, validate and build Session 6
+        run: npm run build
+
+      - name: Commit clean Session 6 diff
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/session6-self-apply.yml
+          git diff --cached --check
+          git commit -m "fix: moderate Business assets and transaction information"
+          git push origin HEAD:fix/admin-business-financial-moderation-v1
