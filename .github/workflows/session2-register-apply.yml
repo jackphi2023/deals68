@@ -1,0 +1,72 @@
+name: Session 2 Register Apply
+
+on:
+  push:
+    branches:
+      - feature/register-profile-transaction-fields-v1
+    paths:
+      - .github/workflows/session2-register-apply.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply-and-validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout feature branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Apply scoped Register patch
+        run: |
+          git apply --check scripts/session2-register-profile-transaction.patch
+          git apply scripts/session2-register-profile-transaction.patch
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Production build
+        run: npm run build
+
+      - name: Validate Session 2 contract
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const source = fs.readFileSync('src/pages/Register.tsx', 'utf8');
+          const required = [
+            'useState<number | null>(() =>',
+            "normalized === 'investor'",
+            '[4, 8, 12, 16, 24].includes(requestedMonths)',
+            ': (investorMonths ?? 1) * 4',
+            '? investorPackageSelected && Boolean(investorMonths)',
+            "missing.push(T(lang, 'Kỳ hạn', 'Term'))",
+            'assets_owned_vi:',
+            'assets_owned_en:',
+            'excluded_physical_asset_value_vi:',
+            'excluded_physical_asset_value_en:',
+            '<textarea\n                      rows={3}\n                      value={excludedAssetValue}',
+            "label={T(lang, 'Giới thiệu', 'Introduction')}\n                  wide\n                  spaced",
+          ];
+          for (const token of required) {
+            if (!source.includes(token)) throw new Error(`Missing Session 2 token: ${token}`);
+          }
+          if (/const \[investorMonths[\s\S]{0,280}: 12\)/.test(source)) {
+            throw new Error('Investor registration still defaults to 12 months.');
+          }
+          if (/inputMode="numeric"[\s\S]{0,120}value=\{excludedAssetValue\}/.test(source)) {
+            throw new Error('Excluded asset field is still numeric-only.');
+          }
+          console.log('Session 2 Register contract: PASS');
+          NODE
+
+      - name: Commit clean scoped change
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm scripts/session2-register-profile-transaction.patch
+          git rm .github/workflows/session2-register-apply.yml
+          git add src/pages/Register.tsx
+          git commit -m "fix: align Register profile and transaction fields"
+          git push origin HEAD:${GITHUB_REF_NAME}
