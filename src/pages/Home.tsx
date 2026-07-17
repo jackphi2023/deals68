@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { Briefcase, Building2, Handshake } from 'lucide-react';
 import { countBusinesses, countInvestors, listHomepageBusinesses, listInvestors, investorTargetCountries } from '../lib/data';
 import { getPublicDealValueSummary, type PublicDealValueSummary } from '../lib/publicMetrics';
 import { toLocalizedPath } from '../lib/i18nRoutes';
@@ -119,15 +120,15 @@ export default function Home({ lang }: { lang: Lang }) {
   const nav = (path: string) => toLocalizedPath(path, lang);
 
   const roleCards = [
-    { icon: '🏢', bg: '#FEF3D3', color: '#B8860B',
+    { icon: <Building2 size={30} strokeWidth={1.9} aria-hidden="true" />, bg: '#E7F6FD', color: '#1BADEA',
       title: T(lang, 'Doanh nghiệp / Chủ doanh nghiệp', 'Businesses / Owners'),
       desc: T(lang, 'Gọi vốn, vay vốn, bán một phần hoặc toàn bộ. Đăng hồ sơ ẩn danh và kết nối với nhà đầu tư.', 'Raise capital, borrow, sell part or all. Post an anonymous profile and connect with investors.'),
       cta: T(lang, 'Đăng hồ sơ doanh nghiệp', 'List your business'), to: '/register/business' },
-    { icon: '💼', bg: '#E7F6FD', color: '#1596cc',
+    { icon: <Briefcase size={30} strokeWidth={1.9} aria-hidden="true" />, bg: '#FEF3D3', color: '#F2B51D',
       title: T(lang, 'Nhà đầu tư / Người mua / Bên cho vay', 'Investors / Buyers / Lenders'),
       desc: T(lang, 'Lọc cơ hội theo ngành, quy mô, lĩnh vực và kết nối với doanh nghiệp.', 'Filter opportunities by industry, size and focus area, then connect with businesses.'),
       cta: T(lang, 'Khám phá cơ hội', 'Explore opportunities'), to: '/investors' },
-    { icon: '🤝', bg: '#EAF7EF', color: '#16A34A',
+    { icon: <Handshake size={30} strokeWidth={1.9} aria-hidden="true" />, bg: '#EAF7EF', color: '#16A34A',
       title: T(lang, 'Đối tác thị trường', 'Market Partners'),
       desc: T(lang, 'Kết nối doanh nghiệp cần vốn với nhà đầu tư, người mua chiến lược và bên cho vay tại thị trường của bạn.', 'Connect businesses seeking capital with investors, strategic buyers and lenders in your market.'),
       cta: T(lang, 'Trở thành đối tác', 'Become a partner'), to: '/partners' }
