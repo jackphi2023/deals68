@@ -1,10 +1,6 @@
 #!/usr/bin/env node
 import fs from 'node:fs';
 import path from 'node:path';
-import { execFileSync } from 'node:child_process';
-if (fs.existsSync('scripts/session6-apply.py')) {
-  execFileSync('python', ['scripts/session6-apply.py'], { stdio: 'inherit' });
-}
 
 const SITE_URL = 'https://deals68.com';
 const outputDir = path.resolve(process.argv[2] || 'dist');

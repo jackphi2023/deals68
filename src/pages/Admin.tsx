@@ -162,6 +162,18 @@ function changedAny(pending: any, approved: any, keys: string[]) {
   );
 }
 
+
+const BUSINESS_FINANCIAL_REVIEW_FIELDS = [
+  ['assets_owned_vi', 'Tài sản doanh nghiệp sở hữu (VN)'],
+  ['assets_owned_en', 'Assets owned by the business (EN)'],
+  ['excluded_physical_asset_value_vi', 'Tài sản vật chất không nằm trong giao dịch (VN)'],
+  ['excluded_physical_asset_value_en', 'Physical assets excluded from the transaction (EN)'],
+] as const;
+
+const BUSINESS_FINANCIAL_REVIEW_KEYS = BUSINESS_FINANCIAL_REVIEW_FIELDS.map(
+  ([key]) => key,
+);
+
 function assetReviewState(row: Row) {
   const note = String(row.admin_note || '').toLowerCase();
   return {
@@ -200,6 +212,8 @@ function businessReviewSections(
 ) {
   const pending = objectOf(business.pending_changes_json);
   const approved = objectOf(business.public_snapshot_json);
+  const pendingFinancial = objectOf(pending.financial_input);
+  const approvedFinancial = objectOf(approved.financial_input);
   const labels: string[] = [];
   if (
     changedAny(pending, approved, [
@@ -211,6 +225,9 @@ function businessReviewSections(
   ) labels.push('Giới thiệu');
   if (changedAny(pending, approved, ['highlights_vi', 'highlights_en'])) {
     labels.push('Điểm nổi bật');
+  }
+  if (changedAny(pendingFinancial, approvedFinancial, BUSINESS_FINANCIAL_REVIEW_KEYS)) {
+    labels.push('Thông tin Tài sản & Giao dịch');
   }
   if (
     changedAny(pending, approved, [
@@ -796,6 +813,11 @@ export default function Admin() {
       text(form.get('city_key')) || submittedCity,
       countryIso2,
     );
+    const approvedFinancialInput = {
+      ...objectOf(business.financial_input),
+      ...objectOf(objectOf(business.public_snapshot_json).financial_input),
+      ...objectOf(objectOf(business.pending_changes_json).financial_input),
+    };
     const adminSnapshot = {
       title_vi: text(form.get('title_vi')),
       title_en: text(form.get('title_en')) || autoEn(text(form.get('title_vi'))),
@@ -828,6 +850,17 @@ export default function Admin() {
       quality_score: parseFormattedNumber(form.get('quality_score')),
       quality_score_manual_override: form.get('quality_score_manual_override') === 'on',
       data_confidence: parseFormattedNumber(form.get('data_confidence')),
+      financial_input: {
+        ...approvedFinancialInput,
+        assets_owned: text(form.get('assets_owned_vi')) || text(form.get('assets_owned_en')),
+        assets_owned_vi: text(form.get('assets_owned_vi')),
+        assets_owned_en: text(form.get('assets_owned_en')),
+        excluded_physical_asset_value:
+          text(form.get('excluded_physical_asset_value_vi')) ||
+          text(form.get('excluded_physical_asset_value_en')),
+        excluded_physical_asset_value_vi: text(form.get('excluded_physical_asset_value_vi')),
+        excluded_physical_asset_value_en: text(form.get('excluded_physical_asset_value_en')),
+      },
       hero_image_url: text(form.get('hero_image_url')),
       image_url: text(form.get('hero_image_url')),
       approved_at: new Date().toISOString(),
@@ -1327,6 +1360,8 @@ function adminCompareValue(value: any, key: string) {
 function BusinessPendingComparison({ business }: { business: Row }) {
   const pending = objectOf(business.pending_changes_json);
   const current = { ...business, ...publicOf(business) };
+  const pendingFinancial = objectOf(pending.financial_input);
+  const currentFinancial = objectOf(current.financial_input);
   const fields = [
     ['company_name_private', 'Tên doanh nghiệp thật'],
     ['industry', 'Ngành'],
@@ -1343,8 +1378,11 @@ function BusinessPendingComparison({ business }: { business: Row }) {
     ['investment_reason_vi', 'Lý do gọi vốn/chuyển nhượng'],
   ] as const;
   const changedRows = fields.filter(([key]) => hasOwn(pending, key) && JSON.stringify(pending[key]) !== JSON.stringify(current[key]));
-  if (!changedRows.length) return null;
-  return <div className="d68-admin-table-wrap"><table className="d68-admin-table"><thead><tr><th>Trường Business sửa</th><th>Dữ liệu đang public/đã duyệt</th><th>Dữ liệu Business đề xuất</th></tr></thead><tbody>{changedRows.map(([key, label]) => <tr key={key}><td><b>{label}</b></td><td><pre>{adminCompareValue(current[key], key)}</pre></td><td><span className="d68-admin-badge warn">Đã thay đổi</span><pre>{adminCompareValue(pending[key], key)}</pre></td></tr>)}</tbody></table></div>;
+  const changedFinancialRows = BUSINESS_FINANCIAL_REVIEW_FIELDS.filter(
+    ([key]) => hasOwn(pendingFinancial, key) && comparable(pendingFinancial[key]) !== comparable(currentFinancial[key]),
+  );
+  if (!changedRows.length && !changedFinancialRows.length) return null;
+  return <div className="d68-admin-table-wrap"><table className="d68-admin-table"><thead><tr><th>Trường Business sửa</th><th>Dữ liệu đang public/đã duyệt</th><th>Dữ liệu Business đề xuất</th></tr></thead><tbody>{changedRows.map(([key, label]) => <tr key={key}><td><b>{label}</b></td><td><pre>{adminCompareValue(current[key], key)}</pre></td><td><span className="d68-admin-badge warn">Đã thay đổi</span><pre>{adminCompareValue(pending[key], key)}</pre></td></tr>)}{changedFinancialRows.map(([key, label]) => <tr key={`financial_input.${key}`}><td><b>{label}</b><br/><code>financial_input.{key}</code></td><td><pre>{adminCompareValue(currentFinancial[key], key)}</pre></td><td><span className="d68-admin-badge warn">Đã thay đổi</span><pre>{adminCompareValue(pendingFinancial[key], key)}</pre></td></tr>)}</tbody></table></div>;
 }
 
 function AdminBusinessLocationFields({
@@ -1394,6 +1432,12 @@ function BusinessPublicEditor({
   const hasPending = Object.keys(pending).length > 0;
   const source = sourceOf(business);
   const publicRow = publicOf(business);
+  const pendingFinancial = objectOf(pending.financial_input);
+  const sourceFinancial = {
+    ...objectOf(business.financial_input),
+    ...objectOf(source.financial_input),
+  };
+  const publicFinancial = objectOf(publicRow.financial_input);
   const sections = businessReviewSections(business, businessFiles, businessImages);
   const pendingFiles = businessFiles.filter((file: Row) => String(file.business_id) === String(business.id) && isPendingBusinessFile(file));
   const pendingImages = businessImages.filter((image: Row) => String(image.business_id) === String(business.id) && isPendingBusinessImage(image));
@@ -1402,11 +1446,20 @@ function BusinessPublicEditor({
     return publicRow[key] ?? source[key] ?? fallback;
   };
   const reviewLines = (key: string) => lines(reviewValue(key));
+  const reviewFinancialValue = (key: string, fallback: any = '') => {
+    if (hasPending && hasOwn(pendingFinancial, key)) return pendingFinancial[key] ?? '';
+    return publicFinancial[key] ?? sourceFinancial[key] ?? fallback;
+  };
+  const hasPendingFinancialChanges = changedAny(
+    pendingFinancial,
+    publicFinancial,
+    BUSINESS_FINANCIAL_REVIEW_KEYS,
+  );
   const warningText = sections.length
     ? `Doanh nghiệp vừa sửa ${sections.join(', ')}, cần kiểm tra và duyệt.`
     : 'Doanh nghiệp cần Admin kiểm tra và duyệt trước khi public.';
 
-  return <Card><form key={`${business.id}:${business.updated_at || ''}:${business.pending_submitted_at || ''}`} onSubmit={(event) => onApprove(event, business)}><div className="d68-admin-row-head"><div><b>{business.public_code || 'D68'} · {business.company_name_private || source.company_name_private || 'Private name pending'}</b><div className="d68-admin-subtle">{business.status || 'pending'} · public v{business.public_version || 0} · {business.public_snapshot_json ? 'has snapshot' : 'no snapshot'} · {business.pending_submitted_at ? `pending ${new Date(business.pending_submitted_at).toLocaleString('vi-VN')}` : 'no pending text'}</div></div><span className={`d68-admin-badge ${business.visible ? 'ok' : 'warn'}`}>{business.visible ? 'visible' : 'not public'}</span></div><div className="d68-admin-notice warn">{warningText}</div>{hasPending ? <BusinessPendingComparison business={business} /> : null}{sections.length ? <div className="d68-admin-actions">{sections.map((label) => <span key={label} className="d68-admin-badge warn">{label}</span>)}</div> : null}{pendingFiles.length || pendingImages.length ? <details className="d68-admin-source" open><summary>Tài sản cần duyệt: {pendingFiles.length} file · {pendingImages.length} ảnh</summary><pre>{JSON.stringify({ files: pendingFiles.map((file: Row) => ({ id: file.id, file_name: file.file_name, display_name: file.display_name, public_visible: file.public_visible, privacy_level: file.privacy_level, admin_note: file.admin_note })), images: pendingImages.map((image: Row) => ({ id: image.id, title: image.title, display_title: image.display_title, public_visible: image.public_visible, is_sanitized: image.is_sanitized, admin_note: image.admin_note })) }, null, 2)}</pre><p className="d68-admin-subtle">Duyệt/đổi tên/làm sạch ảnh-file tại tab “Hình ảnh & Files” hoặc “Ảnh/File DN”.</p></details> : null}{hasPending ? <details className="d68-admin-source" open><summary>Thay đổi doanh nghiệp vừa gửi</summary><pre>{JSON.stringify(pending, null, 2)}</pre></details> : <details className="d68-admin-source"><summary>Xem dữ liệu nguồn</summary><pre>{JSON.stringify(source, null, 2)}</pre></details>}<div className="d68-admin-form4"><label className="d68-admin-field"><span>Tiêu đề ẩn danh (hiển thị public, VN)</span><input name="title_vi" defaultValue={reviewValue('title_vi') || 'Hồ sơ doanh nghiệp ẩn danh'} placeholder="Tên ẩn danh VI" required className="d68-admin-input"/></label><label className="d68-admin-field"><span>Tiêu đề ẩn danh (hiển thị public, EN)</span><input name="title_en" defaultValue={reviewValue('title_en') || autoEn(String(reviewValue('title_vi') || ''))} placeholder="Anonymous title EN" className="d68-admin-input"/></label><input name="industry" defaultValue={reviewValue('industry')} placeholder="Industry" className="d68-admin-input"/><input name="deal_type" defaultValue={reviewValue('deal_type')} placeholder="Deal type" className="d68-admin-input"/><AdminBusinessLocationFields city={String(reviewValue('city') || '')} cityKey={String(reviewValue('city_key') || '')} countryIso2={String(reviewValue('country_iso2', 'VN') || 'VN')} /><AdminNumberInput name="revenue_month" value={reviewValue('revenue_month', 0)} placeholder="Doanh thu tháng"/><AdminNumberInput name="revenue_2025" value={reviewValue('revenue_2025', 0)} placeholder="Doanh thu năm"/><select name="revenue_currency" defaultValue={reviewValue('revenue_currency', 'VND')} className="d68-admin-input"><option>VND</option><option>USD</option></select><AdminNumberInput name="ebitda_margin" value={reviewValue('ebitda_margin', 0)} placeholder="EBITDA %" allowDecimal/><AdminNumberInput name="growth_pct" value={reviewValue('growth_pct', 0)} placeholder="Tăng trưởng năm %" allowDecimal/><AdminNumberInput name="ask_amount" value={reviewValue('ask_amount', 0)} placeholder="Nhu cầu vốn/Giá chào"/><select name="ask_currency" defaultValue={reviewValue('ask_currency') || reviewValue('revenue_currency', 'VND')} className="d68-admin-input"><option>VND</option><option>USD</option></select><AdminNumberInput name="stake_pct" value={reviewValue('stake_pct', 0)} placeholder="Tỷ lệ cổ phần %" allowDecimal/><AdminNumberInput name="quality_score" value={reviewValue('quality_score', business.quality_score ?? 0)} placeholder="Business Quality Score 0-100"/><label className="d68-admin-check"><input name="quality_score_manual_override" type="checkbox" defaultChecked={!!business.quality_score_manual_override}/> Giữ điểm Admin nhập</label><AdminNumberInput name="data_confidence" value={reviewValue('data_confidence', business.data_confidence ?? 0)} placeholder="Data confidence"/><input name="hero_image_url" defaultValue={reviewValue('hero_image_url') || reviewValue('image_url')} placeholder="Approved hero image URL" className="d68-admin-input d68-admin-span2"/><label className="d68-admin-field d68-admin-span2"><span>Mô tả/Giới thiệu (hiển thị public, VN)</span><textarea name="description_vi" defaultValue={reviewValue('description_vi')} placeholder="Mô tả public VI" className="d68-admin-input textarea"/></label><label className="d68-admin-field d68-admin-span2"><span>Mô tả/Giới thiệu (hiển thị public, EN)</span><textarea name="description_en" defaultValue={reviewValue('description_en') || autoEn(String(reviewValue('description_vi') || ''))} placeholder="Description EN" className="d68-admin-input textarea"/></label><label className="d68-admin-field d68-admin-span2"><span>Điểm nổi bật (hiển thị public, VN)</span><textarea name="highlights_vi" defaultValue={reviewLines('highlights_vi')} placeholder="Mỗi dòng là một điểm nổi bật public" className="d68-admin-input textarea"/></label><label className="d68-admin-field d68-admin-span2"><span>Điểm nổi bật (hiển thị public, EN)</span><textarea name="highlights_en" defaultValue={reviewLines('highlights_en') || autoEn(reviewLines('highlights_vi'))} placeholder="Each line is one public highlight" className="d68-admin-input textarea"/></label><textarea name="investment_reason_vi" defaultValue={reviewValue('investment_reason_vi')} placeholder="Lý do giao dịch VI" className="d68-admin-input textarea d68-admin-span2"/><textarea name="investment_reason_en" defaultValue={reviewValue('investment_reason_en') || autoEn(String(reviewValue('investment_reason_vi') || ''))} placeholder="Reason EN" className="d68-admin-input textarea d68-admin-span2"/></div><div className="d68-admin-actions"><button className="d68-admin-btn green">Duyệt & hiển thị public snapshot</button><button type="button" onClick={() => onToggle(business)} className={`d68-admin-btn ${business.visible ? 'red' : ''}`}>{business.visible ? 'Ẩn public' : 'Bật visible'}</button>{business.slug ? <Link to={`/businesses/${business.slug}`} className="d68-admin-btn blue">Public ↗</Link> : null}{pendingFiles.length || pendingImages.length ? <Link to="/admin/assets" className="d68-admin-btn blue">Duyệt ảnh/file ↗</Link> : null}</div></form></Card>;
+  return <Card><form key={`${business.id}:${business.updated_at || ''}:${business.pending_submitted_at || ''}`} onSubmit={(event) => onApprove(event, business)}><div className="d68-admin-row-head"><div><b>{business.public_code || 'D68'} · {business.company_name_private || source.company_name_private || 'Private name pending'}</b><div className="d68-admin-subtle">{business.status || 'pending'} · public v{business.public_version || 0} · {business.public_snapshot_json ? 'has snapshot' : 'no snapshot'} · {business.pending_submitted_at ? `pending ${new Date(business.pending_submitted_at).toLocaleString('vi-VN')}` : 'no pending text'}</div></div><span className={`d68-admin-badge ${business.visible ? 'ok' : 'warn'}`}>{business.visible ? 'visible' : 'not public'}</span></div><div className="d68-admin-notice warn">{warningText}</div>{hasPending ? <BusinessPendingComparison business={business} /> : null}{sections.length ? <div className="d68-admin-actions">{sections.map((label) => <span key={label} className="d68-admin-badge warn">{label}</span>)}</div> : null}{pendingFiles.length || pendingImages.length ? <details className="d68-admin-source" open><summary>Tài sản cần duyệt: {pendingFiles.length} file · {pendingImages.length} ảnh</summary><pre>{JSON.stringify({ files: pendingFiles.map((file: Row) => ({ id: file.id, file_name: file.file_name, display_name: file.display_name, public_visible: file.public_visible, privacy_level: file.privacy_level, admin_note: file.admin_note })), images: pendingImages.map((image: Row) => ({ id: image.id, title: image.title, display_title: image.display_title, public_visible: image.public_visible, is_sanitized: image.is_sanitized, admin_note: image.admin_note })) }, null, 2)}</pre><p className="d68-admin-subtle">Duyệt/đổi tên/làm sạch ảnh-file tại tab “Hình ảnh & Files” hoặc “Ảnh/File DN”.</p></details> : null}{hasPending ? <details className="d68-admin-source" open><summary>Thay đổi doanh nghiệp vừa gửi</summary><pre>{JSON.stringify(pending, null, 2)}</pre></details> : <details className="d68-admin-source"><summary>Xem dữ liệu nguồn</summary><pre>{JSON.stringify(source, null, 2)}</pre></details>}<div className="d68-admin-form4"><label className="d68-admin-field"><span>Tiêu đề ẩn danh (hiển thị public, VN)</span><input name="title_vi" defaultValue={reviewValue('title_vi') || 'Hồ sơ doanh nghiệp ẩn danh'} placeholder="Tên ẩn danh VI" required className="d68-admin-input"/></label><label className="d68-admin-field"><span>Tiêu đề ẩn danh (hiển thị public, EN)</span><input name="title_en" defaultValue={reviewValue('title_en') || autoEn(String(reviewValue('title_vi') || ''))} placeholder="Anonymous title EN" className="d68-admin-input"/></label><input name="industry" defaultValue={reviewValue('industry')} placeholder="Industry" className="d68-admin-input"/><input name="deal_type" defaultValue={reviewValue('deal_type')} placeholder="Deal type" className="d68-admin-input"/><AdminBusinessLocationFields city={String(reviewValue('city') || '')} cityKey={String(reviewValue('city_key') || '')} countryIso2={String(reviewValue('country_iso2', 'VN') || 'VN')} /><AdminNumberInput name="revenue_month" value={reviewValue('revenue_month', 0)} placeholder="Doanh thu tháng"/><AdminNumberInput name="revenue_2025" value={reviewValue('revenue_2025', 0)} placeholder="Doanh thu năm"/><select name="revenue_currency" defaultValue={reviewValue('revenue_currency', 'VND')} className="d68-admin-input"><option>VND</option><option>USD</option></select><AdminNumberInput name="ebitda_margin" value={reviewValue('ebitda_margin', 0)} placeholder="EBITDA %" allowDecimal/><AdminNumberInput name="growth_pct" value={reviewValue('growth_pct', 0)} placeholder="Tăng trưởng năm %" allowDecimal/><AdminNumberInput name="ask_amount" value={reviewValue('ask_amount', 0)} placeholder="Nhu cầu vốn/Giá chào"/><select name="ask_currency" defaultValue={reviewValue('ask_currency') || reviewValue('revenue_currency', 'VND')} className="d68-admin-input"><option>VND</option><option>USD</option></select><AdminNumberInput name="stake_pct" value={reviewValue('stake_pct', 0)} placeholder="Tỷ lệ cổ phần %" allowDecimal/><AdminNumberInput name="quality_score" value={reviewValue('quality_score', business.quality_score ?? 0)} placeholder="Business Quality Score 0-100"/><label className="d68-admin-check"><input name="quality_score_manual_override" type="checkbox" defaultChecked={!!business.quality_score_manual_override}/> Giữ điểm Admin nhập</label><AdminNumberInput name="data_confidence" value={reviewValue('data_confidence', business.data_confidence ?? 0)} placeholder="Data confidence"/><input name="hero_image_url" defaultValue={reviewValue('hero_image_url') || reviewValue('image_url')} placeholder="Approved hero image URL" className="d68-admin-input d68-admin-span2"/><div className="d68-admin-financial-review-box d68-admin-span4"><div className="d68-admin-row-head"><div><h3>Thông tin Tài sản & Giao dịch</h3><p className="d68-admin-subtle">Assets & transaction information · Admin kiểm tra và bổ sung độc lập nội dung VN/EN trước khi public.</p></div>{hasPendingFinancialChanges ? <span className="d68-admin-badge warn">⚠️ Business vừa cập nhật, cần duyệt</span> : <span className="d68-admin-badge ok">Không có thay đổi nested chờ duyệt</span>}</div><div className="d68-admin-form2"><label className="d68-admin-field"><span>Tài sản doanh nghiệp sở hữu (VN)</span><textarea name="assets_owned_vi" defaultValue={reviewFinancialValue('assets_owned_vi', reviewFinancialValue('assets_owned'))} placeholder="Mô tả tài sản hữu hình/vô hình doanh nghiệp sở hữu" className="d68-admin-input textarea"/></label><label className="d68-admin-field"><span>Assets owned by the business (EN)</span><textarea name="assets_owned_en" defaultValue={reviewFinancialValue('assets_owned_en')} placeholder="Describe tangible and intangible assets owned" className="d68-admin-input textarea"/></label><label className="d68-admin-field"><span>Tài sản vật chất KHÔNG nằm trong giao dịch (VN)</span><textarea name="excluded_physical_asset_value_vi" defaultValue={reviewFinancialValue('excluded_physical_asset_value_vi', reviewFinancialValue('excluded_physical_asset_value'))} placeholder="Mô tả tài sản bị loại trừ khỏi giao dịch" className="d68-admin-input textarea"/></label><label className="d68-admin-field"><span>Physical assets excluded from the transaction (EN)</span><textarea name="excluded_physical_asset_value_en" defaultValue={reviewFinancialValue('excluded_physical_asset_value_en')} placeholder="Describe physical assets excluded from the transaction" className="d68-admin-input textarea"/></label></div><p className="d68-admin-subtle">Các key khác trong financial_input được giữ nguyên khi Admin duyệt.</p></div><label className="d68-admin-field d68-admin-span2"><span>Mô tả/Giới thiệu (hiển thị public, VN)</span><textarea name="description_vi" defaultValue={reviewValue('description_vi')} placeholder="Mô tả public VI" className="d68-admin-input textarea"/></label><label className="d68-admin-field d68-admin-span2"><span>Mô tả/Giới thiệu (hiển thị public, EN)</span><textarea name="description_en" defaultValue={reviewValue('description_en') || autoEn(String(reviewValue('description_vi') || ''))} placeholder="Description EN" className="d68-admin-input textarea"/></label><label className="d68-admin-field d68-admin-span2"><span>Điểm nổi bật (hiển thị public, VN)</span><textarea name="highlights_vi" defaultValue={reviewLines('highlights_vi')} placeholder="Mỗi dòng là một điểm nổi bật public" className="d68-admin-input textarea"/></label><label className="d68-admin-field d68-admin-span2"><span>Điểm nổi bật (hiển thị public, EN)</span><textarea name="highlights_en" defaultValue={reviewLines('highlights_en') || autoEn(reviewLines('highlights_vi'))} placeholder="Each line is one public highlight" className="d68-admin-input textarea"/></label><textarea name="investment_reason_vi" defaultValue={reviewValue('investment_reason_vi')} placeholder="Lý do giao dịch VI" className="d68-admin-input textarea d68-admin-span2"/><textarea name="investment_reason_en" defaultValue={reviewValue('investment_reason_en') || autoEn(String(reviewValue('investment_reason_vi') || ''))} placeholder="Reason EN" className="d68-admin-input textarea d68-admin-span2"/></div><div className="d68-admin-actions"><button className="d68-admin-btn green">Duyệt & hiển thị public snapshot</button><button type="button" onClick={() => onToggle(business)} className={`d68-admin-btn ${business.visible ? 'red' : ''}`}>{business.visible ? 'Ẩn public' : 'Bật visible'}</button>{business.slug ? <Link to={`/businesses/${business.slug}`} className="d68-admin-btn blue">Public ↗</Link> : null}{pendingFiles.length || pendingImages.length ? <Link to="/admin/assets" className="d68-admin-btn blue">Duyệt ảnh/file ↗</Link> : null}</div></form></Card>;
 }
 
 function AssetEditor({ business, adminId, onRefresh }: { business: Row; adminId?: string; onRefresh?: () => void | Promise<void> }) {
