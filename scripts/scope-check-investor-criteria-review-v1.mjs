@@ -26,6 +26,7 @@ const allowed = new Set([
   'src/styles/final/release-foundation.css',
   'supabase/migrations/20260717073001_investor_criteria_review_v1.sql',
   'supabase/migrations/20260717073045_investor_profile_contract_ui_v2.sql',
+  'supabase/migrations/20260717073820_promote_legacy_pending_investor_criteria_v1.sql',
   'docs/INVESTOR_CRITERIA_REVIEW_V1.md',
   'scripts/deals68-investor-profile-contract-v2-check.mjs',
   'scripts/deals68-investor-profile-postgres-v2-test.mjs',

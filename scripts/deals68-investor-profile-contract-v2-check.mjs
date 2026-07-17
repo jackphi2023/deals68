@@ -11,6 +11,9 @@ const detailCss = read('src/styles/pages/investor-detail.css');
 const migration = read(
   'supabase/migrations/20260717073045_investor_profile_contract_ui_v2.sql',
 );
+const legacyPromotionMigration = read(
+  'supabase/migrations/20260717073820_promote_legacy_pending_investor_criteria_v1.sql',
+);
 
 // Investor Detail UI contract.
 assert.match(detailCss, /\.d68-id-cover-card\{[^}]*height:350px;min-height:350px/);
@@ -88,6 +91,21 @@ const publicView = migration.match(
 )?.[0] || '';
 assert.ok(publicView);
 assert.doesNotMatch(publicView, /pending_profile_changes/);
+
+for (const token of [
+  "where jsonb_typeof(privacy -> 'pending_profile_changes' -> 'criteria') = 'object'",
+  "v_criteria := case",
+  "end || v_pending_criteria",
+  "v_pending := v_pending - 'criteria'",
+  "v_privacy - 'pending_profile_changes' - 'pending_submitted_at'",
+]) {
+  assert.ok(
+    legacyPromotionMigration.includes(token),
+    `Legacy promotion migration missing: ${token}`,
+  );
+}
+assert.doesNotMatch(legacyPromotionMigration, /insert\s+into\s+public\.investors/i);
+assert.doesNotMatch(legacyPromotionMigration, /delete\s+from\s+public\.investors/i);
 
 // Deterministic in-memory business fixture: no external database and no test
 // rows. It locks independent VI/EN fallback and the moderation boundary.

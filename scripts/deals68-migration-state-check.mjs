@@ -13,6 +13,7 @@ const required = [
   '20260713020000_after_main_cutover_revoke_signup_v1.sql',
   '20260717073001_investor_criteria_review_v1.sql',
   '20260717073045_investor_profile_contract_ui_v2.sql',
+  '20260717073820_promote_legacy_pending_investor_criteria_v1.sql',
 ];
 const forbidden = [
   '20260711103000_normalize_investor_taxonomy_on_write_v1.sql',
