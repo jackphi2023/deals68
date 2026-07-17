@@ -25,10 +25,122 @@ jobs:
           fetch-depth: 0
           ref: ${{ github.head_ref || github.ref_name }}
 
-      - name: Apply scoped Register patch
+      - name: Apply scoped Register changes
         run: |
-          git apply --check scripts/session2-register-profile-transaction.patch
-          git apply scripts/session2-register-profile-transaction.patch
+          python <<'PY'
+          from pathlib import Path
+
+          path = Path('src/pages/Register.tsx')
+          source = path.read_text(encoding='utf-8')
+
+          replacements = [
+              (
+                  """  const [investorMonths, setInvestorMonths] = useState<number>(
+    Number(
+      intent.units ||
+        (intent.termWeeks
+          ? Math.max(1, Math.round(Number(intent.termWeeks) / 4))
+          : 12),
+    ),
+  );""",
+                  """  const [investorMonths, setInvestorMonths] = useState<number | null>(() => {
+    const requestedMonths = Number(
+      intent.units ||
+        (intent.termWeeks
+          ? Math.max(1, Math.round(Number(intent.termWeeks) / 4))
+          : 0),
+    );
+    return checkoutIntentMatchesRole &&
+      normalized === 'investor' &&
+      [4, 8, 12, 16, 24].includes(requestedMonths)
+      ? requestedMonths
+      : null;
+  });""",
+              ),
+              (
+                  "  const effectiveWeeks = isBusiness ? serviceWeeks ?? 1 : investorMonths * 4;",
+                  """  const effectiveWeeks = isBusiness
+    ? serviceWeeks ?? 1
+    : (investorMonths ?? 1) * 4;""",
+              ),
+              (
+                  """    : isInvestor
+      ? investorPackageSelected
+      : true;""",
+                  """    : isInvestor
+      ? investorPackageSelected && Boolean(investorMonths)
+      : true;""",
+              ),
+              (
+                  """      if (!investorPackageSelected) {
+        missing.push(T(lang, 'Gói dịch vụ', 'Service package'));
+      } else if (!paymentAck) {""",
+                  """      if (!investorPackageSelected) {
+        missing.push(T(lang, 'Gói dịch vụ', 'Service package'));
+      }
+      if (!investorMonths) {
+        missing.push(T(lang, 'Kỳ hạn', 'Term'));
+      } else if (investorPackageSelected && !paymentAck) {""",
+              ),
+              (
+                  """            assets_owned: assetsOwned,
+            excluded_physical_asset_value:
+              parseFormattedNumber(excludedAssetValue),
+            financial_source: financialSource,""",
+                  """            assets_owned: assetsOwned,
+            assets_owned_vi: lang === 'vi' ? assetsOwned : '',
+            assets_owned_en: lang === 'en' ? assetsOwned : '',
+            excluded_physical_asset_value: excludedAssetValue,
+            excluded_physical_asset_value_vi:
+              lang === 'vi' ? excludedAssetValue : '',
+            excluded_physical_asset_value_en:
+              lang === 'en' ? excludedAssetValue : '',
+            financial_source: financialSource,""",
+              ),
+              (
+                  """              financialSource,
+              assetsOwned,
+            ].filter""",
+                  """              financialSource,
+              assetsOwned,
+              excludedAssetValue,
+            ].filter""",
+              ),
+              (
+                  """                    <input
+                      inputMode=\"numeric\"
+                      value={excludedAssetValue}
+                      onChange={(event) =>
+                        setExcludedAssetValue(
+                          formatNumberTyping(event.target.value),
+                        )
+                      }
+                    />""",
+                  """                    <textarea
+                      rows={3}
+                      value={excludedAssetValue}
+                      onChange={(event) => setExcludedAssetValue(event.target.value)}
+                    />""",
+              ),
+              (
+                  """                  label={T(lang, 'Giới thiệu', 'Introduction')}
+                  wide
+                  hint={T(""",
+                  """                  label={T(lang, 'Giới thiệu', 'Introduction')}
+                  wide
+                  spaced
+                  hint={T(""",
+              ),
+          ]
+
+          for old, new in replacements:
+              count = source.count(old)
+              if count != 1:
+                  raise SystemExit(f'Expected one exact match, found {count}: {old[:80]!r}')
+              source = source.replace(old, new, 1)
+
+          path.write_text(source, encoding='utf-8')
+          PY
 
       - name: Install dependencies
         run: npm ci
