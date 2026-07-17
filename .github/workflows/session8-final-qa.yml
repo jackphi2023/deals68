@@ -18,7 +18,19 @@ jobs:
           fetch-depth: 0
           ref: qa/session8-final-regression-cleanup-v1
       - name: Session 8 regression contract
-        run: node scripts/deals68-session8-final-regression-check.mjs
+        shell: bash
+        run: |
+          set +e
+          node scripts/deals68-session8-final-regression-check.mjs 2>&1 | tee session8-regression.log
+          status=${PIPESTATUS[0]}
+          exit "$status"
+      - name: Upload regression diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: session8-regression-log
+          path: session8-regression.log
+          if-no-files-found: error
 
   final-qa:
     needs: regression-preflight
