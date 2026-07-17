@@ -24,8 +24,8 @@ const allowed = new Set([
   'src/styles/pages/investor-detail.css',
   'src/styles/pages/investors.css',
   'src/styles/final/release-foundation.css',
-  'supabase/migrations/20260716124500_investor_criteria_review_v1.sql',
-  'supabase/migrations/20260717064725_investor_profile_contract_ui_v2.sql',
+  'supabase/migrations/20260717073001_investor_criteria_review_v1.sql',
+  'supabase/migrations/20260717073045_investor_profile_contract_ui_v2.sql',
   'docs/INVESTOR_CRITERIA_REVIEW_V1.md',
   'scripts/deals68-investor-profile-contract-v2-check.mjs',
   'scripts/deals68-investor-profile-postgres-v2-test.mjs',
@@ -326,7 +326,7 @@ requireTokens('src/styles/final/release-foundation.css', [
 ]);
 
 const migration = requireTokens(
-  'supabase/migrations/20260716124500_investor_criteria_review_v1.sql',
+  'supabase/migrations/20260717073001_investor_criteria_review_v1.sql',
   [
     'generate_investor_public_code',
     "'INV-' || lpad",
@@ -381,7 +381,7 @@ if (!publicInvestorView || /pending_profile_changes/i.test(publicInvestorView)) 
 }
 
 const contractV2 = requireTokens(
-  'supabase/migrations/20260717064725_investor_profile_contract_ui_v2.sql',
+  'supabase/migrations/20260717073045_investor_profile_contract_ui_v2.sql',
   [
     'admin_update_investor_profile',
     "'criteria_pending', false",
