@@ -5,7 +5,8 @@ import { getPublicDealValueSummary, type PublicDealValueSummary } from '../lib/p
 import { toLocalizedPath } from '../lib/i18nRoutes';
 import { formatMoneyForLang, labelIndustry, labelInvestorType, labelCountry, T } from '../lib/labels';
 import type { Lang } from '../lib/i18n';
-import { HeroBannerSlider, PromotionBanner } from '../components/SiteBanners';
+import { PromotionBanner } from '../components/SiteBanners';
+import HomepageHeroSlider from '../components/HomepageHeroSlider';
 
 const PUBLIC_INVESTOR_UI_STYLE_ID = 'd68-public-investor-ui-v1';
 const PUBLIC_INVESTOR_UI_CSS = String.raw`
@@ -18,18 +19,18 @@ const PUBLIC_INVESTOR_UI_CSS = String.raw`
 .d68-home-page .d68-hero-slide.is-active{opacity:1!important;pointer-events:auto!important}
 .d68-home-page .d68-hero-media,.d68-home-page .d68-hero-media img{display:block!important;width:100%!important;height:100%!important}
 .d68-home-page .d68-hero-media img{object-fit:cover!important;object-position:var(--d68-hero-position,50% 50%)!important}
-.d68-home-page .d68-hero-media img[alt="Deals68 hero placeholder"]{opacity:0!important}
+.d68-home-page .d68-home-hero-media,.d68-home-page .d68-home-hero-media img{display:block!important;width:100%!important;height:100%!important}
 .d68-home-page .d68-home-hero__inner{z-index:2!important}
 .d68-home-page .d68-home-hero-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;max-width:790px;margin-top:30px}
 .d68-home-page .d68-home-hero-stats>div{min-width:0;padding:15px 17px;border:1px solid rgba(255,255,255,.18);border-radius:14px;background:rgba(8,36,66,.58);backdrop-filter:blur(7px);box-shadow:0 10px 28px rgba(0,0,0,.16)}
 .d68-home-page .d68-home-hero-stats b{display:block;color:#fff;font-size:clamp(22px,2.5vw,34px);font-weight:900;line-height:1.08;letter-spacing:-.7px}
 .d68-home-page .d68-home-hero-stats span{display:block;margin-top:5px;color:#d8e8f4;font-size:12.5px;font-weight:700;line-height:1.35}
 .d68-home-page .d68-home-role-card{background:#f8fdfa!important;border-color:#dfeee5!important;transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease!important}
-.d68-home-page .d68-home-role-card:hover{border-color:#bfe1cf!important}
+.d68-home-page .d68-home-role-card:hover{transform:none!important;border-color:#dfeee5!important;box-shadow:0 2px 8px rgba(15,42,74,.08)!important}
 .d68-home-page .d68-home-role-card h3,.d68-home-page .d68-home-business-card h3,.d68-home-page .d68-home-investor-title-link,.d68-businesses-page .d68-business-card h3{transition:color .18s ease}
-.d68-home-page .d68-home-role-card:hover h3,.d68-home-page .d68-home-business-card:hover h3,.d68-home-page .d68-home-investor-card:hover .d68-home-investor-title-link,.d68-businesses-page .d68-business-card:hover h3{color:rgb(27,173,234)!important}
+.d68-home-page .d68-home-role-card:hover h3,.d68-home-page .d68-home-business-card:hover h3,.d68-home-page .d68-home-investor-card:hover .d68-home-investor-title-link,.d68-businesses-page .d68-business-card:hover h3{color:#0f2a4a!important}
 .d68-home-page .d68-home-investor-card{background:#fffef8!important;border-color:#eee9cf!important;transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease!important}
-.d68-home-page .d68-home-investor-card:hover{border-color:#e0d496!important}
+.d68-home-page .d68-home-investor-card:hover{transform:none!important;border-color:#eee9cf!important;box-shadow:0 2px 8px rgba(15,42,74,.08)!important}
 .d68-home-page .d68-home-investor-card h3{margin:0 0 8px}
 .d68-home-page .d68-home-investor-title-link{display:inline!important;padding:0!important;border-radius:0!important;background:transparent!important;color:#0f2a4a!important;font-size:inherit!important;font-weight:inherit!important;line-height:inherit!important;text-align:left!important}
 .d68-home-page .d68-home-investor-title-link:hover{background:transparent!important;color:rgb(27,173,234)!important}
@@ -39,7 +40,7 @@ const PUBLIC_INVESTOR_UI_CSS = String.raw`
 @media(max-width:700px){
   .d68-home-page .d68-home-hero{min-height:0!important;aspect-ratio:3/4!important;background:linear-gradient(180deg,#0f2a4a,#14315a)!important}
   .d68-home-page .d68-home-hero:after{background:linear-gradient(180deg,rgba(6,25,48,.46) 0%,rgba(6,25,48,.08) 48%,rgba(6,25,48,.70) 100%)}
-  .d68-home-page .d68-hero-slider.has-mobile-image .d68-hero-media img{object-fit:contain!important;background:#0f2a4a}
+  .d68-home-page .d68-home-hero-media--mobile img{object-fit:contain!important;background:#0f2a4a}
   .d68-home-page .d68-home-hero__orb{display:none!important}
   .d68-home-page .d68-home-hero__inner{position:absolute!important;inset:0!important;display:flex!important;flex-direction:column!important;width:100%!important;max-width:none!important;padding:24px 16px 18px!important;pointer-events:none}
   .d68-home-page .d68-home-eyebrow{align-self:flex-start;margin:0 0 12px!important;padding:6px 10px!important;font-size:11px!important;line-height:1.25!important}
@@ -214,7 +215,7 @@ export default function Home({ lang }: { lang: Lang }) {
   return (
     <main className="d68-home-page">
       <section className="d68-home-hero">
-        <HeroBannerSlider lang={lang} />
+        <HomepageHeroSlider lang={lang} />
         <span className="d68-home-hero__orb" aria-hidden="true" />
         <div className="d68-home-container d68-home-hero__inner">
           <div className="d68-home-eyebrow"><span />{T(lang, 'Kết nối thương vụ, khai mở lộc phát', 'Connecting Deals, Unlocking Prosperity')}</div>

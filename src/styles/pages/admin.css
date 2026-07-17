@@ -100,6 +100,49 @@
   }
 }
 
+.d68-admin-investor-cover-editor{
+  display:grid;
+  grid-template-columns:minmax(260px,.9fr) minmax(260px,1.1fr);
+  gap:18px;
+  align-items:stretch;
+  margin:18px 0;
+  padding:18px;
+  border:1px solid #E7EDF3;
+  border-radius:14px;
+  background:#F8FAFC;
+}
+.d68-admin-investor-cover-preview{
+  min-height:190px;
+  overflow:hidden;
+  border-radius:12px;
+  background:#0F2A4A;
+}
+.d68-admin-investor-cover-preview img{
+  display:block;
+  width:100%;
+  height:100%;
+  min-height:190px;
+  object-fit:cover;
+}
+.d68-admin-investor-cover-controls{
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  justify-content:center;
+  gap:10px;
+}
+.d68-admin-investor-cover-controls>b{color:#0F2A4A}
+.d68-admin-investor-cover-controls>span{
+  color:#64748B;
+  font-size:13px;
+  line-height:1.55;
+}
+.d68-admin-investor-cover-controls input{max-width:100%}
+
+@media(max-width:760px){
+  .d68-admin-investor-cover-editor{grid-template-columns:1fr;padding:14px}
+}
+
 /* G8 — Admin Operations overview, queue badges and URL-filter UX. */
 .d68-admin-nav-link{
   display:flex!important;
