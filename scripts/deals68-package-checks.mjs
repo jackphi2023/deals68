@@ -20,6 +20,7 @@ const scripts = [
   'scripts/deals68-register-about-cta-ux-check.mjs',
   'scripts/deals68-business-dashboard-overview-spacing-check.mjs',
   'scripts/deals68-admin-business-financial-review-check.mjs',
+  'scripts/deals68-business-detail-assets-transaction-check.mjs',
   'scripts/deals68-investor-detail-localization-check.mjs',
   'scripts/deals68-investor-profile-contract-v2-check.mjs',
   'scripts/deals68-investor-profile-postgres-v2-test.mjs',
