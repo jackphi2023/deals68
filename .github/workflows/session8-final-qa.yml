@@ -9,7 +9,19 @@ permissions:
   contents: write
 
 jobs:
+  regression-preflight:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Session 8 branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: qa/session8-final-regression-cleanup-v1
+      - name: Session 8 regression contract
+        run: node scripts/deals68-session8-final-regression-check.mjs
+
   final-qa:
+    needs: regression-preflight
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
