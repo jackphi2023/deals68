@@ -80,8 +80,13 @@ function LegacyViRedirect() {
 function DashboardGate({ role, children }: { role: 'business' | 'investor'; children: ReactNode }) {
   const { profile, loading } = useAuth();
   const location = useLocation();
+  const lang = langFromPath(location.pathname);
   if (loading) return <RouteFallback />;
-  if (!profile) return <Navigate to={`/login?next=${encodeURIComponent(location.pathname + location.search)}`} replace />;
+  if (!profile) {
+    const loginPath = toLocalizedPath('/login', lang);
+    const next = encodeURIComponent(location.pathname + location.search);
+    return <Navigate to={`${loginPath}?next=${next}`} replace />;
+  }
   if (profile.role !== role && profile.role !== 'admin') {
     return <section style={{ maxWidth: 760, margin: '0 auto', padding: '56px 24px' }}><div style={{ background: '#fff', border: '1px solid #E7EDF3', borderRadius: 16, padding: 24 }}><h2>Access restricted</h2><p>Role hiện tại: {profile.role}. Dashboard này dành cho {role}.</p></div></section>;
   }

@@ -268,11 +268,6 @@
   text-decoration:none;
   transition:color .16s ease;
 }
-.d68-investor-business-title-link:hover{
-  color:#1596CC;
-  text-decoration:underline;
-  text-underline-offset:3px;
-}
 .d68-investor-business-title-link:focus-visible{
   border-radius:4px;
   outline:3px solid rgba(27,173,234,.28);

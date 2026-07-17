@@ -740,6 +740,7 @@ export default function InvestorDetail({ lang }: { lang: Lang }) {
                         <small>{relativeTime(item.sent_at, lang)}</small>
                         {item.slug ? (
                           <Link
+                            className="d68-entity-title-link"
                             to={`/businesses/${item.slug}`}
                             target="_blank"
                             rel="noreferrer"

@@ -53,16 +53,28 @@ export function getLocationOptionsForCountry(countryIso2: string) {
   return matches.length ? matches : [];
 }
 
-export function locationKeyFromLabel(label: string, countryIso2 = 'VN') {
-  const n = norm(label);
+export function locationOptionFromValue(raw: any, countryIso2 = '') {
+  const n = norm(raw);
   const iso = String(countryIso2 || '').toUpperCase();
-  const item = locationOptions.find((x) => (!iso || x.countryIso2 === iso) && (norm(x.key) === n || norm(x.vi) === n || norm(x.en) === n || (x.aliases || []).some((a) => norm(a) === n)));
-  return item?.key || '';
+  if (!n) return undefined;
+  return locationOptions.find((x) =>
+    (!iso || x.countryIso2 === iso) &&
+    (norm(x.key) === n || norm(x.vi) === n || norm(x.en) === n ||
+      (x.aliases || []).some((alias) => norm(alias) === n)),
+  );
+}
+
+export function locationKeyFromLabel(label: string, countryIso2 = 'VN') {
+  return locationOptionFromValue(label, countryIso2)?.key || '';
+}
+
+export function locationDbLabel(raw: any, countryIso2 = 'VN') {
+  const item = locationOptionFromValue(raw, countryIso2);
+  return item?.vi || String(raw || '').trim();
 }
 
 export function labelLocation(raw: any, lang: Lang) {
   const r = String(raw || '').trim();
-  const n = norm(r);
-  const item = locationOptions.find((x) => norm(x.key) === n || norm(x.vi) === n || norm(x.en) === n || (x.aliases || []).some((a) => norm(a) === n));
+  const item = locationOptionFromValue(r);
   return item ? T(lang, item.vi, item.en) : (r || T(lang, 'Đang cập nhật', 'Updating'));
 }

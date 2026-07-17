@@ -41,10 +41,6 @@ function Row({
   );
 }
 
-function currencyForCountry(country: string): Currency {
-  return country === 'VN' ? 'VND' : 'USD';
-}
-
 export default function Valuation({
   lang,
 }: {
@@ -56,6 +52,7 @@ export default function Valuation({
   const [country, setCountry] = useState('');
   const [industryKey, setIndustryKey] = useState('');
   const [revenueYear, setRevenueYear] = useState('');
+  const [currency, setCurrency] = useState<Currency>('VND');
   const [margin, setMargin] = useState('');
   const [growth, setGrowth] = useState('');
 
@@ -65,9 +62,6 @@ export default function Valuation({
       .catch(() => setConfig(DEFAULT_VALUATION_CONFIG));
   }, []);
 
-  const selectedCurrency = country
-    ? currencyForCountry(country)
-    : null;
   const parsedRevenue = parseFormattedNumber(revenueYear);
   const hasRequiredInputs =
     !!country &&
@@ -75,7 +69,7 @@ export default function Valuation({
     parsedRevenue > 0;
 
   const result = useMemo(() => {
-    if (!hasRequiredInputs || !selectedCurrency) {
+    if (!hasRequiredInputs) {
       return null;
     }
 
@@ -86,19 +80,19 @@ export default function Valuation({
         growthPct: parseFormattedNumber(growth, true),
         industryKey,
         countryKey: country,
-        currency: selectedCurrency,
+        currency,
       },
       config,
     );
   }, [
     config,
     country,
+    currency,
     growth,
     hasRequiredInputs,
     industryKey,
     margin,
     parsedRevenue,
-    selectedCurrency,
   ]);
 
   const industry =
@@ -107,11 +101,6 @@ export default function Valuation({
   const countryLabel =
     countryOptions.find((item) => item.iso2 === country) ||
     null;
-  const currencyLabel = selectedCurrency
-    ? selectedCurrency === 'VND'
-      ? 'VNĐ'
-      : 'USD'
-    : T(lang, 'VNĐ / USD', 'VND / USD');
   const disclaimer = T(
     lang,
     VALUATION_DISCLAIMER_VI,
@@ -221,77 +210,96 @@ export default function Valuation({
                 </select>
               </label>
 
-              <label>
-                {T(
-                  lang,
-                  `Doanh thu năm gần nhất (${currencyLabel})`,
-                  `Latest annual revenue (${currencyLabel})`,
-                )}
-                <input
-                  inputMode="numeric"
-                  value={revenueYear}
-                  placeholder={T(
+              <div className="d68-val-revenue-row">
+                <label>
+                  {T(
                     lang,
-                    'Nhập doanh thu năm',
-                    'Enter annual revenue',
+                    'Doanh thu năm gần nhất',
+                    'Latest annual revenue',
                   )}
-                  onChange={(event: ChangeEvent<HTMLInputElement>) =>
-                    setRevenueYear(
-                      formatNumberTyping(event.target.value),
-                    )
-                  }
-                />
-              </label>
+                  <input
+                    inputMode="numeric"
+                    value={revenueYear}
+                    placeholder={T(
+                      lang,
+                      'Nhập doanh thu năm',
+                      'Enter annual revenue',
+                    )}
+                    onChange={(event: ChangeEvent<HTMLInputElement>) =>
+                      setRevenueYear(
+                        formatNumberTyping(event.target.value),
+                      )
+                    }
+                  />
+                </label>
 
-              <label>
-                {T(
-                  lang,
-                  'Biên lợi nhuận EBITDA (%)',
-                  'EBITDA margin (%)',
-                )}
-                <input
-                  inputMode="decimal"
-                  value={margin}
-                  placeholder={T(
-                    lang,
-                    'Không bắt buộc',
-                    'Optional',
-                  )}
-                  onChange={(event: ChangeEvent<HTMLInputElement>) =>
-                    setMargin(
-                      formatNumberTyping(
-                        event.target.value,
-                        true,
-                      ),
-                    )
-                  }
-                />
-              </label>
+                <label>
+                  {T(lang, 'Đơn vị', 'Currency')}
+                  <select
+                    value={currency}
+                    onChange={(event: ChangeEvent<HTMLSelectElement>) =>
+                      setCurrency(event.target.value as Currency)
+                    }
+                  >
+                    <option value="VND">
+                      {T(lang, 'VNĐ', 'VND')}
+                    </option>
+                    <option value="USD">USD</option>
+                  </select>
+                </label>
+              </div>
 
-              <label>
-                {T(
-                  lang,
-                  'Tăng trưởng doanh thu (%)',
-                  'Revenue growth (%)',
-                )}
-                <input
-                  inputMode="decimal"
-                  value={growth}
-                  placeholder={T(
+              <div className="d68-val-metrics-row">
+                <label>
+                  {T(
                     lang,
-                    'Không bắt buộc',
-                    'Optional',
+                    'Biên lợi nhuận EBITDA (%)',
+                    'EBITDA margin (%)',
                   )}
-                  onChange={(event: ChangeEvent<HTMLInputElement>) =>
-                    setGrowth(
-                      formatNumberTyping(
-                        event.target.value,
-                        true,
-                      ),
-                    )
-                  }
-                />
-              </label>
+                  <input
+                    inputMode="decimal"
+                    value={margin}
+                    placeholder={T(
+                      lang,
+                      'Không bắt buộc',
+                      'Optional',
+                    )}
+                    onChange={(event: ChangeEvent<HTMLInputElement>) =>
+                      setMargin(
+                        formatNumberTyping(
+                          event.target.value,
+                          true,
+                        ),
+                      )
+                    }
+                  />
+                </label>
+
+                <label>
+                  {T(
+                    lang,
+                    'Tăng trưởng doanh thu (%)',
+                    'Revenue growth (%)',
+                  )}
+                  <input
+                    inputMode="decimal"
+                    value={growth}
+                    placeholder={T(
+                      lang,
+                      'Không bắt buộc',
+                      'Optional',
+                    )}
+                    onChange={(event: ChangeEvent<HTMLInputElement>) =>
+                      setGrowth(
+                        formatNumberTyping(
+                          event.target.value,
+                          true,
+                        ),
+                      )
+                    }
+                  />
+                </label>
+              </div>
             </div>
           </article>
 

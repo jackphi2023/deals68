@@ -91,12 +91,13 @@ const foundation = `
 
 try {
   await db.exec(foundation);
-  await db.exec(
-    fs.readFileSync(
-      'supabase/migrations/20260717073045_investor_profile_contract_ui_v2.sql',
-      'utf8',
-    ),
-  );
+  for (const migrationPath of [
+    'supabase/migrations/20260717073045_investor_profile_contract_ui_v2.sql',
+    'supabase/migrations/20260717073820_promote_legacy_pending_investor_criteria_v1.sql',
+    'supabase/migrations/20260717101552_investor_appetite_moderation_v1.sql',
+  ]) {
+    await db.exec(fs.readFileSync(migrationPath, 'utf8'));
+  }
 
   await db.query(
     `insert into public.investors (
@@ -107,7 +108,7 @@ try {
       $1, $2, 'INV-TEST', 'VC', 'Nhà đầu tư thử nghiệm', 'Test investor',
       'Giới thiệu cũ', 'Old introduction', 'VN', 'Vietnam', 'asia',
       array['technology'], array['equity'], 'Growth', 100000, 500000,
-      '{"investorTypes":["VC"],"stages":["Growth"]}'::jsonb,
+      '{"investorTypes":["VC"],"stages":["Growth"],"investment_appetite_vi":"Khẩu vị đã duyệt","investment_appetite_en":"Approved appetite"}'::jsonb,
       '{}'::jsonb, true, 'active'
     )`,
     [investorId, ownerId],
@@ -151,7 +152,8 @@ try {
   );
 
   assert.equal(investorSave.rows[0].result.saved_immediately, true);
-  assert.equal(investorSave.rows[0].result.criteria_pending, false);
+  assert.equal(investorSave.rows[0].result.criteria_pending, true);
+  assert.equal(investorSave.rows[0].result.investment_appetite_pending, true);
   assert.equal(investorSave.rows[0].result.description_pending, true);
 
   const afterInvestor = await db.query(
@@ -162,13 +164,32 @@ try {
   assert.equal(afterInvestor.rows[0].criteria.riskAppetite, 'balanced');
   assert.equal(
     afterInvestor.rows[0].criteria.investment_appetite_en,
-    'Investor-entered appetite',
+    'Approved appetite',
   );
   assert.deepEqual(
     afterInvestor.rows[0].privacy.pending_profile_changes,
-    { desc_vi: 'Giới thiệu mới chờ duyệt' },
+    {
+      desc_vi: 'Giới thiệu mới chờ duyệt',
+      criteria: {
+        investment_appetite_vi: 'Khẩu vị do Investor nhập',
+        investment_appetite_en: 'Investor-entered appetite',
+      },
+    },
   );
   assert.equal(afterInvestor.rows[0].desc_vi, 'Giới thiệu cũ');
+
+  const beforeAdmin = await db.query(
+    `select criteria from public.public_investors_safe where id = $1`,
+    [investorId],
+  );
+  assert.equal(
+    beforeAdmin.rows[0].criteria.investment_appetite_vi,
+    'Khẩu vị đã duyệt',
+  );
+  assert.equal(
+    beforeAdmin.rows[0].criteria.investment_appetite_en,
+    'Approved appetite',
+  );
 
   const adminSave = await db.query(
     `select public.admin_update_investor_profile($1, $2::jsonb, false) as result`,
@@ -206,6 +227,14 @@ try {
 
   assert.equal(adminSave.rows[0].result.saved, true);
   assert.equal(adminSave.rows[0].result.introduction_approved, false);
+
+  const afterAdminSave = await db.query(
+    `select privacy from public.investors where id = $1`,
+    [investorId],
+  );
+  assert.deepEqual(afterAdminSave.rows[0].privacy.pending_profile_changes, {
+    desc_vi: 'Giới thiệu mới chờ duyệt',
+  });
 
   const publicRow = await db.query(
     `select criteria, desc_vi from public.public_investors_safe where id = $1`,
@@ -249,45 +278,11 @@ try {
   assert.equal(finalRow.rows[0].desc_en, 'Approved English introduction');
   assert.equal(finalRow.rows[0].privacy.pending_profile_changes, undefined);
 
-  await db.query(
-    `update public.investors
-     set privacy = jsonb_build_object(
-       'pending_profile_changes', jsonb_build_object(
-         'desc_vi', 'Giới thiệu vẫn chờ duyệt',
-         'criteria', jsonb_build_object(
-           'investorTypes', jsonb_build_array('PE'),
-           'stages', jsonb_build_array('Mature')
-         )
-       ),
-       'pending_submitted_at', now()::text
-     )
-     where id = $1`,
-    [investorId],
-  );
-  await db.exec(
-    fs.readFileSync(
-      'supabase/migrations/20260717073820_promote_legacy_pending_investor_criteria_v1.sql',
-      'utf8',
-    ),
-  );
-
-  const promotedLegacy = await db.query(
-    `select type, stage, criteria, privacy from public.investors where id = $1`,
-    [investorId],
-  );
-  assert.equal(promotedLegacy.rows[0].type, 'PE');
-  assert.equal(promotedLegacy.rows[0].stage, 'Mature');
-  assert.deepEqual(promotedLegacy.rows[0].criteria.investorTypes, ['PE']);
-  assert.deepEqual(promotedLegacy.rows[0].criteria.stages, ['Mature']);
-  assert.deepEqual(promotedLegacy.rows[0].privacy.pending_profile_changes, {
-    desc_vi: 'Giới thiệu vẫn chờ duyệt',
-  });
-
   console.log('✓ Investor Profile PostgreSQL V2: PASS');
-  console.log('✓ Migration executed in PGlite; no Supabase project was contacted.');
-  console.log('✓ Investor criteria saved immediately; Introduction stayed pending.');
+  console.log('✓ Migrations executed in PGlite; no Supabase project was contacted.');
+  console.log('✓ Non-moderated criteria saved immediately; Introduction stayed pending.');
+  console.log('✓ Investment appetite stayed pending until Admin review.');
   console.log('✓ Admin VN/EN appetite reached public_investors_safe.');
-  console.log('✓ Legacy pending criteria promoted; pending Introduction preserved.');
 } finally {
   await db.close();
 }

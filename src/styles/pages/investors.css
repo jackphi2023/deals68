@@ -28,7 +28,6 @@
 .d68-investor-card__badges .verified{color:#16A34A;background:#E9F9EF}
 .d68-investor-card h3{font-size:15.5px;font-weight:800;margin:0 0 6px;line-height:1.4}
 .d68-investor-card__title-link,.d68-investor-card__title-link:visited{color:#0F2A4A;text-decoration:none;transition:color .18s ease}
-.d68-investor-card__title-link:hover,.d68-investor-card:hover .d68-investor-card__title-link{color:rgb(27,173,234);text-decoration:underline;text-underline-offset:3px}
 .d68-investor-card__title-link:focus-visible{border-radius:4px;outline:3px solid rgba(27,173,234,.26);outline-offset:3px}
 .d68-investor-card__body>p{display:-webkit-box;overflow:hidden;max-height:4.5em;font-size:13.5px;color:#64748B;margin:0 0 10px;line-height:1.5;text-overflow:ellipsis;-webkit-box-orient:vertical;-webkit-line-clamp:3;line-clamp:3}
 .d68-investor-card__meta{display:flex;flex-wrap:wrap;gap:10px 14px;font-size:12.5px;color:#475569;min-width:0}

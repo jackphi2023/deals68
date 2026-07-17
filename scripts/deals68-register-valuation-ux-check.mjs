@@ -17,6 +17,7 @@ function forbidToken(text, token, message) {
 
 const register = read('src/pages/Register.tsx');
 const valuation = read('src/pages/Valuation.tsx');
+const valuationCss = read('src/styles/pages/valuation.css');
 const css = read('src/styles/pages/ui-fixes.css');
 const authCss = read('src/styles/pages/auth.css');
 
@@ -31,6 +32,9 @@ for (const token of [
   'const hasSelectedPackage =',
   "b={hasSelectedPackage ? money(price.subtotal, price.currency) : '-'}",
   'd68-bizreg-package-pending',
+  'useState<number | null>',
+  'Boolean(plan && serviceWeeks)',
+  "const currentTermDisplay = currentTermValue ?? '—'",
   'd68-assets-source-grid',
 ]) {
   requireToken(register, token, `Register missing ${token}`);
@@ -40,6 +44,12 @@ forbidToken(
   register,
   "useState<BusinessPlan>(intent.businessPlan === 'featured' ? 'featured' : 'standard')",
   'Business registration still defaults to Standard plan',
+);
+
+forbidToken(
+  register,
+  'Number(intent.termWeeks || intent.units || 16)',
+  'Business registration still defaults to a 16-week term',
 );
 
 forbidToken(
@@ -87,14 +97,37 @@ for (const token of [
   "const [country, setCountry] = useState('');",
   "const [industryKey, setIndustryKey] = useState('');",
   "const [revenueYear, setRevenueYear] = useState('');",
+  "const [currency, setCurrency] = useState<Currency>('VND');",
   "const [margin, setMargin] = useState('');",
   "const [growth, setGrowth] = useState('');",
   'const hasRequiredInputs =',
   'parsedRevenue > 0',
   "'Chọn quốc gia'",
   "'Chọn ngành'",
+  'className="d68-val-revenue-row"',
+  'className="d68-val-metrics-row"',
+  'value={currency}',
+  'setCurrency(event.target.value as Currency)',
+  '<option value="VND">',
+  '<option value="USD">USD</option>',
+  'currency,',
 ]) {
   requireToken(valuation, token, `Valuation missing ${token}`);
+}
+
+for (const token of [
+  '.d68-val-revenue-row',
+  '.d68-val-metrics-row',
+  'grid-column: 1 / -1',
+  'grid-template-columns: minmax(0, 1fr) minmax(140px, .42fr)',
+  'grid-template-columns: repeat(2, minmax(0, 1fr))',
+  '@media (max-width: 620px)',
+]) {
+  requireToken(
+    valuationCss,
+    token,
+    `Valuation CSS missing ${token}`,
+  );
 }
 
 for (const token of [
@@ -105,6 +138,9 @@ for (const token of [
   "useState('10')",
   "'Đang cập nhật'",
   "'Pending'",
+  'function currencyForCountry',
+  'selectedCurrency',
+  'Doanh thu năm gần nhất (${currencyLabel})',
 ]) {
   forbidToken(
     valuation,
@@ -135,6 +171,7 @@ console.log(
 console.log(
   '✓ Business and Investor packages start unselected on direct registration.',
 );
+console.log('✓ Business term starts unselected on direct registration.');
 console.log(
   '✓ Estimate and total display "-" until a package is selected.',
 );
@@ -154,6 +191,12 @@ console.log(
   '✓ Investor registration dimensions remain unchanged.',
 );
 console.log('✓ Valuation fields start empty.');
+console.log(
+  '✓ Valuation currency is independent from country and defaults to VND.',
+);
+console.log(
+  '✓ Revenue/currency and EBITDA/growth render in their required rows.',
+);
 console.log(
   '✓ Valuation waits for country, industry and valid revenue.',
 );

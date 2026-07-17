@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useState } from 'react';
-import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { BarChart3, BriefcaseBusiness, CreditCard, FileText, Image as ImageIcon, Inbox, LayoutDashboard, Users } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import {
@@ -15,7 +15,7 @@ import {
 } from '../lib/data';
 import { supabase } from '../lib/supabase';
 import { ensureBusinessImagePrivate } from '../lib/businessAssetStorage';
-import { langFromPath, toLocalizedPath } from '../lib/i18nRoutes';
+import { langFromPath, stripLangPrefix, toLocalizedPath } from '../lib/i18nRoutes';
 import { DEFAULT_VALUATION_CONFIG, getActiveValuationConfig, valuate, valuationInputFromBusiness, formatValuationMoney, valuationVerdictMessage, VALUATION_DISCLAIMER_VI, VALUATION_DISCLAIMER_EN } from '../lib/valuationEngine';
 import { businessQualityPublicExplanation, normalizeQualityBreakdown, qualityItemLabel, qualityItemNote } from '../lib/businessQuality';
 import { proposalQuotaTotal } from '../lib/proposals';
@@ -28,6 +28,11 @@ import {
   paymentOrderCode,
 } from '../lib/paymentOrders';
 import { resumePendingBusinessSignupUploads } from '../lib/pendingBusinessUploads';
+import {
+  getLocationOptionsForCountry,
+  locationDbLabel,
+  locationKeyFromLabel,
+} from '../lib/labels';
 
 type Lang = 'vi' | 'en';
 type Tab = 'overview' | 'profile' | 'documents' | 'images' | 'interests' | 'requests' | 'services';
@@ -70,7 +75,10 @@ const DOC_ACCEPT = '.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,application/pdf,applic
 const STATIC_VIETQR_URL = '/assets/vietqr-vcb.png';
 
 function resolveTab(pathname: string): Tab {
-  const suffix = pathname.replace('/dashboard/business','').replace(/^\//,'').split('/')[0];
+  const suffix = stripLangPrefix(pathname)
+    .replace('/dashboard/business','')
+    .replace(/^\//,'')
+    .split('/')[0];
   return tabMap[suffix] || 'overview';
 }
 
@@ -399,8 +407,7 @@ function ValuationOverviewBox({ lang, result }: any) {
 }
 
 export default function BusinessDashboard() {
-  const { profile, loading } = useAuth();
-  const navigate = useNavigate();
+  const { profile } = useAuth();
   const location = useLocation();
   const lang = langFromPath(location.pathname) as Lang;
   const [tab, setTab] = useState<Tab>(() => resolveTab(location.pathname));
@@ -416,6 +423,7 @@ export default function BusinessDashboard() {
   const [msg, setMsg] = useState('');
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
+  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
   const [newDocName, setNewDocName] = useState('');
   const [newDocCategory, setNewDocCategory] = useState('financials');
   const [valuationConfig, setValuationConfig] = useState(DEFAULT_VALUATION_CONFIG);
@@ -513,15 +521,14 @@ export default function BusinessDashboard() {
   }
 
   useEffect(() => {
-    if (!loading && !profile) {
-      const loginPath = toLocalizedPath('/login', lang);
-      const next = encodeURIComponent(
-        location.pathname + location.search,
-      );
-      navigate(`${loginPath}?next=${next}`);
-    }
-    if (profile) load();
-  }, [profile?.id, loading]);
+    if (!profile) return;
+    let active = true;
+    setInitialLoadComplete(false);
+    load().finally(() => {
+      if (active) setInitialLoadComplete(true);
+    });
+    return () => { active = false; };
+  }, [profile?.id]);
 
   useEffect(() => {
     if (!profile?.id || !b?.id) return;
@@ -574,10 +581,10 @@ export default function BusinessDashboard() {
     };
   }, [profile?.id, b?.id]);
 
-  if (loading) return <main className="d68-dashboard-page d68-business-dashboard-page"><div className="d68-dashboard-wrap"><div className="d68-dashboard-card">Loading...</div></div></main>;
-  if (!profile) return <Navigate to="/login?next=/dashboard/business" replace />;
+  if (!profile || !initialLoadComplete) return <main className="d68-dashboard-page d68-business-dashboard-page"><div className="d68-dashboard-wrap"><div className="d68-dashboard-card">{T(lang, 'Đang tải hồ sơ doanh nghiệp...', 'Loading business profile...')}</div></div></main>;
   if (profile.role !== 'business' && profile.role !== 'admin') return <main className="d68-dashboard-page d68-business-dashboard-page"><div className="d68-dashboard-wrap"><div className="d68-dashboard-card"><h2>Business access only</h2><p>Role hiện tại: {profile.role}</p><Link to="/">Back home</Link></div></div></main>;
-  if (!b) return <main className="d68-dashboard-page d68-business-dashboard-page"><div className="d68-dashboard-wrap"><div className="d68-dashboard-card" style={{ textAlign: 'center' }}><h2>{T(lang, 'Chưa có hồ sơ doanh nghiệp', 'Business profile not found')}</h2><p>{T(lang, 'Tài khoản này chưa có hồ sơ DN hoặc đang chờ Admin kích hoạt.', 'This account has no business profile yet or is pending Admin activation.')}</p><Link className="d68-dashboard-btn" to="/register/business">{T(lang, 'Tạo hồ sơ DN', 'Create business profile')}</Link></div></div></main>;
+  if (!b && err) return <main className="d68-dashboard-page d68-business-dashboard-page"><div className="d68-dashboard-wrap"><div className="d68-dashboard-card" style={{ textAlign: 'center' }}><h2>{T(lang, 'Không thể tải hồ sơ doanh nghiệp', 'Could not load business profile')}</h2><p>{err}</p><button type="button" className="d68-dashboard-btn" onClick={() => { setInitialLoadComplete(false); load().finally(() => setInitialLoadComplete(true)); }}>{T(lang, 'Thử lại', 'Try again')}</button></div></div></main>;
+  if (!b) return <main className="d68-dashboard-page d68-business-dashboard-page"><div className="d68-dashboard-wrap"><div className="d68-dashboard-card" style={{ textAlign: 'center' }}><h2>{T(lang, 'Chưa có hồ sơ doanh nghiệp', 'Business profile not found')}</h2><p>{T(lang, 'Tài khoản này chưa có hồ sơ DN hoặc đang chờ Admin kích hoạt.', 'This account has no business profile yet or is pending Admin activation.')}</p><Link className="d68-dashboard-btn" to={toLocalizedPath('/register/business', lang)}>{T(lang, 'Tạo hồ sơ DN', 'Create business profile')}</Link></div></div></main>;
 
   const score = b.quality_score === null || b.quality_score === undefined ? null : Math.round(Number(b.quality_score));
   const band = qBand(score ?? 0);
@@ -601,13 +608,22 @@ export default function BusinessDashboard() {
   async function saveProfile(e: FormEvent) {
     e.preventDefault();
     const fd = new FormData(e.currentTarget as HTMLFormElement);
+    const countryIso2 = fieldValue(fd, 'country_iso2') || ownerView.country_iso2 || 'VN';
+    const submittedCity = fieldValue(fd, 'city') || ownerView.city || '';
+    const cityKey = locationKeyFromLabel(
+      fieldValue(fd, 'city_key') || submittedCity,
+      countryIso2,
+    );
+    const city = locationDbLabel(cityKey || submittedCity, countryIso2);
     const pending = {
       company_name_private: fieldValue(fd, 'company_name_private'),
       title_vi: fieldValue(fd, 'title_vi'),
       description_vi: fieldValue(fd, 'description_vi'),
       industry: fieldValue(fd, 'industry'),
       deal_type: fieldValue(fd, 'deal_type'),
-      city: fieldValue(fd, 'city'),
+      country_iso2: countryIso2,
+      city,
+      city_key: cityKey,
       highlights_vi: fieldValue(fd, 'highlights_vi'),
       investment_reason_vi: fieldValue(fd, 'investment_reason_vi'),
       revenue_month: Number(fd.get('revenue_month') || 0),
@@ -620,7 +636,6 @@ export default function BusinessDashboard() {
       stake_pct: Number(fd.get('stake_pct') || 0),
       offer_amount: Number(fd.get('ask_amount') || 0),
       offer_stake_pct: Number(fd.get('stake_pct') || 0),
-      data_confidence: Number(fd.get('data_confidence') || 0),
       financial_input: financialInputOf(ownerView)
     };
     const patch: any = { pending_changes_json: pending, pending_submitted_at: new Date().toISOString(), pending_submitted_by: profile.id, moderation_status: 'pending_admin_review' };
@@ -905,18 +920,77 @@ function BusinessBillingPanel({ lang, b, payments, profile, setMsg, setErr, onRe
 }
 
 function ProfileForm({ lang, b, saveProfile }: any) {
-  return <form onSubmit={saveProfile} className="d68-dashboard-card" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+  const countryIso2 = String(b.country_iso2 || 'VN').toUpperCase();
+  const locationChoices = getLocationOptionsForCountry(countryIso2);
+  const selectedCityKey = locationKeyFromLabel(b.city_key || b.city, countryIso2);
+  const legacyCity = String(b.city || '').trim();
+  const defaultCityKey = selectedCityKey || (!legacyCity ? locationChoices[0]?.key || '' : '');
+  const [revenueCurrency, setRevenueCurrency] = useState(
+    String(b.revenue_currency || 'VND').toUpperCase(),
+  );
+  const [askCurrency, setAskCurrency] = useState(
+    String(b.ask_currency || b.revenue_currency || 'VND').toUpperCase(),
+  );
+
+  return <form onSubmit={saveProfile} className="d68-dashboard-card d68-business-profile-form">
     <h2>{T(lang,'Chỉnh sửa hồ sơ','Edit profile')}</h2>
-    <p>{T(lang,'Thông tin hiển thị luôn ẩn danh, quản trị sẽ duyệt các thông tin bạn cập nhật.', 'Displayed information is always anonymous, and Admin will review the information you update.')}</p>
-    <label className="d68-dashboard-field"><span>{T(lang,'Tên doanh nghiệp thật — chỉ Admin thấy','Real business name — Admin only')}</span><input className="d68-dashboard-input" name="company_name_private" defaultValue={b.company_name_private || ''}/></label>
-    <label className="d68-dashboard-field"><span>{T(lang,'Tiêu đề ẩn danh public — Admin nhập','Anonymous public title — Admin managed')}</span><input className="d68-dashboard-input" value={b.title_vi || ''} disabled readOnly/><input type="hidden" name="title_vi" value={b.title_vi || ''}/></label>
-    <div className="d68-dashboard-form2"><label className="d68-dashboard-field"><span>{T(lang,'Ngành','Industry')}</span><select className="d68-dashboard-input" name="industry" defaultValue={viIndustry(b.industry)}>{INDUSTRY_VI.map((x) => <option key={x}>{x}</option>)}</select></label><label className="d68-dashboard-field"><span>{T(lang,'Thành phố','City')}</span><input className="d68-dashboard-input" name="city" defaultValue={b.city || ''}/></label></div>
+    <p className="d68-business-profile-intro">{T(lang,'Thông tin hiển thị luôn ẩn danh, quản trị sẽ duyệt các thông tin bạn cập nhật.', 'Displayed information is always anonymous, and Admin will review the information you update.')}</p>
+    <label className="d68-dashboard-field"><span>{T(lang,'Tên doanh nghiệp','Business name')}</span><input className="d68-dashboard-input" name="company_name_private" defaultValue={b.company_name_private || ''}/></label>
+    <label className="d68-dashboard-field"><span>{T(lang,'Tên doanh nghiệp hiển thị (ẩn danh)','Displayed business name (anonymous)')}</span><input className="d68-dashboard-input" value={b.title_vi || ''} disabled readOnly/><input type="hidden" name="title_vi" value={b.title_vi || ''}/></label>
+    <input type="hidden" name="country_iso2" value={countryIso2} />
+    <div className="d68-dashboard-form2">
+      <label className="d68-dashboard-field"><span>{T(lang,'Ngành','Industry')}</span><select className="d68-dashboard-input" name="industry" defaultValue={viIndustry(b.industry)}>{INDUSTRY_VI.map((x) => <option key={x}>{x}</option>)}</select></label>
+      <label className="d68-dashboard-field">
+        <span>{T(lang,'Tỉnh/Thành phố','Province/City')}</span>
+        {locationChoices.length ? <>
+          <select className="d68-dashboard-input" name="city_key" defaultValue={defaultCityKey}>
+            {!selectedCityKey && legacyCity ? <option value="">{legacyCity}</option> : null}
+            {locationChoices.map((item) => <option key={item.key} value={item.key}>{T(lang, item.vi, item.en)}</option>)}
+          </select>
+          <input type="hidden" name="city" value={legacyCity} />
+        </> : <>
+          <input className="d68-dashboard-input" name="city" defaultValue={legacyCity} />
+          <input type="hidden" name="city_key" value={selectedCityKey} />
+        </>}
+      </label>
+    </div>
     <label className="d68-dashboard-field"><span>{T(lang,'Tổng quan doanh nghiệp','Business overview')}</span><textarea className="d68-dashboard-input d68-dashboard-textarea" name="description_vi" defaultValue={b.description_vi || ''}/></label>
     <label className="d68-dashboard-field"><span>{T(lang,'Điểm nổi bật','Highlights')}</span><textarea className="d68-dashboard-input d68-dashboard-textarea" name="highlights_vi" defaultValue={b.highlights_vi || ''}/></label>
-    <div className="d68-dashboard-form2"><label className="d68-dashboard-field"><span>{T(lang,'Loại giao dịch','Deal type')}</span><select className="d68-dashboard-input" name="deal_type" defaultValue={viDealType(b.deal_type)}>{DEAL_TYPE_VI.map((x) => <option key={x}>{x}</option>)}</select></label><label className="d68-dashboard-field"><span>{T(lang,'Doanh thu tháng','Monthly revenue')}</span><FormattedNumberInput name="revenue_month" defaultValue={b.revenue_month || b.financial_input?.revenue_month || 0} /></label><label className="d68-dashboard-field"><span>{T(lang,'Doanh thu năm','Annual revenue')}</span><FormattedNumberInput name="revenue_2025" defaultValue={b.revenue_2025 || 0} /></label><label className="d68-dashboard-field"><span>Revenue currency</span><select className="d68-dashboard-input" name="revenue_currency" defaultValue={b.revenue_currency || 'VND'}><option>VND</option><option>USD</option></select></label><label className="d68-dashboard-field"><span>EBITDA margin (%)</span><FormattedNumberInput name="ebitda_margin" defaultValue={b.ebitda_margin || 0} allowDecimal /></label><label className="d68-dashboard-field"><span>{T(lang,'Tăng trưởng năm (%)','Annual growth (%)')}</span><FormattedNumberInput name="growth_pct" defaultValue={b.growth_pct || b.financial_input?.growth_pct || 0} allowDecimal /></label><label className="d68-dashboard-field"><span>{T(lang,'Nhu cầu vốn/Giá chào','Ask amount')}</span><FormattedNumberInput name="ask_amount" defaultValue={b.ask_amount || 0} /></label><label className="d68-dashboard-field"><span>Ask currency</span><select className="d68-dashboard-input" name="ask_currency" defaultValue={b.ask_currency || b.revenue_currency || 'VND'}><option>VND</option><option>USD</option></select></label><label className="d68-dashboard-field"><span>{T(lang,'Tỷ lệ cổ phần (%)','Stake (%)')}</span><FormattedNumberInput name="stake_pct" defaultValue={b.stake_pct || 0} allowDecimal /></label><label className="d68-dashboard-field"><span>{T(lang,'Độ tin cậy dữ liệu','Data confidence')}</span><FormattedNumberInput name="data_confidence" defaultValue={b.data_confidence || 0} /></label></div>
+    <div className="d68-dashboard-form2 d68-business-financial-fields">
+      <label className="d68-dashboard-field d68-business-financial-span2"><span>{T(lang,'Loại giao dịch','Deal type')}</span><select className="d68-dashboard-input" name="deal_type" defaultValue={viDealType(b.deal_type)}>{DEAL_TYPE_VI.map((x) => <option key={x}>{x}</option>)}</select></label>
+      <label className="d68-dashboard-field"><span>{T(lang,'Doanh thu tháng','Monthly revenue')}</span><FormattedNumberInput name="revenue_month" defaultValue={b.revenue_month || b.financial_input?.revenue_month || 0} /></label>
+      <CurrencyField lang={lang} value={revenueCurrency} onChange={setRevenueCurrency} />
+      <label className="d68-dashboard-field"><span>{T(lang,'Doanh thu năm','Annual revenue')}</span><FormattedNumberInput name="revenue_2025" defaultValue={b.revenue_2025 || 0} /></label>
+      <CurrencyField lang={lang} name="revenue_currency" value={revenueCurrency} onChange={setRevenueCurrency} />
+      <label className="d68-dashboard-field"><span>EBITDA margin (%)</span><FormattedNumberInput name="ebitda_margin" defaultValue={b.ebitda_margin || 0} allowDecimal /></label>
+      <label className="d68-dashboard-field"><span>{T(lang,'Tăng trưởng năm (%)','Annual growth (%)')}</span><FormattedNumberInput name="growth_pct" defaultValue={b.growth_pct || b.financial_input?.growth_pct || 0} allowDecimal /></label>
+      <label className="d68-dashboard-field"><span>{T(lang,'Nhu cầu vốn/Giá chào','Ask amount')}</span><FormattedNumberInput name="ask_amount" defaultValue={b.ask_amount || 0} /></label>
+      <CurrencyField lang={lang} name="ask_currency" value={askCurrency} onChange={setAskCurrency} />
+      <label className="d68-dashboard-field"><span>{T(lang,'Tỷ lệ cổ phần (%)','Stake (%)')}</span><FormattedNumberInput name="stake_pct" defaultValue={b.stake_pct || 0} allowDecimal /></label>
+    </div>
     <label className="d68-dashboard-field"><span>{T(lang,'Lý do giao dịch / dùng vốn','Reason / use of funds')}</span><textarea className="d68-dashboard-input d68-dashboard-textarea" name="investment_reason_vi" defaultValue={b.investment_reason_vi || ''}/></label>
     <div style={{ display: 'flex', justifyContent: 'flex-end' }}><button className="d68-dashboard-btn">{T(lang,'Lưu & gửi Admin duyệt','Save & submit to Admin')}</button></div>
   </form>;
+}
+
+function CurrencyField({ lang, name, value, onChange }: {
+  lang: Lang;
+  name?: string;
+  value: string;
+  onChange?: (value: string) => void;
+}) {
+  return <label className="d68-dashboard-field d68-business-currency-field">
+    <span>{T(lang,'Đơn vị','Currency')}</span>
+    <select
+      className="d68-dashboard-input"
+      name={name}
+      value={value}
+      onChange={(event) => onChange?.(event.target.value)}
+    >
+      <option value="VND">VND</option>
+      <option value="USD">USD</option>
+    </select>
+  </label>;
 }
 
 function DocumentRow({ lang, d, renameFile, deleteFile }: any) {
@@ -961,7 +1035,7 @@ function investorTicket(inv: any, lang: Lang) {
   return T(lang, 'Đang cập nhật', 'Updating');
 }
 function ProposalRows({ lang, rows, empty }: any) {
-  return <div className="d68-dashboard-card"><h2>{T(lang,'Proposal đã gửi','Sent proposals')}</h2>{rows.map((row: any) => { const inv = row.investors || {}; const st = proposalDisplayStatus(row.status, lang); const title = inv.title_vi || inv.title_en || inv.code || row.investor_id || row.id; return <div key={row.id} className="d68-dashboard-row d68-proposal-row"><div style={{ flex: 1 }}><a href={inv.code ? `/investors/${inv.code}` : undefined} target="_blank" rel="noreferrer" className="d68-dashboard-row-title">{title}</a><div className="d68-dashboard-mini">{inv.country || inv.country_iso2 || '—'} · {T(lang,'Khoản đầu tư','Ticket')}: {investorTicket(inv, lang)} · {new Date(row.sent_at || row.created_at || Date.now()).toLocaleString(lang === 'en' ? 'en-US' : 'vi-VN')}</div></div><span className={`d68-dashboard-badge ${st.cls}`}>{st.label}</span></div>; })}{!rows.length ? <div className="d68-dashboard-empty">{empty}</div> : null}</div>;
+  return <div className="d68-dashboard-card"><h2>{T(lang,'Proposal đã gửi','Sent proposals')}</h2>{rows.map((row: any) => { const inv = row.investors || {}; const st = proposalDisplayStatus(row.status, lang); const title = inv.title_vi || inv.title_en || inv.code || row.investor_id || row.id; return <div key={row.id} className="d68-dashboard-row d68-proposal-row"><div style={{ flex: 1 }}><a href={inv.code ? `/investors/${inv.code}` : undefined} target="_blank" rel="noreferrer" className="d68-dashboard-row-title d68-entity-title-link">{title}</a><div className="d68-dashboard-mini">{inv.country || inv.country_iso2 || '—'} · {T(lang,'Khoản đầu tư','Ticket')}: {investorTicket(inv, lang)} · {new Date(row.sent_at || row.created_at || Date.now()).toLocaleString(lang === 'en' ? 'en-US' : 'vi-VN')}</div></div><span className={`d68-dashboard-badge ${st.cls}`}>{st.label}</span></div>; })}{!rows.length ? <div className="d68-dashboard-empty">{empty}</div> : null}</div>;
 }
 function Rows({ title, rows, empty, actions }: any) {
   return <div className="d68-dashboard-card"><h2>{title}</h2>{rows.map((row: any) => <div key={row.id} className="d68-dashboard-row"><div style={{ flex: 1 }}><b>{row.investors?.title_vi || row.investors?.title_en || row.investors?.code || row.id}</b><div className="d68-dashboard-mini">{row.status || 'new'} · {new Date(row.created_at || row.sent_at || Date.now()).toLocaleString()}</div>{userFacingNote(row) ? <p>{userFacingNote(row)}</p> : null}</div><div className="d68-dashboard-actions">{actions ? actions(row) : null}</div></div>)}{!rows.length ? <div className="d68-dashboard-empty">{empty}</div> : null}</div>;

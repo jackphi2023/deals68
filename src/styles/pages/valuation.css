@@ -1,2 +1,25 @@
 .d68-valuation-page{background:#F7FAFC;color:#0F2A4A}.d68-val-hero{background:radial-gradient(900px 400px at 82% -20%,rgba(27,173,234,.25),transparent 60%),linear-gradient(180deg,#0F2A4A,#14315A);color:#fff}.d68-val-hero>div{max-width:1200px;margin:0 auto;padding:56px 24px 40px}.d68-val-hero span{display:inline-flex;align-items:center;gap:9px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16);padding:7px 14px;border-radius:999px;font-size:13px;font-weight:600;color:#cfe8f6;margin-bottom:18px}.d68-val-hero h1{font-size:44px;line-height:1.08;font-weight:800;letter-spacing:-1.2px;margin:0 0 14px;max-width:760px}.d68-val-hero p{font-size:18px;line-height:1.55;color:#c6d5e6;max-width:640px;margin:0}.d68-val-wrap{max-width:1200px;margin:0 auto;padding:36px 24px 20px}.d68-val-cols{display:grid;grid-template-columns:minmax(0,1fr)minmax(0,1.05fr);gap:26px;align-items:start;transform:translateY(-56px)}.d68-val-card,.d68-val-result{background:#fff;border:1px solid #E7EDF3;border-radius:20px;padding:30px;box-shadow:0 18px 44px rgba(6,20,40,.12)}.d68-val-card h2{font-size:20px;margin:0 0 4px}.d68-val-form{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:22px 0}.d68-val-form label{display:flex;flex-direction:column;gap:7px;font-size:12.5px;font-weight:800;color:#334155}.d68-val-form input,.d68-val-form select{border:1px solid #E2E8F0;border-radius:10px;padding:12px 13px;font-size:15px;color:#0F2A4A;background:#F7FAFC;font-weight:500;outline:none;width:100%}.d68-val-form small{font-size:11.5px;color:#94A3B8}.d68-val-card button{width:100%;background:#0F2A4A;color:#fff;font-weight:800;font-size:15.5px;padding:14px;border:0;border-radius:12px;cursor:pointer}.d68-val-result{background:#0F2A4A;color:#fff}.d68-val-result>span{display:inline-flex;background:rgba(22,163,74,.18);color:#4ade80;border-radius:999px;padding:7px 13px;font-size:13px;font-weight:800}.d68-val-result h2{font-size:36px;line-height:1.1;color:#F2B51D;margin:18px 0 12px;letter-spacing:-1px}.d68-val-result p{color:#c6d5e6;line-height:1.6}.d68-val-result>div{display:flex;flex-direction:column;gap:10px;margin:22px 0;padding:18px 0;border-top:1px solid rgba(255,255,255,.12);border-bottom:1px solid rgba(255,255,255,.12)}.d68-val-row{display:flex;justify-content:space-between;gap:16px;font-size:14px}.d68-val-row span{color:#c6d5e6}.d68-val-row b{color:#fff}.d68-val-result a{display:block;text-align:center;background:#F2B51D;color:#0F2A4A;font-weight:800;font-size:16px;padding:15px;border-radius:12px;box-shadow:0 8px 20px rgba(242,181,29,.32)}.d68-val-method{max-width:1200px;margin:0 auto;padding:0 24px 60px}.d68-val-method h2{text-align:center;font-size:28px;font-weight:800;margin:0 0 28px}.d68-val-method>div{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}.d68-val-method article{background:#fff;border:1px solid #E7EDF3;border-radius:16px;padding:26px}.d68-val-method b{width:40px;height:40px;border-radius:11px;background:#E7F6FD;color:#1596cc;font-weight:800;display:flex;align-items:center;justify-content:center;margin-bottom:16px}.d68-val-method h3{font-size:18px;margin:0 0 8px}.d68-val-method p{color:#64748B;line-height:1.55;margin:0}@media(max-width:900px){.d68-val-cols,.d68-val-method>div{grid-template-columns:1fr}.d68-val-hero h1{font-size:34px}}@media(max-width:620px){.d68-val-form{grid-template-columns:1fr}.d68-val-result h2{font-size:28px}}
 .d68-val-card-note{color:#64748B;font-size:14px;line-height:1.55;margin:8px 0 0}.d68-val-method>.d68-static-notice{margin-top:22px}.d68-valuation-page *{min-width:0}@media(max-width:620px){.d68-val-wrap{padding-left:16px;padding-right:16px}.d68-val-method{padding-left:16px;padding-right:16px}.d68-val-card,.d68-val-result{padding:22px}.d68-val-row{align-items:flex-start;flex-direction:column;gap:4px}}
+
+/* Session 8: Valuation input rows */
+.d68-val-revenue-row,
+.d68-val-metrics-row {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 14px;
+}
+
+.d68-val-revenue-row {
+  grid-template-columns: minmax(0, 1fr) minmax(140px, .42fr);
+}
+
+.d68-val-metrics-row {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+@media (max-width: 620px) {
+  .d68-val-revenue-row,
+  .d68-val-metrics-row {
+    grid-template-columns: 1fr;
+  }
+}

@@ -32,6 +32,7 @@ import {
   industryKeyFromLabel,
   getLocationOptionsForCountry,
   locationKeyFromLabel,
+  locationDbLabel,
   labelIndustry,
   labelInvestorType,
 } from '../lib/labels';
@@ -261,9 +262,14 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
     useState<boolean>(
       () => checkoutIntentMatchesRole && normalized === 'investor',
     );
-  const [serviceWeeks, setServiceWeeks] = useState<number>(
-    Number(intent.termWeeks || intent.units || 16),
-  );
+  const [serviceWeeks, setServiceWeeks] = useState<number | null>(() => {
+    const requestedTerm = Number(intent.termWeeks || intent.units || 0);
+    return checkoutIntentMatchesRole &&
+      normalized === 'business' &&
+      [4, 8, 12, 16, 24].includes(requestedTerm)
+      ? requestedTerm
+      : null;
+  });
   const [investorMonths, setInvestorMonths] = useState<number>(
     Number(
       intent.units ||
@@ -353,13 +359,13 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
   );
   const countryCode = countryIso[country] || 'VN';
   const locationChoices = getLocationOptionsForCountry(countryCode);
-  const effectiveWeeks = isBusiness ? serviceWeeks : investorMonths * 4;
+  const effectiveWeeks = isBusiness ? serviceWeeks ?? 1 : investorMonths * 4;
   const pricingRole = (
     isInvestor ? 'investor' : isBusiness ? 'business' : normalized
   ) as PricingRole;
   const selectedBusinessPlan: BusinessPlan = plan || 'standard';
   const hasSelectedPackage = isBusiness
-    ? Boolean(plan)
+    ? Boolean(plan && serviceWeeks)
     : isInvestor
       ? investorPackageSelected
       : true;
@@ -403,6 +409,7 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
     : '-';
   const termOptions = [4, 8, 12, 16, 24];
   const currentTermValue = isInvestor ? investorMonths : serviceWeeks;
+  const currentTermDisplay = currentTermValue ?? '—';
   const termUnitLabel = isInvestor
     ? T(lang, 'tháng', 'months')
     : T(lang, 'tuần', 'weeks');
@@ -584,8 +591,8 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
         missing.push(
           T(
             lang,
-            'Doanh thu năm gần nhất hoặc doanh thu tháng',
-            'Latest annual revenue or monthly revenue',
+            'Doanh thu năm gần nhất (VNĐ) hoặc doanh thu tháng',
+            'Latest annual revenue (VND) or monthly revenue',
           ),
         );
       }
@@ -602,8 +609,8 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
         missing.push(
           T(
             lang,
-            'Số tiền gọi vốn / giá trị giao dịch mong muốn',
-            'Capital sought / desired transaction value',
+            'Số tiền gọi vốn / giá trị giao dịch mong muốn (VNĐ)',
+            'Capital sought / desired transaction value (VND)',
           ),
         );
       }
@@ -612,7 +619,11 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
       }
       if (!plan) {
         missing.push(T(lang, 'Gói dịch vụ', 'Service package'));
-      } else if (!paymentAck) {
+      }
+      if (!serviceWeeks) {
+        missing.push(T(lang, 'Kỳ hạn', 'Term'));
+      }
+      if (plan && serviceWeeks && !paymentAck) {
         missing.push(
           T(
             lang,
@@ -760,7 +771,9 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
       let investorPayload: any = null;
 
       if (isBusiness) {
-        const titleVi = `${dealType} · ${industry} · ${city}`;
+        const cityKey = locationKeyFromLabel(city, countryCode);
+        const canonicalCity = locationDbLabel(cityKey || city, countryCode);
+        const titleVi = `${dealType} · ${industry} · ${canonicalCity}`;
         const revenueCurrency = countryCode === 'VN' ? 'VND' : 'USD';
         const uploadPlan = {
           images: businessImages.map((asset) => ({
@@ -784,8 +797,8 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
           description_vi: '',
           description_en: '',
           country_iso2: countryCode,
-          city,
-          city_key: locationKeyFromLabel(city, countryCode),
+          city: canonicalCity,
+          city_key: cityKey,
           industry,
           industry_key: industryKeyFromLabel(industry),
           deal_type: dealType,
@@ -817,7 +830,7 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
           investment_reason_vi: reason,
           investment_reason_en: '',
           financial_input: {
-            city_key: locationKeyFromLabel(city, countryCode),
+            city_key: cityKey,
             assets_owned: assetsOwned,
             excluded_physical_asset_value:
               parseFormattedNumber(excludedAssetValue),
@@ -1023,6 +1036,16 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
   }
 
   const currentCurrency = countryCode === 'VN' ? 'VND' : 'USD';
+  const annualRevenueLabel = T(
+    lang,
+    'Doanh thu năm gần nhất (VNĐ)',
+    'Latest annual revenue (VND)',
+  );
+  const askAmountLabel = T(
+    lang,
+    'Số tiền gọi vốn / giá trị giao dịch mong muốn (VNĐ)',
+    'Capital sought / desired transaction value (VND)',
+  );
   const paymentSection = (
     <section
       className={`d68-register-section d68-register-section--pricing${
@@ -1213,10 +1236,10 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
           <RowMini
             a={T(
               lang,
-              `Phí dịch vụ (${currentTermValue} ${
+              `Phí dịch vụ (${currentTermDisplay} ${
                 isInvestor ? 'tháng' : 'tuần'
               })`,
-              `Service fee (${currentTermValue} ${
+              `Service fee (${currentTermDisplay} ${
                 isInvestor ? 'months' : 'weeks'
               })`,
             )}
@@ -1288,7 +1311,7 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
         </div>
       ) : (
         <div className="d68-bizreg-package-pending" role="status">
-          <b>{T(lang, 'Vui lòng chọn gói dịch vụ', 'Please select a service package')}</b>
+          <b>{T(lang, 'Vui lòng chọn gói dịch vụ và kỳ hạn', 'Please select a service package and term')}</b>
           <span>
             {T(
               lang,
@@ -1490,11 +1513,7 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
                     />
                   </Field>
                   <Field
-                    label={T(
-                      lang,
-                      'Doanh thu năm gần nhất',
-                      'Latest annual revenue',
-                    )}
+                    label={annualRevenueLabel}
                   >
                     <input
                       inputMode="numeric"
@@ -1529,11 +1548,7 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
                     />
                   </Field>
                   <Field
-                    label={T(
-                      lang,
-                      'Số tiền gọi vốn / giá trị giao dịch mong muốn',
-                      'Capital sought / desired transaction value',
-                    )}
+                    label={askAmountLabel}
                   >
                     <input
                       inputMode="numeric"

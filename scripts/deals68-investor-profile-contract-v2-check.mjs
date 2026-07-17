@@ -11,6 +11,9 @@ const detailCss = read('src/styles/pages/investor-detail.css');
 const migration = read(
   'supabase/migrations/20260717073045_investor_profile_contract_ui_v2.sql',
 );
+const appetiteMigration = read(
+  'supabase/migrations/20260717101552_investor_appetite_moderation_v1.sql',
+);
 const legacyPromotionMigration = read(
   'supabase/migrations/20260717073820_promote_legacy_pending_investor_criteria_v1.sql',
 );
@@ -31,25 +34,30 @@ assert.match(criteriaBlock, /'Loại giao dịch quan tâm'/);
 assert.match(criteriaBlock, /'Ngành quan tâm'/);
 assert.match(criteriaBlock, /value=\{investmentAppetite\}/);
 
-// Dashboard saves criteria immediately and queues Introduction only.
-assert.match(dashboard, /const requiresReview = Boolean\(data\?\.description_pending\)/);
+// Dashboard saves ordinary criteria immediately and queues Introduction plus
+// bilingual Investment appetite.
+assert.match(
+  dashboard,
+  /const requiresReview = Boolean\([\s\S]*data\?\.description_pending \|\| data\?\.criteria_pending/,
+);
 assert.match(dashboard, /'Đã lưu thành công'/);
 assert.match(dashboard, /'Lưu thay đổi'/);
-assert.match(dashboard, /Chỉ Giới thiệu, ảnh và files/);
-assert.doesNotMatch(
+assert.match(
   dashboard,
-  /data\?\.profile_pending \|\| data\?\.criteria_pending/,
+  /Khi cập nhật Giới thiệu, Khẩu vị đầu tư cần quản trị Deals68 duyệt trước khi hiển thị để bảo đảm luôn ẩn danh\./,
 );
+assert.doesNotMatch(dashboard, /khẩu vị đầu tư được lưu ngay/i);
 
 // Admin has separate direct-save and Introduction-approval actions.
 for (const token of [
   "supabase.rpc('admin_update_investor_profile'",
   "submitter?.value === 'approve_introduction'",
   "approve_introduction: approveIntroduction",
-  'Lưu thông tin Investor',
-  'Lưu & duyệt Giới thiệu',
+  'Lưu & duyệt Khẩu vị đầu tư',
+  'Lưu & duyệt Giới thiệu + Khẩu vị',
   'investment_appetite_vi',
   'investment_appetite_en',
+  'appetiteUpdated',
 ]) {
   assert.ok(admin.includes(token), `Admin contract missing: ${token}`);
 }
@@ -57,7 +65,6 @@ assert.doesNotMatch(
   admin,
   /supabase\.rpc\('admin_approve_investor_profile_changes'/,
 );
-assert.doesNotMatch(admin, /Khẩu vị vừa sửa|Tiêu chí vừa sửa/);
 
 for (const selector of [
   '.d68-admin-investor-filter-grid',
@@ -68,15 +75,12 @@ for (const selector of [
   assert.ok(adminCss.includes(selector), `Missing Admin CSS: ${selector}`);
 }
 
-// Database contract: public criteria update directly; only descriptions remain
-// pending; Admin appetite save and public view use independent bilingual keys.
+// Database contract: ordinary criteria update directly; Introduction and
+// bilingual appetite remain pending. Admin appetite save and the public view
+// continue to use independent bilingual keys.
 for (const token of [
   'create or replace function public.update_my_investor_profile',
   'create or replace function public.admin_update_investor_profile',
-  "criteria = v_criteria",
-  "- 'ticket_min' - 'ticket_max' - 'criteria'",
-  "'criteria_pending', false",
-  "'profile_pending', false",
   "'investment_appetite_vi', criteria -> 'investment_appetite_vi'",
   "'investment_appetite_en', criteria -> 'investment_appetite_en'",
   'with (security_barrier = true, security_invoker = true)',
@@ -85,6 +89,34 @@ for (const token of [
 ]) {
   assert.ok(migration.includes(token), `Migration contract missing: ${token}`);
 }
+
+for (const token of [
+  'create or replace function public.update_my_investor_profile',
+  'v_pending_criteria jsonb',
+  "array['investment_appetite_vi','investment_appetite_en']",
+  "v_text is distinct from coalesce(v_row.criteria ->> v_key, '')",
+  "'criteria_pending', v_appetite_pending",
+  "'investment_appetite_pending', v_appetite_pending",
+  "'profile_pending', v_pending <> '{}'::jsonb",
+  'criteria = v_criteria',
+  'revoke all on function public.update_my_investor_profile',
+  'grant execute on function public.update_my_investor_profile',
+]) {
+  assert.ok(
+    appetiteMigration.includes(token),
+    `Appetite moderation migration missing: ${token}`,
+  );
+}
+assert.match(
+  appetiteMigration,
+  /security definer\s+set search_path = ''/,
+);
+assert.doesNotMatch(appetiteMigration, /insert\s+into\s+public\.investors/i);
+assert.doesNotMatch(appetiteMigration, /delete\s+from\s+public\.investors/i);
+assert.doesNotMatch(
+  appetiteMigration,
+  /v_criteria := jsonb_set\(v_criteria, array\[v_key\],[\s\S]{0,120}investment_appetite/,
+);
 
 const publicView = migration.match(
   /create or replace view public\.public_investors_safe[\s\S]*?grant select on public\.public_investors_safe to anon, authenticated;/i,
@@ -110,14 +142,34 @@ assert.doesNotMatch(legacyPromotionMigration, /delete\s+from\s+public\.investors
 // Deterministic in-memory business fixture: no external database and no test
 // rows. It locks independent VI/EN fallback and the moderation boundary.
 function saveInvestorFixture(current, profilePatch, descriptionPatch) {
-  const criteria = { ...current.criteria, ...profilePatch.criteria };
+  const criteriaPatch = { ...profilePatch.criteria };
+  const pendingCriteria = { ...(current.pending.criteria || {}) };
+  for (const key of ['investment_appetite_vi', 'investment_appetite_en']) {
+    if (!(key in criteriaPatch)) continue;
+    if (criteriaPatch[key] === current.criteria[key]) delete pendingCriteria[key];
+    else pendingCriteria[key] = criteriaPatch[key];
+    delete criteriaPatch[key];
+  }
+  const criteria = { ...current.criteria, ...criteriaPatch };
   const pending = { ...current.pending };
   for (const key of ['desc_vi', 'desc_en']) {
     if (!(key in descriptionPatch)) continue;
     if (descriptionPatch[key] === current[key]) delete pending[key];
     else pending[key] = descriptionPatch[key];
   }
+  if (Object.keys(pendingCriteria).length) pending.criteria = pendingCriteria;
+  else delete pending.criteria;
   return { ...current, ...profilePatch, criteria, pending };
+}
+
+function approveAppetiteFixture(current, adminCriteria) {
+  const pendingCriteria = current.pending.criteria || {};
+  const { criteria: _discarded, ...pending } = current.pending;
+  return {
+    ...current,
+    criteria: { ...current.criteria, ...pendingCriteria, ...adminCriteria },
+    pending,
+  };
 }
 
 function publicAppetite(criteria, lang) {
@@ -130,7 +182,11 @@ const saved = saveInvestorFixture(
   {
     desc_vi: 'Giới thiệu cũ',
     desc_en: 'Old introduction',
-    criteria: { riskAppetite: 'conservative' },
+    criteria: {
+      investment_appetite_vi: 'Khẩu vị đã duyệt',
+      investment_appetite_en: 'Approved appetite',
+      riskAppetite: 'conservative',
+    },
     pending: {},
   },
   {
@@ -149,9 +205,23 @@ const saved = saveInvestorFixture(
 
 assert.equal(saved.ticket_min, 100000);
 assert.equal(saved.criteria.riskAppetite, 'balanced');
-assert.equal(publicAppetite(saved.criteria, 'vi'), 'Khẩu vị tiếng Việt');
-assert.equal(publicAppetite(saved.criteria, 'en'), 'English appetite');
-assert.deepEqual(saved.pending, { desc_vi: 'Giới thiệu mới' });
+assert.equal(publicAppetite(saved.criteria, 'vi'), 'Khẩu vị đã duyệt');
+assert.equal(publicAppetite(saved.criteria, 'en'), 'Approved appetite');
+assert.deepEqual(saved.pending, {
+  desc_vi: 'Giới thiệu mới',
+  criteria: {
+    investment_appetite_vi: 'Khẩu vị tiếng Việt',
+    investment_appetite_en: 'English appetite',
+  },
+});
+
+const approved = approveAppetiteFixture(saved, {
+  investment_appetite_vi: 'Khẩu vị Admin duyệt',
+  investment_appetite_en: 'Admin-approved appetite',
+});
+assert.equal(publicAppetite(approved.criteria, 'vi'), 'Khẩu vị Admin duyệt');
+assert.equal(publicAppetite(approved.criteria, 'en'), 'Admin-approved appetite');
+assert.deepEqual(approved.pending, { desc_vi: 'Giới thiệu mới' });
 
 const fallback = { investment_appetite_vi: 'Chỉ có tiếng Việt', investment_appetite_en: '' };
 assert.equal(publicAppetite(fallback, 'en'), 'Chỉ có tiếng Việt');
@@ -159,6 +229,6 @@ assert.equal(publicAppetite({}, 'vi'), '');
 
 console.log('✓ Investor Profile Contract V2: PASS');
 console.log('✓ Cover 350px desktop / 250px mobile, aligned right.');
-console.log('✓ Criteria save immediately; Introduction remains moderated.');
-console.log('✓ Admin bilingual appetite save reaches the approved public view.');
+console.log('✓ Other criteria save immediately; Introduction and appetite stay moderated.');
+console.log('✓ Admin bilingual appetite approval reaches the public view.');
 console.log('✓ In-memory fixture used; no Supabase data was created or changed.');

@@ -634,6 +634,17 @@ export default function InvestorDashboard() {
   const hasPendingIntroduction =
     Object.prototype.hasOwnProperty.call(pending, 'desc_vi') ||
     Object.prototype.hasOwnProperty.call(pending, 'desc_en');
+  const hasPendingInvestmentAppetite =
+    Object.prototype.hasOwnProperty.call(
+      pendingCriteria,
+      'investment_appetite_vi',
+    ) ||
+    Object.prototype.hasOwnProperty.call(
+      pendingCriteria,
+      'investment_appetite_en',
+    );
+  const hasPendingModeratedContent =
+    hasPendingIntroduction || hasPendingInvestmentAppetite;
 
   async function saveProfile(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -718,14 +729,16 @@ export default function InvestorDashboard() {
       return;
     }
 
-    const requiresReview = Boolean(data?.description_pending);
+    const requiresReview = Boolean(
+      data?.description_pending || data?.criteria_pending,
+    );
     setNoticeType(requiresReview ? 'warn' : 'ok');
     setNotice(
       requiresReview
         ? T(
             lang,
-            'Đã lưu thành công các tiêu chí đầu tư. Giới thiệu đang chờ quản trị Deals68 duyệt trước khi công khai.',
-            'Investment criteria saved successfully. The Introduction is awaiting Deals68 administrator approval before public display.',
+            'Đã lưu thành công các tiêu chí khác. Giới thiệu và/hoặc Khẩu vị đầu tư đang chờ quản trị Deals68 duyệt trước khi công khai.',
+            'Other investment criteria were saved successfully. The Introduction and/or Investment appetite are awaiting Deals68 administrator approval before public display.',
           )
         : T(lang, 'Đã lưu thành công', 'Saved successfully'),
     );
@@ -940,12 +953,12 @@ export default function InvestorDashboard() {
 
           <section>
             {notice ? <div className={`d68-dashboard-notice ${noticeType}`}>{notice}</div> : null}
-            {hasPendingIntroduction ? (
+            {hasPendingModeratedContent ? (
               <div className="d68-dashboard-notice warn">
                 {T(
                   lang,
-                  'Giới thiệu có thay đổi đang chờ quản trị Deals68 duyệt. Các tiêu chí đầu tư khác đã được lưu ngay.',
-                  'Introduction changes are awaiting Deals68 administrator approval. Other investment criteria were saved immediately.',
+                  'Giới thiệu hoặc Khẩu vị đầu tư có thay đổi đang chờ quản trị Deals68 duyệt. Các tiêu chí đầu tư khác đã được lưu ngay.',
+                  'Introduction or Investment appetite changes are awaiting Deals68 administrator approval. Other investment criteria were saved immediately.',
                 )}
               </div>
             ) : null}
@@ -1058,20 +1071,20 @@ export default function InvestorDashboard() {
                   <label className="d68-dashboard-field">
                     <span>{T(lang, 'Khẩu vị đầu tư (VN)', 'Investment appetite (VI)')}</span>
                     <textarea name="investment_appetite_vi" className="d68-dashboard-input d68-dashboard-textarea" defaultValue={formAppetiteVi} />
-                    <small>{T(lang, 'Mô tả loại doanh nghiệp, mô hình và điều kiện đầu tư ưu tiên bằng tiếng Việt.', 'Describe preferred businesses, models and investment conditions in Vietnamese.')}</small>
+                    <small>{T(lang, 'Nội dung tiếng Việt độc lập, chờ quản trị Deals68 duyệt trước khi công khai.', 'Independent Vietnamese content; Deals68 administrator approval is required before public display.')}</small>
                   </label>
                   <label className="d68-dashboard-field">
                     <span>{T(lang, 'Khẩu vị đầu tư (EN)', 'Investment appetite (EN)')}</span>
                     <textarea name="investment_appetite_en" className="d68-dashboard-input d68-dashboard-textarea" defaultValue={formAppetiteEn} />
-                    <small>{T(lang, 'Nội dung tiếng Anh độc lập; để trống nếu chưa có bản EN.', 'Independent English content; leave blank until an English version is available.')}</small>
+                    <small>{T(lang, 'Nội dung tiếng Anh độc lập, không tự dịch và chờ quản trị Deals68 duyệt trước khi công khai.', 'Independent English content; it is not auto-translated and requires Deals68 administrator approval before public display.')}</small>
                   </label>
                 </div>
 
                 <div className="d68-investor-profile-review-note">
                   {T(
                     lang,
-                    'Loại nhà đầu tư, giai đoạn, ngành, thị trường, ticket size và khẩu vị đầu tư được lưu ngay. Chỉ Giới thiệu, ảnh và files cần quản trị Deals68 duyệt để bảo đảm ẩn danh.',
-                    'Investor type, stages, sectors, markets, ticket size and investment appetite are saved immediately. Only the Introduction, images and files require Deals68 review to protect anonymity.',
+                    'Khi cập nhật Giới thiệu, Khẩu vị đầu tư cần quản trị Deals68 duyệt trước khi hiển thị để bảo đảm luôn ẩn danh.',
+                    'Updates to the Introduction and Investment appetite require Deals68 administrator approval before display to preserve anonymity.',
                   )}
                 </div>
 

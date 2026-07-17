@@ -52,7 +52,6 @@
 .d68-id-timeline--proposal span{display:flex;flex-direction:column;gap:4px;min-width:0}
 .d68-id-timeline--proposal small{color:#94A3B8;font-weight:800}
 .d68-id-timeline--proposal a,.d68-id-timeline--proposal b{color:#1596cc;font-weight:900;line-height:1.45;overflow-wrap:anywhere}
-.d68-id-timeline--proposal a:hover{color:#1BADEA;text-decoration:underline;text-underline-offset:3px}
 
 .d68-id-contact-list{display:flex;flex-direction:column;gap:10px}
 .d68-id-contact-row{display:grid;grid-template-columns:24px minmax(110px,.42fr) minmax(0,1fr);align-items:center;gap:12px;background:#F7FAFC;border:1px solid #E2E8F0;border-radius:12px;padding:13px 14px;color:#94A3B8;min-width:0}

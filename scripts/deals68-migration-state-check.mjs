@@ -14,6 +14,8 @@ const required = [
   '20260717073001_investor_criteria_review_v1.sql',
   '20260717073045_investor_profile_contract_ui_v2.sql',
   '20260717073820_promote_legacy_pending_investor_criteria_v1.sql',
+  '20260717101552_investor_appetite_moderation_v1.sql',
+  '20260717143000_business_city_key_public_flow_v1.sql',
 ];
 const forbidden = [
   '20260711103000_normalize_investor_taxonomy_on_write_v1.sql',

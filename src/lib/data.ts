@@ -8,12 +8,13 @@ import {
 import { seedBusinesses } from '../data/seedBusinesses';
 import { computeBusinessQuality } from './scoring';
 import { industryKeyFromLabel } from './industryTaxonomy';
+import { locationKeyFromLabel } from './locationTaxonomy';
 
 type BusinessAssetRow = Record<string, any>;
 type BusinessDetailAssets = { files: BusinessAssetRow[]; images: BusinessAssetRow[] };
 
 const businessPublicSelect = [
-  'id','public_code','slug','title_vi','title_en','description_vi','description_en','country_iso2','city','industry','industry_key','deal_type','plan','revenue_2025','revenue_currency','ebitda_margin','ask_amount','ask_currency','stake_pct','highlights_vi','highlights_en','investment_reason_vi','investment_reason_en','data_confidence','quality_score','valuation_reasonableness','visible','status','image_url','created_at','updated_at','public_snapshot_json','public_version','last_approved_at','moderation_status','hero_image_url','business_files_count','business_images_count','business_files','business_images'
+  'id','public_code','slug','title_vi','title_en','description_vi','description_en','country_iso2','city','city_key','industry','industry_key','deal_type','plan','revenue_2025','revenue_currency','ebitda_margin','ask_amount','ask_currency','stake_pct','highlights_vi','highlights_en','investment_reason_vi','investment_reason_en','data_confidence','quality_score','valuation_reasonableness','visible','status','image_url','created_at','updated_at','public_snapshot_json','public_version','last_approved_at','moderation_status','hero_image_url','business_files_count','business_images_count','business_files','business_images'
 ].join(',');
 
 const investorPublicSelect = [
@@ -45,6 +46,13 @@ export function getPublicBusinessView(row: any) {
   const s = snapshotOf(row);
   const titleVi = firstValue(s.title_vi, row.title_vi, row.public_code, 'Hồ sơ doanh nghiệp ẩn danh');
   const titleEn = firstValue(s.title_en, row.title_en, s.title_vi, row.title_vi, 'Anonymous business profile');
+  const countryIso2 = firstValue(s.country_iso2, row.country_iso2, 'VN');
+  const city = firstValue(s.city, row.city, countryIso2, 'Việt Nam');
+  const cityKey = firstValue(
+    s.city_key,
+    row.city_key,
+    locationKeyFromLabel(city, countryIso2),
+  );
   return {
     ...row,
     ...s,
@@ -70,8 +78,9 @@ export function getPublicBusinessView(row: any) {
       industryKeyFromLabel(firstValue(s.industry, row.industry)),
     ),
     deal_type: firstValue(s.deal_type, row.deal_type, 'Đang cập nhật'),
-    city: firstValue(s.city, row.city, row.country_iso2, 'Việt Nam'),
-    country_iso2: firstValue(s.country_iso2, row.country_iso2, 'VN'),
+    city,
+    city_key: cityKey,
+    country_iso2: countryIso2,
     revenue_2025: Number(firstValue(s.revenue_2025, row.revenue_2025, 0) || 0),
     revenue_currency: firstValue(s.revenue_currency, row.revenue_currency, 'VND'),
     ebitda_margin: s.ebitda_margin ?? row.ebitda_margin,
@@ -207,7 +216,11 @@ function applyBusinessPublicFilters(q: any, filters: any) {
     if (terms.length > 1) q = q.or(terms.map((term) => `deal_type.ilike.%${term}%`).join(','));
     else if (terms[0]) q = q.ilike('deal_type', `%${terms[0]}%`);
   }
-  if (filters.city) q = q.ilike('city', `%${safeLikeTerm(filters.city)}%`);
+  if (filters.cityKey || filters.city) {
+    const requestedCity = filters.cityKey || filters.city;
+    const cityKey = locationKeyFromLabel(requestedCity, filters.country || '') || String(requestedCity).trim();
+    if (cityKey) q = q.eq('city_key', cityKey);
+  }
   if (filters.revenueBand === 'small') {
     q = q.or('and(revenue_currency.eq.VND,revenue_2025.lt.10000000000),and(revenue_currency.eq.USD,revenue_2025.lt.400000)');
   } else if (filters.revenueBand === 'mid') {
@@ -224,8 +237,8 @@ function applyBusinessPublicFilters(q: any, filters: any) {
   return q;
 }
 
-export async function listBusinessFacets(filters: any = {}): Promise<{ city: string; industry: string; industry_key: string; deal_type: string; plan: string; quality_score: number | null }[]> {
-  let q: any = supabase.from('public_businesses_safe').select('city, industry, industry_key, deal_type, plan, quality_score');
+export async function listBusinessFacets(filters: any = {}): Promise<{ city: string; city_key: string; country_iso2: string; industry: string; industry_key: string; deal_type: string; plan: string; quality_score: number | null }[]> {
+  let q: any = supabase.from('public_businesses_safe').select('city, city_key, country_iso2, industry, industry_key, deal_type, plan, quality_score');
   q = applyBusinessPublicFilters(q, { search: filters.search, country: filters.country });
   const { data, error } = await q.limit(1000);
   if (error) throw error;

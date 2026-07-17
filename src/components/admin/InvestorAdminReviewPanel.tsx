@@ -107,15 +107,24 @@ function pendingCriteriaOf(investor: Row) {
 
 function reviewReasons(investor: Row) {
   const pending = pendingOf(investor);
+  const pendingCriteria = objectOf(pending.criteria);
   const status = String(investor.status || '').toLowerCase();
   const newAccount = ['draft', 'payment_pending', 'pending_admin_review'].includes(status);
   const introUpdated = Object.prototype.hasOwnProperty.call(pending, 'desc_vi') ||
     Object.prototype.hasOwnProperty.call(pending, 'desc_en');
+  const appetiteUpdated = Object.prototype.hasOwnProperty.call(
+    pendingCriteria,
+    'investment_appetite_vi',
+  ) || Object.prototype.hasOwnProperty.call(
+    pendingCriteria,
+    'investment_appetite_en',
+  );
 
   return {
     newAccount,
     introUpdated,
-    any: newAccount || introUpdated,
+    appetiteUpdated,
+    any: newAccount || introUpdated || appetiteUpdated,
   };
 }
 
@@ -376,8 +385,8 @@ function InvestorReviewEditor({
     setError('');
     setMessage(
       approveIntroduction
-        ? 'Đã lưu hồ sơ và duyệt Giới thiệu Investor. Khẩu vị đầu tư VN/EN đã cập nhật public.'
-        : `Đã lưu thông tin Investor. Khẩu vị đầu tư VN/EN đã cập nhật public${data?.visible ? '' : '; hồ sơ vẫn đang ẩn'}.`,
+        ? 'Đã lưu và duyệt Giới thiệu cùng Khẩu vị đầu tư VN/EN.'
+        : `Đã lưu hồ sơ và duyệt Khẩu vị đầu tư VN/EN${data?.visible ? '' : '; hồ sơ vẫn đang ẩn'}.`,
     );
     await onReload();
   }
@@ -412,8 +421,11 @@ function InvestorReviewEditor({
 
       {reasons.any ? (
         <div className="d68-admin-notice warn">
-          {reasons.newAccount ? 'Tài khoản mới · ' : ''}
-          {reasons.introUpdated ? 'Giới thiệu vừa sửa, cần duyệt' : ''}
+          {[
+            reasons.newAccount ? 'Tài khoản mới' : '',
+            reasons.introUpdated ? 'Giới thiệu vừa sửa, cần duyệt' : '',
+            reasons.appetiteUpdated ? 'Khẩu vị đầu tư vừa sửa, cần duyệt' : '',
+          ].filter(Boolean).join(' · ')}
         </div>
       ) : null}
 
@@ -427,6 +439,8 @@ function InvestorReviewEditor({
         <div className="d68-admin-investor-comparison-grid">
           <Comparison label="Giới thiệu (VN)" approved={investor.desc_vi} pending={pending.desc_vi} />
           <Comparison label="Giới thiệu (EN)" approved={investor.desc_en} pending={pending.desc_en} />
+          <Comparison label="Khẩu vị đầu tư (VN)" approved={approvedCriteria.investment_appetite_vi ?? approvedCriteria.investmentAppetiteVi} pending={pendingCriteria.investment_appetite_vi} />
+          <Comparison label="Khẩu vị đầu tư (EN)" approved={approvedCriteria.investment_appetite_en ?? approvedCriteria.investmentAppetiteEn} pending={pendingCriteria.investment_appetite_en} />
         </div>
       ) : null}
 
@@ -499,8 +513,8 @@ function InvestorReviewEditor({
         </div>
 
         <div className="d68-admin-actions">
-          <button name="action" value="save" className="d68-admin-btn green" disabled={approving}>{approving ? 'Đang lưu…' : 'Lưu thông tin Investor'}</button>
-          <button name="action" value="approve_introduction" className="d68-admin-btn gold" disabled={approving}>{approving ? 'Đang lưu…' : 'Lưu & duyệt Giới thiệu'}</button>
+          <button name="action" value="save" className="d68-admin-btn green" disabled={approving}>{approving ? 'Đang lưu…' : 'Lưu & duyệt Khẩu vị đầu tư'}</button>
+          <button name="action" value="approve_introduction" className="d68-admin-btn gold" disabled={approving}>{approving ? 'Đang lưu…' : 'Lưu & duyệt Giới thiệu + Khẩu vị'}</button>
           <button type="button" onClick={toggleVisible} className={`d68-admin-btn ${investor.visible ? 'red' : 'blue'}`}>{investor.visible ? 'Ẩn public' : 'Bật visible'}</button>
           {investor.code ? <Link to={`/investors/${investor.code}`} target="_blank" className="d68-admin-btn blue">Xem public ↗</Link> : null}
         </div>
@@ -539,12 +553,13 @@ export default function InvestorAdminReviewPanel({
   const [dealFilter, setDealFilter] = useState('');
 
   const queueStats = useMemo(() => {
-    const result = { total: 0, newAccount: 0, intro: 0 };
+    const result = { total: 0, newAccount: 0, intro: 0, appetite: 0 };
     investors.forEach((investor) => {
       const reasons = reviewReasons(investor);
       if (reasons.any) result.total += 1;
       if (reasons.newAccount) result.newAccount += 1;
       if (reasons.introUpdated) result.intro += 1;
+      if (reasons.appetiteUpdated) result.appetite += 1;
     });
     return result;
   }, [investors]);
@@ -556,7 +571,7 @@ export default function InvestorAdminReviewPanel({
         const reasons = reviewReasons(investor);
         if (reviewFilter === 'pending' && !reasons.any) return false;
         if (reviewFilter === 'new' && !reasons.newAccount) return false;
-        if (reviewFilter === 'intro' && !reasons.introUpdated) return false;
+        if (reviewFilter === 'intro' && !reasons.introUpdated && !reasons.appetiteUpdated) return false;
         if (visibilityFilter === 'visible' && !investor.visible) return false;
         if (visibilityFilter === 'hidden' && investor.visible) return false;
         if (officeCountryFilter && String(investor.country_iso2 || '').toUpperCase() !== officeCountryFilter) return false;
@@ -609,12 +624,12 @@ export default function InvestorAdminReviewPanel({
 
         {queueStats.total ? (
           <div className="d68-admin-notice warn">
-            Có {queueStats.total} Investor cần kiểm tra: {queueStats.newAccount} tài khoản mới · {queueStats.intro} Giới thiệu sửa. Khẩu vị và tiêu chí khác được lưu ngay, không vào hàng chờ.
+            Có {queueStats.total} Investor cần kiểm tra: {queueStats.newAccount} tài khoản mới · {queueStats.intro} Giới thiệu sửa · {queueStats.appetite} Khẩu vị đầu tư sửa. Các tiêu chí khác được lưu ngay.
           </div>
         ) : null}
 
         <div className="d68-admin-investor-filter-grid">
-          <label>Hàng chờ<select value={reviewFilter} onChange={(event) => onReviewFilterChange(event.target.value)} className="d68-admin-input"><option value="">Tất cả hồ sơ</option><option value="pending">Tất cả cần duyệt</option><option value="new">Tài khoản mới</option><option value="intro">Giới thiệu vừa sửa</option></select></label>
+          <label>Hàng chờ<select value={reviewFilter} onChange={(event) => onReviewFilterChange(event.target.value)} className="d68-admin-input"><option value="">Tất cả hồ sơ</option><option value="pending">Tất cả cần duyệt</option><option value="new">Tài khoản mới</option><option value="intro">Giới thiệu / Khẩu vị vừa sửa</option></select></label>
           <label>Trạng thái<select value={visibilityFilter} onChange={(event) => onVisibilityFilterChange(event.target.value)} className="d68-admin-input"><option value="">Tất cả</option><option value="visible">Hiển thị</option><option value="hidden">Ẩn</option></select></label>
           <label>{officeCountryLabel}<select value={officeCountryFilter} onChange={(event) => onOfficeCountryFilterChange(event.target.value)} className="d68-admin-input"><option value="">Tất cả</option>{officeCountries.map((value) => <option key={value} value={value}>{labelCountry(value, 'vi')}</option>)}</select></label>
           <label>Thị trường quan tâm<select value={targetCountryFilter} onChange={(event) => onTargetCountryFilterChange(event.target.value)} className="d68-admin-input"><option value="">Tất cả</option>{targetCountries.map((value) => <option key={value} value={value}>{labelCountry(value, 'vi')}</option>)}</select></label>

@@ -95,7 +95,7 @@ function svgData(
 
 const HERO_FALLBACK = svgData(
   'Deals68.com',
-  'Upload active Hero banners in Admin',
+  '',
   '#0F2A4A',
   '#1596cc',
   600,
@@ -159,16 +159,24 @@ function BannerImg({
 function MaybeLink({
   href,
   className,
+  ariaHidden,
+  tabIndex,
   children,
 }: {
   href?: string | null;
   className?: string;
+  ariaHidden?: boolean;
+  tabIndex?: number;
   children: ReactNode;
 }) {
   const clean = cleanUrl(href);
 
   if (!clean) {
-    return <div className={className}>{children}</div>;
+    return (
+      <div className={className} aria-hidden={ariaHidden}>
+        {children}
+      </div>
+    );
   }
 
   const external = clean.startsWith('http');
@@ -179,6 +187,8 @@ function MaybeLink({
       href={clean}
       target={external ? '_blank' : undefined}
       rel={external ? 'noreferrer' : undefined}
+      aria-hidden={ariaHidden}
+      tabIndex={tabIndex}
     >
       {children}
     </a>
@@ -220,7 +230,14 @@ export function HeroBannerSlider({
   }, [rows.length]);
 
   useEffect(() => {
-    if (rows.length <= 1) return;
+    if (rows.length <= 1 || typeof window === 'undefined') {
+      return undefined;
+    }
+
+    const reducedMotion = window.matchMedia(
+      '(prefers-reduced-motion: reduce)',
+    );
+    if (reducedMotion.matches) return undefined;
 
     const timer = window.setInterval(() => {
       setActive((current) => (current + 1) % rows.length);
@@ -239,7 +256,10 @@ export function HeroBannerSlider({
 
   if (!loaded || !rows.length) {
     return (
-      <div className={sliderClassName} aria-hidden="true">
+      <div
+        className={`${sliderClassName} d68-hero-slider--fallback`}
+        aria-hidden="true"
+      >
         <div className="d68-hero-slide is-active">
           <HeroBannerMedia
             banner={HERO_FALLBACK_ROW}
@@ -253,11 +273,16 @@ export function HeroBannerSlider({
   }
 
   return (
-    <div className={sliderClassName} aria-hidden="true">
+    <div
+      className={sliderClassName}
+      data-hero-layout="single-active"
+    >
       {rows.map((slide, index) => (
         <MaybeLink
           key={slide.id}
           href={slide.link_url}
+          ariaHidden={index !== active}
+          tabIndex={index === active ? undefined : -1}
           className={
             `d68-hero-slide${index === active ? ' is-active' : ''}`
           }
@@ -278,6 +303,7 @@ export function HeroBannerSlider({
               key={slide.id}
               type="button"
               aria-label={`Slide ${index + 1}`}
+              aria-pressed={index === active}
               className={index === active ? 'active' : ''}
               onClick={() => setActive(index)}
             />

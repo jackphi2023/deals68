@@ -78,7 +78,7 @@ export default function HeroBannerMedia({
     <picture
       className={
         `d68-hero-media${
-          mobileUrl ? ' d68-hero-media--has-mobile' : ''
+          mobileEnabled ? ' d68-hero-media--has-mobile' : ''
         } ${className}`.trim()
       }
       style={style}
@@ -90,6 +90,7 @@ export default function HeroBannerMedia({
         />
       ) : null}
       <img
+        className="d68-hero-media__image"
         src={currentDesktop}
         alt={alt}
         loading={eager ? 'eager' : 'lazy'}

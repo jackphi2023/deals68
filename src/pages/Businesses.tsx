@@ -3,7 +3,14 @@ import { Link, useLocation } from 'react-router-dom';
 import { countBusinesses, listBusinesses, listBusinessFacets } from '../lib/data';
 import { percent } from '../lib/format';
 import { toLocalizedPath } from '../lib/i18nRoutes';
-import { formatMoneyForLang, labelDealType, labelIndustry, labelCountry, T } from '../lib/labels';
+import {
+  formatMoneyForLang,
+  labelDealType,
+  labelIndustry,
+  labelLocation,
+  locationKeyFromLabel,
+  T,
+} from '../lib/labels';
 import type { Lang } from '../lib/i18n';
 import { BusinessOnsiteContent } from '../components/BusinessFaq';
 import { PromotionBanner } from '../components/SiteBanners';
@@ -68,7 +75,7 @@ function normalizeBusiness(b: any): Deal {
     titleEn: b.title_en || titleVi,
     descVi,
     descEn: b.description_en || arrText(b.highlights_en) || descVi,
-    cityRaw: b.city || b.country_iso2 || 'VN',
+    cityRaw: b.city_key || b.city || b.country_iso2 || 'VN',
     industryRaw: String(b.industry || 'Đang cập nhật').split(';')[0].trim(),
     group: normalizeGroup(b.deal_type),
     dealTypeRaw: b.deal_type || '',
@@ -97,8 +104,8 @@ function DealCard({ d, lang, view, tintIndex }: { d: Deal; lang: Lang; view: Vie
         {d.quality !== null ? <span className="d68-rating-badge"><span>◆</span>{d.quality}/100</span> : null}
       </div>
       <div className="d68-business-card__body">
-        <div className="d68-business-card__tags"><span>{labelIndustry(d.industryRaw, lang)}</span><span>📍 {labelCountry(d.cityRaw, lang)}</span></div>
-        <h3>{title}</h3>
+        <div className="d68-business-card__tags"><span>{labelIndustry(d.industryRaw, lang)}</span><span>📍 {labelLocation(d.cityRaw, lang)}</span></div>
+        <h3 className="d68-entity-title-link">{title}</h3>
         <p>{desc}</p>
         <div className="d68-business-card__metrics">
           <div><span>{T(lang, 'Doanh thu', 'Revenue')}</span><b>{formatMoneyForLang(d.revenueValue, d.revenueCurrency, lang)}</b></div>
@@ -128,7 +135,7 @@ export default function Businesses({ lang }: { lang: Lang }) {
   const nav = (path: string) => toLocalizedPath(path, lang);
 
   const [rows, setRows] = useState<Deal[]>([]);
-  const [facets, setFacets] = useState<{ city: string; industry: string; industry_key: string; deal_type: string; plan: string; quality_score: number | null }[]>([]);
+  const [facets, setFacets] = useState<{ city: string; city_key: string; country_iso2: string; industry: string; industry_key: string; deal_type: string; plan: string; quality_score: number | null }[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [total, setTotal] = useState<number | null>(null);
@@ -149,7 +156,8 @@ export default function Businesses({ lang }: { lang: Lang }) {
     const rawIndustry = p.get('industry') || '';
     const industryKey = industryKeyFromLabel(rawIndustry);
     setIndustries(rawIndustry ? [industryKey || rawIndustry] : []);
-    setCities(p.get('city') ? [p.get('city') as string] : []);
+    const rawCity = p.get('city') || '';
+    setCities(rawCity ? [locationKeyFromLabel(rawCity) || rawCity] : []);
     setTx(txFromQuery(p.get('dealType')));
     setPage(1);
   }, [location.search]);
@@ -167,7 +175,7 @@ export default function Businesses({ lang }: { lang: Lang }) {
     async function load() {
       setLoading(true); setError('');
       try {
-        const filters: any = { limit: PAGE_SIZE, offset: (page - 1) * PAGE_SIZE, sort, search: query || undefined, city: cities[0] || undefined, industry: industries[0] || undefined, revenueBand: revenueBand || undefined, minQuality: quality70 ? 70 : undefined, featuredOnly: featuredOnly || undefined };
+        const filters: any = { limit: PAGE_SIZE, offset: (page - 1) * PAGE_SIZE, sort, search: query || undefined, cityKey: cities[0] || undefined, industry: industries[0] || undefined, revenueBand: revenueBand || undefined, minQuality: quality70 ? 70 : undefined, featuredOnly: featuredOnly || undefined };
         if (tx !== 'all') filters.dealType = TX_DB[tx];
         const [data, count] = await Promise.all([listBusinesses(filters), countBusinesses(filters).catch(() => null)]);
         if (!live) return;
@@ -190,7 +198,11 @@ export default function Businesses({ lang }: { lang: Lang }) {
   }, [facets]);
   const cityFacets = useMemo(() => {
     const m = new Map<string, number>();
-    facets.forEach((f) => { const k = (f.city || 'Đang cập nhật').trim(); m.set(k, (m.get(k) || 0) + 1); });
+    facets.forEach((f) => {
+      const key = locationKeyFromLabel(f.city_key || f.city, f.country_iso2 || '');
+      if (!key) return;
+      m.set(key, (m.get(key) || 0) + 1);
+    });
     return [...m.entries()].sort((a, b) => b[1] - a[1]);
   }, [facets]);
   const industryFacets = useMemo(() => {
@@ -246,7 +258,7 @@ export default function Businesses({ lang }: { lang: Lang }) {
             <input className="d68-filter-select" value={query} placeholder={T(lang, 'Mã hồ sơ, ngành, tiêu đề...', 'Code, industry, title...')} onChange={(e) => { setQuery(e.target.value); setPage(1); }} />
 
             <div className="d68-filter-title d68-filter-title--border">{T(lang, 'Địa điểm', 'Location')}</div>
-            {cityFacets.length ? cityFacets.map(([city, n]) => <label key={city} className="d68-filter-check"><input type="checkbox" checked={cities.includes(city)} onChange={() => { toggle(cities, setCities, city); setPage(1); }} /><span>{labelCountry(city, lang)}</span><em>{n}</em></label>) : <div className="d68-filter-check"><em>{T(lang, 'Đang cập nhật', 'Updating')}</em></div>}
+            {cityFacets.length ? cityFacets.map(([cityKey, n]) => <label key={cityKey} className="d68-filter-check"><input type="checkbox" checked={cities.includes(cityKey)} onChange={() => { toggle(cities, setCities, cityKey); setPage(1); }} /><span>{labelLocation(cityKey, lang)}</span><em>{n}</em></label>) : <div className="d68-filter-check"><em>{T(lang, 'Đang cập nhật', 'Updating')}</em></div>}
 
             <div className="d68-filter-title d68-filter-title--border">{T(lang, 'Ngành', 'Industry')}</div>
             {industryFacets.length ? industryFacets.map(([ind, n]) => <label key={ind} className="d68-filter-check"><input type="checkbox" checked={industries.includes(ind)} onChange={() => { toggle(industries, setIndustries, ind); setPage(1); }} /><span>{labelIndustry(ind, lang)}</span><em>{n}</em></label>) : <div className="d68-filter-check"><em>{T(lang, 'Đang cập nhật', 'Updating')}</em></div>}

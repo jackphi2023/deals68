@@ -143,7 +143,7 @@ function InvestorCard({
 
         <h3>
           <Link
-            className="d68-investor-card__title-link"
+            className="d68-investor-card__title-link d68-entity-title-link"
             to={toLocalizedPath(`/investors/${inv.code}`, lang)}
           >
             {investorPublicTitle(inv.raw, lang)}

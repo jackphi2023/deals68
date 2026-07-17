@@ -111,7 +111,8 @@ Kết quả:
 - tên thật vẫn có trong input nội bộ;
 - tên hiển thị public vẫn bị khóa;
 - lưu hồ sơ vẫn hoạt động;
-- mô tả vẫn đưa vào chờ Admin duyệt như trước.
+- Giới thiệu và Khẩu vị đầu tư được đưa vào chờ Admin duyệt;
+- các tiêu chí đầu tư còn lại vẫn lưu ngay.
 
 ## Test 5 — Tiêu chí & Gợi ý
 

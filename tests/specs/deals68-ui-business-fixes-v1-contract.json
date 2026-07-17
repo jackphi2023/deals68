@@ -1,0 +1,248 @@
+{
+  "version": "Deals68 UI and business fixes v1",
+  "baseline": {
+    "branch": "building",
+    "sha": "08b8dc276e0eb01961e9ffcc36d4cabf6866864a"
+  },
+  "statusValues": [
+    "pending",
+    "completed"
+  ],
+  "contracts": [
+    {
+      "id": "HOME-HERO-FALLBACK",
+      "session": 2,
+      "status": "completed",
+      "requirement": "Homepage uses one responsive Hero slider and always renders a fallback when banner data is empty or unavailable.",
+      "checks": [
+        {
+          "path": "src/pages/Home.tsx",
+          "contains": [
+            "HeroBannerSlider"
+          ],
+          "notContains": [
+            "HomepageHeroSlider",
+            "PUBLIC_INVESTOR_UI_CSS"
+          ]
+        },
+        {
+          "path": "src/components/SiteBanners.tsx",
+          "contains": [
+            "HERO_FALLBACK_ROW",
+            "d68-hero-slider--fallback",
+            "!loaded || !rows.length",
+            "(prefers-reduced-motion: reduce)"
+          ]
+        },
+        {
+          "path": "src/styles/pages/home.css",
+          "contains": [
+            "Deals68 canonical Homepage Hero",
+            "aspect-ratio:8/3",
+            "aspect-ratio:3/4"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "HOME-FEATURED-INVESTOR-CARD",
+      "session": 2,
+      "status": "completed",
+      "requirement": "Featured Investor title is adjacent to its icon, has no background and is clamped to two lines.",
+      "checks": [
+        {
+          "path": "src/pages/Home.tsx",
+          "contains": [
+            "d68-home-investor-card__heading"
+          ]
+        },
+        {
+          "path": "src/styles/pages/home.css",
+          "contains": [
+            ".d68-home-investor-card__heading",
+            ".d68-home-investor-title-link",
+            "-webkit-line-clamp:2"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ENTITY-TITLE-HOVER",
+      "session": 3,
+      "status": "completed",
+      "requirement": "Business and Investor title links use rgb(27, 173, 234) on hover/focus without underlines across every requested surface.",
+      "checks": [
+        {
+          "path": "src/styles/final/release-foundation.css",
+          "contains": [
+            "--d68-entity-title-hover:rgb(27,173,234)",
+            "text-decoration:none"
+          ]
+        },
+        {
+          "path": "src/styles/pages/ui-fixes.css",
+          "contains": [
+            ".d68-entity-title-link:focus-visible",
+            "a:hover .d68-entity-title-link",
+            "text-decoration:none!important"
+          ]
+        },
+        {
+          "path": "src/pages/Home.tsx",
+          "contains": [
+            "d68-home-investor-title-link d68-entity-title-link",
+            "<h3 className=\"d68-entity-title-link\">{d.title}</h3>"
+          ]
+        },
+        {
+          "path": "src/pages/BusinessDashboard.tsx",
+          "contains": [
+            "d68-dashboard-row-title d68-entity-title-link"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "BUSINESS-LOCATION-CANONICAL-FLOW",
+      "session": 4,
+      "status": "completed",
+      "requirement": "Business registration, Dashboard, Admin and public filters preserve and query canonical city_key values.",
+      "checks": [
+        {
+          "path": "src/pages/Register.tsx",
+          "contains": [
+            "city: canonicalCity",
+            "city_key: cityKey"
+          ]
+        },
+        {
+          "path": "src/pages/BusinessDashboard.tsx",
+          "contains": [
+            "getLocationOptionsForCountry",
+            "name=\"city_key\"",
+            "city_key: cityKey"
+          ]
+        },
+        {
+          "path": "src/pages/Admin.tsx",
+          "contains": [
+            "city_key:"
+          ]
+        },
+        {
+          "path": "src/lib/data.ts",
+          "contains": [
+            "'city_key'",
+            ".eq('city_key'"
+          ],
+          "notContains": [
+            "q.ilike('city'"
+          ]
+        },
+        {
+          "path": "src/pages/Businesses.tsx",
+          "contains": [
+            "locationKeyFromLabel(f.city_key || f.city",
+            "labelLocation(cityKey, lang)"
+          ]
+        },
+        {
+          "path": "supabase/migrations/20260717143000_business_city_key_public_flow_v1.sql",
+          "contains": [
+            "idx_businesses_city_key",
+            "base.city_key",
+            "security_invoker = true"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "BUSINESS-REGISTER-COPY-AND-TERM",
+      "session": 5,
+      "status": "completed",
+      "requirement": "Business revenue/ask labels include currency and the 16-week term is not selected on a direct registration visit.",
+      "checks": [
+        {
+          "path": "src/pages/Register.tsx",
+          "contains": [
+            "Doanh thu năm gần nhất (VNĐ)",
+            "Số tiền gọi vốn / giá trị giao dịch mong muốn (VNĐ)",
+            "useState<number | null>",
+            "Boolean(plan && serviceWeeks)",
+            "const currentTermDisplay = currentTermValue ?? '—'"
+          ],
+          "notContains": [
+            "Number(intent.termWeeks || intent.units || 16)"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "BUSINESS-DASHBOARD-AUTH-AND-PROFILE",
+      "session": 6,
+      "status": "completed",
+      "requirement": "DashboardGate owns auth redirection; Business profile copy, currencies and data-confidence payload follow the approved contract.",
+      "checks": [
+        {
+          "path": "src/pages/BusinessDashboard.tsx",
+          "contains": [
+            "Tên doanh nghiệp hiển thị (ẩn danh)",
+            "T(lang,'Đơn vị','Currency')"
+          ],
+          "notContains": [
+            "Link, Navigate, useLocation, useNavigate",
+            "fd.get('data_confidence')",
+            "name=\"data_confidence\"",
+            "<span>Revenue currency</span>",
+            "<span>Ask currency</span>"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "INVESTOR-APPETITE-MODERATION",
+      "session": 7,
+      "status": "completed",
+      "requirement": "Investor Introduction and bilingual Investment appetite remain pending until Admin approval; other criteria save immediately.",
+      "checks": [
+        {
+          "path": "src/pages/InvestorDashboard.tsx",
+          "contains": [
+            "Khi cập nhật Giới thiệu, Khẩu vị đầu tư cần quản trị Deals68 duyệt trước khi hiển thị để bảo đảm luôn ẩn danh."
+          ],
+          "notContains": [
+            "khẩu vị đầu tư được lưu ngay"
+          ]
+        },
+        {
+          "path": "scripts/deals68-investor-profile-postgres-v2-test.mjs",
+          "contains": [
+            "Investment appetite stayed pending"
+          ],
+          "notContains": [
+            "Investor criteria saved immediately; Introduction stayed pending."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "VALUATION-CURRENCY-LAYOUT",
+      "session": 8,
+      "status": "completed",
+      "requirement": "Valuation has an independent VND-default currency selector beside annual revenue and keeps EBITDA/growth on the next row.",
+      "checks": [
+        {
+          "path": "src/pages/Valuation.tsx",
+          "contains": [
+            "useState<Currency>('VND')",
+            "d68-val-revenue-row",
+            "d68-val-metrics-row"
+          ],
+          "notContains": [
+            "function currencyForCountry"
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -15,6 +15,8 @@ The new Release Candidate migration is:
 
 - `20260713010000_release_candidate_phase_a_hardening.sql` — apply before production code cutover.
 - `20260713020000_after_main_cutover_revoke_signup_v1.sql` — apply only after Netlify production serves the v2 frontend.
+- `20260717101552_investor_appetite_moderation_v1.sql` — additive Session 7 migration; apply after the Investor Profile V2 migrations so bilingual Investment appetite waits for Admin approval.
+- `20260717143000_business_city_key_public_flow_v1.sql` — additive Session 4 migration; apply before testing the canonical Business location filter.
 
 Rules:
 

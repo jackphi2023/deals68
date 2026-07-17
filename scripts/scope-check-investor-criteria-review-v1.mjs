@@ -8,7 +8,8 @@ const allowed = new Set([
   'src/lib/investorListing.ts',
   'src/lib/investorDisplay.ts',
   'src/lib/banners.ts',
-  'src/components/HomepageHeroSlider.tsx',
+  'src/components/HeroBannerMedia.tsx',
+  'src/components/SiteBanners.tsx',
   'src/components/investor/InvestorCriteriaTagPickers.tsx',
   'src/components/investor/IndustryTagPicker.tsx',
   'src/components/admin/InvestorAdminReviewPanel.tsx',
@@ -23,6 +24,8 @@ const allowed = new Set([
   'src/styles/pages/admin.css',
   'src/styles/pages/investor-detail.css',
   'src/styles/pages/investors.css',
+  'src/styles/pages/home.css',
+  'src/styles/pages/ui-fixes.css',
   'src/styles/final/release-foundation.css',
   'supabase/migrations/20260717073001_investor_criteria_review_v1.sql',
   'supabase/migrations/20260717073045_investor_profile_contract_ui_v2.sql',
@@ -305,17 +308,29 @@ requireTokens('src/lib/banners.ts', [
   'getPublicUrl(path)',
 ]);
 
-requireTokens('src/components/HomepageHeroSlider.tsx', [
-  'HomepageHeroMedia',
-  'data-hero-variant',
-  'mobileUrl',
+requireTokens('src/components/HeroBannerMedia.tsx', [
+  'HeroBannerMedia',
+  'd68-hero-media__image',
+  'mobileEnabled',
   'desktopUrl',
+  '--d68-hero-position',
+]);
+
+requireTokens('src/components/SiteBanners.tsx', [
+  'HeroBannerSlider',
+  'HERO_FALLBACK_ROW',
+  'd68-hero-slider--fallback',
   'prefers-reduced-motion: reduce',
 ]);
 
 requireTokens('src/pages/Home.tsx', [
-  'HomepageHeroSlider',
-  'd68-home-hero-media--mobile',
+  'HeroBannerSlider',
+  'd68-home-investor-card__heading',
+]);
+
+requireTokens('src/styles/pages/home.css', [
+  'Deals68 canonical Homepage Hero',
+  'aspect-ratio:3/4',
   'box-shadow:0 2px 8px',
 ]);
 
@@ -412,4 +427,4 @@ console.log('✓ Register stores Introduction/Appetite in the selected UI langua
 console.log('✓ Dashboard/Admin expose independent VI and EN fields.');
 console.log('✓ Public pages use approved canonical criteria only.');
 console.log('✓ Existing Dashboard/Admin shells and Proposal/Payment flows remain mounted.');
-console.log('✓ Criteria save immediately; only Introduction/assets remain moderated.');
+console.log('✓ Other criteria save immediately; Introduction/Appetite/assets remain moderated.');

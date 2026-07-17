@@ -80,10 +80,11 @@ Industries use the existing industry taxonomy keys. Countries use uppercase ISO-
 
 1. MAIN Dashboard menu, icons, route and layout remain unchanged.
 2. Private name and private website can update immediately.
-3. Public criteria, public description and investment appetite are submitted through `update_my_investor_profile`.
-4. The RPC stores those fields in `privacy.pending_profile_changes`.
-5. Approved public fields remain unchanged until Admin approval.
-6. Dashboard shows a pending-review alert after submission.
+3. Criteria, Introduction and Investment appetite are submitted through `update_my_investor_profile`.
+4. Investor type, stage, industries, deal types, target markets, ticket size, risk appetite, expected return and revenue band save immediately.
+5. Only `desc_vi/desc_en` and `investment_appetite_vi/investment_appetite_en` are stored in `privacy.pending_profile_changes`.
+6. The currently approved Introduction and Investment appetite remain public until Admin approval.
+7. Dashboard shows a pending-review alert after submission.
 
 ## Admin flow
 
@@ -91,7 +92,7 @@ Industries use the existing industry taxonomy keys. Countries use uppercase ISO-
 2. New or changed profiles are sorted into the review queue.
 3. Admin sees approved values and pending values with labels.
 4. Admin can edit the proposed public values before approval.
-5. `admin_approve_investor_profile_changes` validates, normalizes, mirrors legacy fields, clears pending data and optionally publishes.
+5. `admin_update_investor_profile` validates and publishes the reviewed bilingual appetite; its approval action also clears and publishes pending Introduction when selected.
 6. Admin contact fields remain private and are not exposed by public queries.
 7. Dashboard and Admin always expose independent VN and EN fields for both Introduction and Investment appetite.
 8. Risk appetite and expected return remain empty until explicitly entered; empty values are not rendered on the public detail page.
@@ -116,7 +117,7 @@ Industries use the existing industry taxonomy keys. Countries use uppercase ISO-
 
 ## Database rollout
 
-The migration file is idempotent in intent but must first be tested on a Supabase development branch or disposable database.
+The migration file is idempotent in intent but must first be tested with the repository PGlite fixture or another disposable local PostgreSQL database.
 Do not apply it to production before:
 
 - TypeScript production build passes.

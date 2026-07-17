@@ -97,15 +97,20 @@ for (const path of changed) {
 
 const home = requireTokens('src/pages/Home.tsx', [
   'HeroBannerSlider',
-  'PUBLIC_INVESTOR_UI_CSS',
-  '.d68-home-page .d68-home-hero',
-  '.d68-businesses-page .d68-business-card:hover h3',
-  '#f8fdfa',
-  '#fffef8',
+  'd68-home-investor-card__heading',
   'd68-home-investor-title-link',
 ]);
+const homeCss = requireTokens('src/styles/pages/home.css', [
+  '.d68-home-page .d68-home-hero',
+  'Deals68 canonical Homepage Hero',
+  'background:#FFFEF8!important',
+  '.d68-home-investor-title-link',
+  '-webkit-line-clamp:2',
+]);
 if (home.includes('HomepageHeroSlider')) failures.push('Home must not replace HeroBannerSlider with HomepageHeroSlider.');
+if (home.includes('PUBLIC_INVESTOR_UI_CSS')) failures.push('Home must not inject route CSS at runtime.');
 if (home.includes("from '../styles/index.css'")) failures.push('Home must not import the CSS entry file.');
+if (homeCss.includes('.d68-home-investor-card:hover>a')) failures.push('Home card hover must not activate its CTA.');
 
 const investors = requireTokens('src/pages/Investors.tsx', [
   'getMyBusiness',
