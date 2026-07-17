@@ -34,3 +34,4 @@
 @import './pages/admin-promos.css' layer(d68-overrides);
 @import './pages/home-hero-media.css' layer(d68-overrides);
 @import './pages/admin-banners-responsive.css' layer(d68-overrides);
+@import './pages/admin-banners-performance.css' layer(d68-overrides);
