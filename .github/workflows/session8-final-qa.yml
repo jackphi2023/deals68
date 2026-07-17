@@ -1,12 +1,9 @@
 name: Session 8 Final QA
 
-# Trigger after workflow registration.
 on:
-  push:
+  pull_request:
     branches:
-      - qa/session8-final-regression-cleanup-v1
-    paths:
-      - .github/workflows/session8-final-qa.yml
+      - building
 
 permissions:
   contents: write
