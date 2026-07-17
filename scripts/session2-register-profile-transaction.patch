@@ -1,24 +1,22 @@
 diff --git a/src/pages/Register.tsx b/src/pages/Register.tsx
-index 1d4179d..0000000 100644
 --- a/src/pages/Register.tsx
 +++ b/src/pages/Register.tsx
-@@ -273,13 +273,17 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
+@@ -268,18 +268,23 @@
+       normalized === 'business' &&
+       [4, 8, 12, 16, 24].includes(requestedTerm)
        ? requestedTerm
        : null;
    });
 -  const [investorMonths, setInvestorMonths] = useState<number>(
 -    Number(
--      intent.units ||
--        (intent.termWeeks
--          ? Math.max(1, Math.round(Number(intent.termWeeks) / 4))
++  const [investorMonths, setInvestorMonths] = useState<number | null>(() => {
++    const requestedMonths = Number(
+       intent.units ||
+         (intent.termWeeks
+           ? Math.max(1, Math.round(Number(intent.termWeeks) / 4))
 -          : 12),
 -    ),
 -  );
-+  const [investorMonths, setInvestorMonths] = useState<number | null>(() => {
-+    const requestedMonths = Number(
-+      intent.units ||
-+        (intent.termWeeks
-+          ? Math.max(1, Math.round(Number(intent.termWeeks) / 4))
 +          : 0),
 +    );
 +    return checkoutIntentMatchesRole &&
@@ -27,7 +25,11 @@ index 1d4179d..0000000 100644
 +      ? requestedMonths
 +      : null;
 +  });
-@@ -362,7 +366,9 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
+   const [promoCode, setPromoCode] = useState(String(intent.promoCode || ''));
+   const [promoPct, setPromoPct] = useState<number>(
+     Number(intent.price?.promoDiscountPct || 0),
+   );
+@@ -359,15 +364,17 @@
    );
    const countryCode = countryIso[country] || 'VN';
    const locationChoices = getLocationOptionsForCountry(countryCode);
@@ -38,14 +40,20 @@ index 1d4179d..0000000 100644
    const pricingRole = (
      isInvestor ? 'investor' : isBusiness ? 'business' : normalized
    ) as PricingRole;
-@@ -373,7 +379,7 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
+   const selectedBusinessPlan: BusinessPlan = plan || 'standard';
    const hasSelectedPackage = isBusiness
      ? Boolean(plan && serviceWeeks)
      : isInvestor
 -      ? investorPackageSelected
 +      ? investorPackageSelected && Boolean(investorMonths)
        : true;
-@@ -669,7 +675,9 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
+ 
+   useEffect(() => {
+@@ -663,19 +670,22 @@
+         missing.push(T(lang, 'Khẩu vị đầu tư', 'Investment appetite'));
+       }
+       if (!ticketMin.trim() || !ticketMax.trim()) {
+         missing.push(T(lang, 'Khoản đầu tư/ticket size', 'Ticket size'));
        }
        if (!investorPackageSelected) {
          missing.push(T(lang, 'Gói dịch vụ', 'Service package'));
@@ -57,7 +65,15 @@ index 1d4179d..0000000 100644
          missing.push(
            T(
              lang,
-@@ -835,9 +843,13 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
+             'Xác nhận đã chuyển khoản đúng nội dung',
+             'Payment transfer confirmation',
+           ),
+         );
+       }
+     }
+ 
+     if (!agree) {
+@@ -832,9 +842,14 @@
            financial_input: {
              city_key: cityKey,
              assets_owned: assetsOwned,
@@ -73,14 +89,16 @@ index 1d4179d..0000000 100644
              financial_source: financialSource,
              valuation_check: valuationCheck,
              benchmark: benchmarkResult,
-@@ -854,6 +866,7 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
+@@ -851,7 +866,8 @@
+               highlights,
                reason,
                financialSource,
                assetsOwned,
 +              excludedAssetValue,
              ].filter((value) => String(value || '').trim()).length * 8,
            quality_score: 0,
-@@ -1698,14 +1711,10 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
+         };
+@@ -1715,15 +1731,11 @@
                        'Physical asset value excluded from transaction',
                      )}
                    >
@@ -97,7 +115,11 @@ index 1d4179d..0000000 100644
 +                      onChange={(event) => setExcludedAssetValue(event.target.value)}
                      />
                    </Field>
-@@ -1872,6 +1881,7 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
+                   <Field label={T(lang, 'Nguồn số liệu tài chính', 'Financial data source')}>
+                     <select
+@@ -1868,16 +1880,17 @@
+                 </div>
+ 
                  <Field
                    label={T(lang, 'Giới thiệu', 'Introduction')}
                    wide
@@ -105,3 +127,11 @@ index 1d4179d..0000000 100644
                    hint={T(
                      lang,
                      'Nội dung giới thiệu công khai, không ghi email/số điện thoại.',
+                     'Public introduction; do not include email or phone.',
+                   )}
+                 >
+                   <textarea
+                     rows={4}
+                     value={generalDesc}
+                     onChange={(event) => setGeneralDesc(event.target.value)}
+                   />
