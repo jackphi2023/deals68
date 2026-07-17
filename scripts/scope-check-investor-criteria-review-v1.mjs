@@ -337,6 +337,12 @@ const migration = requireTokens(
     "'{targetCountries}'",
     'investment_appetite_vi',
     'investment_appetite_en',
+    'create or replace view public.public_investors_safe',
+    "'investorTypes', coalesce(",
+    "'stages', coalesce(",
+    "'investment_appetite_vi', criteria -> 'investment_appetite_vi'",
+    "'investment_appetite_en', criteria -> 'investment_appetite_en'",
+    'with (security_barrier = true, security_invoker = true)',
     'publish_profile boolean default false',
   ],
 );
@@ -360,6 +366,12 @@ if (/v_profile_criteria\s*->\s*'investment_appetite'[\s\S]{0,250}'\{investment_a
 }
 if (migration.includes('drop table public.investors')) {
   failures.push('Migration must not replace the investors table.');
+}
+const publicInvestorView = migration.match(
+  /create or replace view public\.public_investors_safe[\s\S]*?grant select on public\.public_investors_safe to anon, authenticated;/i,
+)?.[0] || '';
+if (!publicInvestorView || /pending_profile_changes/i.test(publicInvestorView)) {
+  failures.push('Public Investor view must never expose pending profile changes.');
 }
 
 if (!changed.length) failures.push('No PR 3 changed files detected.');

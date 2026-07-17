@@ -631,6 +631,90 @@ begin
 end;
 $$;
 
+-- Public discovery must expose only approved canonical criteria. In particular,
+-- bilingual appetite fields stay independent and pending profile data never
+-- crosses this view boundary.
+create or replace view public.public_investors_safe
+with (security_barrier = true, security_invoker = true)
+as
+select
+  id,
+  code,
+  type,
+  title_vi,
+  title_en,
+  desc_vi,
+  desc_en,
+  country_iso2,
+  country,
+  region,
+  coalesce(industries, array[]::text[]) as industries,
+  coalesce(deal_types, array[]::text[]) as deal_types,
+  stage,
+  ticket_min,
+  ticket_max,
+  jsonb_strip_nulls(jsonb_build_object(
+    'investorTypes', coalesce(
+      criteria -> 'investorTypes',
+      to_jsonb(case when type is null then array[]::text[] else array[type]::text[] end)
+    ),
+    'stages', coalesce(
+      criteria -> 'stages',
+      to_jsonb(case when stage is null then array[]::text[] else array[stage]::text[] end)
+    ),
+    'sectors', coalesce(
+      criteria -> 'sectors',
+      to_jsonb(coalesce(industries, array[]::text[]))
+    ),
+    'dealTypes', coalesce(
+      criteria -> 'dealTypes',
+      to_jsonb(coalesce(deal_types, array[]::text[]))
+    ),
+    'targetRegions', criteria -> 'targetRegions',
+    'targetCountries', coalesce(
+      criteria -> 'targetCountries',
+      criteria -> 'targetCountriesCache',
+      criteria -> 'preferredCountries'
+    ),
+    'preferredCountries', coalesce(
+      criteria -> 'preferredCountries',
+      criteria -> 'targetCountries'
+    ),
+    'targetGeographies', coalesce(
+      criteria -> 'targetGeographies',
+      criteria -> 'preferredGeographies'
+    ),
+    'investment_appetite_vi', criteria -> 'investment_appetite_vi',
+    'investment_appetite_en', criteria -> 'investment_appetite_en',
+    'investment_appetite', criteria -> 'investment_appetite',
+    'riskAppetite', criteria -> 'riskAppetite',
+    'returnExpectation', criteria -> 'returnExpectation',
+    'revenueRange', coalesce(
+      criteria -> 'revenueRange',
+      criteria -> 'revenueBand'
+    ),
+    'revenueBand', coalesce(
+      criteria -> 'revenueBand',
+      criteria -> 'revenueRange'
+    ),
+    'ebitdaRange', criteria -> 'ebitdaRange',
+    'preferredDealSize', criteria -> 'preferredDealSize',
+    'proposal_history', criteria -> 'proposal_history',
+    'cover_image_url', criteria -> 'cover_image_url'
+  )) as criteria,
+  true as visible,
+  coalesce(verified, false) as verified,
+  coalesce(admin_priority, false) as admin_priority,
+  activity_level,
+  'active'::public.account_status as status,
+  created_at,
+  updated_at
+from public.investors i
+where visible = true
+  and status = 'active'::public.account_status;
+
+grant select on public.public_investors_safe to anon, authenticated;
+
 revoke all on function public.generate_investor_public_code() from public;
 revoke all on function public.ensure_investor_public_code() from public;
 revoke all on function public.update_my_investor_profile(jsonb, jsonb) from public;
