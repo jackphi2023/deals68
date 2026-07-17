@@ -1,9 +1,11 @@
-diff --git a/.github/workflows/session2-register-apply.yml b/.github/workflows/session2-register-apply.yml
-index e21d10c..0000000 100644
---- a/.github/workflows/session2-register-apply.yml
-+++ b/.github/workflows/session2-register-apply.yml
-@@ -1,3 +1,4 @@
- name: Session 2 Register Apply Placeholder
+diff --git a/scripts/session7-apply.py b/scripts/session7-apply.py
+index 95d3e88..0000000 100644
+--- a/scripts/session7-apply.py
++++ b/scripts/session7-apply.py
+@@ -1,5 +1,6 @@
+ from pathlib import Path
+ import subprocess
 +# Temporary no-op target for the approved legacy QA workflow.
- on: workflow_dispatch
- jobs: {}
+ 
+ detail_path = Path('src/pages/BusinessDetail.tsx')
+ source = detail_path.read_text(encoding='utf-8')
