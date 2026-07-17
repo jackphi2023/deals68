@@ -270,19 +270,14 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
       ? requestedTerm
       : null;
   });
-  const [investorMonths, setInvestorMonths] = useState<number | null>(() => {
-    const requestedMonths = Number(
+  const [investorMonths, setInvestorMonths] = useState<number>(
+    Number(
       intent.units ||
         (intent.termWeeks
           ? Math.max(1, Math.round(Number(intent.termWeeks) / 4))
-          : 0),
-    );
-    return checkoutIntentMatchesRole &&
-      normalized === 'investor' &&
-      [4, 8, 12, 16, 24].includes(requestedMonths)
-      ? requestedMonths
-      : null;
-  });
+          : 12),
+    ),
+  );
   const [promoCode, setPromoCode] = useState(String(intent.promoCode || ''));
   const [promoPct, setPromoPct] = useState<number>(
     Number(intent.price?.promoDiscountPct || 0),
@@ -364,9 +359,7 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
   );
   const countryCode = countryIso[country] || 'VN';
   const locationChoices = getLocationOptionsForCountry(countryCode);
-  const effectiveWeeks = isBusiness
-    ? serviceWeeks ?? 1
-    : (investorMonths ?? 1) * 4;
+  const effectiveWeeks = isBusiness ? serviceWeeks ?? 1 : investorMonths * 4;
   const pricingRole = (
     isInvestor ? 'investor' : isBusiness ? 'business' : normalized
   ) as PricingRole;
@@ -374,7 +367,7 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
   const hasSelectedPackage = isBusiness
     ? Boolean(plan && serviceWeeks)
     : isInvestor
-      ? investorPackageSelected && Boolean(investorMonths)
+      ? investorPackageSelected
       : true;
 
   useEffect(() => {
@@ -674,10 +667,7 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
       }
       if (!investorPackageSelected) {
         missing.push(T(lang, 'Gói dịch vụ', 'Service package'));
-      }
-      if (!investorMonths) {
-        missing.push(T(lang, 'Kỳ hạn', 'Term'));
-      } else if (investorPackageSelected && !paymentAck) {
+      } else if (!paymentAck) {
         missing.push(
           T(
             lang,
@@ -842,13 +832,8 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
           financial_input: {
             city_key: cityKey,
             assets_owned: assetsOwned,
-            assets_owned_vi: lang === 'vi' ? assetsOwned : '',
-            assets_owned_en: lang === 'en' ? assetsOwned : '',
-            excluded_physical_asset_value: excludedAssetValue,
-            excluded_physical_asset_value_vi:
-              lang === 'vi' ? excludedAssetValue : '',
-            excluded_physical_asset_value_en:
-              lang === 'en' ? excludedAssetValue : '',
+            excluded_physical_asset_value:
+              parseFormattedNumber(excludedAssetValue),
             financial_source: financialSource,
             valuation_check: valuationCheck,
             benchmark: benchmarkResult,
@@ -867,7 +852,6 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
               reason,
               financialSource,
               assetsOwned,
-              excludedAssetValue,
             ].filter((value) => String(value || '').trim()).length * 8,
           quality_score: 0,
         };
@@ -1731,10 +1715,14 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
                       'Physical asset value excluded from transaction',
                     )}
                   >
-                    <textarea
-                      rows={3}
+                    <input
+                      inputMode="numeric"
                       value={excludedAssetValue}
-                      onChange={(event) => setExcludedAssetValue(event.target.value)}
+                      onChange={(event) =>
+                        setExcludedAssetValue(
+                          formatNumberTyping(event.target.value),
+                        )
+                      }
                     />
                   </Field>
                   <Field label={T(lang, 'Nguồn số liệu tài chính', 'Financial data source')}>
@@ -1882,7 +1870,6 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
                 <Field
                   label={T(lang, 'Giới thiệu', 'Introduction')}
                   wide
-                  spaced
                   hint={T(
                     lang,
                     'Nội dung giới thiệu công khai, không ghi email/số điện thoại.',
