@@ -1,0 +1,148 @@
+name: Session 2 Building Runner
+
+on:
+  push:
+    branches:
+      - building
+    paths:
+      - .github/workflows/session2-building-runner.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply-build-and-clean:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout building
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: building
+
+      - name: Apply exact Register changes
+        run: |
+          python <<'PY'
+          from pathlib import Path
+          path = Path('src/pages/Register.tsx')
+          source = path.read_text(encoding='utf-8')
+          replacements = [
+            ("""  const [investorMonths, setInvestorMonths] = useState<number>(
+    Number(
+      intent.units ||
+        (intent.termWeeks
+          ? Math.max(1, Math.round(Number(intent.termWeeks) / 4))
+          : 12),
+    ),
+  );""", """  const [investorMonths, setInvestorMonths] = useState<number | null>(() => {
+    const requestedMonths = Number(
+      intent.units ||
+        (intent.termWeeks
+          ? Math.max(1, Math.round(Number(intent.termWeeks) / 4))
+          : 0),
+    );
+    return checkoutIntentMatchesRole &&
+      normalized === 'investor' &&
+      [4, 8, 12, 16, 24].includes(requestedMonths)
+      ? requestedMonths
+      : null;
+  });"""),
+            ("  const effectiveWeeks = isBusiness ? serviceWeeks ?? 1 : investorMonths * 4;", """  const effectiveWeeks = isBusiness
+    ? serviceWeeks ?? 1
+    : (investorMonths ?? 1) * 4;"""),
+            ("""    : isInvestor
+      ? investorPackageSelected
+      : true;""", """    : isInvestor
+      ? investorPackageSelected && Boolean(investorMonths)
+      : true;"""),
+            ("""      if (!investorPackageSelected) {
+        missing.push(T(lang, 'Gói dịch vụ', 'Service package'));
+      } else if (!paymentAck) {""", """      if (!investorPackageSelected) {
+        missing.push(T(lang, 'Gói dịch vụ', 'Service package'));
+      }
+      if (!investorMonths) {
+        missing.push(T(lang, 'Kỳ hạn', 'Term'));
+      } else if (investorPackageSelected && !paymentAck) {"""),
+            ("""            assets_owned: assetsOwned,
+            excluded_physical_asset_value:
+              parseFormattedNumber(excludedAssetValue),
+            financial_source: financialSource,""", """            assets_owned: assetsOwned,
+            assets_owned_vi: lang === 'vi' ? assetsOwned : '',
+            assets_owned_en: lang === 'en' ? assetsOwned : '',
+            excluded_physical_asset_value: excludedAssetValue,
+            excluded_physical_asset_value_vi:
+              lang === 'vi' ? excludedAssetValue : '',
+            excluded_physical_asset_value_en:
+              lang === 'en' ? excludedAssetValue : '',
+            financial_source: financialSource,"""),
+            ("""              financialSource,
+              assetsOwned,
+            ].filter""", """              financialSource,
+              assetsOwned,
+              excludedAssetValue,
+            ].filter"""),
+            ("""                    <input
+                      inputMode=\"numeric\"
+                      value={excludedAssetValue}
+                      onChange={(event) =>
+                        setExcludedAssetValue(
+                          formatNumberTyping(event.target.value),
+                        )
+                      }
+                    />""", """                    <textarea
+                      rows={3}
+                      value={excludedAssetValue}
+                      onChange={(event) => setExcludedAssetValue(event.target.value)}
+                    />"""),
+            ("""                  label={T(lang, 'Giới thiệu', 'Introduction')}
+                  wide
+                  hint={T(""", """                  label={T(lang, 'Giới thiệu', 'Introduction')}
+                  wide
+                  spaced
+                  hint={T("""),
+          ]
+          for old, new in replacements:
+            count = source.count(old)
+            if count != 1:
+              raise SystemExit(f'Expected exactly one match, found {count}: {old[:90]!r}')
+            source = source.replace(old, new, 1)
+          path.write_text(source, encoding='utf-8')
+          PY
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Production build
+        run: npm run build
+
+      - name: Session 2 contract
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const source = fs.readFileSync('src/pages/Register.tsx', 'utf8');
+          const required = [
+            'useState<number | null>(() =>',
+            '[4, 8, 12, 16, 24].includes(requestedMonths)',
+            ': (investorMonths ?? 1) * 4',
+            '? investorPackageSelected && Boolean(investorMonths)',
+            "missing.push(T(lang, 'Kỳ hạn', 'Term'))",
+            'assets_owned_vi:', 'assets_owned_en:',
+            'excluded_physical_asset_value_vi:',
+            'excluded_physical_asset_value_en:',
+            '<textarea\n                      rows={3}\n                      value={excludedAssetValue}',
+            "label={T(lang, 'Giới thiệu', 'Introduction')}\n                  wide\n                  spaced",
+          ];
+          for (const token of required) if (!source.includes(token)) throw new Error(`Missing: ${token}`);
+          if (/const \[investorMonths[\s\S]{0,280}: 12\)/.test(source)) throw new Error('12-month default remains');
+          if (/inputMode="numeric"[\s\S]{0,120}value=\{excludedAssetValue\}/.test(source)) throw new Error('Excluded assets remain numeric-only');
+          console.log('Session 2 contract: PASS');
+          NODE
+
+      - name: Commit product change and remove runner
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/session2-building-runner.yml
+          git add src/pages/Register.tsx
+          git commit -m "fix: align Register profile and transaction fields"
+          git push origin HEAD:building
