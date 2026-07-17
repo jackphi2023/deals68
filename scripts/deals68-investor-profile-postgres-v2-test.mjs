@@ -249,10 +249,45 @@ try {
   assert.equal(finalRow.rows[0].desc_en, 'Approved English introduction');
   assert.equal(finalRow.rows[0].privacy.pending_profile_changes, undefined);
 
+  await db.query(
+    `update public.investors
+     set privacy = jsonb_build_object(
+       'pending_profile_changes', jsonb_build_object(
+         'desc_vi', 'Giới thiệu vẫn chờ duyệt',
+         'criteria', jsonb_build_object(
+           'investorTypes', jsonb_build_array('PE'),
+           'stages', jsonb_build_array('Mature')
+         )
+       ),
+       'pending_submitted_at', now()::text
+     )
+     where id = $1`,
+    [investorId],
+  );
+  await db.exec(
+    fs.readFileSync(
+      'supabase/migrations/20260717073820_promote_legacy_pending_investor_criteria_v1.sql',
+      'utf8',
+    ),
+  );
+
+  const promotedLegacy = await db.query(
+    `select type, stage, criteria, privacy from public.investors where id = $1`,
+    [investorId],
+  );
+  assert.equal(promotedLegacy.rows[0].type, 'PE');
+  assert.equal(promotedLegacy.rows[0].stage, 'Mature');
+  assert.deepEqual(promotedLegacy.rows[0].criteria.investorTypes, ['PE']);
+  assert.deepEqual(promotedLegacy.rows[0].criteria.stages, ['Mature']);
+  assert.deepEqual(promotedLegacy.rows[0].privacy.pending_profile_changes, {
+    desc_vi: 'Giới thiệu vẫn chờ duyệt',
+  });
+
   console.log('✓ Investor Profile PostgreSQL V2: PASS');
   console.log('✓ Migration executed in PGlite; no Supabase project was contacted.');
   console.log('✓ Investor criteria saved immediately; Introduction stayed pending.');
   console.log('✓ Admin VN/EN appetite reached public_investors_safe.');
+  console.log('✓ Legacy pending criteria promoted; pending Introduction preserved.');
 } finally {
   await db.close();
 }
