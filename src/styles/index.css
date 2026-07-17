@@ -29,3 +29,4 @@
 @import './final/release-foundation.css' layer(d68-overrides);
 @import './pages/release-cleanup.css' layer(d68-overrides);
 @import './pages/home-hero.css' layer(d68-overrides);
+@import './pages/home-featured-investors.css' layer(d68-overrides);
