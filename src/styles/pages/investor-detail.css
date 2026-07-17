@@ -6,18 +6,18 @@
 .d68-id-breadcrumb a{color:#94A3B8;text-decoration:none;transition:color .16s ease}
 .d68-id-breadcrumb a:hover{color:#1596cc}
 .d68-id-breadcrumb b{color:#475569}
-.d68-id-layout{display:grid;grid-template-columns:minmax(0,1fr)332px;gap:24px;align-items:start}
+.d68-id-layout{display:grid;grid-template-columns:minmax(0,1fr) 332px;gap:24px;align-items:start}
 .d68-id-main{min-width:0;display:flex;flex-direction:column;gap:20px}
 .d68-id-side{display:flex;flex-direction:column;gap:16px;min-width:0}
 .d68-id-side--sticky{position:sticky;top:86px}
 
 .d68-id-cover-card{position:relative;display:block;height:350px;min-height:350px;background:#0F2A4A;border:1px solid #E7EDF3;border-radius:22px;overflow:hidden;box-shadow:0 2px 8px rgba(15,42,74,.08);isolation:isolate}
 .d68-id-cover-card:after{content:"";position:absolute;inset:0;z-index:1;background:linear-gradient(90deg,rgba(3,17,35,.90) 0%,rgba(5,26,51,.70) 48%,rgba(5,26,51,.20) 100%);pointer-events:none}
-.d68-id-cover-copy{position:relative;z-index:2;display:flex;flex-direction:column;justify-content:flex-end;min-width:0;height:350px;min-height:350px;max-width:76%;padding:34px 36px;color:#fff}
-.d68-id-cover__eyebrow{position:absolute;top:34px;left:36px;display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:0}
-.d68-id-cover__eyebrow span{display:inline-flex;align-items:center;background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.22);border-radius:8px;color:#fff;font-size:12px;font-weight:900;letter-spacing:.5px;padding:7px 10px}
-.d68-id-cover__eyebrow b{color:#fff;font-size:12px;font-weight:900;letter-spacing:.5px;text-transform:uppercase}
-.d68-id-cover-copy h1{color:#fff;font-size:clamp(30px,3.1vw,43px);font-weight:900;letter-spacing:-1.1px;line-height:1.12;margin:0 0 20px;overflow-wrap:anywhere;text-shadow:0 2px 14px rgba(0,0,0,.28)}
+.d68-id-cover-copy{position:relative;z-index:2;display:flex;flex-direction:column;justify-content:flex-end;min-width:0;height:350px;min-height:350px;max-width:76%;padding:34px 36px;color:#fff;text-align:left}
+.d68-id-cover__eyebrow{position:absolute;top:34px;left:36px;display:flex;align-items:center;justify-content:flex-start;flex-wrap:wrap;gap:8px;margin:0;text-align:left}
+.d68-id-cover__eyebrow span{display:none}
+.d68-id-cover__eyebrow b{display:inline-flex;align-items:center;color:#fff;font-size:12px;font-weight:900;letter-spacing:.5px;text-transform:uppercase}
+.d68-id-cover-copy h1{color:#fff;font-size:clamp(30px,3.1vw,43px);font-weight:900;letter-spacing:-1.1px;line-height:1.12;margin:0 0 20px;overflow-wrap:anywhere;text-align:left;text-shadow:0 2px 14px rgba(0,0,0,.28)}
 .d68-id-cover-badges{display:flex;flex-wrap:wrap;gap:8px}
 .d68-id-cover-badges span{display:inline-flex;align-items:center;background:rgba(9,35,64,.54);border:1px solid rgba(255,255,255,.34);border-radius:999px;color:#fff;font-size:12px;font-weight:900;line-height:1.25;padding:7px 11px;backdrop-filter:blur(4px)}
 .d68-id-cover-badges span:nth-child(2){background:rgba(9,35,64,.54);color:#fff}
@@ -89,10 +89,10 @@
   .d68-id-cover-card:after{background:linear-gradient(180deg,rgba(3,17,35,.38) 0%,rgba(3,17,35,.74) 58%,rgba(3,17,35,.92) 100%)}
   .d68-id-cover-media{position:absolute;inset:0;height:250px;min-height:250px;width:100%}
   .d68-id-cover-media img{width:100%;height:250px;min-height:250px;object-fit:cover;object-position:right center}
-  .d68-id-cover-copy{position:relative;height:250px;min-height:250px;max-width:100%;padding:20px 18px 18px;justify-content:flex-end}
-  .d68-id-cover__eyebrow{top:20px;left:18px;margin:0}
-  .d68-id-cover-copy h1{font-size:clamp(20px,6vw,24px);line-height:1.12;letter-spacing:-.45px;margin-bottom:10px;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:4;overflow:hidden}
-  .d68-id-cover-badges{align-items:flex-start;gap:6px}
+  .d68-id-cover-copy{position:relative;height:250px;min-height:250px;max-width:100%;padding:20px 18px 18px;justify-content:flex-end;align-items:flex-start;text-align:left}
+  .d68-id-cover__eyebrow{top:20px;left:18px;justify-content:flex-start;margin:0;text-align:left}
+  .d68-id-cover-copy h1{width:100%;font-size:clamp(20px,6vw,24px);line-height:1.12;letter-spacing:-.45px;margin-bottom:10px;text-align:left;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:4;overflow:hidden}
+  .d68-id-cover-badges{align-items:flex-start;justify-content:flex-start;gap:6px}
   .d68-id-cover-badges span{font-size:10.5px;padding:6px 9px}
   .d68-id-cta{order:2;border-radius:16px;padding:20px 18px}
   .d68-id-section--intro{order:3}
