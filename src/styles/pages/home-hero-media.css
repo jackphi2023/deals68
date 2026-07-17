@@ -1,0 +1,12 @@
+/* Banner A — media-only override. Preserve hero geometry, dots, overlay and slider timing. */
+.d68-home-page .d68-hero-media__image{
+  object-fit:cover!important;
+  object-position:var(--d68-hero-position,50% 50%)!important;
+}
+@media(max-width:700px){
+  .d68-home-page .d68-hero-media__image,
+  .d68-home-page .d68-hero-media--has-mobile .d68-hero-media__image{
+    object-fit:cover!important;
+    object-position:var(--d68-hero-mobile-position,var(--d68-hero-position,50% 50%))!important;
+  }
+}
