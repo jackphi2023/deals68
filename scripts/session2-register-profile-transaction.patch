@@ -1,7 +1,7 @@
 diff --git a/src/pages/Register.tsx b/src/pages/Register.tsx
 --- a/src/pages/Register.tsx
 +++ b/src/pages/Register.tsx
-@@ -268,18 +268,23 @@
+@@ -268,17 +268,22 @@
        normalized === 'business' &&
        [4, 8, 12, 16, 24].includes(requestedTerm)
        ? requestedTerm
@@ -73,7 +73,7 @@ diff --git a/src/pages/Register.tsx b/src/pages/Register.tsx
      }
  
      if (!agree) {
-@@ -832,9 +842,14 @@
+@@ -832,8 +842,13 @@
            financial_input: {
              city_key: cityKey,
              assets_owned: assetsOwned,
