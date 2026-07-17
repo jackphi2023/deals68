@@ -169,3 +169,16 @@
   max-width:none!important;
   width:100%!important;
 }
+
+
+/* Session 7 — approved assets and transaction information. */
+.d68-detail-transaction-info{display:grid;gap:0}
+.d68-detail-transaction-row{display:grid;grid-template-columns:minmax(210px,.8fr) minmax(0,1.4fr);gap:22px;padding:16px 0;border-bottom:1px solid #EEF2F6}
+.d68-detail-transaction-row:first-child{padding-top:2px}
+.d68-detail-transaction-row:last-child{border-bottom:0;padding-bottom:2px}
+.d68-detail-transaction-row>span{color:#64748B;font-size:13.5px;font-weight:800;line-height:1.5}
+.d68-detail-transaction-row>p{margin:0;color:#334155;font-size:14.5px;line-height:1.65;white-space:pre-wrap;overflow-wrap:anywhere}
+.d68-detail-card--bqs .d68-bqs-card.is-real{border:0;padding:0;box-shadow:none}
+.d68-detail-card--bqs .d68-bqs-head{justify-content:center;text-align:center}
+.d68-detail-card--bqs .d68-bqs-head h3{text-align:center}
+@media(max-width:620px){.d68-detail-transaction-row{grid-template-columns:1fr;gap:7px;padding:14px 0}}
