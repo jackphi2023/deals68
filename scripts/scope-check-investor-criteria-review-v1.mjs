@@ -25,8 +25,15 @@ const allowed = new Set([
   'src/styles/pages/investors.css',
   'src/styles/final/release-foundation.css',
   'supabase/migrations/20260716124500_investor_criteria_review_v1.sql',
+  'supabase/migrations/20260717064725_investor_profile_contract_ui_v2.sql',
   'docs/INVESTOR_CRITERIA_REVIEW_V1.md',
+  'scripts/deals68-investor-profile-contract-v2-check.mjs',
+  'scripts/deals68-investor-profile-postgres-v2-test.mjs',
+  'scripts/deals68-migration-state-check.mjs',
+  'scripts/deals68-package-checks.mjs',
   'scripts/scope-check-investor-criteria-review-v1.mjs',
+  'package.json',
+  'package-lock.json',
 ]);
 
 const forbiddenExact = new Set([
@@ -35,8 +42,6 @@ const forbiddenExact = new Set([
   'src/styles/index.css',
   'src/styles/pages/release-cleanup.css',
   'netlify.toml',
-  'package.json',
-  'package-lock.json',
 ]);
 const forbiddenPrefixes = [
   '.github/workflows/',
@@ -266,8 +271,8 @@ const adminInvestor = requireTokens(
   'src/components/admin/InvestorAdminReviewPanel.tsx',
   [
     'pending_profile_changes',
-    'admin_approve_investor_profile_changes',
-    'publish_profile: false',
+    'admin_update_investor_profile',
+    'approve_introduction: approveIntroduction',
     'InvestorTypeTagPicker',
     'InvestorStageTagPicker',
     'InvestorMarketTagPicker',
@@ -278,17 +283,18 @@ const adminInvestor = requireTokens(
     'Khẩu vị đầu tư (EN)',
     'investment_appetite_vi',
     'investment_appetite_en',
-    'Khẩu vị đầu tư vừa sửa',
+    'Lưu thông tin Investor',
+    'Lưu & duyệt Giới thiệu',
     'uploadInvestorCoverImage',
     'cover_image_url',
     'visible',
   ],
 );
-if (adminInvestor.includes('publish_profile: true')) {
-  failures.push('Admin approval must not force public visibility.');
-}
 if (adminInvestor.includes("approvedCriteria.riskAppetite || 'balanced'")) {
   failures.push('Admin must not manufacture a default risk appetite.');
+}
+if (adminInvestor.includes("supabase.rpc('admin_approve_investor_profile_changes'")) {
+  failures.push('Admin UI must use the direct-save V2 RPC.');
 }
 
 requireTokens('src/lib/banners.ts', [
@@ -374,6 +380,23 @@ if (!publicInvestorView || /pending_profile_changes/i.test(publicInvestorView)) 
   failures.push('Public Investor view must never expose pending profile changes.');
 }
 
+const contractV2 = requireTokens(
+  'supabase/migrations/20260717064725_investor_profile_contract_ui_v2.sql',
+  [
+    'admin_update_investor_profile',
+    "'criteria_pending', false",
+    "'profile_pending', false",
+    "- 'ticket_min' - 'ticket_max' - 'criteria'",
+    "'investment_appetite_vi', criteria -> 'investment_appetite_vi'",
+    "'investment_appetite_en', criteria -> 'investment_appetite_en'",
+    'with (security_barrier = true, security_invoker = true)',
+    'revoke all on function public.admin_update_investor_profile',
+  ],
+);
+if (/jsonb_set\(v_pending_criteria[\s\S]*riskAppetite/i.test(contractV2)) {
+  failures.push('V2 must not stage Investor criteria for Admin review.');
+}
+
 if (!changed.length) failures.push('No PR 3 changed files detected.');
 
 if (failures.length) {
@@ -385,7 +408,7 @@ if (failures.length) {
 console.log('✓ Investor Criteria Review V1 scope check: PASS');
 console.log(`✓ ${changed.length} changed files are inside the stacked whitelist.`);
 console.log('✓ Register stores Introduction/Appetite in the selected UI language only.');
-console.log('✓ Dashboard/Admin expose independent VI and EN review fields.');
+console.log('✓ Dashboard/Admin expose independent VI and EN fields.');
 console.log('✓ Public pages use approved canonical criteria only.');
 console.log('✓ Existing Dashboard/Admin shells and Proposal/Payment flows remain mounted.');
-console.log('✓ Migration preserves valid codes and approval does not force visibility.');
+console.log('✓ Criteria save immediately; only Introduction/assets remain moderated.');

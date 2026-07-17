@@ -11,6 +11,7 @@ const required = [
   '20260712153808_restore_public_business_view_helper_execute.sql',
   '20260713010000_release_candidate_phase_a_hardening.sql',
   '20260713020000_after_main_cutover_revoke_signup_v1.sql',
+  '20260717064725_investor_profile_contract_ui_v2.sql',
 ];
 const forbidden = [
   '20260711103000_normalize_investor_taxonomy_on_write_v1.sql',
