@@ -334,12 +334,6 @@ function MatchCard({
           </div>
         </div>
         <div className="d68-investor-card-actions">
-          <Link
-            className="d68-dashboard-btn light"
-            to={toLocalizedPath(`/businesses/${business.slug}`, lang)}
-          >
-            {T(lang, 'Xem doanh nghiệp', 'View business')}
-          </Link>
           <button
             type="button"
             className="d68-dashboard-btn gold"
@@ -360,7 +354,15 @@ function MatchCard({
   );
 }
 
-function InterestRows({ lang, rows }: { lang: Lang; rows: any[] }) {
+function InterestRows({
+  lang,
+  rows,
+  onRequest,
+}: {
+  lang: Lang;
+  rows: any[];
+  onRequest: (business: any) => void;
+}) {
   if (!rows.length) {
     return (
       <div className="d68-dashboard-empty">
@@ -427,13 +429,14 @@ function InterestRows({ lang, rows }: { lang: Lang; rows: any[] }) {
                 </div>
               </div>
             </div>
-            {business.slug ? (
-              <Link
-                className="d68-dashboard-btn light"
-                to={toLocalizedPath(`/businesses/${business.slug}`, lang)}
+            {business.id ? (
+              <button
+                type="button"
+                className="d68-dashboard-btn gold"
+                onClick={() => onRequest(business)}
               >
-                {T(lang, 'Xem chi tiết', 'View details')}
-              </Link>
+                {T(lang, 'Yêu cầu tài liệu', 'Request documents')}
+              </button>
             ) : null}
           </article>
         );
@@ -487,14 +490,6 @@ function ProposalRows({ lang, proposals, onMark, onRequestData }: any) {
                   )}
                 </b>{' '}· <span className={`d68-dashboard-badge ${status.cls}`}>{status.label}</span>
               </p>
-              {business.slug ? (
-                <Link
-                  to={toLocalizedPath(`/businesses/${business.slug}`, lang)}
-                  className="d68-dashboard-btn light"
-                >
-                  {T(lang, 'Xem hồ sơ doanh nghiệp', 'View business profile')}
-                </Link>
-              ) : null}
             </div>
             <div className="d68-dashboard-actions">
               <button type="button" onClick={() => onMark(row, 'approved')} className="d68-dashboard-btn green">
@@ -1157,7 +1152,11 @@ export default function InvestorDashboard() {
             {tab === 'watchlist' ? (
               <div className="d68-dashboard-card">
                 <h2>{T(lang, 'Doanh nghiệp đã bày tỏ quan tâm', 'Businesses you expressed interest in')}</h2>
-                <InterestRows lang={lang} rows={interests} />
+                <InterestRows
+                  lang={lang}
+                  rows={interests}
+                  onRequest={requestData}
+                />
               </div>
             ) : null}
 
