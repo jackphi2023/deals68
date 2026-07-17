@@ -9,7 +9,7 @@ const adminCss = read('src/styles/pages/admin.css');
 const detail = read('src/pages/InvestorDetail.tsx');
 const detailCss = read('src/styles/pages/investor-detail.css');
 const migration = read(
-  'supabase/migrations/20260717064725_investor_profile_contract_ui_v2.sql',
+  'supabase/migrations/20260717073045_investor_profile_contract_ui_v2.sql',
 );
 
 // Investor Detail UI contract.

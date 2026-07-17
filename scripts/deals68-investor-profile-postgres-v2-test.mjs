@@ -93,7 +93,7 @@ try {
   await db.exec(foundation);
   await db.exec(
     fs.readFileSync(
-      'supabase/migrations/20260717064725_investor_profile_contract_ui_v2.sql',
+      'supabase/migrations/20260717073045_investor_profile_contract_ui_v2.sql',
       'utf8',
     ),
   );
