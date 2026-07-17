@@ -6,14 +6,19 @@ import {
 } from 'react';
 import type { SiteBanner } from '../lib/banners';
 
+type HeroBannerLike = Pick<
+  SiteBanner,
+  | 'image_url'
+  | 'mobile_image_url'
+  | 'focal_x'
+  | 'focal_y'
+> & {
+  mobile_focal_x?: number | null;
+  mobile_focal_y?: number | null;
+};
+
 type Props = {
-  banner: Pick<
-    SiteBanner,
-    | 'image_url'
-    | 'mobile_image_url'
-    | 'focal_x'
-    | 'focal_y'
-  >;
+  banner: HeroBannerLike;
   fallback: string;
   alt: string;
   eager?: boolean;
@@ -38,6 +43,12 @@ export function heroFocusPosition(
   )}%`;
 }
 
+export function heroMobileFocusPosition(banner: HeroBannerLike) {
+  const mobileX = banner.mobile_focal_x ?? banner.focal_x;
+  const mobileY = banner.mobile_focal_y ?? banner.focal_y;
+  return `${clampFocus(mobileX)}% ${clampFocus(mobileY)}%`;
+}
+
 export default function HeroBannerMedia({
   banner,
   fallback,
@@ -59,8 +70,14 @@ export default function HeroBannerMedia({
     () =>
       ({
         '--d68-hero-position': heroFocusPosition(banner),
+        '--d68-hero-mobile-position': heroMobileFocusPosition(banner),
       }) as CSSProperties,
-    [banner.focal_x, banner.focal_y],
+    [
+      banner.focal_x,
+      banner.focal_y,
+      banner.mobile_focal_x,
+      banner.mobile_focal_y,
+    ],
   );
 
   function handleError() {
