@@ -1,5 +1,6 @@
 name: Session 2 Register Apply
 
+# Fresh PR trigger for deterministic Session 2 validation.
 on:
   push:
     branches:
