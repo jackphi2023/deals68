@@ -61,11 +61,11 @@ jobs:
       - name: Independent production build
         run: npm run build
 
-      - name: Public UAT against local branch
+      - name: Public profile UAT against local branch
         env:
           D68_USE_LOCAL_SERVER: '1'
           D68_BASE_URL: http://127.0.0.1:5173
-        run: npm run test:e2e:public -- --project=chromium-1440
+        run: npx playwright test tests/e2e/04-public-profile-rules.spec.ts --config=playwright.config.ts --project=chromium-1440
 
       - name: Diff and scope guard
         run: |
