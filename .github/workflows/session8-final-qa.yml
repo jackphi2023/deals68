@@ -1,0 +1,65 @@
+name: Session 8 Final QA
+
+on:
+  push:
+    branches:
+      - qa/session8-final-regression-cleanup-v1
+    paths:
+      - .github/workflows/session8-final-qa.yml
+
+permissions:
+  contents: write
+
+jobs:
+  final-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout Session 8 branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: qa/session8-final-regression-cleanup-v1
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Release QA
+        run: npm run qa:release
+
+      - name: Independent production build
+        run: npm run build
+
+      - name: Public E2E
+        run: npm run test:e2e:public
+
+      - name: Visual pilots
+        run: npm run visual:pilots
+
+      - name: Diff and scope guard
+        run: |
+          git diff --check
+          git diff --check origin/building...HEAD
+          changed="$(git diff --name-only origin/building...HEAD | sort)"
+          printf '%s\n' "$changed"
+          test -z "$(printf '%s\n' "$changed" | grep '^src/styles/pages/release-cleanup.css$' || true)"
+          unexpected="$(printf '%s\n' "$changed" | grep -Ev '^(\.github/workflows/session8-final-qa\.yml|docs/release/MIGRATION_STATE\.md|scripts/deals68-migration-state-check\.mjs|scripts/deals68-package-checks\.mjs|scripts/deals68-session8-final-regression-check\.mjs|supabase/migrations/20260717215300_business_public_financial_snapshot_v1\.sql)$' || true)"
+          test -z "$unexpected"
+
+      - name: Remove temporary QA workflow
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/session8-final-qa.yml
+          git diff --cached --check
+          git commit -m "chore: remove temporary Session 8 QA workflow"
+          git push origin HEAD:qa/session8-final-regression-cleanup-v1
