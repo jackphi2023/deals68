@@ -205,6 +205,8 @@ for (const token of [
   "coalesce(b.public_snapshot_json->'financial_input', '{}'::jsonb) as public_financial_input",
   'alter view public.public_businesses_safe set (security_invoker = true)',
   'revoke all on function public.approve_business_pending_changes',
+  'alter table public.businesses disable trigger trg_refresh_quality_businesses',
+  'alter table public.businesses enable trigger trg_refresh_quality_businesses',
 ]) {
   assert.ok(migration.includes(token), `Missing Session 8 migration token: ${token}`);
 }

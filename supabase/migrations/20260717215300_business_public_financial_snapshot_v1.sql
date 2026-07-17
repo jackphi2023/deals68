@@ -188,6 +188,8 @@ revoke all on function public.approve_business_pending_changes(uuid, jsonb, time
 grant execute on function public.approve_business_pending_changes(uuid, jsonb, timestamptz)
   to authenticated, service_role;
 
+alter table public.businesses disable trigger trg_refresh_quality_businesses;
+
 -- Backfill only previously approved public snapshots, using the protected approved
 -- financial_input column and exposing only the two public asset groups.
 update public.businesses b
@@ -235,6 +237,8 @@ set public_snapshot_json = jsonb_set(
 where b.public_snapshot_json is not null
   and b.moderation_status = 'approved'
   and b.last_approved_at is not null;
+
+alter table public.businesses enable trigger trg_refresh_quality_businesses;
 
 create or replace view public.public_businesses_safe
 with (security_barrier = true)
