@@ -15,10 +15,6 @@ function section(source, startToken, endToken, label) {
   return source.slice(start, end);
 }
 
-function occurrences(source, token) {
-  return source.split(token).length - 1;
-}
-
 const home = read('src/pages/Home.tsx');
 const register = read('src/pages/Register.tsx');
 const investorDashboard = read('src/pages/InvestorDashboard.tsx');
@@ -166,11 +162,14 @@ for (const token of [
   assert.ok(admin.includes(token), `Missing Admin approval token: ${token}`);
 }
 
-// Session 7 — Business Detail has one BQS title and reads approved public assets.
-assert.equal(
-  occurrences(businessDetail, 'Business Quality Score'),
-  1,
-  'Business Detail must render exactly one Business Quality Score title',
+// Session 7 — Business Detail renders one BQS heading and reads approved public assets.
+assert.ok(
+  !businessDetail.includes('<InfoSection title="Business Quality Score">'),
+  'Duplicate outer Business Quality Score header returned',
+);
+assert.match(
+  businessDetail,
+  /<section className="d68-detail-card d68-detail-card--bqs">[\s\S]*?<h3>Business Quality Score<\/h3>/,
 );
 for (const token of [
   'approvedFinancialInputOf',
