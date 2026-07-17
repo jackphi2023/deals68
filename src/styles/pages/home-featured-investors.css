@@ -1,0 +1,44 @@
+/* Session 10 — Homepage featured investor ownership. */
+.d68-home-page .d68-home-investor-band {
+  padding-top: 56px;
+  padding-bottom: 56px;
+}
+
+.d68-home-page .d68-home-investor-grid {
+  align-items: stretch;
+}
+
+.d68-home-page .d68-home-investor-card {
+  min-height: 356px !important;
+}
+
+.d68-home-page .d68-home-investor-card__meta {
+  display: grid;
+  gap: 8px;
+  align-content: start;
+}
+
+.d68-home-page .d68-home-investor-card__meta > span {
+  display: block;
+  min-width: 0;
+  color: #475569;
+  font-size: 13px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.d68-home-page .d68-home-investor-card__meta b {
+  color: #0F2A4A;
+  font-weight: 800;
+}
+
+@media (max-width: 700px) {
+  .d68-home-page .d68-home-investor-band {
+    padding-top: 44px;
+    padding-bottom: 44px;
+  }
+
+  .d68-home-page .d68-home-investor-card {
+    min-height: 0 !important;
+  }
+}
