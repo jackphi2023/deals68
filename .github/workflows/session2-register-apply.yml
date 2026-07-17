@@ -1,29 +1,20 @@
 name: Session 2 Register Apply
 
-on:
-  push:
-    branches:
-      - feature/register-profile-transaction-fields-v1
-    paths:
-      - .github/workflows/session2-register-apply.yml
-  pull_request:
-    branches:
-      - building
-    paths:
-      - .github/workflows/session2-register-apply.yml
+on: push
 
 permissions:
   contents: write
 
 jobs:
   apply-and-validate:
+    if: github.ref == 'refs/heads/feature/register-profile-transaction-fields-v1'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout feature branch
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          ref: ${{ github.head_ref || github.ref_name }}
+          ref: feature/register-profile-transaction-fields-v1
 
       - name: Apply scoped Register changes
         run: |
@@ -155,7 +146,6 @@ jobs:
           const source = fs.readFileSync('src/pages/Register.tsx', 'utf8');
           const required = [
             'useState<number | null>(() =>',
-            "normalized === 'investor'",
             '[4, 8, 12, 16, 24].includes(requestedMonths)',
             ': (investorMonths ?? 1) * 4',
             '? investorPackageSelected && Boolean(investorMonths)',
@@ -187,4 +177,4 @@ jobs:
           git rm .github/workflows/session2-register-apply.yml
           git add src/pages/Register.tsx
           git commit -m "fix: align Register profile and transaction fields"
-          git push origin HEAD:${{ github.head_ref || github.ref_name }}
+          git push origin HEAD:feature/register-profile-transaction-fields-v1
