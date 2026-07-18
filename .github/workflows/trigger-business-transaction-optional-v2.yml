@@ -24,24 +24,8 @@ jobs:
           fetch-depth: 1
           show-progress: false
 
-      - name: Extract and run scoped patch
-        shell: bash
-        run: |
-          python3 <<'PY'
-          from pathlib import Path
-          import textwrap
-
-          workflow = Path('.github/workflows/apply-business-transaction-optional-v2.yml').read_text(encoding='utf-8')
-          start_marker = "          python3 <<'PY'\n"
-          end_marker = "\n          PY\n\n      - name: Install dependencies"
-          start = workflow.find(start_marker)
-          end = workflow.find(end_marker, start)
-          if start < 0 or end < 0:
-              raise SystemExit('Could not extract one-time patch script')
-          script = workflow[start + len(start_marker):end]
-          Path('/tmp/apply_business_transaction_v2.py').write_text(textwrap.dedent(script), encoding='utf-8')
-          PY
-          python3 /tmp/apply_business_transaction_v2.py
+      - name: Apply scoped patch
+        run: python3 scripts/run-one-time-business-transaction-v2.py
 
       - name: Install dependencies
         run: npm ci
@@ -49,11 +33,12 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Commit update to building and remove one-time workflows
+      - name: Commit update to building and remove one-time files
         shell: bash
         run: |
           rm -f .github/workflows/apply-business-transaction-optional-v2.yml
           rm -f .github/workflows/trigger-business-transaction-optional-v2.yml
+          rm -f scripts/run-one-time-business-transaction-v2.py
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
