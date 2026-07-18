@@ -123,8 +123,8 @@ export function About({ lang }: Props) {
       titleEn="A private markets platform for Vietnamese businesses worldwide"
       desc="Deals68 kết nối doanh nghiệp Việt với nhà đầu tư, bên mua, bên cho vay, đối tác chiến lược và cố vấn trên toàn cầu; đồng thời cung cấp quy trình dữ liệu, thẩm định và quản trị giúp các bên tạo ra giá trị trước, trong và sau giao dịch."
       descEn="Deals68 connects Vietnamese businesses with global investors, buyers, lenders, strategic partners and advisors, while providing the data, due diligence and management workflows needed to create value before, during and after a transaction."
-      slogan="Kết nối thương vụ, khai mở lộc phát."
-      sloganEn="Connecting Deals, Unlocking Prosperity."
+      slogan="Deals68 Kết nối thương vụ, khai mở lộc phát."
+      sloganEn="Deals68 Connecting Deals, Unlocking Prosperity."
     />
 
     <Section narrow>
@@ -205,16 +205,6 @@ export function About({ lang }: Props) {
       <div className="d68-static-card d68-static-card--wide">
         <BulletList ordered items={lang === 'en' ? aboutTrustPrinciples.en : aboutTrustPrinciples.vi} />
       </div>
-      <CTA
-        lang={lang}
-        to="/"
-        title="Bắt đầu từ một hồ sơ có chất lượng"
-        titleEn="Start with a high-quality profile"
-        text="Đăng hồ sơ doanh nghiệp, xác lập tiêu chí đầu tư hoặc tham gia với vai trò cố vấn và đối tác thị trường."
-        textEn="Create a business profile, set your investment criteria or participate as an advisor or Market Partner."
-        cta="Khám phá Deals68"
-        ctaEn="Explore Deals68"
-      />
     </Section>
   </main>;
 }
