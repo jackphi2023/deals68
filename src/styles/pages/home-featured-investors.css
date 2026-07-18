@@ -1,8 +1,5 @@
-/* Session 10 — Homepage featured investor ownership. */
-.d68-home-page .d68-home-investor-band {
-  padding-top: 56px;
-  padding-bottom: 56px;
-}
+/* Homepage featured investor component ownership.
+   Section background and vertical rhythm are owned by home-layout.css. */
 
 .d68-home-page .d68-home-investor-grid {
   align-items: stretch;
@@ -33,11 +30,6 @@
 }
 
 @media (max-width: 700px) {
-  .d68-home-page .d68-home-investor-band {
-    padding-top: 44px;
-    padding-bottom: 44px;
-  }
-
   .d68-home-page .d68-home-investor-card {
     min-height: 0 !important;
   }
