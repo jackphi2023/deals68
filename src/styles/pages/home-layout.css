@@ -16,8 +16,8 @@
   min-width: 0;
 }
 
-/* Every non-hero block participates in exactly one 80px flex gap.
-   Horizontal auto-centering and container gutters are preserved. */
+/* Every non-hero block participates in exactly one 80px flex gap. No direct
+   block may add external vertical margin or padding; container gutters remain. */
 .d68-home-page > .d68-home-block {
   width: 100%;
   margin-block: 0;
