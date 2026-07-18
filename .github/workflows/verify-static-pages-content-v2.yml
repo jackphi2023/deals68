@@ -24,6 +24,23 @@ jobs:
           fetch-depth: 1
           show-progress: false
 
+      - name: Repair one-time patch decoder
+        shell: bash
+        run: |
+          if [ -f scripts/apply-static-pages-v2.py ]; then
+            python3 <<'PY'
+          from pathlib import Path
+          path = Path('scripts/apply-static-pages-v2.py')
+          text = path.read_text(encoding='utf-8')
+          text = text.replace('import gzip\n', 'import gzip\nimport zlib\n', 1)
+          old = "def decode(value: str) -> str:\n    return gzip.decompress(base64.b64decode(value)).decode('utf-8')"
+          new = "def decode(value: str) -> str:\n    raw = base64.b64decode(value)\n    try:\n        return gzip.decompress(raw).decode('utf-8')\n    except gzip.BadGzipFile:\n        return zlib.decompress(raw[10:-8], -zlib.MAX_WBITS).decode('utf-8')"
+          if old not in text:
+              raise SystemExit('Static-page decoder marker not found')
+          path.write_text(text.replace(old, new, 1), encoding='utf-8')
+          PY
+          fi
+
       - name: Apply scoped content and UI patch
         id: patch
         continue-on-error: true
@@ -62,7 +79,7 @@ jobs:
         run: |
           rm -f scripts/apply-static-pages-v2.py
           rm -f .github/workflows/apply-static-pages-content-v2.yml
-          rm -f docs/.static-pages-v2-trigger docs/.static-pages-v2-trigger-2 docs/.static-pages-v2-trigger-3 docs/.static-pages-v2-trigger-4 docs/.static-pages-v2-trigger-5 docs/.static-pages-v2-trigger-6 docs/.static-pages-v2-trigger-7
+          rm -f docs/.static-pages-v2-trigger docs/.static-pages-v2-trigger-2 docs/.static-pages-v2-trigger-3 docs/.static-pages-v2-trigger-4 docs/.static-pages-v2-trigger-5 docs/.static-pages-v2-trigger-6 docs/.static-pages-v2-trigger-7 docs/.static-pages-v2-trigger-8
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
