@@ -25,32 +25,7 @@ jobs:
           show-progress: false
 
       - name: Fix package JSX expression in patch runner
-        shell: bash
-        run: |
-          python3 <<'PY'
-          from pathlib import Path
-          path = Path('scripts/apply-investor-register-selection-v1.py')
-          text = path.read_text(encoding='utf-8')
-          old = '''replacement = (
-    '      {isBusiness ? (\n'
-    '        <div className="d68-bizreg-options">\n'
-    f'{business_body}'
-    '        </div>\n'
-    '      ) : null}\n'
-)'''
-          new = '''replacement = (
-    '      {isBusiness ? (\n'
-    '        <div className="d68-bizreg-options">\n'
-    '          {\n'
-    f'{business_body}'
-    '          }\n'
-    '        </div>\n'
-    '      ) : null}\n'
-)'''
-          if text.count(old) != 1:
-              raise SystemExit('Could not patch package JSX expression')
-          path.write_text(text.replace(old, new, 1), encoding='utf-8')
-          PY
+        run: python3 scripts/fix-investor-register-patch-runner-v1.py
 
       - name: Apply scoped patch
         run: python3 scripts/apply-investor-register-selection-v1.py
@@ -84,6 +59,7 @@ jobs:
         shell: bash
         run: |
           rm -f scripts/apply-investor-register-selection-v1.py
+          rm -f scripts/fix-investor-register-patch-runner-v1.py
           rm -f .github/workflows/apply-investor-register-selection-v1.yml
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
