@@ -1,4 +1,4 @@
 Homepage H0 deterministic capture trigger.
-Run: final clean branch with bounded image stabilization.
+Run: corrected direct test harness, bounded stabilization.
 Created only to run the one-time local Vite evidence workflow.
 Remove before merging the H0 PR into building.
