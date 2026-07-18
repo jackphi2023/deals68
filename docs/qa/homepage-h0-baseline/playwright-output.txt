@@ -1,7 +1,0 @@
-
-Running 1 test using 1 worker
-
-  ✓  1 [chromium-1440] › tests/e2e/06-homepage-h0-baseline.spec.ts:171:1 › capture Homepage H0 source-equivalent baseline (16.3s)
-
-Deals68 report written to reports/deals68/test-report.html
-  1 passed (18.3s)
