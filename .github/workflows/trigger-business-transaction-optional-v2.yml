@@ -24,6 +24,22 @@ jobs:
           fetch-depth: 1
           show-progress: false
 
+      - name: Fix scoped runner setter rename
+        shell: bash
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+          path = Path('scripts/run-one-time-business-transaction-v2.py')
+          text = path.read_text(encoding='utf-8')
+          marker = "text = text.replace('excludedAssetValue', 'includedTangibleAssets')"
+          replacement = marker + "\ntext = text.replace('setExcludedAssetValue', 'setIncludedTangibleAssets')"
+          if replacement not in text:
+              if text.count(marker) != 1:
+                  raise SystemExit('Could not patch Register setter rename')
+              text = text.replace(marker, replacement, 1)
+          path.write_text(text, encoding='utf-8')
+          PY
+
       - name: Apply scoped patch
         id: patch
         continue-on-error: true
