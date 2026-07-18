@@ -60,7 +60,7 @@ jobs:
             tests/e2e/06-homepage-h0-baseline.spec.ts \
             --config=playwright.config.ts \
             --project=chromium-1440 \
-            2>&1 | tee docs/qa/homepage-h0-baseline/playwright-output.log
+            2>&1 | tee docs/qa/homepage-h0-baseline/playwright-output.txt
           status=${PIPESTATUS[0]}
           echo "status=$status" >> "$GITHUB_OUTPUT"
           exit "$status"
