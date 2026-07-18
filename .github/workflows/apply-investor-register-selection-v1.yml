@@ -1,0 +1,45 @@
+name: Apply investor registration selection v1
+
+on:
+  pull_request:
+    branches:
+      - building
+    types:
+      - opened
+      - reopened
+      - synchronize
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout building
+        uses: actions/checkout@v4
+        with:
+          ref: building
+          fetch-depth: 1
+          show-progress: false
+
+      - name: Apply scoped patch
+        run: python3 scripts/apply-investor-register-selection-v1.py
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Commit to building and remove one-time files
+        shell: bash
+        run: |
+          rm -f scripts/apply-investor-register-selection-v1.py
+          rm -f .github/workflows/apply-investor-register-selection-v1.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "fix(register): require investor criteria choices and simplify payment"
+          git push origin HEAD:building
