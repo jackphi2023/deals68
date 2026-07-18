@@ -89,8 +89,6 @@
 }
 
 /* Home reference alignment — Featured industries + investors cards. */
-.d68-home-industries{max-width:none;margin:0;background:#F7FAFC;border-top:1px solid #E7EDF3;border-bottom:1px solid #E7EDF3;padding:72px 0}
-.d68-home-industries .d68-home-container{max-width:1200px;margin:0 auto;padding:0 24px}
 .d68-home-industry-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:22px}
 .d68-home-industry-card{min-height:205px;border-radius:18px;background:#fff;border:1px solid #E7EDF3;box-shadow:0 1px 2px rgba(15,42,74,.04);overflow:hidden;text-decoration:none;color:inherit;display:flex;flex-direction:column}
 .d68-home-industry-card>div{height:116px;background:linear-gradient(135deg,#E7F6FD 0%,#FEF3D3 100%)!important;display:flex;align-items:center;justify-content:center}
@@ -98,10 +96,9 @@
 .d68-home-industry-card section{background:#fff;padding:18px 20px 20px;display:flex;flex-direction:column;gap:5px;flex:1}
 .d68-home-industry-card strong{font-size:17px;line-height:1.3;font-weight:800;color:#0F2A4A}
 .d68-home-industry-card p{font-size:13.5px;line-height:1.5;color:#64748B;margin:0}
-.d68-home-container.d68-home-section:has(.d68-home-investor-grid){padding-top:66px;padding-bottom:72px}
 .d68-home-investor-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:20px}
 @media(max-width:980px){.d68-home-industry-grid,.d68-home-investor-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(max-width:620px){.d68-home-industries{padding:54px 0}.d68-home-industry-grid,.d68-home-investor-grid{grid-template-columns:1fr}.d68-home-container.d68-home-section:has(.d68-home-investor-grid){padding-top:52px;padding-bottom:56px}.d68-home-industry-card{min-height:0}}
+@media(max-width:620px){.d68-home-industry-grid,.d68-home-investor-grid{grid-template-columns:1fr}.d68-home-industry-card{min-height:0}}
 
 /* Register Business reference alignment — richer profile intake without changing public guards. */
 .d68-register-page{align-items:flex-start;background:linear-gradient(180deg,#F7FAFC 0%,#EEF2F6 100%);padding-top:42px}
@@ -211,7 +208,6 @@
 
 /* Front-end visual polish — Home UI Reference + Static hero brand band (2026-07-05)
    Additive CSS only. Does not modify data/auth/dashboard/public guards. */
-.d68-home-industries{background:#fff!important;padding:68px 0 58px!important;border:0!important}
 .d68-home-industries .d68-home-title{margin-bottom:34px!important}
 .d68-home-industries .d68-home-title h2{font-size:34px!important;letter-spacing:-.8px!important;line-height:1.12!important;color:#0F2A4A!important;margin:0 0 12px!important;text-align:center!important}
 .d68-home-industries .d68-home-title p{font-size:16px!important;color:#64748B!important;line-height:1.55!important;text-align:center!important;margin:0 auto!important;max-width:620px!important}
@@ -231,10 +227,9 @@
 .d68-home-industry-card strong{font-size:16px!important;font-weight:900!important;line-height:1.28!important;color:#0F2A4A!important;letter-spacing:-.2px!important}
 .d68-home-industry-card p{font-size:13px!important;line-height:1.45!important;color:#64748B!important;margin:0!important}
 
-.d68-home-container.d68-home-section:has(.d68-home-investor-grid){padding-top:62px!important;padding-bottom:64px!important;background:#fff!important}
-.d68-home-container.d68-home-section:has(.d68-home-investor-grid) .d68-home-title--row{align-items:flex-end!important;margin-bottom:28px!important}
-.d68-home-container.d68-home-section:has(.d68-home-investor-grid) .d68-home-title h2{font-size:34px!important;letter-spacing:-.8px!important;line-height:1.14!important;color:#0F2A4A!important;margin-top:16px!important}
-.d68-home-container.d68-home-section:has(.d68-home-investor-grid) .d68-home-title>a{font-size:14px!important;font-weight:900!important;color:#1BADEA!important;white-space:nowrap!important}
+.d68-home-investor-band .d68-home-title--row{align-items:flex-end!important;margin-bottom:28px!important}
+.d68-home-investor-band .d68-home-title h2{font-size:34px!important;letter-spacing:-.8px!important;line-height:1.14!important;color:#0F2A4A!important;margin-top:16px!important}
+.d68-home-investor-band .d68-home-title>a{font-size:14px!important;font-weight:900!important;color:#1BADEA!important;white-space:nowrap!important}
 .d68-home-badge--blue{background:#DDF4FE!important;color:#1596cc!important;border-radius:999px!important;padding:8px 13px!important;letter-spacing:.7px!important;font-size:12px!important;font-weight:900!important}
 .d68-home-investor-grid{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:20px!important}
 
@@ -246,8 +241,8 @@
 .d68-static-hero p{opacity:.96!important;max-width:820px!important}
 .d68-static-card strong{color:#F2B51D!important}
 
-@media(max-width:1040px){.d68-home-industry-grid,.d68-home-investor-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}.d68-home-container.d68-home-section:has(.d68-home-investor-grid) .d68-home-title h2,.d68-home-industries .d68-home-title h2{font-size:30px!important}}
-@media(max-width:620px){.d68-home-industries{padding:52px 0 44px!important}.d68-home-industry-grid,.d68-home-investor-grid{grid-template-columns:1fr!important;gap:16px!important}.d68-home-industry-card{min-height:0!important}.d68-home-industry-card>div{height:110px!important}.d68-home-container.d68-home-section:has(.d68-home-investor-grid){padding-top:50px!important;padding-bottom:52px!important}.d68-home-container.d68-home-section:has(.d68-home-investor-grid) .d68-home-title--row{align-items:flex-start!important}.d68-static-hero__inner{padding-top:52px!important;padding-bottom:46px!important}.d68-static-hero h1{font-size:32px!important}.d68-static-hero p{font-size:15.5px!important}}
+@media(max-width:1040px){.d68-home-industry-grid,.d68-home-investor-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}.d68-home-investor-band .d68-home-title h2,.d68-home-industries .d68-home-title h2{font-size:30px!important}}
+@media(max-width:620px){.d68-home-industry-grid,.d68-home-investor-grid{grid-template-columns:1fr!important;gap:16px!important}.d68-home-industry-card{min-height:0!important}.d68-home-industry-card>div{height:110px!important}.d68-home-investor-band .d68-home-title--row{align-items:flex-start!important}.d68-static-hero__inner{padding-top:52px!important;padding-bottom:46px!important}.d68-static-hero h1{font-size:32px!important}.d68-static-hero p{font-size:15.5px!important}}
 
 /* Deals68 public UI polish — 2026-07 */
 *, *::before, *::after{box-sizing:border-box}
@@ -282,12 +277,10 @@ a:focus-visible .d68-entity-title-link{
 .d68-business-card__media{overflow:hidden}
 
 /* Home promotion banner spacing. */
-.d68-promo-banner.d68-home-container{padding-top:50px!important;padding-bottom:50px!important}
 .d68-promo-banner__link{display:block;width:100%;overflow:hidden;border-radius:18px}
 .d68-promo-banner__link img{display:block;width:100%;height:auto}
 
 /* Featured investor section framing; card ownership lives in home.css. */
-.d68-home-container.d68-home-section:has(.d68-home-investor-grid){background:transparent!important}
 .d68-home-investor-grid{min-width:0;width:100%}
 
 /* Hide horizontal transaction menu on business listing. */
@@ -351,8 +344,7 @@ a:focus-visible .d68-entity-title-link{
 
   .d68-detail-hero-media{min-height:220px;aspect-ratio:16/10}
   .d68-detail-thumbs{max-width:100%;overflow-x:auto}
-  .d68-promo-banner.d68-home-container{padding-top:50px!important;padding-bottom:50px!important}
-}
+  }
 
 /* G6/G7 — Business + Investor registration desktop payment sizing. */
 @media(min-width:781px){

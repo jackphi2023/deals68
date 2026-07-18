@@ -92,15 +92,17 @@ export async function listSiteBanners(
     const today = todayIso();
     q = q
       .eq('active', true)
-      .lte('starts_at', today)
+      .or(`starts_at.is.null,starts_at.lte.${today}`)
       .or(`ends_at.is.null,ends_at.gte.${today}`);
   }
 
   const { data, error } = await q;
   if (error) throw error;
 
-  const filtered = ((data || []) as SiteBanner[]).filter(
-    (row) => admin || bannerMatchesLang(row, lang),
+  const filtered = ((data || []) as SiteBanner[]).filter((row) =>
+    admin
+      ? true
+      : bannerMatchesLang(row, lang) && bannerIsActive(row),
   );
 
   if (admin) return filtered;

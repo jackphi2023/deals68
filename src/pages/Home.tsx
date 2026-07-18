@@ -256,7 +256,7 @@ export default function Home({ lang }: { lang: Lang }) {
   );
 
   const featuredInvestorSection = (
-    <section className="d68-home-container d68-home-section d68-home-investor-band">
+    <section className="d68-home-container d68-home-block d68-home-investor-band">
       <div className="d68-home-title d68-home-title--row">
         <div>
           <span className="d68-home-badge d68-home-badge--blue">◆ {T(lang, 'Nhà đầu tư tiêu biểu', 'Featured investors')}</span>
@@ -319,28 +319,28 @@ export default function Home({ lang }: { lang: Lang }) {
         </div>
       </section>
 
-      <section className="d68-home-container d68-home-section d68-home-section--roles">
+      <section className="d68-home-container d68-home-block d68-home-section--roles">
         <div className="d68-home-title d68-home-title--center"><h2>{T(lang, 'Bạn tham gia với vai trò nào?', 'Which role fits you?')}</h2><p>{T(lang, 'Deals68 phục vụ nhiều nhu cầu: gọi vốn, mua bán, cho vay và phát triển thị trường.', 'Deals68 serves many needs: fundraising, M&A, lending and market development.')}</p></div>
         <div className="d68-home-role-grid">{roleCards.map((role) => <div key={role.title} className="d68-home-role-card"><div style={{ background: role.bg, color: role.color }}>{role.icon}</div><h3>{role.title}</h3><p>{role.desc}</p><Link to={nav(role.to)}><span>{role.cta} →</span></Link></div>)}</div>
       </section>
 
       {featuredInvestorSection}
 
-      <PromotionBanner placement="home_promotion" lang={lang} className="d68-home-container" />
+      <PromotionBanner placement="home_promotion" lang={lang} className="d68-home-container d68-home-block" />
 
-      <section className="d68-home-container d68-home-section">
+      <section className="d68-home-container d68-home-block d68-home-deals-section">
         <div className="d68-home-title d68-home-title--row"><div><span className="d68-home-badge d68-home-badge--gold">★ {T(lang, 'Thương vụ nổi bật', 'Featured Deals')}</span><h2>{T(lang, 'Cơ hội đang được chào', 'Opportunities on the market')}</h2></div><Link to={nav('/businesses')}>{T(lang, 'Xem tất cả', 'View all')} →</Link></div>
         {loading ? <div className="d68-home-deals">{Array.from({ length: 3 }).map((_, index) => <div key={index} className="d68-home-business-card d68-home-business-card--loading"><div className="d68-home-business-card__media"/><div className="d68-home-business-card__body"/></div>)}</div> : deals.length ? <div className="d68-home-deals">{deals.map((deal) => <Link key={deal.id} to={nav(`/businesses/${deal.slug}`)} className="d68-home-business-card"><div className="d68-home-business-card__media">{deal.image ? <img src={deal.image} alt={deal.title} loading="lazy" /> : <span>{T(lang, 'Deals68 · Hồ sơ ẩn danh', 'Deals68 · Anonymous listing')}</span>}{deal.featured ? <b>{T(lang, 'Nổi bật', 'Featured')}</b> : null}</div><div className="d68-home-business-card__body"><div className="d68-home-business-card__tags"><span>{deal.industry}</span><span>📍 {deal.city}</span></div><h3 className="d68-entity-title-link">{deal.title}</h3><div className="d68-home-business-card__metrics"><div><span>{T(lang, 'Doanh thu', 'Revenue')}</span><strong>{deal.revenue}</strong></div><div><span>{T(lang, 'Nhu cầu', 'Ask')}</span><strong>{deal.ask}</strong></div></div></div></Link>)}</div> : <div className="d68-home-empty">{T(lang, 'Chưa có doanh nghiệp đang hiển thị.', 'No active business listings yet.')}</div>}
       </section>
 
-      <section className="d68-home-industries">
+      <section className="d68-home-block d68-home-industries">
         <div className="d68-home-container">
           <div className="d68-home-title d68-home-title--center"><h2>{T(lang, 'Ngành nổi bật', 'Featured industries')}</h2><p>{T(lang, 'Khám phá cơ hội theo từng ngành trọng điểm trên Deals68.', 'Explore opportunities across key industries on Deals68.')}</p></div>
           <div className="d68-home-industry-grid">{industries.map((item) => <Link key={item.vi} to={buildPath('/businesses', lang, { industry: item.key })} className="d68-home-industry-card"><div><IndustryLineIcon type={item.icon} /></div><section><strong>{T(lang, item.vi, item.en)}</strong><p>{T(lang, item.noteVi, item.noteEn)}</p></section></Link>)}</div>
         </div>
       </section>
 
-      <section className="d68-home-valuation">
+      <section className="d68-home-block d68-home-valuation">
         <div className="d68-home-container">
           <div className="d68-home-valuation__box">
             <div>
@@ -353,7 +353,7 @@ export default function Home({ lang }: { lang: Lang }) {
         </div>
       </section>
 
-      <section className="d68-home-how"><div className="d68-home-container"><div className="d68-home-title d68-home-title--center"><h2 style={{ color: '#0F2A4A' }}>{T(lang, 'Cách hoạt động', 'How it works')}</h2><p>{T(lang, 'Ba bước để bắt đầu một thương vụ trên Deals68.', 'Three steps to start a deal on Deals68.')}</p></div><div className="d68-home-steps">{steps.map((step) => <div key={step.n}><b>{step.n}</b><h3>{step.title}</h3><p>{step.desc}</p></div>)}</div></div></section>
+      <section className="d68-home-block d68-home-how"><div className="d68-home-container"><div className="d68-home-title d68-home-title--center"><h2 style={{ color: '#0F2A4A' }}>{T(lang, 'Cách hoạt động', 'How it works')}</h2><p>{T(lang, 'Ba bước để bắt đầu một thương vụ trên Deals68.', 'Three steps to start a deal on Deals68.')}</p></div><div className="d68-home-steps">{steps.map((step) => <div key={step.n}><b>{step.n}</b><h3>{step.title}</h3><p>{step.desc}</p></div>)}</div></div></section>
     </main>
   );
 }
