@@ -3,27 +3,17 @@ name: Homepage H0 baseline capture
 on:
   push:
     branches:
-      - chore/homepage-h0-baseline
+      - chore/homepage-h0-baseline-final
     paths:
       - .github/workflows/homepage-h0-baseline-capture.yml
       - scripts/homepage-h0-trigger.txt
-  pull_request:
-    branches:
-      - building
-    types:
-      - opened
-      - reopened
-    paths:
-      - .github/workflows/homepage-h0-baseline-capture.yml
 
 permissions:
   contents: write
 
 jobs:
   capture:
-    if: >-
-      github.event_name == 'pull_request' ||
-      contains(github.event.head_commit.message, '[h0 baseline]')
+    if: contains(github.event.head_commit.message, '[h0 baseline]')
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
@@ -35,7 +25,7 @@ jobs:
       - name: Checkout H0 branch
         uses: actions/checkout@v4
         with:
-          ref: chore/homepage-h0-baseline
+          ref: chore/homepage-h0-baseline-final
           fetch-depth: 0
           show-progress: false
 
@@ -126,7 +116,7 @@ jobs:
             exit 0
           fi
           git commit -m "test(home): record H0 visual and computed-style baseline"
-          git push origin HEAD:chore/homepage-h0-baseline
+          git push origin HEAD:chore/homepage-h0-baseline-final
 
       - name: Enforce successful browser capture
         if: always()
