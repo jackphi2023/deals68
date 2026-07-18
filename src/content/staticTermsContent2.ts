@@ -64,8 +64,8 @@ export const termsPart2: LegalItem[] = [
   {
     viTitle: 'Giới hạn trách nhiệm',
     enTitle: 'Limitation of liability',
-    viParagraphs: ['Trong phạm vi pháp luật cho phép, Deals68 không chịu trách nhiệm đối với thiệt hại gián tiếp, mất lợi nhuận, mất cơ hội, mất dữ liệu, tổn hại uy tín hoặc quyết định dựa trên thông tin do người dùng hoặc bên thứ ba cung cấp. Tổng trách nhiệm trực tiếp của Deals68 liên quan đến một dịch vụ không vượt quá số phí người dùng thực trả cho dịch vụ đó trong [6/12] tháng trước sự kiện phát sinh, trừ khi pháp luật bắt buộc khác.'],
-    enParagraphs: ['To the extent permitted by law, Deals68 is not liable for indirect loss, lost profits, lost opportunities, data loss, reputational harm or decisions based on information supplied by users or third parties. Deals68’s aggregate direct liability for a service will not exceed the fees actually paid by the user for that service during the [6/12] months preceding the event, unless mandatory law requires otherwise.'],
+    viParagraphs: ['Trong phạm vi pháp luật cho phép, Deals68 không chịu trách nhiệm đối với thiệt hại gián tiếp, mất lợi nhuận, mất cơ hội, mất dữ liệu, tổn hại uy tín hoặc quyết định dựa trên thông tin do người dùng hoặc bên thứ ba cung cấp. Tổng trách nhiệm trực tiếp của Deals68 liên quan đến một dịch vụ không vượt quá số phí người dùng thực trả cho dịch vụ đó kể từ Tháng 6/2026 đến trước sự kiện phát sinh, trừ khi pháp luật bắt buộc khác.'],
+    enParagraphs: ['To the extent permitted by law, Deals68 is not liable for indirect loss, lost profits, lost opportunities, data loss, reputational harm or decisions based on information supplied by users or third parties. Deals68’s aggregate direct liability for a service will not exceed the fees actually paid by the user for that service from June 2026 until the event giving rise to the claim, unless mandatory law requires otherwise.'],
   },
   {
     viTitle: 'Bồi hoàn',
@@ -76,13 +76,13 @@ export const termsPart2: LegalItem[] = [
   {
     viTitle: 'Luật điều chỉnh và giải quyết tranh chấp',
     enTitle: 'Governing law and dispute resolution',
-    viParagraphs: ['Điều khoản này được điều chỉnh bởi pháp luật [Việt Nam]. Tranh chấp trước hết được thương lượng thiện chí trong 30 ngày. Nếu không giải quyết được, tranh chấp thuộc thẩm quyền của [Tòa án/Trọng tài cụ thể tại Thành phố Hồ Chí Minh], trừ khi pháp luật bảo vệ người tiêu dùng hoặc quy định bắt buộc yêu cầu khác.'],
-    enParagraphs: ['These Terms are governed by the laws of [Vietnam]. Disputes should first be subject to good-faith negotiation for 30 days. Unresolved disputes shall be submitted to [specified courts/arbitration institution in Ho Chi Minh City], except where mandatory consumer or other laws require otherwise.'],
+    viParagraphs: ['Điều khoản này được điều chỉnh bởi pháp luật Việt Nam. Tranh chấp trước hết được thương lượng thiện chí trong 30 ngày. Nếu không giải quyết được, tranh chấp sẽ được giải quyết tại Việt Nam, trừ khi pháp luật bảo vệ người tiêu dùng hoặc quy định bắt buộc yêu cầu khác.'],
+    enParagraphs: ['These Terms are governed by the laws of Vietnam. Disputes should first be subject to good-faith negotiation for 30 days. Unresolved disputes shall be resolved in Vietnam, except where mandatory consumer or other laws require otherwise.'],
   },
   {
     viTitle: 'Thay đổi điều khoản và liên hệ',
     enTitle: 'Changes and contact',
-    viParagraphs: ['Deals68 có thể cập nhật điều khoản để phản ánh thay đổi sản phẩm, pháp luật hoặc rủi ro. Thay đổi quan trọng sẽ được thông báo phù hợp trên website hoặc qua thông tin liên hệ của tài khoản. Việc tiếp tục sử dụng sau ngày hiệu lực được xem là chấp thuận trong phạm vi pháp luật cho phép. Câu hỏi pháp lý gửi đến [legal@deals68.com].'],
-    enParagraphs: ['Deals68 may update these Terms to reflect product, legal or risk changes. Material updates will be notified appropriately on the website or through account contact details. Continued use after the effective date constitutes acceptance to the extent permitted by law. Legal questions may be sent to [legal@deals68.com].'],
+    viParagraphs: ['Deals68 có thể cập nhật điều khoản để phản ánh thay đổi sản phẩm, pháp luật hoặc rủi ro. Thay đổi quan trọng sẽ được thông báo phù hợp trên website hoặc qua thông tin liên hệ của tài khoản. Việc tiếp tục sử dụng sau ngày hiệu lực được xem là chấp thuận trong phạm vi pháp luật cho phép. Câu hỏi pháp lý gửi đến partner@vietcapitalpartners.com.'],
+    enParagraphs: ['Deals68 may update these Terms to reflect product, legal or risk changes. Material updates will be notified appropriately on the website or through account contact details. Continued use after the effective date constitutes acceptance to the extent permitted by law. Legal questions may be sent to partner@vietcapitalpartners.com.'],
   },
 ];

@@ -10,8 +10,8 @@ export const termsPart1: LegalItem[] = [
   {
     viTitle: 'Chủ thể vận hành',
     enTitle: 'Platform operator',
-    viParagraphs: ['Deals68.com được vận hành bởi [Tên pháp nhân đầy đủ], mã số doanh nghiệp [●], địa chỉ [●] (“Deals68”, “chúng tôi”). Thông tin thương hiệu trên website không thay thế thông tin pháp nhân trong hợp đồng, hóa đơn hoặc chứng từ thanh toán.'],
-    enParagraphs: ['Deals68.com is operated by [full legal entity name], registration number [●], registered address [●] (“Deals68”, “we”, “us”). Brand information on the website does not replace the legal entity details stated in contracts, invoices or payment records.'],
+    viParagraphs: ['Deals68.com được vận hành bởi Deals68.com (“Deals68”, “chúng tôi”). Thông tin thương hiệu trên website không thay thế thông tin pháp nhân trong hợp đồng, hóa đơn hoặc chứng từ thanh toán.'],
+    enParagraphs: ['Deals68.com is operated by Deals68.com (“Deals68”, “we”, “us”). Brand information on the website does not replace the legal entity details stated in contracts, invoices or payment records.'],
   },
   {
     viTitle: 'Điều kiện sử dụng và thẩm quyền đại diện',

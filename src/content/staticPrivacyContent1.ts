@@ -4,8 +4,8 @@ export const privacyPart1: LegalItem[] = [
   {
     viTitle: 'Phạm vi và đơn vị chịu trách nhiệm',
     enTitle: 'Scope and responsible entity',
-    viParagraphs: ['Chính sách áp dụng cho website, tài khoản, hồ sơ, phòng dữ liệu, không gian giao dịch, thư điện tử và các dịch vụ liên quan của Deals68. Đơn vị kiểm soát dữ liệu chính là [Tên pháp nhân, địa chỉ, mã số doanh nghiệp]. Một số nhà cung cấp có thể xử lý dữ liệu thay Deals68 theo hợp đồng và hướng dẫn của Deals68.'],
-    enParagraphs: ['This Policy applies to the Deals68 website, accounts, profiles, Datarooms, transaction workspaces, emails and related services. The primary data controller is [legal entity, address and registration number]. Certain providers may process data on Deals68’s behalf under contract and instructions.'],
+    viParagraphs: ['Chính sách áp dụng cho website, tài khoản, hồ sơ, phòng dữ liệu, không gian giao dịch, thư điện tử và các dịch vụ liên quan của Deals68. Đơn vị kiểm soát dữ liệu chính là Deals68.com. Một số nhà cung cấp có thể xử lý dữ liệu thay Deals68 theo hợp đồng và hướng dẫn của Deals68.'],
+    enParagraphs: ['This Policy applies to the Deals68 website, accounts, profiles, Datarooms, transaction workspaces, emails and related services. The primary data controller is Deals68.com. Certain providers may process data on Deals68’s behalf under contract and instructions.'],
   },
   {
     viTitle: 'Các nhóm dữ liệu được thu thập',
