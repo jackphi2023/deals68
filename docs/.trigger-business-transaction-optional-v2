@@ -5,3 +5,4 @@ Rerun with extracted script diagnostics.
 Rerun with diagnostic artifact capture.
 Rerun with normalized patch indentation.
 Run direct scoped patch implementation.
+Collect TypeScript and Vite build diagnostics.
