@@ -25,14 +25,7 @@ jobs:
           show-progress: false
 
       - name: Apply scoped homepage and banner cleanup
-        shell: bash
-        run: |
-          if [ -f scripts/repair-homepage-layout-banner-patcher.py ]; then
-            python3 scripts/repair-homepage-layout-banner-patcher.py
-          fi
-          if [ -f scripts/apply-homepage-layout-banner-system.py ]; then
-            python3 scripts/apply-homepage-layout-banner-system.py
-          fi
+        run: python3 scripts/apply-homepage-layout-banner-system-v2.py
 
       - name: Verify source ownership contracts
         shell: bash
@@ -57,6 +50,7 @@ jobs:
         run: |
           rm -f scripts/apply-homepage-layout-banner-system.py
           rm -f scripts/repair-homepage-layout-banner-patcher.py
+          rm -f scripts/apply-homepage-layout-banner-system-v2.py
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
