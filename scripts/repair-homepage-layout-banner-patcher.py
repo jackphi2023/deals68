@@ -1,5 +1,6 @@
 from pathlib import Path
 
+# This helper only repairs the one-time patch script before CI executes it.
 path = Path('scripts/apply-homepage-layout-banner-system.py')
 text = path.read_text(encoding='utf-8')
 
