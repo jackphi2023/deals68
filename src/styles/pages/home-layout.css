@@ -7,7 +7,7 @@
   display: flex;
   flex-direction: column;
   row-gap: var(--d68-home-section-gap);
-  background: var(--d68-bg, #F7FAFC);
+  background: #F7FAFC !important;
   padding-bottom: var(--d68-home-section-gap);
 }
 
@@ -33,30 +33,30 @@
   padding-bottom: 0 !important;
 }
 
-/* Featured industries belongs to the common homepage canvas. Only the industry
-   cards remain white; the section and its inner container use #F7FAFC. */
-.d68-home-page > .d68-home-industries {
-  background: var(--d68-bg, #F7FAFC) !important;
-  border-top: 0;
-  border-bottom: 0;
-}
-
+/* Featured Industries belongs to the common homepage canvas. The outer section
+   and its content container are #F7FAFC; individual industry cards stay white. */
+.d68-home-page > .d68-home-industries,
 .d68-home-page > .d68-home-industries > .d68-home-container {
-  background: var(--d68-bg, #F7FAFC);
+  background: #F7FAFC !important;
 }
 
-/* Valuation is a CSS-rendered branded box, not a cropped image. Keep the outer
-   wrapper transparent and borderless; the blue gradient box remains intact. */
+.d68-home-page > .d68-home-industries {
+  border-top: 0 !important;
+  border-bottom: 0 !important;
+  box-shadow: none;
+}
+
+/* Valuation is a CSS-rendered branded box, not a cropped image. Its wrapper uses
+   the common #F7FAFC canvas; only the inner box keeps the blue brand gradient. */
 .d68-home-page > .d68-home-valuation {
-  width: 100%;
-  background: transparent !important;
-  border: 0;
+  background: #F7FAFC !important;
+  border: 0 !important;
   outline: 0;
   box-shadow: none;
 }
 
 .d68-home-page > .d68-home-valuation > .d68-home-valuation__box {
-  border: 0;
+  border: 0 !important;
   outline: 0;
   background-clip: padding-box;
 }
