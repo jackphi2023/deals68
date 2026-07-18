@@ -41,7 +41,7 @@ if marker_index < 0:
 static_path.write_text(static_css[:marker_index].rstrip() + '\n', encoding='utf-8')
 
 # Load dedicated About CSS after frozen release compatibility rules.
-entry_path = Path('src/styles/styles.css')
+entry_path = Path('src/styles/index.css')
 entry = entry_path.read_text(encoding='utf-8')
 about_import = "@import './pages/about.css' layer(d68-overrides);"
 if about_import not in entry:
