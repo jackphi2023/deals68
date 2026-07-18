@@ -31,13 +31,16 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        run: npm ci
+        shell: bash
+        run: npm ci > /tmp/home-layout-npm-ci.log 2>&1
 
       - name: Install Playwright Chromium
-        run: npx playwright install --with-deps chromium
+        shell: bash
+        run: npx playwright install --with-deps chromium > /tmp/home-layout-playwright.log 2>&1
 
       - name: Build
-        run: npm run build
+        shell: bash
+        run: npm run build > /tmp/home-layout-build.log 2>&1
 
       - name: Start preview server
         shell: bash
@@ -111,12 +114,6 @@ jobs:
                   valuationBorderLeft: parseFloat(valuationStyle.borderLeftWidth),
                   valuationBoxBorderTop: parseFloat(valuationBoxStyle.borderTopWidth),
                   actualGap: valuationRect.top - industriesRect.bottom,
-                  clip: {
-                    x: 0,
-                    y: Math.max(0, industriesRect.top - 24),
-                    width: document.documentElement.clientWidth,
-                    height: Math.min(document.documentElement.scrollHeight, valuationRect.bottom + 24) - Math.max(0, industriesRect.top - 24),
-                  },
                 };
               });
 
@@ -130,17 +127,16 @@ jobs:
               if ([values.valuationBorderTop, values.valuationBorderRight, values.valuationBorderBottom, values.valuationBorderLeft, values.valuationBoxBorderTop].some((value) => value !== 0)) failures.push('valuation wrapper or box has a visible border');
               if (Math.abs(values.actualGap - viewport.expectedGap) > 0.5) failures.push(`Industry → Valuation gap expected ${viewport.expectedGap}px, received ${values.actualGap}px`);
 
+              report.push({ viewport, values, failures });
               await page.screenshot({
                 path: `artifacts/home-layout/${viewport.name}.png`,
-                clip: values.clip,
-                fullPage: false,
+                fullPage: true,
               });
-
-              report.push({ viewport, values, failures });
               await page.close();
             }
 
             fs.writeFileSync('artifacts/home-layout/report.json', JSON.stringify(report, null, 2));
+            console.log(JSON.stringify(report, null, 2));
             await browser.close();
 
             const failures = report.flatMap((entry) => entry.failures.map((failure) => `${entry.viewport.name}: ${failure}`));
