@@ -1,22 +1,29 @@
 /* Homepage canvas and vertical rhythm.
-   Owns only the outer page background, direct-section spacing and removal of
-   decorative markers that reduce title readability. Inner cards and branded
-   content boxes retain their existing colors and visual identity. */
+   This file owns only top-level homepage spacing and outer section surfaces.
+   Inner cards, media and branded content boxes keep their existing identity. */
 
 .d68-home-page {
   --d68-home-section-gap: 80px;
+  display: flex;
+  flex-direction: column;
+  row-gap: var(--d68-home-section-gap);
   background: var(--d68-bg, #F7FAFC);
   padding-bottom: var(--d68-home-section-gap);
 }
 
-/* Each top-level homepage block contributes one spacing source only. */
-.d68-home-page > :not(.d68-home-hero) {
-  margin-top: var(--d68-home-section-gap);
+.d68-home-page > * {
+  min-width: 0;
 }
 
-/* Neutralise legacy vertical padding on top-level wrappers so adjacent blocks
-   do not add two spacing systems together. Horizontal container padding and
-   all inner component backgrounds remain untouched. */
+/* Flex gap is the single source of vertical spacing between homepage blocks.
+   Remove legacy sibling margins without affecting horizontal auto-centering. */
+.d68-home-page > :not(.d68-home-hero) {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+/* Neutralise legacy top/bottom padding on direct wrappers. Horizontal container
+   gutters and every inner component background remain unchanged. */
 .d68-home-page > .d68-home-section,
 .d68-home-page > .d68-home-industries,
 .d68-home-page > .d68-home-valuation,
@@ -24,14 +31,37 @@
 .d68-home-page > .d68-promo-banner {
   padding-top: 0 !important;
   padding-bottom: 0 !important;
-  margin-bottom: 0 !important;
 }
 
-.d68-home-page > .d68-home-how,
-.d68-home-page > .d68-home-industries,
-.d68-home-page > .d68-home-valuation,
-.d68-home-page > .d68-home-section,
-.d68-home-page > .d68-promo-banner {
+/* Featured industries belongs to the common homepage canvas. Only the industry
+   cards remain white; the section and its inner container use #F7FAFC. */
+.d68-home-page > .d68-home-industries {
+  background: var(--d68-bg, #F7FAFC) !important;
+  border-top: 0;
+  border-bottom: 0;
+}
+
+.d68-home-page > .d68-home-industries > .d68-home-container {
+  background: var(--d68-bg, #F7FAFC);
+}
+
+/* Valuation is a CSS-rendered branded box, not a cropped image. Keep the outer
+   wrapper transparent and borderless; the blue gradient box remains intact. */
+.d68-home-page > .d68-home-valuation {
+  width: 100%;
+  background: transparent !important;
+  border: 0;
+  outline: 0;
+  box-shadow: none;
+}
+
+.d68-home-page > .d68-home-valuation > .d68-home-valuation__box {
+  border: 0;
+  outline: 0;
+  background-clip: padding-box;
+}
+
+.d68-home-page > .d68-home-how {
   background-color: transparent;
 }
 
