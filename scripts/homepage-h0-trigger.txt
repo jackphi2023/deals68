@@ -1,4 +1,4 @@
 Homepage H0 deterministic capture trigger.
-Run: bounded Homepage image stabilization wait.
+Run: final clean branch with bounded image stabilization.
 Created only to run the one-time local Vite evidence workflow.
-Remove before merging PR #60 into building.
+Remove before merging the H0 PR into building.
