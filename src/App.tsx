@@ -22,7 +22,6 @@ import { langFromPath, stripLangPrefix, toLocalizedPath } from './lib/i18nRoutes
 const BusinessDashboard = lazy(() => import('./pages/BusinessDashboard'));
 const InvestorDashboard = lazy(() => import('./pages/InvestorDashboard'));
 const Admin = lazy(() => import('./pages/Admin'));
-const AdminPromos = lazy(() => import('./pages/AdminPromos'));
 const AdminBanners = lazy(() => import('./pages/AdminBanners'));
 const AdminProposals = lazy(() => import('./pages/AdminProposals'));
 const AdminValuation = lazy(() => import('./pages/AdminValuation'));
@@ -162,8 +161,8 @@ export default function App(){
         <Route path="/admin/valuation" element={<AdminValuation/>}/>
         <Route path="/admin/valuation-config" element={<AdminValuation/>}/>
         <Route path="/admin/proposals" element={<Admin/>}/>
-        <Route path="/admin/promo" element={<AdminPromos/>}/>
-        <Route path="/admin/promos" element={<AdminPromos/>}/>
+        <Route path="/admin/promo" element={<Admin/>}/>
+        <Route path="/admin/promos" element={<Admin/>}/>
         <Route path="/admin/banners" element={<AdminBanners/>}/>
         <Route path="/admin/banner" element={<AdminBanners/>}/>
         <Route path="/admin" element={<Admin/>}/>
