@@ -27,6 +27,9 @@ jobs:
       - name: Apply scoped homepage and banner cleanup
         shell: bash
         run: |
+          if [ -f scripts/repair-homepage-layout-banner-patcher.py ]; then
+            python3 scripts/repair-homepage-layout-banner-patcher.py
+          fi
           if [ -f scripts/apply-homepage-layout-banner-system.py ]; then
             python3 scripts/apply-homepage-layout-banner-system.py
           fi
@@ -38,6 +41,7 @@ jobs:
           ! grep -q ':has(.d68-home-investor-grid)' src/styles/pages/ui-fixes.css
           ! grep -q 'Promotion banner spacing:' src/styles/final/release-foundation.css
           ! grep -q '.d68-home-section{padding:' src/styles/pages/home.css
+          ! grep -q 'd68-promo-banner.d68-home-container{padding-top' src/styles/pages/ui-fixes.css
           grep -q -- '--d68-home-section-gap: 80px' src/styles/pages/home-layout.css
           grep -q 'starts_at.is.null,starts_at.lte' src/lib/banners.ts
           grep -q 'async function setBannerActive' src/components/SiteBanners.tsx
@@ -52,6 +56,7 @@ jobs:
         shell: bash
         run: |
           rm -f scripts/apply-homepage-layout-banner-system.py
+          rm -f scripts/repair-homepage-layout-banner-patcher.py
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
