@@ -6,13 +6,22 @@ on:
       - chore/homepage-h0-baseline
     paths:
       - .github/workflows/homepage-h0-baseline-capture.yml
+  pull_request:
+    branches:
+      - building
+    types:
+      - opened
+    paths:
+      - .github/workflows/homepage-h0-baseline-capture.yml
 
 permissions:
   contents: write
 
 jobs:
   capture:
-    if: contains(github.event.head_commit.message, '[h0 baseline]')
+    if: >-
+      github.event_name == 'pull_request' ||
+      contains(github.event.head_commit.message, '[h0 baseline]')
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
