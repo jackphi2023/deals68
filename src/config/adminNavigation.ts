@@ -1,3 +1,5 @@
+/* Single source of truth for Admin menu groups, routes and aliases.
+   New management modules should register here and render inside the Admin shell. */
 export type AdminTab =
   | 'overview'
   | 'payments'
