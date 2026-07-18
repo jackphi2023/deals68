@@ -1,2 +1,3 @@
 One-time trigger for Investor registration defaults and payment UI update on branch building.
 Rerun with build diagnostics enabled.
+Rerun after package JSX expression fix.
