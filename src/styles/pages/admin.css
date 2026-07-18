@@ -497,3 +497,13 @@
 .d68-admin-financial-review-box .d68-admin-row-head{align-items:flex-start;margin-bottom:12px}
 .d68-admin-financial-review-box .d68-admin-field textarea{min-height:104px;background:#fff}
 @media(max-width:980px){.d68-admin-span4{grid-column:span 1}}
+
+/* Config-driven Admin navigation. Groups scale without changing the shell. */
+.d68-admin-nav-section{display:flex;flex-direction:column;gap:2px;padding:4px 0 8px}
+.d68-admin-nav-section+.d68-admin-nav-section{border-top:1px solid #EEF2F6;padding-top:12px}
+.d68-admin-nav-section__label{padding:0 12px 5px;color:#94A3B8;font-size:10.5px;font-weight:900;letter-spacing:.55px;text-transform:uppercase}
+.d68-admin-nav-link{display:flex!important;align-items:center;justify-content:space-between;gap:10px;min-width:0}
+.d68-admin-nav-link>span{min-width:0}
+.d68-admin-nav-count{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:22px;padding:0 6px;border-radius:999px;background:#FEF3D3;color:#92400E;font-size:11px;font-weight:900}
+.d68-admin-nav-link.active .d68-admin-nav-count{background:#fff;color:#0F2A4A}
+

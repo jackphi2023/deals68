@@ -28,6 +28,13 @@ import {
   paymentOrderCode,
 } from '../lib/paymentOrders';
 import { AdminOperationsOverview } from '../components/admin/AdminOperationsOverview';
+import AdminPromoManager from '../components/admin/AdminPromoManager';
+import {
+  ADMIN_NAV_SECTIONS,
+  adminTabUsesGlobalSearch,
+  resolveAdminTab,
+  type AdminTab,
+} from '../config/adminNavigation';
 import {
   adminRefreshLabel,
   isPendingAdminLead,
@@ -38,67 +45,7 @@ import {
   type AdminQueueCounts,
 } from '../lib/adminOperations';
 
-type AdminTab =
-  | 'overview'
-  | 'payments'
-  | 'proposals'
-  | 'banners'
-  | 'businesses'
-  | 'business_review'
-  | 'assets'
-  | 'investors'
-  | 'promos'
-  | 'requests'
-  | 'leads'
-  | 'logs'
-  | 'settings';
-
 type Row = Record<string, any>;
-
-const pathTabs: Record<string, AdminTab> = {
-  '': 'overview',
-  overview: 'overview',
-  payments: 'payments',
-  approvals: 'payments',
-  proposals: 'proposals',
-  banners: 'banners',
-  banner: 'banners',
-  businesses: 'businesses',
-  'business-review': 'business_review',
-  assets: 'assets',
-  investors: 'investors',
-  promo: 'promos',
-  promos: 'promos',
-  'data-requests': 'requests',
-  requests: 'requests',
-  leads: 'leads',
-  'market-partners': 'leads',
-  contacts: 'leads',
-  audit: 'logs',
-  logs: 'logs',
-  settings: 'settings',
-};
-
-const tabs: { id: AdminTab; label: string; icon: string; href: string }[] = [
-  { id: 'overview', label: 'Tổng quan', icon: '📊', href: '/admin' },
-  { id: 'payments', label: 'Thanh toán', icon: '💳', href: '/admin/payments' },
-  { id: 'proposals', label: 'Proposal', icon: '📨', href: '/admin/proposals' },
-  { id: 'banners', label: 'Banner', icon: '🖼️', href: '/admin/banners' },
-  { id: 'business_review', label: 'Duyệt public DN', icon: '✅', href: '/admin/business-review' },
-  { id: 'businesses', label: 'Doanh nghiệp', icon: '🏢', href: '/admin/businesses' },
-  { id: 'assets', label: 'Ảnh/File DN', icon: '🖼️', href: '/admin/assets' },
-  { id: 'investors', label: 'Nhà đầu tư', icon: '📈', href: '/admin/investors' },
-  { id: 'promos', label: 'Mã KM', icon: '🎟️', href: '/admin/promo' },
-  { id: 'requests', label: 'Yêu cầu data', icon: '📂', href: '/admin/data-requests' },
-  { id: 'leads', label: 'Liên hệ/Đối tác', icon: '📨', href: '/admin/leads' },
-  { id: 'logs', label: 'Audit', icon: '🧾', href: '/admin/audit' },
-  { id: 'settings', label: 'Cài đặt', icon: '⚙️', href: '/admin/settings' },
-];
-
-function resolveTab(pathname: string): AdminTab {
-  const suffix = pathname.replace('/admin', '').replace(/^\//, '').split('/')[0];
-  return pathTabs[suffix] || 'overview';
-}
 
 function text(value: any) {
   return String(value ?? '').trim();
@@ -418,7 +365,7 @@ export default function Admin() {
   const location = useLocation();
   const navigate = useNavigate();
   const initialQuery = new URLSearchParams(location.search);
-  const [tab, setTab] = useState<AdminTab>(() => resolveTab(location.pathname));
+  const [tab, setTab] = useState<AdminTab>(() => resolveAdminTab(location.pathname));
   const [businesses, setBusinesses] = useState<Row[]>([]);
   const [investors, setInvestors] = useState<Row[]>([]);
   const [profiles, setProfiles] = useState<Row[]>([]);
@@ -470,7 +417,7 @@ export default function Admin() {
     () => initialQuery.get('prs') || 'sent',
   );
 
-  useEffect(() => setTab(resolveTab(location.pathname)), [location.pathname]);
+  useEffect(() => setTab(resolveAdminTab(location.pathname)), [location.pathname]);
 
   useEffect(() => {
     const query = new URLSearchParams(location.search);
@@ -913,25 +860,6 @@ export default function Admin() {
     }
   }
 
-  async function createPromo(event: FormEvent) {
-    event.preventDefault();
-    const form = new FormData(event.currentTarget as HTMLFormElement);
-    const { error: createError } = await supabase.from('promo_codes').insert({
-      code: String(form.get('code') || '').toUpperCase(),
-      description: form.get('description'),
-      role: form.get('role'),
-      discount_pct: Number(form.get('discount_pct') || 0),
-      quota_total: Number(form.get('quota_total') || 0),
-      starts_at: form.get('starts_at') || new Date().toISOString(),
-      ends_at: form.get('ends_at') || null,
-      active: true,
-      created_by: profile.id,
-    });
-    setError(createError?.message || '');
-    setMsg(createError ? '' : 'Promo created.');
-    load();
-  }
-
   async function markLead(
     table: 'contact_messages' | 'partner_leads',
     row: Row,
@@ -955,20 +883,25 @@ export default function Admin() {
       <div className="d68-admin-wrap">
         <div className="d68-admin-cols">
           <nav className="d68-admin-side">
-            {tabs.map((item) => {
-              const queueCount = navQueueCounts[item.id] || 0;
-              return (
-                <Link
-                  key={item.id}
-                  to={item.href}
-                  onClick={() => setTab(item.id)}
-                  className={`d68-admin-nav-link ${tab === item.id ? 'active' : ''}`}
-                >
-                  <span>{item.icon} {item.label}</span>
-                  {queueCount ? <b className="d68-admin-nav-count">{queueCount}</b> : null}
-                </Link>
-              );
-            })}
+            {ADMIN_NAV_SECTIONS.map((section) => (
+              <section key={section.id} className="d68-admin-nav-section">
+                <span className="d68-admin-nav-section__label">{section.label}</span>
+                {section.items.map((item) => {
+                  const queueCount = navQueueCounts[item.id] || 0;
+                  return (
+                    <Link
+                      key={item.id}
+                      to={item.href}
+                      onClick={() => setTab(item.id)}
+                      className={`d68-admin-nav-link ${tab === item.id ? 'active' : ''}`}
+                    >
+                      <span>{item.icon} {item.label}</span>
+                      {queueCount ? <b className="d68-admin-nav-count">{queueCount}</b> : null}
+                    </Link>
+                  );
+                })}
+              </section>
+            ))}
           </nav>
           <main>
             <div className="d68-admin-title">
@@ -983,12 +916,14 @@ export default function Admin() {
             </div>
             {msg ? <div className="d68-admin-notice ok">{msg}</div> : null}
             {error ? <div className="d68-admin-notice err">{error}</div> : null}
-            <input
-              className="d68-admin-input d68-admin-search"
-              value={search}
-              onChange={(event) => updateSearch(event.target.value)}
-              placeholder="Search businesses/investors/profiles..."
-            />
+            {adminTabUsesGlobalSearch(tab) ? (
+              <input
+                className="d68-admin-input d68-admin-search"
+                value={search}
+                onChange={(event) => updateSearch(event.target.value)}
+                placeholder="Tìm doanh nghiệp, nhà đầu tư hoặc hồ sơ..."
+              />
+            ) : null}
 
             {tab === 'overview' && (
               <AdminOperationsOverview
@@ -1151,7 +1086,16 @@ export default function Admin() {
                 />
               </div>
             )}
-            {tab === 'promos' && <Promos promos={promos} createPromo={createPromo} />}
+            {tab === 'promos' && (
+              <AdminPromoManager
+                promos={promos}
+                adminId={profile.id}
+                busy={busy}
+                onReload={load}
+                setMessage={setMsg}
+                setError={setError}
+              />
+            )}
             {tab === 'requests' && <Requests requests={requests} markRequest={markRequest} />}
             {tab === 'leads' && (
               <Leads
@@ -1466,10 +1410,6 @@ function BusinessPublicEditor({
 
 function AssetEditor({ business, adminId, onRefresh }: { business: Row; adminId?: string; onRefresh?: () => void | Promise<void> }) {
   return <Card><AdminBusinessAssets business={business} adminId={adminId} onRefresh={onRefresh} /></Card>;
-}
-
-function Promos({ promos, createPromo }: any) {
-  return <Card><h3>Mã khuyến mãi</h3><form onSubmit={createPromo} className="d68-admin-form4 d68-admin-form-gap"><input required name="code" placeholder="CODE" className="d68-admin-input"/><input name="description" placeholder="Description" className="d68-admin-input"/><select name="role" className="d68-admin-input"><option value="business">business</option><option value="investor">investor</option><option value="advisor">advisor</option><option value="affiliate">affiliate</option></select><input name="discount_pct" type="number" placeholder="%" className="d68-admin-input"/><input name="quota_total" type="number" placeholder="Quota" className="d68-admin-input"/><input name="starts_at" type="datetime-local" className="d68-admin-input"/><input name="ends_at" type="datetime-local" className="d68-admin-input"/><button className="d68-admin-btn green">Tạo mã</button></form>{promos.map((promo: Row) => <div key={promo.id} className="d68-admin-card"><b>{promo.code}</b> · {promo.discount_pct}% · {promo.role} · {promo.active ? 'active' : 'inactive'}</div>)}</Card>;
 }
 
 function Requests({ requests, markRequest }: any) {
