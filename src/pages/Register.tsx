@@ -310,10 +310,8 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
   const [stake, setStake] = useState('');
   const [reason, setReason] = useState('');
   const [assetsOwned, setAssetsOwned] = useState('');
-  const [excludedAssetValue, setExcludedAssetValue] = useState('');
-  const [financialSource, setFinancialSource] = useState(
-    'management_accounts',
-  );
+  const [includedTangibleAssets, setIncludedTangibleAssets] = useState('');
+  const [financialSource, setFinancialSource] = useState('');
   const [businessImages, setBusinessImages] = useState<PendingAsset[]>([]);
   const [businessDocs, setBusinessDocs] = useState<PendingAsset[]>([]);
 
@@ -844,11 +842,11 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
             assets_owned: assetsOwned,
             assets_owned_vi: lang === 'vi' ? assetsOwned : '',
             assets_owned_en: lang === 'en' ? assetsOwned : '',
-            excluded_physical_asset_value: excludedAssetValue,
-            excluded_physical_asset_value_vi:
-              lang === 'vi' ? excludedAssetValue : '',
-            excluded_physical_asset_value_en:
-              lang === 'en' ? excludedAssetValue : '',
+            included_tangible_assets: includedTangibleAssets,
+            included_tangible_assets_vi:
+              lang === 'vi' ? includedTangibleAssets : '',
+            included_tangible_assets_en:
+              lang === 'en' ? includedTangibleAssets : '',
             financial_source: financialSource,
             valuation_check: valuationCheck,
             benchmark: benchmarkResult,
@@ -867,7 +865,7 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
               reason,
               financialSource,
               assetsOwned,
-              excludedAssetValue,
+              includedTangibleAssets,
             ].filter((value) => String(value || '').trim()).length * 8,
           quality_score: 0,
         };
@@ -1448,7 +1446,7 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
           {isBusiness ? (
             <>
               <section className="d68-register-section">
-                <h2>{T(lang, 'Thông tin doanh nghiệp', 'Business information')}</h2>
+                <h2>{T(lang, 'Thông tin doanh nghiệp & Giao dịch', 'Business & Transaction Information')}</h2>
                 <div className="d68-form-grid">
                   <Field label={T(lang, 'Tên doanh nghiệp', 'Business name')}>
                     <input
@@ -1602,6 +1600,69 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
                 <Field
                   label={T(
                     lang,
+                    'Tài sản hữu hình & vô hình doanh nghiệp sở hữu (Không bắt buộc điền)',
+                    'Tangible and intangible assets owned by the business (Optional)',
+                  )}
+                  hint={T(
+                    lang,
+                    'Ví dụ: thương hiệu, quyền sở hữu trí tuệ, hệ thống, máy móc, phương tiện, bất động sản hoặc tài sản khác.',
+                    'Examples: brand, intellectual property, systems, machinery, vehicles, real estate or other assets.',
+                  )}
+                  wide
+                  spaced
+                >
+                  <textarea
+                    rows={3}
+                    value={assetsOwned}
+                    onChange={(event) => setAssetsOwned(event.target.value)}
+                    placeholder={T(lang, 'Không bắt buộc điền', 'Optional')}
+                  />
+                </Field>
+                <Field
+                  label={T(
+                    lang,
+                    'Mô tả giá trị của các tài sản hữu hình thuộc sở hữu của doanh nghiệp sẽ được đưa vào giao dịch (Không bắt buộc điền)',
+                    'Description and value of tangible assets owned by the business that will be included in the transaction (Optional)',
+                  )}
+                  hint={T(
+                    lang,
+                    'Ví dụ: khi bán khách sạn, giao dịch có thể bao gồm quyền sử dụng đất, công trình khách sạn, nội thất và thiết bị. Nêu giá trị ước tính và đơn vị tiền nếu có.',
+                    'Example: a hotel sale may include land-use rights, the hotel building, furniture and equipment. Include estimated values and currency where available.',
+                  )}
+                  wide
+                  spaced
+                >
+                  <textarea
+                    rows={3}
+                    value={includedTangibleAssets}
+                    onChange={(event) => setIncludedTangibleAssets(event.target.value)}
+                    placeholder={T(lang, 'Không bắt buộc điền', 'Optional')}
+                  />
+                </Field>
+                <Field
+                  label={T(
+                    lang,
+                    'Nguồn số liệu tài chính (Không bắt buộc điền)',
+                    'Financial data source (Optional)',
+                  )}
+                  wide
+                  spaced
+                >
+                  <select
+                    value={financialSource}
+                    onChange={(event) => setFinancialSource(event.target.value)}
+                  >
+                    <option value="">{T(lang, 'Chọn nguồn số liệu nếu có', 'Select a data source if available')}</option>
+                    <option value="management_accounts">{T(lang, 'Số liệu quản trị nội bộ', 'Management accounts')}</option>
+                    <option value="tax_report">{T(lang, 'Báo cáo thuế', 'Tax filings')}</option>
+                    <option value="audited_financials">{T(lang, 'Báo cáo kiểm toán', 'Audited financials')}</option>
+                    <option value="bank_statement">{T(lang, 'Sao kê ngân hàng / POS', 'Bank / POS statements')}</option>
+                    <option value="estimate">{T(lang, 'Ước tính của chủ DN', 'Founder estimate')}</option>
+                  </select>
+                </Field>
+                <Field
+                  label={T(
+                    lang,
                     'Lý do gọi vốn/chuyển nhượng',
                     'Reason for fundraising/sale',
                   )}
@@ -1708,61 +1769,9 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
               </section>
 
               <section className="d68-register-section">
-                <h2>{T(lang, 'Thông tin tài sản & nguồn số liệu', 'Assets & financial source')}</h2>
-                <Field
-                  label={T(
-                    lang,
-                    'Tài sản hữu hình & vô hình DN sở hữu',
-                    'Tangible & intangible assets owned',
-                  )}
-                  wide
-                >
-                  <textarea
-                    rows={3}
-                    value={assetsOwned}
-                    onChange={(event) => setAssetsOwned(event.target.value)}
-                  />
-                </Field>
-                <div className="d68-form-grid d68-assets-source-grid">
-                  <Field
-                    label={T(
-                      lang,
-                      'Giá trị tài sản vật chất KHÔNG nằm trong giao dịch',
-                      'Physical asset value excluded from transaction',
-                    )}
-                  >
-                    <textarea
-                      rows={3}
-                      value={excludedAssetValue}
-                      onChange={(event) => setExcludedAssetValue(event.target.value)}
-                    />
-                  </Field>
-                  <Field label={T(lang, 'Nguồn số liệu tài chính', 'Financial data source')}>
-                    <select
-                      value={financialSource}
-                      onChange={(event) => setFinancialSource(event.target.value)}
-                    >
-                      <option value="management_accounts">
-                        {T(lang, 'Số liệu quản trị nội bộ', 'Management accounts')}
-                      </option>
-                      <option value="tax_report">
-                        {T(lang, 'Báo cáo thuế', 'Tax filings')}
-                      </option>
-                      <option value="audited_financials">
-                        {T(lang, 'Báo cáo kiểm toán', 'Audited financials')}
-                      </option>
-                      <option value="bank_statement">
-                        {T(lang, 'Sao kê ngân hàng / POS', 'Bank / POS statements')}
-                      </option>
-                      <option value="estimate">
-                        {T(lang, 'Ước tính của chủ DN', 'Founder estimate')}
-                      </option>
-                    </select>
-                  </Field>
-                </div>
+                <h2>{T(lang, 'Gợi ý kiểm tra định giá', 'Valuation sanity check')}</h2>
                 <div className={`d68-valuation-check d68-valuation-check--${valuationCheck.level}`}>
                   <div>
-                    <span>{T(lang, 'Gợi ý kiểm tra định giá', 'Valuation sanity check')}</span>
                     <b>{valuationCheck.label}</b>
                     <p>{valuationCheck.message}</p>
                   </div>

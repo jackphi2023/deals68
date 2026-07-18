@@ -492,7 +492,7 @@
 
 /* Session 6 — nested Business assets & transaction moderation. */
 .d68-admin-span4{grid-column:1 / -1}
-.d68-admin-financial-review-box{border:1px solid #F2D27A;background:#FFFBEB;border-radius:12px;padding:14px;margin:4px 0}
+.d68-admin-financial-review-box{border:1px solid #E2E8F0;background:#F8FAFC;border-radius:12px;padding:14px;margin:4px 0}
 .d68-admin-financial-review-box h3{margin:0 0 4px;color:#0F2A4A}
 .d68-admin-financial-review-box .d68-admin-row-head{align-items:flex-start;margin-bottom:12px}
 .d68-admin-financial-review-box .d68-admin-field textarea{min-height:104px;background:#fff}

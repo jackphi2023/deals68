@@ -227,9 +227,9 @@ function buildQualityItems(lang: Lang, b: any, files: any[], images: any[]) {
       detail: hasFinancialData ? T(lang, 'Đã có số liệu tài chính chính', 'Core financial metrics provided') : T(lang, 'Cần bổ sung doanh thu và EBITDA', 'Revenue and EBITDA are missing')
     },
     {
-      ok: !!(financialInput.assets_owned || financialInput.financial_data_source || financialInput.excluded_physical_asset_value),
+      ok: !!(financialInput.assets_owned_vi || financialInput.assets_owned_en || financialInput.assets_owned || financialInput.included_tangible_assets_vi || financialInput.included_tangible_assets_en || financialInput.included_tangible_assets || financialInput.financial_source),
       label: T(lang, 'Tài sản & nguồn số liệu', 'Assets & data source'),
-      detail: T(lang, 'Tài sản hữu hình/vô hình, tài sản loại trừ, nguồn số liệu', 'Tangible/intangible assets, excluded assets and data source')
+      detail: T(lang, 'Tài sản doanh nghiệp sở hữu, tài sản hữu hình đưa vào giao dịch và nguồn số liệu', 'Business-owned assets, tangible assets included in the transaction and data source')
     },
     {
       ok: Number(b?.ask_amount || 0) > 0 && Number(b?.stake_pct || 0) > 0,
@@ -615,6 +615,23 @@ export default function BusinessDashboard() {
       countryIso2,
     );
     const city = locationDbLabel(cityKey || submittedCity, countryIso2);
+    const currentFinancialInput = financialInputOf(ownerView);
+    const assetsOwned = fieldValue(fd, 'assets_owned_localized');
+    const includedTangibleAssets = fieldValue(fd, 'included_tangible_assets_localized');
+    const financialSource = fieldValue(fd, 'financial_source');
+    const localizedFinancialInput = lang === 'en'
+      ? {
+          assets_owned: assetsOwned,
+          assets_owned_en: assetsOwned,
+          included_tangible_assets: includedTangibleAssets,
+          included_tangible_assets_en: includedTangibleAssets,
+        }
+      : {
+          assets_owned: assetsOwned,
+          assets_owned_vi: assetsOwned,
+          included_tangible_assets: includedTangibleAssets,
+          included_tangible_assets_vi: includedTangibleAssets,
+        };
     const pending = {
       company_name_private: fieldValue(fd, 'company_name_private'),
       title_vi: fieldValue(fd, 'title_vi'),
@@ -636,7 +653,11 @@ export default function BusinessDashboard() {
       stake_pct: Number(fd.get('stake_pct') || 0),
       offer_amount: Number(fd.get('ask_amount') || 0),
       offer_stake_pct: Number(fd.get('stake_pct') || 0),
-      financial_input: financialInputOf(ownerView)
+      financial_input: {
+        ...currentFinancialInput,
+        ...localizedFinancialInput,
+        financial_source: financialSource,
+      }
     };
     const patch: any = { pending_changes_json: pending, pending_submitted_at: new Date().toISOString(), pending_submitted_by: profile.id, moderation_status: 'pending_admin_review' };
     if (!hasPublicSnapshot) { patch.status = 'pending_admin_review'; patch.visible = false; }
@@ -931,6 +952,13 @@ function ProfileForm({ lang, b, saveProfile }: any) {
   const [askCurrency, setAskCurrency] = useState(
     String(b.ask_currency || b.revenue_currency || 'VND').toUpperCase(),
   );
+  const financialInput = financialInputOf(b);
+  const assetsOwnedValue = lang === 'en'
+    ? financialInput.assets_owned_en || financialInput.assets_owned || ''
+    : financialInput.assets_owned_vi || financialInput.assets_owned || '';
+  const includedTangibleAssetsValue = lang === 'en'
+    ? financialInput.included_tangible_assets_en || financialInput.included_tangible_assets || ''
+    : financialInput.included_tangible_assets_vi || financialInput.included_tangible_assets || '';
 
   return <form onSubmit={saveProfile} className="d68-dashboard-card d68-business-profile-form">
     <h2>{T(lang,'Chỉnh sửa hồ sơ','Edit profile')}</h2>
@@ -956,6 +984,12 @@ function ProfileForm({ lang, b, saveProfile }: any) {
     </div>
     <label className="d68-dashboard-field"><span>{T(lang,'Tổng quan doanh nghiệp','Business overview')}</span><textarea className="d68-dashboard-input d68-dashboard-textarea" name="description_vi" defaultValue={b.description_vi || ''}/></label>
     <label className="d68-dashboard-field"><span>{T(lang,'Điểm nổi bật','Highlights')}</span><textarea className="d68-dashboard-input d68-dashboard-textarea" name="highlights_vi" defaultValue={b.highlights_vi || ''}/></label>
+    <div className="d68-business-transaction-fields">
+      <h3>{T(lang,'Thông tin Tài sản & Giao dịch','Assets & Transaction Information')}</h3>
+      <label className="d68-dashboard-field"><span>{T(lang,'Tài sản hữu hình & vô hình doanh nghiệp sở hữu (Không bắt buộc điền)','Tangible and intangible assets owned by the business (Optional)')}</span><textarea className="d68-dashboard-input d68-dashboard-textarea" name="assets_owned_localized" defaultValue={assetsOwnedValue} placeholder={T(lang,'Không bắt buộc điền','Optional')}/><small>{T(lang,'Ví dụ: thương hiệu, quyền sở hữu trí tuệ, hệ thống, máy móc, phương tiện, bất động sản hoặc tài sản khác.','Examples: brand, intellectual property, systems, machinery, vehicles, real estate or other assets.')}</small></label>
+      <label className="d68-dashboard-field"><span>{T(lang,'Mô tả giá trị của các tài sản hữu hình thuộc sở hữu của doanh nghiệp sẽ được đưa vào giao dịch (Không bắt buộc điền)','Description and value of tangible assets owned by the business that will be included in the transaction (Optional)')}</span><textarea className="d68-dashboard-input d68-dashboard-textarea" name="included_tangible_assets_localized" defaultValue={includedTangibleAssetsValue} placeholder={T(lang,'Không bắt buộc điền','Optional')}/><small>{T(lang,'Ví dụ: khi bán khách sạn, giao dịch có thể bao gồm quyền sử dụng đất, công trình khách sạn, nội thất và thiết bị. Nêu giá trị ước tính và đơn vị tiền nếu có.','Example: a hotel sale may include land-use rights, the hotel building, furniture and equipment. Include estimated values and currency where available.')}</small></label>
+      <label className="d68-dashboard-field"><span>{T(lang,'Nguồn số liệu tài chính (Không bắt buộc điền)','Financial data source (Optional)')}</span><select className="d68-dashboard-input" name="financial_source" defaultValue={financialInput.financial_source || ''}><option value="">{T(lang,'Chọn nguồn số liệu nếu có','Select a data source if available')}</option><option value="management_accounts">{T(lang,'Số liệu quản trị nội bộ','Management accounts')}</option><option value="tax_report">{T(lang,'Báo cáo thuế','Tax filings')}</option><option value="audited_financials">{T(lang,'Báo cáo kiểm toán','Audited financials')}</option><option value="bank_statement">{T(lang,'Sao kê ngân hàng / POS','Bank / POS statements')}</option><option value="estimate">{T(lang,'Ước tính của chủ DN','Founder estimate')}</option></select></label>
+    </div>
     <div className="d68-dashboard-form2 d68-business-financial-fields">
       <label className="d68-dashboard-field d68-business-financial-span2"><span>{T(lang,'Loại giao dịch','Deal type')}</span><select className="d68-dashboard-input" name="deal_type" defaultValue={viDealType(b.deal_type)}>{DEAL_TYPE_VI.map((x) => <option key={x}>{x}</option>)}</select></label>
       <label className="d68-dashboard-field"><span>{T(lang,'Doanh thu tháng','Monthly revenue')}</span><FormattedNumberInput name="revenue_month" defaultValue={b.revenue_month || b.financial_input?.revenue_month || 0} /></label>

@@ -30,7 +30,7 @@ function localizedApprovedText(lang: Lang, vi: any, en: any, legacy: any = '') {
   const value = lang === 'en'
     ? cleanText(en) || cleanText(vi) || cleanText(legacy)
     : cleanText(vi) || cleanText(legacy) || cleanText(en);
-  return value || T(lang, 'Đang cập nhật', 'Pending');
+  return value;
 }
 function lines(value: any): string[] {
   if (Array.isArray(value)) return value.filter(Boolean).map(String).map((x) => x.trim()).filter(Boolean);
@@ -194,12 +194,12 @@ export default function BusinessDetail({ lang }: { lang: Lang }) {
         ),
       },
       {
-        label: T(lang, 'Giá trị tài sản vật chất KHÔNG nằm trong giao dịch', 'Physical asset value NOT included in the transaction'),
+        label: T(lang, 'Tài sản hữu hình thuộc sở hữu doanh nghiệp sẽ được đưa vào giao dịch', 'Tangible assets owned by the business that will be included in the transaction'),
         value: localizedApprovedText(
           lang,
-          financial.excluded_physical_asset_value_vi,
-          financial.excluded_physical_asset_value_en,
-          financial.excluded_physical_asset_value,
+          financial.included_tangible_assets_vi,
+          financial.included_tangible_assets_en,
+          financial.included_tangible_assets,
         ),
       },
       {
@@ -211,7 +211,7 @@ export default function BusinessDetail({ lang }: { lang: Lang }) {
           financial.investment_reason,
         ),
       },
-    ];
+    ].filter((item) => cleanText(item.value));
   }, [business, lang]);
   const heroImages = useMemo(() => {
     const approved = images.filter((img) => cleanText(img.public_url)).map((img) => ({ url: cleanText(img.public_url), title: img.display_title || img.title || '', isHero: !!img.is_hero }));
@@ -401,7 +401,7 @@ export default function BusinessDetail({ lang }: { lang: Lang }) {
           <section className="d68-detail-image-card" aria-label={T(lang, 'Hình ảnh doanh nghiệp', 'Business images')}><div className={`d68-detail-hero-media${activeHero?.url ? ' has-image' : ''}`}>{activeHero?.url ? <img src={activeHero.url} alt={activeHero.title || title} /> : <div className="d68-detail-anon-visual"><b>📷 {T(lang, 'Hồ sơ ẩn danh', 'Anonymous listing')}</b><span>{T(lang, 'Ảnh public đang chờ Admin duyệt', 'Public image pending Admin approval')}</span></div>}{heroImages.length > 1 ? <button type="button" className="d68-detail-slide d68-detail-slide--prev" onClick={() => setActiveImage((v) => (v <= 0 ? heroImages.length - 1 : v - 1))}>‹</button> : null}{heroImages.length > 1 ? <button type="button" className="d68-detail-slide d68-detail-slide--next" onClick={() => setActiveImage((v) => (v + 1) % heroImages.length)}>›</button> : null}<span className="d68-detail-slide-count">{heroImages.length ? `${activeImage + 1}/${heroImages.length}` : '0/0'}</span></div>{heroImages.length > 1 ? <div className="d68-detail-thumbs">{heroImages.map((img, idx) => <button type="button" key={`${img.url}-${idx}`} className={idx === activeImage ? 'active' : ''} onClick={() => setActiveImage(idx)}><img src={img.url} alt={img.title || title} /></button>)}</div> : null}</section>
           <section className="d68-detail-facts" aria-label={T(lang, 'Thông tin chính', 'Key facts')}>{facts.map((fact) => <Fact key={fact.label} label={fact.label} value={fact.value} />)}</section>
           <InfoSection title={T(lang, 'Điểm nổi bật', 'Highlights')}><BulletList items={highlights} empty={T(lang, 'Chưa có điểm nổi bật đã duyệt.', 'No approved highlights yet.')} /></InfoSection>
-          <InfoSection title={T(lang, 'Thông tin Tài sản & Giao dịch', 'Assets & Transaction Information')}><div className="d68-detail-transaction-info">{transactionInfo.map((item) => <div key={item.label} className="d68-detail-transaction-row"><span>{item.label}</span><p>{item.value}</p></div>)}</div></InfoSection>
+          {transactionInfo.length ? <InfoSection title={T(lang, 'Thông tin Tài sản & Giao dịch', 'Assets & Transaction Information')}><div className="d68-detail-transaction-info">{transactionInfo.map((item) => <div key={item.label} className="d68-detail-transaction-row"><span>{item.label}</span><p>{item.value}</p></div>)}</div></InfoSection> : null}
           <InfoSection title={T(lang, 'Tài liệu Hồ sơ doanh nghiệp', 'Business Profile Documents')} badge={investorAccess ? `✓ ${T(lang, 'Đã kết nối', 'Connected')}` : isOwnerBusiness ? T(lang, 'Bản xem của doanh nghiệp', 'Business owner view') : `🔒 ${T(lang, 'Mở sau kết nối', 'Unlock after connection')}`}><DocList
             docs={docsToShow}
             lang={lang}
