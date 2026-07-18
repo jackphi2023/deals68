@@ -116,6 +116,11 @@
   margin: 0 0 8px;
 }
 
+.d68-static-about-page .d68-static-about-single .d68-static-card h3 {
+  color: var(--d68-about-heading);
+  font-size: 18px;
+}
+
 .d68-static-about-page .d68-static-card strong {
   color: var(--d68-about-heading);
   font-size: 24px;

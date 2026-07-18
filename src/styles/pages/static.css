@@ -79,9 +79,6 @@
 .d68-static-prose p+p{
   margin-top:18px;
 }
-.d68-static-grid--about-layers article:last-child:nth-child(3n+2){
-  grid-column:2 / 3;
-}
 .d68-static-card--wide{
   padding:28px 30px;
 }
@@ -149,9 +146,6 @@
 }
 .d68-static-legal-card .d68-static-bullets{
   margin-top:14px;
-}
-@media(max-width:900px){
-  .d68-static-grid--about-layers article:last-child:nth-child(3n+2){grid-column:auto}
 }
 @media(max-width:620px){
   .d68-static-legal-toc>div{grid-template-columns:1fr}
