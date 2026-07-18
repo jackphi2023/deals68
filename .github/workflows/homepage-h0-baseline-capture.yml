@@ -7,13 +7,22 @@ on:
     paths:
       - .github/workflows/homepage-h0-baseline-capture.yml
       - scripts/homepage-h0-trigger.txt
+  pull_request:
+    branches:
+      - building
+    types:
+      - opened
+    paths:
+      - .github/workflows/homepage-h0-baseline-capture.yml
 
 permissions:
   contents: write
 
 jobs:
   capture:
-    if: contains(github.event.head_commit.message, '[h0 baseline]')
+    if: >-
+      github.event_name == 'pull_request' ||
+      contains(github.event.head_commit.message, '[h0 baseline]')
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
@@ -35,33 +44,10 @@ jobs:
           from pathlib import Path
           path = Path('tests/e2e/06-homepage-h0-baseline.spec.ts')
           text = path.read_text(encoding='utf-8')
-
-          priority_old = 'admin_priority: index < 2,'
-          priority_new = 'admin_priority: false,'
-          if priority_old not in text and priority_new not in text:
-              raise SystemExit('Expected H0 Investor fixture token was not found')
-          text = text.replace(priority_old, priority_new)
-
-          wait_old = '''  await page.evaluate(async () => {
-            await (document as Document & { fonts?: FontFaceSet }).fonts?.ready;
-            const images = Array.from(document.images);
-            await Promise.all(
-              images.map((image) =>
-                image.complete
-                  ? Promise.resolve()
-                  : new Promise<void>((resolve) => {
-                      image.addEventListener('load', () => resolve(), { once: true });
-                      image.addEventListener('error', () => resolve(), { once: true });
-                    }),
-              ),
-            );
-          });'''
-          wait_new = '  await page.waitForTimeout(300);'
-          if wait_old not in text and wait_new not in text:
-              raise SystemExit('Expected unbounded image wait block was not found')
-          text = text.replace(wait_old, wait_new)
-
-          path.write_text(text, encoding='utf-8')
+          if 'admin_priority: false,' not in text:
+              raise SystemExit('Corrected H0 Investor fixture is missing')
+          if 'await page.waitForTimeout(300);' not in text:
+              raise SystemExit('Bounded H0 stabilization wait is missing')
           PY
 
       - name: Install dependencies
@@ -105,12 +91,12 @@ jobs:
           test -f docs/qa/homepage-h0-baseline/home-en-1440x900.png
           git diff --check
 
-      - name: Commit H0 evidence and deterministic fixture to feature branch
+      - name: Commit H0 evidence to feature branch
         if: always()
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add docs/qa/homepage-h0-baseline tests/e2e/06-homepage-h0-baseline.spec.ts
+          git add docs/qa/homepage-h0-baseline
           if git diff --cached --quiet; then
             echo "No generated H0 evidence to commit."
             exit 0
