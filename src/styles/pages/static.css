@@ -157,3 +157,160 @@
   .d68-static-legal-toc>div{grid-template-columns:1fr}
   .d68-static-card--wide{padding:20px}
 }
+
+/* About flat editorial layout — continuous pale-blue canvas, no content boxes. */
+.d68-static-about-page{
+  background:#E7F6FD;
+}
+.d68-static-about-page .d68-static-hero{
+  background:radial-gradient(760px 360px at 88% 18%,rgba(255,255,255,.12),transparent 62%),linear-gradient(135deg,#0789DA 0%,#0769C7 100%);
+  border-bottom:0;
+  color:#fff;
+}
+.d68-static-about-page .d68-static-hero p{
+  color:rgba(255,255,255,.88);
+}
+.d68-static-about-page .d68-static-eyebrow{
+  background:rgba(255,255,255,.12);
+  border:1px solid rgba(255,255,255,.24);
+  color:#fff;
+}
+.d68-static-about-page .d68-static-hero__slogan{
+  color:#F2B51D;
+}
+.d68-static-about-page .d68-static-section,
+.d68-static-about-page .d68-static-section--alt{
+  background:#E7F6FD;
+  border:0;
+  padding:0;
+}
+.d68-static-about-page .d68-static-section>.d68-static-container{
+  border-top:1px solid rgba(15,42,74,.12);
+  padding-top:58px;
+  padding-bottom:58px;
+}
+.d68-static-about-page .d68-static-hero+.d68-static-section>.d68-static-container{
+  border-top:0;
+}
+.d68-static-about-page .d68-static-title{
+  margin-bottom:30px;
+}
+.d68-static-about-page .d68-static-title h2{
+  color:#0F2A4A;
+  font-size:30px;
+  position:relative;
+}
+.d68-static-about-page .d68-static-title h2:after{
+  background:#F2B51D;
+  border-radius:999px;
+  content:"";
+  display:block;
+  height:3px;
+  margin:13px auto 0;
+  width:44px;
+}
+.d68-static-about-page .d68-static-title p,
+.d68-static-about-page .d68-static-prose,
+.d68-static-about-page .d68-static-card p,
+.d68-static-about-page .d68-static-card div,
+.d68-static-about-page .d68-static-bullets{
+  color:#334155;
+}
+.d68-static-about-page .d68-static-prose{
+  margin:0 auto;
+  max-width:820px;
+}
+.d68-static-about-page .d68-static-card{
+  background:transparent;
+  border:0;
+  border-radius:0;
+  box-shadow:none;
+  padding:0;
+  transition:none;
+}
+.d68-static-about-page .d68-static-card:hover{
+  box-shadow:none;
+  transform:none;
+}
+.d68-static-about-page .d68-static-card h3{
+  color:#F2B51D;
+  font-size:17px;
+  line-height:1.45;
+  margin-bottom:8px;
+}
+.d68-static-about-page .d68-static-card strong{
+  color:#F2B51D;
+  font-size:24px;
+  margin:5px 0 6px;
+}
+.d68-static-about-page .d68-static-card__icon,
+.d68-static-about-page .d68-static-card__icon--line{
+  background:transparent;
+  border-radius:0;
+  color:#1BADEA;
+  height:28px;
+  margin-bottom:8px;
+  width:28px;
+}
+.d68-static-about-page .d68-static-card__icon--line svg{
+  height:25px;
+  width:25px;
+}
+.d68-static-about-page .d68-static-grid{
+  gap:30px 42px;
+}
+.d68-static-about-page .d68-static-grid--2>article+article{
+  border-left:1px solid rgba(15,42,74,.12);
+  padding-left:42px;
+}
+.d68-static-about-page .d68-static-grid--about-layers{
+  counter-reset:d68AboutLayer;
+  gap:34px 38px;
+}
+.d68-static-about-page .d68-static-grid--about-layers article{
+  counter-increment:d68AboutLayer;
+  padding-left:27px;
+  position:relative;
+}
+.d68-static-about-page .d68-static-grid--about-layers article:before{
+  color:#1BADEA;
+  content:counter(d68AboutLayer) ".";
+  font-size:14px;
+  font-weight:900;
+  left:0;
+  position:absolute;
+  top:1px;
+}
+.d68-static-about-page .d68-static-about-single{
+  margin:0 auto;
+  max-width:820px;
+}
+.d68-static-about-page .d68-static-card--wide{
+  margin:0 auto;
+  max-width:820px;
+  padding:0;
+}
+.d68-static-about-page .d68-static-cta{
+  background:transparent;
+  border-radius:0;
+  border-top:1px solid rgba(15,42,74,.12);
+  box-shadow:none;
+  color:#0F2A4A;
+  margin-top:36px;
+  padding:30px 0 0;
+}
+.d68-static-about-page .d68-static-cta p{
+  color:#475569;
+}
+@media(max-width:900px){
+  .d68-static-about-page .d68-static-section>.d68-static-container{padding-top:48px;padding-bottom:48px}
+  .d68-static-about-page .d68-static-grid--about-layers{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .d68-static-about-page .d68-static-grid--about-layers article:last-child:nth-child(3n+2){grid-column:auto}
+}
+@media(max-width:620px){
+  .d68-static-about-page .d68-static-section>.d68-static-container{padding-top:40px;padding-bottom:40px}
+  .d68-static-about-page .d68-static-title h2{font-size:26px}
+  .d68-static-about-page .d68-static-grid--about-layers{grid-template-columns:1fr}
+  .d68-static-about-page .d68-static-grid--2>article+article{border-left:0;border-top:1px solid rgba(15,42,74,.12);padding-left:0;padding-top:28px}
+  .d68-static-about-page .d68-static-cta{align-items:flex-start}
+}

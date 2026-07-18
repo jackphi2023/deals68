@@ -10,8 +10,8 @@ export const privacyPart2: LegalItem[] = [
   {
     viTitle: 'Quyền của người dùng',
     enTitle: 'User rights',
-    viParagraphs: ['Theo pháp luật áp dụng, người dùng có thể có quyền được biết, đồng ý, truy cập, chỉnh sửa, rút lại sự đồng ý, yêu cầu xóa, hạn chế hoặc phản đối xử lý, yêu cầu cung cấp dữ liệu, khiếu nại và yêu cầu bồi thường khi có căn cứ. Yêu cầu được gửi tới [privacy@deals68.com]; Deals68 có thể xác minh danh tính và từ chối hoặc giới hạn yêu cầu khi pháp luật cho phép.'],
-    enParagraphs: ['Subject to applicable law, users may have rights to be informed, consent, access, correct, withdraw consent, request deletion, restrict or object to processing, request data provision, complain and seek damages where legally supported. Requests may be sent to [privacy@deals68.com]; Deals68 may verify identity and deny or limit a request where law permits.'],
+    viParagraphs: ['Theo pháp luật áp dụng, người dùng có thể có quyền được biết, đồng ý, truy cập, chỉnh sửa, rút lại sự đồng ý, yêu cầu xóa, hạn chế hoặc phản đối xử lý, yêu cầu cung cấp dữ liệu, khiếu nại và yêu cầu bồi thường khi có căn cứ. Yêu cầu được gửi tới partner@vietcapitalpartners.com; Deals68 có thể xác minh danh tính và từ chối hoặc giới hạn yêu cầu khi pháp luật cho phép.'],
+    enParagraphs: ['Subject to applicable law, users may have rights to be informed, consent, access, correct, withdraw consent, request deletion, restrict or object to processing, request data provision, complain and seek damages where legally supported. Requests may be sent to partner@vietcapitalpartners.com; Deals68 may verify identity and deny or limit a request where law permits.'],
   },
   {
     viTitle: 'Đóng tài khoản và xóa dữ liệu giao dịch',
@@ -58,7 +58,7 @@ export const privacyPart2: LegalItem[] = [
   {
     viTitle: 'Thay đổi chính sách và liên hệ',
     enTitle: 'Changes and contact',
-    viParagraphs: ['Deals68 có thể cập nhật chính sách để phản ánh sản phẩm, nhà cung cấp hoặc pháp luật mới. Thay đổi quan trọng sẽ được thông báo phù hợp và ghi ngày hiệu lực. Câu hỏi, yêu cầu hoặc khiếu nại về dữ liệu gửi tới [privacy@deals68.com], địa chỉ [●], điện thoại [●].'],
-    enParagraphs: ['Deals68 may update this Policy to reflect new products, providers or laws. Material changes will be appropriately notified and dated. Privacy questions, requests or complaints may be sent to [privacy@deals68.com], address [●], telephone [●].'],
+    viParagraphs: ['Deals68 có thể cập nhật chính sách để phản ánh sản phẩm, nhà cung cấp hoặc pháp luật mới. Thay đổi quan trọng sẽ được thông báo phù hợp và ghi ngày hiệu lực. Câu hỏi, yêu cầu hoặc khiếu nại về dữ liệu gửi tới partner@vietcapitalpartners.com.'],
+    enParagraphs: ['Deals68 may update this Policy to reflect new products, providers or laws. Material changes will be appropriately notified and dated. Privacy questions, requests or complaints may be sent to partner@vietcapitalpartners.com.'],
   },
 ];

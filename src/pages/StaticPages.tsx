@@ -114,7 +114,7 @@ function LegalList({ lang, items }: Props & { items: LegalItem[] }) {
 }
 
 export function About({ lang }: Props) {
-  return <main className="d68-static-page">
+  return <main className="d68-static-page d68-static-about-page">
     <Hero
       lang={lang}
       kicker="Giới thiệu"
@@ -187,17 +187,11 @@ export function About({ lang }: Props) {
     </Section>
 
     <Section>
-      <div className="d68-static-grid d68-static-grid--2">
+      <div className="d68-static-about-single">
         <Card title={T(lang, 'Giá trị dành cho cố vấn và đối tác thị trường', 'Value for advisors and market partners')}>
           <p>{T(lang,
             'Cố vấn pháp lý, tài chính, thuế, chiến lược, vận hành, công nghệ và mua bán doanh nghiệp có thể tham gia theo từng thương vụ, đúng phạm vi công việc và quyền truy cập được cấp. Đối tác thị trường có thể giúp Deals68 phát triển mạng lưới doanh nghiệp, nhà đầu tư và chuyên gia tại từng quốc gia hoặc cộng đồng người Việt, nhưng không được cam kết lợi nhuận, kết quả giao dịch hoặc đại diện Deals68 ngoài phạm vi được ủy quyền.',
             'Legal, financial, tax, strategy, operations, technology and M&A advisors may participate in specific transactions within an agreed scope and authorised access level. Market Partners may help Deals68 develop networks of businesses, investors and specialists by country or Vietnamese community, but may not promise returns, transaction outcomes or represent Deals68 beyond expressly authorised activities.'
-          )}</p>
-        </Card>
-        <Card title={T(lang, 'Phạm vi và giới hạn', 'Scope and limitations')}>
-          <p>{T(lang,
-            'Deals68 là nền tảng công nghệ và hỗ trợ quy trình. Trừ khi có hợp đồng riêng nêu rõ khác đi, Deals68 không phải là bên mua, bên bán, nhà đầu tư, bên cho vay, đại lý, người nhận ủy thác, công ty chứng khoán, công ty quản lý quỹ, đơn vị kiểm toán hoặc luật sư của người dùng. Deals68 không bảo đảm dữ liệu luôn đầy đủ, không bảo đảm doanh nghiệp hoặc nhà đầu tư sẽ đáp ứng kỳ vọng, và không bảo đảm giao dịch sẽ được hoàn tất.',
-            'Deals68 is a technology and workflow platform. Unless a separate agreement expressly states otherwise, Deals68 is not the buyer, seller, investor, lender, agent, fiduciary, broker-dealer, fund manager, auditor or legal counsel of any user. Deals68 does not guarantee that information is complete, that a business or investor will meet expectations, or that a transaction will close.'
           )}</p>
         </Card>
       </div>
@@ -235,8 +229,8 @@ export function Terms({ lang }: Props) {
       titleEn="Deals68 Terms of Use"
       desc="Các điều khoản này điều chỉnh việc truy cập và sử dụng Deals68 của khách truy cập, doanh nghiệp, nhà đầu tư, bên mua, bên cho vay, cố vấn và đối tác thị trường."
       descEn="These Terms govern access to and use of Deals68 by visitors, businesses, investors, buyers, lenders, advisors and Market Partners."
-      meta="Ngày hiệu lực: [Ngày hiệu lực]"
-      metaEn="Effective date: [Effective date]"
+      meta="Ngày hiệu lực: Tháng 6/2026"
+      metaEn="Effective date: June 2026"
     />
     <Section narrow>
       <LegalToc lang={lang} items={terms} />
@@ -255,8 +249,8 @@ export function Privacy({ lang }: Props) {
       titleEn="Deals68 Privacy and Data Policy"
       desc="Chính sách này giải thích Deals68 thu thập, sử dụng, chia sẻ, lưu trữ và bảo vệ dữ liệu cá nhân, dữ liệu doanh nghiệp và tài liệu giao dịch như thế nào."
       descEn="This Policy explains how Deals68 collects, uses, shares, retains and protects personal data, business information and transaction materials."
-      meta="Ngày hiệu lực: [Ngày hiệu lực]"
-      metaEn="Effective date: [Effective date]"
+      meta="Ngày hiệu lực: Tháng 6/2026"
+      metaEn="Effective date: June 2026"
     />
     <Section narrow>
       <LegalToc lang={lang} items={privacy} />
