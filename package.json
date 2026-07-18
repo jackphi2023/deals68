@@ -28,7 +28,8 @@
     "qa:packages": "node scripts/deals68-package-checks.mjs",
     "qa:css": "node scripts/deals68-css-architecture-check.mjs",
     "qa:migrations": "node scripts/deals68-migration-state-check.mjs",
-    "qa:fix-series": "node scripts/deals68-ui-business-fixes-v1-contract-check.mjs"
+    "qa:fix-series": "node scripts/deals68-ui-business-fixes-v1-contract-check.mjs",
+    "qa:home:h0": "node scripts/deals68-homepage-h0-baseline-check.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.45.4",
