@@ -1,3 +1,4 @@
 One-time trigger for the scoped Business assets and transaction information update on branch building.
 Rerun after diagnostic log reduction.
 Rerun with compact patch runner.
+Rerun with extracted script diagnostics.
