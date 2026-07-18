@@ -1,2 +1,3 @@
 Trigger one-time computed layout verification for homepage Featured Industries and Valuation spacing.
 Rerun with full-page screenshots and compact diagnostics.
+Rerun with split computed-style assertions.
