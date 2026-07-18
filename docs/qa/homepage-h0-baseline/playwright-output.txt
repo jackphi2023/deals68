@@ -1,8 +1,8 @@
 
 Running 1 test using 1 worker
 
-  ✘  1 [chromium-1440] › tests/e2e/06-homepage-h0-baseline.spec.ts:249:1 › capture Homepage H0 source-equivalent baseline (47.7s)
-  ✘  2 [chromium-1440] › tests/e2e/06-homepage-h0-baseline.spec.ts:249:1 › capture Homepage H0 source-equivalent baseline (retry #1) (47.7s)
+  ✘  1 [chromium-1440] › tests/e2e/06-homepage-h0-baseline.spec.ts:249:1 › capture Homepage H0 source-equivalent baseline (47.5s)
+  ✘  2 [chromium-1440] › tests/e2e/06-homepage-h0-baseline.spec.ts:249:1 › capture Homepage H0 source-equivalent baseline (retry #1) (47.6s)
 
 Deals68 report written to reports/deals68/test-report.html
 
