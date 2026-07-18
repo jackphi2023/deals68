@@ -1,0 +1,3 @@
+Homepage H0 deterministic capture trigger.
+Created only to run the one-time local Vite evidence workflow.
+Remove before merging PR #60 into building.
