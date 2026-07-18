@@ -8,6 +8,7 @@ def replace_once(text: str, old: str, new: str, label: str) -> str:
     return text.replace(old, new, 1)
 
 
+# Final refinement: the promo module owns its query and only loads when mounted.
 path = Path('src/pages/Admin.tsx')
 text = path.read_text(encoding='utf-8')
 
