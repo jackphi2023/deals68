@@ -8,7 +8,7 @@ import {
 import { seedBusinesses } from '../data/seedBusinesses';
 import { computeBusinessQuality } from './scoring';
 import { industryKeyFromLabel } from './industryTaxonomy';
-import { locationKeyFromLabel } from './locationTaxonomy';
+import { locationKeyFromLabel, locationOptionFromValue } from './locationTaxonomy';
 
 type BusinessAssetRow = Record<string, any>;
 type BusinessDetailAssets = { files: BusinessAssetRow[]; images: BusinessAssetRow[] };
@@ -48,11 +48,11 @@ export function getPublicBusinessView(row: any) {
   const titleEn = firstValue(s.title_en, row.title_en, s.title_vi, row.title_vi, 'Anonymous business profile');
   const countryIso2 = firstValue(s.country_iso2, row.country_iso2, 'VN');
   const city = firstValue(s.city, row.city, countryIso2, 'Việt Nam');
-  const cityKey = firstValue(
-    s.city_key,
-    row.city_key,
-    locationKeyFromLabel(city, countryIso2),
-  );
+  const rawCityKey = firstValue(s.city_key, row.city_key);
+  const cityKey =
+    locationKeyFromLabel(rawCityKey, countryIso2) ||
+    locationKeyFromLabel(city, countryIso2) ||
+    clean(rawCityKey);
   return {
     ...row,
     ...s,
@@ -96,6 +96,37 @@ export function getPublicBusinessView(row: any) {
 
 function safeLikeTerm(value: any) {
   return String(value || '').trim().replace(/[,()%]/g, ' ');
+}
+
+function businessLocationFilter(raw: any, countryIso2 = '') {
+  const requested = clean(raw);
+  if (!requested) return { countryIso2: '', clauses: [] as string[] };
+
+  const option =
+    locationOptionFromValue(requested, countryIso2) ||
+    locationOptionFromValue(requested);
+  const canonicalKey =
+    option?.key ||
+    locationKeyFromLabel(requested, countryIso2) ||
+    requested;
+  const keyCandidates = [
+    canonicalKey,
+    requested,
+    option?.key?.replace(/^[A-Z]{2}-/, ''),
+    ...(option?.aliases || []),
+  ];
+  const labelCandidates = option
+    ? [option.vi, option.en, ...(option.aliases || [])]
+    : [];
+  const clauses = [
+    ...keyCandidates.map((value) => clean(value)).filter(Boolean).map((value) => `city_key.eq.${safeLikeTerm(value)}`),
+    ...labelCandidates.map((value) => safeLikeTerm(value)).filter(Boolean).map((value) => `city.ilike.%${value}%`),
+  ];
+
+  return {
+    countryIso2: option?.countryIso2 || '',
+    clauses: Array.from(new Set(clauses)),
+  };
 }
 
 const COUNTRY_NAME_TO_ISO: Record<string, string> = {
@@ -218,8 +249,13 @@ function applyBusinessPublicFilters(q: any, filters: any) {
   }
   if (filters.cityKey || filters.city) {
     const requestedCity = filters.cityKey || filters.city;
-    const cityKey = locationKeyFromLabel(requestedCity, filters.country || '') || String(requestedCity).trim();
-    if (cityKey) q = q.eq('city_key', cityKey);
+    const locationFilter = businessLocationFilter(requestedCity, filters.country || '');
+    if (!filters.country && locationFilter.countryIso2) {
+      q = q.eq('country_iso2', locationFilter.countryIso2);
+    }
+    if (locationFilter.clauses.length) {
+      q = q.or(locationFilter.clauses.join(','));
+    }
   }
   if (filters.revenueBand === 'small') {
     q = q.or('and(revenue_currency.eq.VND,revenue_2025.lt.10000000000),and(revenue_currency.eq.USD,revenue_2025.lt.400000)');
@@ -242,7 +278,14 @@ export async function listBusinessFacets(filters: any = {}): Promise<{ city: str
   q = applyBusinessPublicFilters(q, { search: filters.search, country: filters.country });
   const { data, error } = await q.limit(1000);
   if (error) throw error;
-  return (data || []) as any[];
+  return ((data || []) as any[]).map((row) => {
+    const countryIso2 = clean(row.country_iso2) || 'VN';
+    const cityKey =
+      locationKeyFromLabel(row.city_key, countryIso2) ||
+      locationKeyFromLabel(row.city, countryIso2) ||
+      clean(row.city_key);
+    return { ...row, country_iso2: countryIso2, city_key: cityKey };
+  });
 }
 
 export async function listBusinesses(filters: any = {}): Promise<any[]> {

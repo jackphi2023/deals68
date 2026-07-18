@@ -10,11 +10,18 @@
 }
 
 .d68-val-revenue-row {
-  grid-template-columns: minmax(0, 1fr) minmax(140px, .42fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .d68-val-metrics-row {
   grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+@media (min-width: 621px) {
+  .d68-val-revenue-row > label,
+  .d68-val-metrics-row > label {
+    justify-content: flex-end;
+  }
 }
 
 @media (max-width: 620px) {

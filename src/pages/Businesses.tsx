@@ -199,7 +199,10 @@ export default function Businesses({ lang }: { lang: Lang }) {
   const cityFacets = useMemo(() => {
     const m = new Map<string, number>();
     facets.forEach((f) => {
-      const key = locationKeyFromLabel(f.city_key || f.city, f.country_iso2 || '');
+      const countryIso2 = f.country_iso2 || '';
+      const key =
+        locationKeyFromLabel(f.city_key, countryIso2) ||
+        locationKeyFromLabel(f.city, countryIso2);
       if (!key) return;
       m.set(key, (m.get(key) || 0) + 1);
     });
