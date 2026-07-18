@@ -214,7 +214,7 @@ export function About({ lang }: Props) {
       <CTA
         lang={lang}
         to="/"
-        title="B)}<t đầu từ một hồ sơ có chất lượng"
+        title="Bắt đầu từ một hồ sơ có chất lượng"
         titleEn="Start with a high-quality profile"
         text="Đăng hồ sơ doanh nghiệp, xác lập tiêu chí đầu tư hoặc tham gia với vai trò cố vấn và đối tác thị trường."
         textEn="Create a business profile, set your investment criteria or participate as an advisor or Market Partner."
