@@ -2,3 +2,4 @@ One-time trigger for the scoped Business assets and transaction information upda
 Rerun after diagnostic log reduction.
 Rerun with compact patch runner.
 Rerun with extracted script diagnostics.
+Rerun with diagnostic artifact capture.
