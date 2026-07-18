@@ -56,7 +56,7 @@ jobs:
           cat /tmp/deals68-home-preview.log
           exit 1
 
-      - name: Verify computed layout and capture sections
+      - name: Capture computed homepage layout
         shell: bash
         run: |
           mkdir -p artifacts/home-layout
@@ -64,23 +64,20 @@ jobs:
           const { chromium } = require('playwright');
           const fs = require('fs');
 
-          const rgb = (value) => value.replace(/\s+/g, '');
-          const expectedCanvas = new Set(['rgb(247,250,252)', 'rgba(247,250,252,1)']);
-
           (async () => {
             const browser = await chromium.launch({ headless: true });
-            const report = [];
+            const report = {};
 
             for (const viewport of [
-              { width: 1440, height: 1200, expectedGap: 80, name: 'desktop' },
-              { width: 375, height: 900, expectedGap: 50, name: 'mobile' },
+              { width: 1440, height: 1200, name: 'desktop' },
+              { width: 375, height: 900, name: 'mobile' },
             ]) {
               const page = await browser.newPage({ viewport: { width: viewport.width, height: viewport.height } });
               await page.goto('http://127.0.0.1:4173/', { waitUntil: 'networkidle' });
               await page.waitForSelector('.d68-home-industries');
               await page.waitForSelector('.d68-home-valuation__box');
 
-              const values = await page.evaluate(() => {
+              report[viewport.name] = await page.evaluate(() => {
                 const home = document.querySelector('.d68-home-page');
                 const industries = document.querySelector('.d68-home-industries');
                 const industriesInner = industries?.querySelector(':scope > .d68-home-container');
@@ -117,38 +114,47 @@ jobs:
                 };
               });
 
-              const failures = [];
-              if (values.homeDisplay !== 'flex' || values.homeDirection !== 'column') failures.push('homepage must use a column flex layout');
-              if (Math.abs(values.homeRowGap - viewport.expectedGap) > 0.5) failures.push(`row-gap expected ${viewport.expectedGap}px, received ${values.homeRowGap}px`);
-              if (!expectedCanvas.has(rgb(values.industriesBackground))) failures.push(`industries background is ${values.industriesBackground}`);
-              if (!expectedCanvas.has(rgb(values.industriesInnerBackground))) failures.push(`industries inner background is ${values.industriesInnerBackground}`);
-              if (rgb(values.industryCardBackground) !== 'rgb(255,255,255)') failures.push(`industry card background is ${values.industryCardBackground}`);
-              if (!['rgba(0,0,0,0)', 'transparent'].includes(rgb(values.valuationBackground))) failures.push(`valuation wrapper background is ${values.valuationBackground}`);
-              if ([values.valuationBorderTop, values.valuationBorderRight, values.valuationBorderBottom, values.valuationBorderLeft, values.valuationBoxBorderTop].some((value) => value !== 0)) failures.push('valuation wrapper or box has a visible border');
-              if (Math.abs(values.actualGap - viewport.expectedGap) > 0.5) failures.push(`Industry → Valuation gap expected ${viewport.expectedGap}px, received ${values.actualGap}px`);
-
-              report.push({ viewport, values, failures });
-              await page.screenshot({
-                path: `artifacts/home-layout/${viewport.name}.png`,
-                fullPage: true,
-              });
+              await page.screenshot({ path: `artifacts/home-layout/${viewport.name}.png`, fullPage: true });
               await page.close();
             }
 
             fs.writeFileSync('artifacts/home-layout/report.json', JSON.stringify(report, null, 2));
-            console.log(JSON.stringify(report, null, 2));
             await browser.close();
-
-            const failures = report.flatMap((entry) => entry.failures.map((failure) => `${entry.viewport.name}: ${failure}`));
-            if (failures.length) {
-              console.error(failures.join('\n'));
-              process.exit(1);
-            }
           })().catch((error) => {
             console.error(error);
             process.exit(1);
           });
           NODE
+
+      - name: Verify homepage uses one column gap source
+        shell: bash
+        run: |
+          node -e "const r=require('./artifacts/home-layout/report.json'); for (const k of ['desktop','mobile']) if(r[k].homeDisplay!=='flex'||r[k].homeDirection!=='column') throw new Error(k+' homepage layout is not flex column')"
+
+      - name: Verify Featured Industries canvas is F7FAFC
+        shell: bash
+        run: |
+          node -e "const r=require('./artifacts/home-layout/report.json'); const ok=v=>['rgb(247, 250, 252)','rgba(247, 250, 252, 1)'].includes(v); for (const k of ['desktop','mobile']) if(!ok(r[k].industriesBackground)||!ok(r[k].industriesInnerBackground)) throw new Error(k+' industries canvas mismatch: '+JSON.stringify(r[k]))"
+
+      - name: Verify industry cards remain white
+        shell: bash
+        run: |
+          node -e "const r=require('./artifacts/home-layout/report.json'); for (const k of ['desktop','mobile']) if(r[k].industryCardBackground!=='rgb(255, 255, 255)') throw new Error(k+' industry card is not white: '+r[k].industryCardBackground)"
+
+      - name: Verify Industry to Valuation gap is 80px desktop
+        shell: bash
+        run: |
+          node -e "const r=require('./artifacts/home-layout/report.json').desktop; if(Math.abs(r.homeRowGap-80)>.5||Math.abs(r.actualGap-80)>.5) throw new Error(JSON.stringify(r))"
+
+      - name: Verify Industry to Valuation gap is 50px mobile
+        shell: bash
+        run: |
+          node -e "const r=require('./artifacts/home-layout/report.json').mobile; if(Math.abs(r.homeRowGap-50)>.5||Math.abs(r.actualGap-50)>.5) throw new Error(JSON.stringify(r))"
+
+      - name: Verify Valuation wrapper is transparent and borderless
+        shell: bash
+        run: |
+          node -e "const r=require('./artifacts/home-layout/report.json'); for (const k of ['desktop','mobile']) { const v=r[k]; if(v.valuationBackground!=='rgba(0, 0, 0, 0)'||[v.valuationBorderTop,v.valuationBorderRight,v.valuationBorderBottom,v.valuationBorderLeft,v.valuationBoxBorderTop].some(Number)) throw new Error(k+' valuation surface mismatch: '+JSON.stringify(v)); }"
 
       - name: Upload verification artifact
         if: always()
