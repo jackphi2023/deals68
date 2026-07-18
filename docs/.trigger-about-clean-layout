@@ -1,2 +1,3 @@
 Trigger the one-time About layout cleanup and production build on building.
 Rerun after correcting the stylesheet entry path.
+Run final removal of the remaining legacy About grid rule.
