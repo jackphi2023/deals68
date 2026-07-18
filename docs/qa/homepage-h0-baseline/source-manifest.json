@@ -1,0 +1,122 @@
+{
+  "generatedAt": "2026-07-18T16:27:32.474Z",
+  "baselineSourceCommit": "816b319e85ff5839367a92428e2e65ce0424a5ea",
+  "head": "0eefeea8317c2c1273b7390bd72575ece90f20f0",
+  "files": [
+    {
+      "path": "src/pages/Home.tsx",
+      "expectedBlob": "b1904a6e7736051b911eedb4ac0a0b44b158989d",
+      "actualBlob": "b1904a6e7736051b911eedb4ac0a0b44b158989d",
+      "matches": true,
+      "bytes": 21182,
+      "lines": 360
+    },
+    {
+      "path": "src/components/HeroBannerMedia.tsx",
+      "expectedBlob": "cadb67721c0fabef302da901b13b4aa845e36bd1",
+      "actualBlob": "cadb67721c0fabef302da901b13b4aa845e36bd1",
+      "matches": true,
+      "bytes": 4290,
+      "lines": 143
+    },
+    {
+      "path": "src/components/SiteBanners.tsx",
+      "expectedBlob": "0557fc29e99211803adeda84083ffca9f6b68580",
+      "actualBlob": "0557fc29e99211803adeda84083ffca9f6b68580",
+      "matches": true,
+      "bytes": 30127,
+      "lines": 1087
+    },
+    {
+      "path": "src/styles/index.css",
+      "expectedBlob": "30c4947ade094112058b3fe6dc1cab6064be4d33",
+      "actualBlob": "30c4947ade094112058b3fe6dc1cab6064be4d33",
+      "matches": true,
+      "bytes": 2026,
+      "lines": 40
+    },
+    {
+      "path": "src/styles/pages/home.css",
+      "expectedBlob": "be36ae3f26ba194561f224e1d56224c0995ffe83",
+      "actualBlob": "be36ae3f26ba194561f224e1d56224c0995ffe83",
+      "matches": true,
+      "bytes": 34867,
+      "lines": 587
+    },
+    {
+      "path": "src/styles/pages/home-hero.css",
+      "expectedBlob": "58978ac30da6f7989a8be54f9bd464de5467abd6",
+      "actualBlob": "58978ac30da6f7989a8be54f9bd464de5467abd6",
+      "matches": true,
+      "bytes": 1896,
+      "lines": 70
+    },
+    {
+      "path": "src/styles/pages/home-hero-media.css",
+      "expectedBlob": "d36fdd9782e83008cf36ddbbc481c9a556ccf0df",
+      "actualBlob": "d36fdd9782e83008cf36ddbbc481c9a556ccf0df",
+      "matches": true,
+      "bytes": 499,
+      "lines": 13
+    },
+    {
+      "path": "src/styles/pages/home-featured-investors.css",
+      "expectedBlob": "e7a853245dbd40b747e2a820c32825c24db916b1",
+      "actualBlob": "e7a853245dbd40b747e2a820c32825c24db916b1",
+      "matches": true,
+      "bytes": 1013,
+      "lines": 47
+    },
+    {
+      "path": "src/styles/pages/home-layout.css",
+      "expectedBlob": "44f38d58d6ccd6475e2edb1b916dff11433d2622",
+      "actualBlob": "44f38d58d6ccd6475e2edb1b916dff11433d2622",
+      "matches": true,
+      "bytes": 1826,
+      "lines": 69
+    },
+    {
+      "path": "src/styles/pages/ui-fixes.css",
+      "expectedBlob": "795e353274f3d06eef68002310fb34cae932b47e",
+      "actualBlob": "795e353274f3d06eef68002310fb34cae932b47e",
+      "matches": true,
+      "bytes": 31677,
+      "lines": 365
+    },
+    {
+      "path": "src/styles/final/release-foundation.css",
+      "expectedBlob": "ba6a2af64a4bf0160698b476c117a989e7ff86a6",
+      "actualBlob": "ba6a2af64a4bf0160698b476c117a989e7ff86a6",
+      "matches": true,
+      "bytes": 14012,
+      "lines": 284
+    },
+    {
+      "path": "src/styles/pages/release-cleanup.css",
+      "expectedBlob": "e854f4536aaa27e101314837c81bd066119be07a",
+      "actualBlob": "e854f4536aaa27e101314837c81bd066119be07a",
+      "matches": true,
+      "bytes": 212,
+      "lines": 6
+    }
+  ],
+  "importOrder": [
+    "./pages/home.css",
+    "./pages/ui-fixes.css",
+    "./final/release-foundation.css",
+    "./pages/release-cleanup.css",
+    "./pages/home-hero.css",
+    "./pages/home-featured-investors.css",
+    "./pages/home-layout.css",
+    "./pages/home-hero-media.css"
+  ],
+  "findings": {
+    "pageGap80": true,
+    "pageBackgroundF7FAFC": true,
+    "homeCssContainsMobileContain": true,
+    "lateHeroMediaForcesCover": true,
+    "promotionHasFoundationPadding50": true,
+    "cleanupIsStub": true,
+    "homeSelectorsRemainInFoundation": true
+  }
+}
