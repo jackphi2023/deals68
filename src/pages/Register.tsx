@@ -258,10 +258,6 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
       ? (intent.businessPlan as BusinessPlan)
       : '',
   );
-  const [investorPackageSelected, setInvestorPackageSelected] =
-    useState<boolean>(
-      () => checkoutIntentMatchesRole && normalized === 'investor',
-    );
   const [serviceWeeks, setServiceWeeks] = useState<number | null>(() => {
     const requestedTerm = Number(intent.termWeeks || intent.units || 0);
     return checkoutIntentMatchesRole &&
@@ -315,26 +311,15 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
   const [businessImages, setBusinessImages] = useState<PendingAsset[]>([]);
   const [businessDocs, setBusinessDocs] = useState<PendingAsset[]>([]);
 
-  const [investorTypes, setInvestorTypes] = useState<string[]>([
-    'Individual/Angel',
-  ]);
-  const [selectedIndustries, setSelectedIndustries] = useState<string[]>([
-    'food_beverage',
-    'it_software',
-  ]);
-  const [investorStages, setInvestorStages] = useState<string[]>(['Growth']);
-  const [investorDealTypes, setInvestorDealTypes] = useState<string[]>([
-    'Investment',
-  ]);
+  const [investorTypes, setInvestorTypes] = useState<string[]>([]);
+  const [selectedIndustries, setSelectedIndustries] = useState<string[]>([]);
+  const [investorStages, setInvestorStages] = useState<string[]>([]);
+  const [investorDealTypes, setInvestorDealTypes] = useState<string[]>([]);
   const [preferredCountries, setPreferredCountries] = useState<string[]>([
     'VN',
   ]);
-  const [ticketMin, setTicketMin] = useState(
-    formatNumberTyping('100000'),
-  );
-  const [ticketMax, setTicketMax] = useState(
-    formatNumberTyping('5000000'),
-  );
+  const [ticketMin, setTicketMin] = useState('');
+  const [ticketMax, setTicketMax] = useState('');
   const [generalDesc, setGeneralDesc] = useState('');
   const [appetiteDesc, setAppetiteDesc] = useState('');
   const [phoneIso, setPhoneIso] = useState('VN');
@@ -372,7 +357,7 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
   const hasSelectedPackage = isBusiness
     ? Boolean(plan && serviceWeeks)
     : isInvestor
-      ? investorPackageSelected && Boolean(investorMonths)
+      ? Boolean(investorMonths)
       : true;
 
   useEffect(() => {
@@ -423,9 +408,11 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
     hasSelectedPackage && price.currency === 'VND'
       ? `amount=${Math.round(price.total)}&`
       : '';
-  const qrUrl = `https://img.vietqr.io/image/VCB-0011004000713-compact2.png?${qrAmountParam}addInfo=${encodeURIComponent(
-    bankContent,
-  )}&accountName=${encodeURIComponent('Tieu Vo Dinh Phi')}`;
+  const qrUrl = hasSelectedPackage
+    ? `https://img.vietqr.io/image/VCB-0011004000713-compact2.png?${qrAmountParam}addInfo=${encodeURIComponent(
+        bankContent,
+      )}&accountName=${encodeURIComponent('Tieu Vo Dinh Phi')}`
+    : STATIC_VIETQR_URL;
   const [qrImageSrc, setQrImageSrc] = useState(qrUrl);
 
   useEffect(() => {
@@ -670,12 +657,9 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
       if (!ticketMin.trim() || !ticketMax.trim()) {
         missing.push(T(lang, 'Khoản đầu tư/ticket size', 'Ticket size'));
       }
-      if (!investorPackageSelected) {
-        missing.push(T(lang, 'Gói dịch vụ', 'Service package'));
-      }
       if (!investorMonths) {
         missing.push(T(lang, 'Kỳ hạn', 'Term'));
-      } else if (investorPackageSelected && !paymentAck) {
+      } else if (!paymentAck) {
         missing.push(
           T(
             lang,
@@ -1071,8 +1055,14 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
       }`}
     >
       <h2>{T(lang, 'Gói dịch vụ và Thanh toán', 'Service package and Payment')}</h2>
-      <div className="d68-bizreg-options">
-        {isBusiness ? (
+      {isInvestor ? (
+        <p className="d68-bizreg-section-help">
+          {T(lang, 'Vui lòng chọn thời gian sử dụng.', 'Please select the service duration.')}
+        </p>
+      ) : null}
+      {isBusiness ? (
+        <div className="d68-bizreg-options">
+          {
           ([
             {
               key: 'standard' as BusinessPlan,
@@ -1120,40 +1110,9 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
               ) : null}
             </button>
           ))
-        ) : (
-          <>
-            <button
-              type="button"
-              className={investorPackageSelected ? 'active' : ''}
-              onClick={() => {
-                setInvestorPackageSelected(true);
-                setPaymentAck(false);
-              }}
-            >
-              <h3>{T(lang, 'Gói Nhà đầu tư', 'Investor membership')}</h3>
-              <p>
-                {T(
-                  lang,
-                  'Tìm kiếm, lưu doanh nghiệp, gửi yêu cầu kết nối/data và nhận gợi ý thương vụ phù hợp.',
-                  'Search, save businesses, request connection/data and receive matched opportunities.',
-                )}
-              </p>
-              <span>{T(lang, 'Đã gồm Dashboard Nhà đầu tư', 'Investor dashboard included')}</span>
-            </button>
-            <button type="button" disabled>
-              <h3>{T(lang, 'Gói Tổ chức / Ưu tiên', 'Institutional / Priority')}</h3>
-              <p>
-                {T(
-                  lang,
-                  'Dành cho quỹ/tổ chức cần thêm quy trình nhóm, phân quyền và hỗ trợ riêng.',
-                  'For funds/institutions requiring team workflow, permissions and dedicated support.',
-                )}
-              </p>
-              <span>{T(lang, 'Sắp ra mắt', 'Coming soon')}</span>
-            </button>
-          </>
-        )}
-      </div>
+          }
+        </div>
+      ) : null}
 
       <div className="d68-bizreg-paygrid">
         <div className="d68-bizreg-payleft">
@@ -1295,7 +1254,7 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
         </button>
       </div>
 
-      {hasSelectedPackage ? (
+      {isInvestor || hasSelectedPackage ? (
         <div className="d68-bizreg-qrbox">
           <a href={qrImageSrc} target="_blank" rel="noreferrer">
             <img
@@ -1307,21 +1266,27 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
           <div>
             <p>{T(lang, 'Người nhận:', 'Recipient:')} <b>Tieu Vo Dinh Phi</b></p>
             <p>{T(lang, 'Số TK:', 'Account no.:')} <b>0011004000713</b></p>
-            <p>{T(lang, 'Nội dung:', 'Transfer note:')} <b>{bankContent}</b></p>
-            <p>{T(lang, 'Số tiền:', 'Amount:')} <b>{money(price.total, price.currency)}</b></p>
+            {hasSelectedPackage ? (
+              <>
+                <p>{T(lang, 'Nội dung:', 'Transfer note:')} <b>{bankContent}</b></p>
+                <p>{T(lang, 'Số tiền:', 'Amount:')} <b>{money(price.total, price.currency)}</b></p>
+              </>
+            ) : null}
           </div>
+          {hasSelectedPackage ? (
           <label>
-            <input
-              type="checkbox"
-              checked={paymentAck}
-              onChange={(event) => setPaymentAck(event.target.checked)}
-            />{' '}
-            {T(
-              lang,
-              'Tôi đã chuyển khoản đúng số tiền và nội dung ở trên',
-              'I have transferred the exact amount with the transfer note above',
-            )}
-          </label>
+              <input
+                type="checkbox"
+                checked={paymentAck}
+                onChange={(event) => setPaymentAck(event.target.checked)}
+              />{' '}
+              {T(
+                lang,
+                'Tôi đã chuyển khoản đúng số tiền và nội dung ở trên',
+                'I have transferred the exact amount with the transfer note above',
+              )}
+            </label>
+          ) : null}
         </div>
       ) : (
         <div className="d68-bizreg-package-pending" role="status">

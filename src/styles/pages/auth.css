@@ -62,3 +62,12 @@
     padding: 20px;
   }
 }
+
+
+/* Investor registration: membership is implicit; user selects only the service duration. */
+.d68-register-page .d68-bizreg-section-help {
+  color: #64748b;
+  font-size: 14px;
+  line-height: 1.55;
+  margin: -8px 0 16px;
+}
