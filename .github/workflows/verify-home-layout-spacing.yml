@@ -1,0 +1,171 @@
+name: Verify homepage section canvas and spacing
+
+on:
+  pull_request:
+    branches:
+      - building
+    types:
+      - opened
+      - reopened
+      - synchronize
+
+permissions:
+  contents: read
+
+jobs:
+  verify-home-layout:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 1
+          show-progress: false
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Build
+        run: npm run build
+
+      - name: Start preview server
+        shell: bash
+        run: |
+          npm run preview -- --host 127.0.0.1 > /tmp/deals68-home-preview.log 2>&1 &
+          echo $! > /tmp/deals68-home-preview.pid
+          for i in {1..30}; do
+            if curl -fsS http://127.0.0.1:4173/ >/dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/deals68-home-preview.log
+          exit 1
+
+      - name: Verify computed layout and capture sections
+        shell: bash
+        run: |
+          mkdir -p artifacts/home-layout
+          node <<'NODE'
+          const { chromium } = require('playwright');
+          const fs = require('fs');
+
+          const rgb = (value) => value.replace(/\s+/g, '');
+          const expectedCanvas = new Set(['rgb(247,250,252)', 'rgba(247,250,252,1)']);
+
+          (async () => {
+            const browser = await chromium.launch({ headless: true });
+            const report = [];
+
+            for (const viewport of [
+              { width: 1440, height: 1200, expectedGap: 80, name: 'desktop' },
+              { width: 375, height: 900, expectedGap: 50, name: 'mobile' },
+            ]) {
+              const page = await browser.newPage({ viewport: { width: viewport.width, height: viewport.height } });
+              await page.goto('http://127.0.0.1:4173/', { waitUntil: 'networkidle' });
+              await page.waitForSelector('.d68-home-industries');
+              await page.waitForSelector('.d68-home-valuation__box');
+
+              const values = await page.evaluate(() => {
+                const home = document.querySelector('.d68-home-page');
+                const industries = document.querySelector('.d68-home-industries');
+                const industriesInner = industries?.querySelector(':scope > .d68-home-container');
+                const industryCard = document.querySelector('.d68-home-industry-card');
+                const valuation = document.querySelector('.d68-home-valuation');
+                const valuationBox = document.querySelector('.d68-home-valuation__box');
+                if (!home || !industries || !industriesInner || !industryCard || !valuation || !valuationBox) {
+                  throw new Error('Required homepage sections were not rendered');
+                }
+
+                const homeStyle = getComputedStyle(home);
+                const industriesStyle = getComputedStyle(industries);
+                const industriesInnerStyle = getComputedStyle(industriesInner);
+                const industryCardStyle = getComputedStyle(industryCard);
+                const valuationStyle = getComputedStyle(valuation);
+                const valuationBoxStyle = getComputedStyle(valuationBox);
+                const industriesRect = industries.getBoundingClientRect();
+                const valuationRect = valuation.getBoundingClientRect();
+
+                return {
+                  homeDisplay: homeStyle.display,
+                  homeDirection: homeStyle.flexDirection,
+                  homeRowGap: parseFloat(homeStyle.rowGap),
+                  industriesBackground: industriesStyle.backgroundColor,
+                  industriesInnerBackground: industriesInnerStyle.backgroundColor,
+                  industryCardBackground: industryCardStyle.backgroundColor,
+                  valuationBackground: valuationStyle.backgroundColor,
+                  valuationBorderTop: parseFloat(valuationStyle.borderTopWidth),
+                  valuationBorderRight: parseFloat(valuationStyle.borderRightWidth),
+                  valuationBorderBottom: parseFloat(valuationStyle.borderBottomWidth),
+                  valuationBorderLeft: parseFloat(valuationStyle.borderLeftWidth),
+                  valuationBoxBorderTop: parseFloat(valuationBoxStyle.borderTopWidth),
+                  actualGap: valuationRect.top - industriesRect.bottom,
+                  clip: {
+                    x: 0,
+                    y: Math.max(0, industriesRect.top - 24),
+                    width: document.documentElement.clientWidth,
+                    height: Math.min(document.documentElement.scrollHeight, valuationRect.bottom + 24) - Math.max(0, industriesRect.top - 24),
+                  },
+                };
+              });
+
+              const failures = [];
+              if (values.homeDisplay !== 'flex' || values.homeDirection !== 'column') failures.push('homepage must use a column flex layout');
+              if (Math.abs(values.homeRowGap - viewport.expectedGap) > 0.5) failures.push(`row-gap expected ${viewport.expectedGap}px, received ${values.homeRowGap}px`);
+              if (!expectedCanvas.has(rgb(values.industriesBackground))) failures.push(`industries background is ${values.industriesBackground}`);
+              if (!expectedCanvas.has(rgb(values.industriesInnerBackground))) failures.push(`industries inner background is ${values.industriesInnerBackground}`);
+              if (rgb(values.industryCardBackground) !== 'rgb(255,255,255)') failures.push(`industry card background is ${values.industryCardBackground}`);
+              if (!['rgba(0,0,0,0)', 'transparent'].includes(rgb(values.valuationBackground))) failures.push(`valuation wrapper background is ${values.valuationBackground}`);
+              if ([values.valuationBorderTop, values.valuationBorderRight, values.valuationBorderBottom, values.valuationBorderLeft, values.valuationBoxBorderTop].some((value) => value !== 0)) failures.push('valuation wrapper or box has a visible border');
+              if (Math.abs(values.actualGap - viewport.expectedGap) > 0.5) failures.push(`Industry → Valuation gap expected ${viewport.expectedGap}px, received ${values.actualGap}px`);
+
+              await page.screenshot({
+                path: `artifacts/home-layout/${viewport.name}.png`,
+                clip: values.clip,
+                fullPage: false,
+              });
+
+              report.push({ viewport, values, failures });
+              await page.close();
+            }
+
+            fs.writeFileSync('artifacts/home-layout/report.json', JSON.stringify(report, null, 2));
+            await browser.close();
+
+            const failures = report.flatMap((entry) => entry.failures.map((failure) => `${entry.viewport.name}: ${failure}`));
+            if (failures.length) {
+              console.error(failures.join('\n'));
+              process.exit(1);
+            }
+          })().catch((error) => {
+            console.error(error);
+            process.exit(1);
+          });
+          NODE
+
+      - name: Upload verification artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: homepage-industries-valuation-verification
+          path: artifacts/home-layout
+          retention-days: 7
+
+      - name: Stop preview server
+        if: always()
+        shell: bash
+        run: |
+          if [ -f /tmp/deals68-home-preview.pid ]; then
+            kill "$(cat /tmp/deals68-home-preview.pid)" || true
+          fi
