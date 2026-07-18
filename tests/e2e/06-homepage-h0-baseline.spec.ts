@@ -86,7 +86,7 @@ const investors = Array.from({ length: 4 }, (_, index) => ({
   },
   visible: true,
   verified: true,
-  admin_priority: index < 2,
+  admin_priority: false,
   activity_level: 'active',
   status: 'active',
   created_at: `2026-07-${String(index + 1).padStart(2, '0')}T00:00:00Z`,

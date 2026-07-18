@@ -1,35 +1,25 @@
 
 Running 1 test using 1 worker
 
-  ✘  1 [chromium-1440] › tests/e2e/06-homepage-h0-baseline.spec.ts:249:1 › capture Homepage H0 source-equivalent baseline (10.5s)
-  ✘  2 [chromium-1440] › tests/e2e/06-homepage-h0-baseline.spec.ts:249:1 › capture Homepage H0 source-equivalent baseline (retry #1) (10.6s)
+  ✘  1 [chromium-1440] › tests/e2e/06-homepage-h0-baseline.spec.ts:249:1 › capture Homepage H0 source-equivalent baseline (47.6s)
+  ✘  2 [chromium-1440] › tests/e2e/06-homepage-h0-baseline.spec.ts:249:1 › capture Homepage H0 source-equivalent baseline (retry #1) (47.6s)
 
 Deals68 report written to reports/deals68/test-report.html
 
   1) [chromium-1440] › tests/e2e/06-homepage-h0-baseline.spec.ts:249:1 › capture Homepage H0 source-equivalent baseline 
 
-    Error: expect(locator).toHaveCount(expected) failed
+    Test timeout of 45000ms exceeded.
 
-    Locator:  locator('.d68-home-investor-card')
-    Expected: 4
-    Received: 2
-    Timeout:  8000ms
+    Error: page.evaluate: Test timeout of 45000ms exceeded.
 
-    Call log:
-      - Expect "toHaveCount" with timeout 8000ms
-      - waiting for locator('.d68-home-investor-card')
-        20 × locator resolved to 2 elements
-           - unexpected value "2"
-
-
-      219 |   await page.goto('/', { waitUntil: 'networkidle' });
-      220 |   await expect(page.locator('.d68-home-page')).toBeVisible();
-    > 221 |   await expect(page.locator('.d68-home-investor-card')).toHaveCount(4);
-          |                                                         ^
-      222 |   await expect(page.locator('.d68-home-business-card')).toHaveCount(6);
       223 |   await expect(page.locator('.d68-promo-banner')).toBeVisible();
       224 |   await expect(page.locator('.d68-hero-media__image')).toBeVisible();
-        at waitForHomepage (/home/runner/work/deals68/deals68/tests/e2e/06-homepage-h0-baseline.spec.ts:221:57)
+    > 225 |   await page.evaluate(async () => {
+          |              ^
+      226 |     await (document as Document & { fonts?: FontFaceSet }).fonts?.ready;
+      227 |     const images = Array.from(document.images);
+      228 |     await Promise.all(
+        at waitForHomepage (/home/runner/work/deals68/deals68/tests/e2e/06-homepage-h0-baseline.spec.ts:225:14)
         at /home/runner/work/deals68/deals68/tests/e2e/06-homepage-h0-baseline.spec.ts:258:5
 
     attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
@@ -52,28 +42,18 @@ Deals68 report written to reports/deals68/test-report.html
 
     Retry #1 ───────────────────────────────────────────────────────────────────────────────────────
 
-    Error: expect(locator).toHaveCount(expected) failed
+    Test timeout of 45000ms exceeded.
 
-    Locator:  locator('.d68-home-investor-card')
-    Expected: 4
-    Received: 2
-    Timeout:  8000ms
+    Error: page.evaluate: Test timeout of 45000ms exceeded.
 
-    Call log:
-      - Expect "toHaveCount" with timeout 8000ms
-      - waiting for locator('.d68-home-investor-card')
-        20 × locator resolved to 2 elements
-           - unexpected value "2"
-
-
-      219 |   await page.goto('/', { waitUntil: 'networkidle' });
-      220 |   await expect(page.locator('.d68-home-page')).toBeVisible();
-    > 221 |   await expect(page.locator('.d68-home-investor-card')).toHaveCount(4);
-          |                                                         ^
-      222 |   await expect(page.locator('.d68-home-business-card')).toHaveCount(6);
       223 |   await expect(page.locator('.d68-promo-banner')).toBeVisible();
       224 |   await expect(page.locator('.d68-hero-media__image')).toBeVisible();
-        at waitForHomepage (/home/runner/work/deals68/deals68/tests/e2e/06-homepage-h0-baseline.spec.ts:221:57)
+    > 225 |   await page.evaluate(async () => {
+          |              ^
+      226 |     await (document as Document & { fonts?: FontFaceSet }).fonts?.ready;
+      227 |     const images = Array.from(document.images);
+      228 |     await Promise.all(
+        at waitForHomepage (/home/runner/work/deals68/deals68/tests/e2e/06-homepage-h0-baseline.spec.ts:225:14)
         at /home/runner/work/deals68/deals68/tests/e2e/06-homepage-h0-baseline.spec.ts:258:5
 
     attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
