@@ -1,13 +1,11 @@
-import { FormEvent, useMemo, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { supabase } from '../../lib/supabase';
 
 type PromoRow = Record<string, any>;
 
 type AdminPromoManagerProps = {
-  promos: PromoRow[];
   adminId: string;
-  busy?: boolean;
-  onReload: () => void | Promise<void>;
+  refreshKey?: string;
   setMessage: (message: string) => void;
   setError: (message: string) => void;
 };
@@ -61,15 +59,41 @@ function dateTimeValue(raw: FormDataEntryValue | null) {
 }
 
 export default function AdminPromoManager({
-  promos,
   adminId,
-  busy = false,
-  onReload,
+  refreshKey = '',
   setMessage,
   setError,
 }: AdminPromoManagerProps) {
+  const [promos, setPromos] = useState<PromoRow[]>([]);
+  const [loading, setLoading] = useState(false);
   const [actionKey, setActionKey] = useState('');
-  const isBusy = busy || Boolean(actionKey);
+  const isBusy = loading || Boolean(actionKey);
+
+  async function loadPromos() {
+    if (!adminId) return;
+    setLoading(true);
+    setError('');
+
+    try {
+      const { data, error } = await supabase
+        .from('promo_codes')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(500);
+
+      if (error) throw error;
+      setPromos(data || []);
+    } catch (loadError: any) {
+      setPromos([]);
+      setError(loadError?.message || 'Không tải được danh sách mã khuyến mãi.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    void loadPromos();
+  }, [adminId, refreshKey]);
 
   const totals = useMemo(
     () => ({
@@ -129,7 +153,7 @@ export default function AdminPromoManager({
       if (error) throw error;
       formElement.reset();
       setMessage(`Đã tạo mã khuyến mãi ${code}.`);
-      await onReload();
+      await loadPromos();
     } catch (createError: any) {
       setError(createError?.message || 'Không tạo được mã khuyến mãi.');
     } finally {
@@ -154,7 +178,7 @@ export default function AdminPromoManager({
           ? `Đã bật mã ${promo.code}.`
           : `Đã tạm dừng mã ${promo.code}.`,
       );
-      await onReload();
+      await loadPromos();
     } catch (statusError: any) {
       setError(statusError?.message || 'Không cập nhật được trạng thái mã.');
     } finally {
@@ -172,7 +196,7 @@ export default function AdminPromoManager({
         <button
           type="button"
           className="d68-admin-btn"
-          onClick={() => void onReload()}
+          onClick={() => void loadPromos()}
           disabled={isBusy}
         >
           {isBusy ? 'Đang xử lý...' : 'Làm mới'}
@@ -225,7 +249,7 @@ export default function AdminPromoManager({
       <div className="d68-admin-card">
         <div className="d68-admin-promo-list-head">
           <h2>Danh sách mã</h2>
-          <span>{promos.length} mã</span>
+          <span>{loading ? 'Đang tải...' : `${promos.length} mã`}</span>
         </div>
         {promos.length ? (
           <div className="d68-admin-promo-list">
@@ -270,7 +294,7 @@ export default function AdminPromoManager({
               );
             })}
           </div>
-        ) : (
+        ) : loading ? null : (
           <div className="d68-admin-empty">Chưa có mã khuyến mãi.</div>
         )}
       </div>
