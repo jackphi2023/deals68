@@ -1,17 +1,20 @@
 name: Apply About clean layout
 
 on:
-  push:
+  pull_request:
     branches:
       - building
-    paths:
-      - .github/workflows/apply-about-clean-layout.yml
+    types:
+      - opened
+      - reopened
+      - synchronize
 
 permissions:
   contents: write
 
 jobs:
   apply:
+    if: github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     steps:
       - name: Checkout building
