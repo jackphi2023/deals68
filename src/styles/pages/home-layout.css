@@ -1,0 +1,58 @@
+/* Homepage canvas and vertical rhythm.
+   Owns only the outer page background, direct-section spacing and removal of
+   decorative markers that reduce title readability. Inner cards and branded
+   content boxes retain their existing colors and visual identity. */
+
+.d68-home-page {
+  --d68-home-section-gap: 80px;
+  background: var(--d68-bg, #F7FAFC);
+  padding-bottom: var(--d68-home-section-gap);
+}
+
+/* Each top-level homepage block contributes one spacing source only. */
+.d68-home-page > :not(.d68-home-hero) {
+  margin-top: var(--d68-home-section-gap);
+}
+
+/* Neutralise legacy vertical padding on top-level wrappers so adjacent blocks
+   do not add two spacing systems together. Horizontal container padding and
+   all inner component backgrounds remain untouched. */
+.d68-home-page > .d68-home-section,
+.d68-home-page > .d68-home-industries,
+.d68-home-page > .d68-home-valuation,
+.d68-home-page > .d68-home-how,
+.d68-home-page > .d68-promo-banner {
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+.d68-home-page > .d68-home-how,
+.d68-home-page > .d68-home-industries,
+.d68-home-page > .d68-home-valuation,
+.d68-home-page > .d68-home-section,
+.d68-home-page > .d68-promo-banner {
+  background-color: transparent;
+}
+
+.d68-home-page > .d68-home-how .d68-home-container {
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+/* Remove the absolute verification decoration that overlaps long investor
+   names. Verification states can be represented by an explicit badge later. */
+.d68-home-page .d68-home-investor-card::after {
+  content: none !important;
+  display: none !important;
+}
+
+.d68-home-page .d68-home-investor-card__heading {
+  margin-right: 0 !important;
+}
+
+@media (max-width: 700px) {
+  .d68-home-page {
+    --d68-home-section-gap: 50px;
+  }
+}
