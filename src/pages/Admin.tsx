@@ -369,7 +369,6 @@ export default function Admin() {
   const [businesses, setBusinesses] = useState<Row[]>([]);
   const [investors, setInvestors] = useState<Row[]>([]);
   const [profiles, setProfiles] = useState<Row[]>([]);
-  const [promos, setPromos] = useState<Row[]>([]);
   const [requests, setRequests] = useState<Row[]>([]);
   const [proposals, setProposals] = useState<Row[]>([]);
   const [payments, setPayments] = useState<Row[]>([]);
@@ -472,7 +471,6 @@ export default function Admin() {
         businessImagesResult,
         investorResult,
         profileResult,
-        promoResult,
         requestResult,
         proposalResult,
         paymentResult,
@@ -485,7 +483,6 @@ export default function Admin() {
         supabase.from('business_images').select('id,business_id,title,display_title,public_visible,is_sanitized,is_hero,admin_note,created_at,updated_at').order('created_at', { ascending: false }).limit(2000),
         supabase.from('investors').select('*').order('created_at', { ascending: false }).limit(2000),
         supabase.from('profiles').select('id,role,username,display_name,email,country_iso2,language_code,timezone,phone_country_iso2,phone,status,dashboard_login_enabled,created_at,updated_at').order('created_at', { ascending: false }).limit(2000),
-        supabase.from('promo_codes').select('*').order('created_at', { ascending: false }).limit(500),
         supabase.from('request_data').select('*, businesses(title_vi,title_en,public_code,slug), investors(title_en,title_vi,code,type)').order('created_at', { ascending: false }).limit(500),
         supabase.from('proposals').select('id,business_id,investor_id,message,status,sent_at,updated_at,businesses(id,slug,company_name_private,title_vi,title_en,public_code),investors(id,code,private_name,title_vi,title_en,private_email)').order('sent_at', { ascending: false }).limit(1000),
         supabase.from('payment_orders').select('*').order('created_at', { ascending: false }).limit(500),
@@ -499,7 +496,6 @@ export default function Admin() {
       setBusinessImages(businessImagesResult.data || []);
       setInvestors(investorResult.data || []);
       setProfiles(profileResult.data || []);
-      setPromos(promoResult.data || []);
       setRequests(requestResult.data || []);
       setProposals(proposalResult.data || []);
       setPayments(paymentResult.data || []);
@@ -514,7 +510,6 @@ export default function Admin() {
         businessImagesResult.error ||
         investorResult.error ||
         profileResult.error ||
-        promoResult.error ||
         requestResult.error ||
         proposalResult.error ||
         paymentResult.error ||
@@ -1088,10 +1083,8 @@ export default function Admin() {
             )}
             {tab === 'promos' && (
               <AdminPromoManager
-                promos={promos}
                 adminId={profile.id}
-                busy={busy}
-                onReload={load}
+                refreshKey={lastRefreshedAt}
                 setMessage={setMsg}
                 setError={setError}
               />
