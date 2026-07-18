@@ -50,13 +50,23 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       - name: Capture local Homepage baseline
-        run: >-
-          npx playwright test
-          tests/e2e/06-homepage-h0-baseline.spec.ts
-          --config=playwright.config.ts
-          --project=chromium-1440
+        id: browser_capture
+        continue-on-error: true
+        shell: bash
+        run: |
+          mkdir -p docs/qa/homepage-h0-baseline
+          set +e
+          npx playwright test \
+            tests/e2e/06-homepage-h0-baseline.spec.ts \
+            --config=playwright.config.ts \
+            --project=chromium-1440 \
+            2>&1 | tee docs/qa/homepage-h0-baseline/playwright-output.log
+          status=${PIPESTATUS[0]}
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+          exit "$status"
 
       - name: Validate generated evidence
+        if: steps.browser_capture.outcome == 'success'
         run: |
           test -f docs/qa/homepage-h0-baseline/source-manifest.json
           test -f docs/qa/homepage-h0-baseline/computed-styles.json
@@ -68,7 +78,8 @@ jobs:
           test -f docs/qa/homepage-h0-baseline/home-en-1440x900.png
           git diff --check
 
-      - name: Commit H0 evidence to feature branch
+      - name: Commit H0 evidence and diagnostics to feature branch
+        if: always()
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -77,5 +88,10 @@ jobs:
             echo "No generated H0 evidence to commit."
             exit 0
           fi
-          git commit -m "test(home): record H0 visual and computed-style baseline"
+          git commit -m "test(home): record H0 evidence and capture diagnostics"
           git push origin HEAD:chore/homepage-h0-baseline
+
+      - name: Enforce successful browser capture
+        if: always()
+        run: |
+          test "${{ steps.browser_capture.outputs.status }}" = "0"
