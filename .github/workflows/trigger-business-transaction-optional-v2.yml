@@ -50,11 +50,29 @@ jobs:
         run: npm ci
 
       - name: Build
+        id: build
         if: steps.patch.outcome == 'success'
-        run: npm run build
+        continue-on-error: true
+        shell: bash
+        run: npm run build > /tmp/business-transaction-build.log 2>&1
+
+      - name: Upload build diagnostic
+        if: steps.build.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: business-transaction-build-diagnostic
+          path: /tmp/business-transaction-build.log
+          retention-days: 1
+
+      - name: Stop after build failure
+        if: steps.build.outcome == 'failure'
+        shell: bash
+        run: |
+          cat /tmp/business-transaction-build.log
+          exit 1
 
       - name: Commit update to building and remove one-time files
-        if: steps.patch.outcome == 'success'
+        if: steps.patch.outcome == 'success' && steps.build.outcome == 'success'
         shell: bash
         run: |
           rm -f .github/workflows/apply-business-transaction-optional-v2.yml
