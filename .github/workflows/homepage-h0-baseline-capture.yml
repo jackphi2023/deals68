@@ -39,17 +39,39 @@ jobs:
           fetch-depth: 0
           show-progress: false
 
-      - name: Normalize deterministic H0 Investor fixture
+      - name: Normalize deterministic H0 test harness
         run: |
           python3 - <<'PY'
           from pathlib import Path
           path = Path('tests/e2e/06-homepage-h0-baseline.spec.ts')
           text = path.read_text(encoding='utf-8')
-          old = 'admin_priority: index < 2,'
-          new = 'admin_priority: false,'
-          if old not in text and new not in text:
+
+          priority_old = 'admin_priority: index < 2,'
+          priority_new = 'admin_priority: false,'
+          if priority_old not in text and priority_new not in text:
               raise SystemExit('Expected H0 Investor fixture token was not found')
-          path.write_text(text.replace(old, new), encoding='utf-8')
+          text = text.replace(priority_old, priority_new)
+
+          wait_old = '''  await page.evaluate(async () => {
+            await (document as Document & { fonts?: FontFaceSet }).fonts?.ready;
+            const images = Array.from(document.images);
+            await Promise.all(
+              images.map((image) =>
+                image.complete
+                  ? Promise.resolve()
+                  : new Promise<void>((resolve) => {
+                      image.addEventListener('load', () => resolve(), { once: true });
+                      image.addEventListener('error', () => resolve(), { once: true });
+                    }),
+              ),
+            );
+          });'''
+          wait_new = '  await page.waitForTimeout(300);'
+          if wait_old not in text and wait_new not in text:
+              raise SystemExit('Expected unbounded image wait block was not found')
+          text = text.replace(wait_old, wait_new)
+
+          path.write_text(text, encoding='utf-8')
           PY
 
       - name: Install dependencies
