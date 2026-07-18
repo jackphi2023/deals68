@@ -11,6 +11,7 @@ on:
       - building
     types:
       - opened
+      - reopened
     paths:
       - .github/workflows/homepage-h0-baseline-capture.yml
 
