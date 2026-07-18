@@ -1,0 +1,45 @@
+name: Verify static pages content v2
+
+on:
+  pull_request:
+    branches:
+      - building
+    types:
+      - opened
+      - reopened
+      - synchronize
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout feature branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 1
+          show-progress: false
+
+      - name: Apply scoped content and UI patch
+        run: python3 scripts/apply-static-pages-v2.py
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Commit verified update to feature branch
+        shell: bash
+        run: |
+          rm -f scripts/apply-static-pages-v2.py
+          rm -f .github/workflows/apply-static-pages-content-v2.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "feat(static): update About Terms and Privacy content"
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}
