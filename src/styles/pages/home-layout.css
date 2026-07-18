@@ -1,56 +1,44 @@
-/* Homepage canvas and vertical rhythm.
-   This file owns only top-level homepage spacing and outer section surfaces.
-   Inner cards, media and branded content boxes keep their existing identity. */
+/* Homepage layout contract.
+   This file is the only owner of direct-child spacing and outer section surfaces.
+   Component internals remain in their component/page stylesheets. */
 
 .d68-home-page {
   --d68-home-section-gap: 80px;
   display: flex;
   flex-direction: column;
   row-gap: var(--d68-home-section-gap);
-  background: #F7FAFC !important;
   padding-bottom: var(--d68-home-section-gap);
+  background: #F7FAFC;
 }
 
-.d68-home-page > * {
+.d68-home-page > .d68-home-hero,
+.d68-home-page > .d68-home-block {
   min-width: 0;
 }
 
-/* Flex gap is the single source of vertical spacing between homepage blocks.
-   Remove legacy sibling margins without affecting horizontal auto-centering. */
-.d68-home-page > :not(.d68-home-hero) {
-  margin-top: 0 !important;
-  margin-bottom: 0 !important;
+/* Every non-hero block participates in exactly one 80px flex gap. No direct
+   block may add external vertical margin or padding; container gutters remain. */
+.d68-home-page > .d68-home-block {
+  width: 100%;
+  margin-block: 0;
+  padding-block: 0;
 }
 
-/* Neutralise legacy top/bottom padding on direct wrappers. Horizontal container
-   gutters and every inner component background remain unchanged. */
-.d68-home-page > .d68-home-section,
-.d68-home-page > .d68-home-industries,
-.d68-home-page > .d68-home-valuation,
-.d68-home-page > .d68-home-how,
-.d68-home-page > .d68-promo-banner {
-  padding-top: 0 !important;
-  padding-bottom: 0 !important;
-}
-
-/* Featured Industries belongs to the common homepage canvas. The outer section
-   and its content container are #F7FAFC; individual industry cards stay white. */
+/* Featured Industries is a full-width transparent section on the common canvas.
+   Its nested container owns only width/gutters; cards retain their white surface. */
 .d68-home-page > .d68-home-industries,
 .d68-home-page > .d68-home-industries > .d68-home-container {
-  background: #F7FAFC !important;
+  background: transparent;
 }
 
 .d68-home-page > .d68-home-industries {
-  border-top: 0 !important;
-  border-bottom: 0 !important;
+  border: 0;
   box-shadow: none;
 }
 
-/* Valuation owns a full-width transparent section. Horizontal gutters belong
-   to the nested container; only the branded inner box owns a visible surface. */
+/* Valuation follows the same section/container pattern. Only the inner branded
+   box owns a visible background. */
 .d68-home-page > .d68-home-valuation {
-  width: 100%;
-  padding: 0 !important;
   background: transparent;
   border: 0;
   outline: 0;
@@ -67,24 +55,10 @@
   background-clip: padding-box;
 }
 
+/* How-it-works keeps its own section surface and internal content padding.
+   No additional external spacing is introduced here. */
 .d68-home-page > .d68-home-how {
-  background-color: transparent;
-}
-
-.d68-home-page > .d68-home-how .d68-home-container {
-  padding-top: 0 !important;
-  padding-bottom: 0 !important;
-}
-
-/* Remove the absolute verification decoration that overlaps long investor
-   names. Verification states can be represented by an explicit badge later. */
-.d68-home-page .d68-home-investor-card::after {
-  content: none !important;
-  display: none !important;
-}
-
-.d68-home-page .d68-home-investor-card__heading {
-  margin-right: 0 !important;
+  margin-block: 0;
 }
 
 @media (max-width: 700px) {

@@ -680,6 +680,54 @@ export function AdminBannerManager() {
     }
   }
 
+  async function setBannerActive(
+    row: SiteBanner,
+    active: boolean,
+  ) {
+    const key = `status-${row.id}`;
+    setBusyKey(key);
+    setError('');
+    setMessage('');
+
+    try {
+      const updatedAt = new Date().toISOString();
+      const updateResult = await supabase
+        .from('site_banners')
+        .update({ active, updated_at: updatedAt })
+        .eq('id', row.id)
+        .select('id')
+        .single();
+
+      if (updateResult.error) throw updateResult.error;
+
+      if (active) {
+        const duplicateResult = await supabase
+          .from('site_banners')
+          .update({ active: false, updated_at: updatedAt })
+          .eq('placement', row.placement)
+          .eq('sort_order', row.sort_order)
+          .neq('id', row.id)
+          .eq('active', true);
+
+        if (duplicateResult.error) throw duplicateResult.error;
+      }
+
+      setMessage(
+        active
+          ? `Đã bật hiển thị ${row.title || 'banner'}.`
+          : `Đã tắt hiển thị ${row.title || 'banner'}.`,
+      );
+      await load();
+    } catch (statusError: any) {
+      setError(
+        statusError?.message || 'Không cập nhật được trạng thái banner.',
+      );
+      await load();
+    } finally {
+      setBusyKey('');
+    }
+  }
+
   async function remove(row: SiteBanner) {
     if (!window.confirm('Xóa banner này?')) return;
 
@@ -857,8 +905,19 @@ export function AdminBannerManager() {
                             name="active"
                             type="checkbox"
                             defaultChecked={row?.active !== false}
+                            disabled={!!busyKey}
+                            onChange={(event) => {
+                              if (row) {
+                                void setBannerActive(
+                                  row,
+                                  event.currentTarget.checked,
+                                );
+                              }
+                            }}
                           />{' '}
-                          Đang hiển thị
+                          {row
+                            ? 'Đang hiển thị · lưu trạng thái ngay'
+                            : 'Hiển thị sau khi upload'}
                         </label>
                       </label>
 

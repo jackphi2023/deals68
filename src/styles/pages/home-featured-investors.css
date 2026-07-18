@@ -1,5 +1,5 @@
-/* Homepage featured investor component ownership.
-   Section background and vertical rhythm are owned by home-layout.css. */
+/* Homepage featured-investor component ownership.
+   Outer section spacing belongs exclusively to home-layout.css. */
 
 .d68-home-page .d68-home-investor-grid {
   align-items: stretch;
@@ -7,6 +7,16 @@
 
 .d68-home-page .d68-home-investor-card {
   min-height: 356px !important;
+}
+
+/* Remove the legacy absolute verification decoration that overlaps long names. */
+.d68-home-page .d68-home-investor-card::after {
+  content: none !important;
+  display: none !important;
+}
+
+.d68-home-page .d68-home-investor-card__heading {
+  margin-right: 0 !important;
 }
 
 .d68-home-page .d68-home-investor-card__meta {

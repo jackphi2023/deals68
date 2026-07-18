@@ -132,34 +132,6 @@ img,svg,video,canvas{max-width:100%}
   width:60px!important;
   height:60px!important;
 }
-/* Promotion banner spacing: reduce large white gaps above/below homepage banner. */
-.d68-promo-banner.d68-home-container{
-  padding-top:50px!important;
-  padding-bottom:50px!important;
-  margin-top:0!important;
-  margin-bottom:0!important;
-}
-.d68-home-section--roles{
-  padding-bottom:50px!important;
-}
-.d68-promo-banner.d68-home-container + .d68-home-section,
-.d68-promo-banner.d68-home-container + .d68-home-container{
-  padding-top:50px!important;
-}
-@media(max-width:700px){
-  .d68-promo-banner.d68-home-container{
-    padding-top:36px!important;
-    padding-bottom:36px!important;
-  }
-  .d68-home-section--roles{
-    padding-bottom:36px!important;
-  }
-  .d68-promo-banner.d68-home-container + .d68-home-section,
-  .d68-promo-banner.d68-home-container + .d68-home-container{
-    padding-top:36px!important;
-  }
-}
-
 /* Card interaction contract: keep geometry and borders stable; hover adds only
    a light 2px lift shadow on the public entity routes. */
 .d68-home-page .d68-home-role-card:hover,
@@ -276,13 +248,6 @@ img,svg,video,canvas{max-width:100%}
   max-width:100%!important;
 }
 @media(max-width:700px){
-  .d68-home-investor-band{
-    border-radius:0!important;
-    padding:38px 16px 48px!important;
-    margin-left:auto!important;
-    margin-right:auto!important;
-    width:100%!important;
-  }
   .d68-detail-image-card{
     overflow:hidden!important;
     padding:8px!important;
