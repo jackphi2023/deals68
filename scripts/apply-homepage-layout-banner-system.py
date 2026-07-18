@@ -23,7 +23,8 @@ for old, new, label in [
     home = replace_once(home, old, new, label)
 home_path.write_text(home, encoding='utf-8')
 
-# 2) Remove legacy outer spacing from component CSS. home-layout.css is the owner.
+# 2) Remove legacy outer geometry from home.css. Component visuals stay here;
+#    direct-child spacing belongs only to home-layout.css.
 home_css_path = Path('src/styles/pages/home.css')
 home_css = home_css_path.read_text(encoding='utf-8')
 for old, label in [
@@ -31,37 +32,41 @@ for old, label in [
     ('.d68-home-industries{max-width:1200px;margin:0 auto;padding:72px 24px}', 'legacy industries geometry'),
     ('.d68-home-valuation{padding:8px 24px 72px}', 'legacy valuation geometry'),
     ('.d68-home-section{padding:48px 0}', 'legacy mobile section padding'),
+    ('.d68-home-page{\n  background:#fff;\n}\n\n', 'legacy homepage canvas'),
+    ('.d68-home-page .d68-home-container.d68-home-investor-band{\n  background:#fff!important;\n}\n', 'legacy investor section background'),
+    ('''  .d68-home-page .d68-home-container.d68-home-investor-band{
+    width:100%!important;
+    max-width:100%!important;
+    margin-left:auto!important;
+    margin-right:auto!important;
+    padding-left:16px!important;
+    padding-right:16px!important;
+  }
+''', 'legacy mobile investor geometry'),
 ]:
     home_css = replace_once(home_css, old, '', label)
 home_css_path.write_text(home_css, encoding='utf-8')
 
-# 3) Remove route geometry overrides from the generic UI-fixes file.
+# 3) Remove homepage outer spacing from generic UI fixes and replace :has-based
+#    component selectors with the stable semantic investor-band class.
 ui_path = Path('src/styles/pages/ui-fixes.css')
 ui = ui_path.read_text(encoding='utf-8')
-ui = replace_once(
-    ui,
-    '.d68-home-industries{max-width:none;margin:0;background:#F7FAFC;border-top:1px solid #E7EDF3;border-bottom:1px solid #E7EDF3;padding:72px 0}\n',
-    '',
-    'ui industries outer rule',
-)
-ui = replace_once(
-    ui,
-    '.d68-home-industries .d68-home-container{max-width:1200px;margin:0 auto;padding:0 24px}\n',
-    '',
-    'ui industries container rule',
-)
-ui = replace_once(
-    ui,
-    '.d68-home-container.d68-home-section:has(.d68-home-investor-grid){padding-top:66px;padding-bottom:72px}\n',
-    '',
-    'ui investor section padding',
-)
-ui = replace_once(
-    ui,
-    '@media(max-width:620px){.d68-home-industries{padding:54px 0}.d68-home-industry-grid,.d68-home-investor-grid{grid-template-columns:1fr}.d68-home-container.d68-home-section:has(.d68-home-investor-grid){padding-top:52px;padding-bottom:56px}.d68-home-industry-card{min-height:0}}',
-    '@media(max-width:620px){.d68-home-industry-grid,.d68-home-investor-grid{grid-template-columns:1fr}.d68-home-industry-card{min-height:0}}',
-    'ui mobile homepage spacing',
-)
+for old, new, label in [
+    ('.d68-home-industries{max-width:none;margin:0;background:#F7FAFC;border-top:1px solid #E7EDF3;border-bottom:1px solid #E7EDF3;padding:72px 0}\n', '', 'ui industries outer rule v1'),
+    ('.d68-home-industries .d68-home-container{max-width:1200px;margin:0 auto;padding:0 24px}\n', '', 'ui industries container rule'),
+    ('.d68-home-container.d68-home-section:has(.d68-home-investor-grid){padding-top:66px;padding-bottom:72px}\n', '', 'ui investor padding v1'),
+    ('@media(max-width:620px){.d68-home-industries{padding:54px 0}.d68-home-industry-grid,.d68-home-investor-grid{grid-template-columns:1fr}.d68-home-container.d68-home-section:has(.d68-home-investor-grid){padding-top:52px;padding-bottom:56px}.d68-home-industry-card{min-height:0}}', '@media(max-width:620px){.d68-home-industry-grid,.d68-home-investor-grid{grid-template-columns:1fr}.d68-home-industry-card{min-height:0}}', 'ui mobile spacing v1'),
+    ('.d68-home-industries{background:#fff!important;padding:68px 0 58px!important;border:0!important}\n', '', 'ui industries outer rule v2'),
+    ('.d68-home-container.d68-home-section:has(.d68-home-investor-grid){padding-top:62px!important;padding-bottom:64px!important;background:#fff!important}\n', '', 'ui investor padding v2'),
+    ('.d68-home-container.d68-home-section:has(.d68-home-investor-grid) .d68-home-title--row', '.d68-home-investor-band .d68-home-title--row', 'investor title row selector'),
+    ('.d68-home-container.d68-home-section:has(.d68-home-investor-grid) .d68-home-title h2', '.d68-home-investor-band .d68-home-title h2', 'investor title selector'),
+    ('.d68-home-container.d68-home-section:has(.d68-home-investor-grid) .d68-home-title>a', '.d68-home-investor-band .d68-home-title>a', 'investor title link selector'),
+    ('@media(max-width:1040px){.d68-home-industry-grid,.d68-home-investor-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}.d68-home-container.d68-home-section:has(.d68-home-investor-grid) .d68-home-title h2,.d68-home-industries .d68-home-title h2{font-size:30px!important}}', '@media(max-width:1040px){.d68-home-industry-grid,.d68-home-investor-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}.d68-home-investor-band .d68-home-title h2,.d68-home-industries .d68-home-title h2{font-size:30px!important}}', 'tablet investor selector'),
+    ('@media(max-width:620px){.d68-home-industries{padding:52px 0 44px!important}.d68-home-industry-grid,.d68-home-investor-grid{grid-template-columns:1fr!important;gap:16px!important}.d68-home-industry-card{min-height:0!important}.d68-home-industry-card>div{height:110px!important}.d68-home-container.d68-home-section:has(.d68-home-investor-grid){padding-top:50px!important;padding-bottom:52px!important}.d68-home-container.d68-home-section:has(.d68-home-investor-grid) .d68-home-title--row{align-items:flex-start!important}.d68-static-hero__inner{padding-top:52px!important;padding-bottom:46px!important}.d68-static-hero h1{font-size:32px!important}.d68-static-hero p{font-size:15.5px!important}}', '@media(max-width:620px){.d68-home-industry-grid,.d68-home-investor-grid{grid-template-columns:1fr!important;gap:16px!important}.d68-home-industry-card{min-height:0!important}.d68-home-industry-card>div{height:110px!important}.d68-home-investor-band .d68-home-title--row{align-items:flex-start!important}.d68-static-hero__inner{padding-top:52px!important;padding-bottom:46px!important}.d68-static-hero h1{font-size:32px!important}.d68-static-hero p{font-size:15.5px!important}}', 'ui mobile spacing v2'),
+    ('.d68-promo-banner.d68-home-container{padding-top:50px!important;padding-bottom:50px!important}\n', '', 'ui promotion outer spacing'),
+    ('.d68-home-container.d68-home-section:has(.d68-home-investor-grid){background:transparent!important}\n', '', 'ui investor background compatibility'),
+]:
+    ui = replace_once(ui, old, new, label)
 ui_path.write_text(ui, encoding='utf-8')
 
 # 4) Remove old release compatibility spacing rules now owned by home-layout.css.
@@ -217,7 +222,9 @@ checks = {
     'legacy home section padding removed': '.d68-home-section{padding:' not in home_css,
     'legacy industries geometry removed': '.d68-home-industries{max-width:1200px' not in home_css,
     'legacy valuation geometry removed': '.d68-home-valuation{padding:' not in home_css,
+    'legacy investor white surface removed': 'd68-home-container.d68-home-investor-band' not in home_css,
     'ui :has spacing removed': ':has(.d68-home-investor-grid)' not in ui,
+    'ui promotion spacing removed': 'd68-promo-banner.d68-home-container{padding-top' not in ui,
     'release promo spacing removed': 'Promotion banner spacing:' not in release,
     'release mobile investor padding removed': 'padding:38px 16px 48px' not in release,
     'nullable start date query': 'starts_at.is.null,starts_at.lte' in banners,
