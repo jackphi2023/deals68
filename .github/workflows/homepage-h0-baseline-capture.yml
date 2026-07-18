@@ -6,6 +6,7 @@ on:
       - chore/homepage-h0-baseline
     paths:
       - .github/workflows/homepage-h0-baseline-capture.yml
+      - scripts/homepage-h0-trigger.txt
   pull_request:
     branches:
       - building
