@@ -1,0 +1,42 @@
+name: Apply static pages content v2
+
+on:
+  push:
+    branches:
+      - chore/static-pages-content-v2
+    paths:
+      - .github/workflows/apply-static-pages-content-v2.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout feature branch
+        uses: actions/checkout@v4
+        with:
+          ref: chore/static-pages-content-v2
+          fetch-depth: 1
+          show-progress: false
+
+      - name: Apply scoped content and UI patch
+        run: python3 scripts/apply-static-pages-v2.py
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Commit verified update and remove one-time files
+        shell: bash
+        run: |
+          rm -f scripts/apply-static-pages-v2.py
+          rm -f .github/workflows/apply-static-pages-content-v2.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "feat(static): update About Terms and Privacy content"
+          git push origin HEAD:chore/static-pages-content-v2
