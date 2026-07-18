@@ -25,15 +25,36 @@ jobs:
           show-progress: false
 
       - name: Apply scoped patch
-        run: python3 scripts/run-one-time-business-transaction-v2.py
+        id: patch
+        continue-on-error: true
+        shell: bash
+        run: python3 scripts/run-one-time-business-transaction-v2.py > /tmp/business-transaction-patch.log 2>&1
+
+      - name: Upload patch diagnostic
+        if: steps.patch.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: business-transaction-patch-diagnostic
+          path: /tmp/business-transaction-patch.log
+          retention-days: 1
+
+      - name: Stop after patch failure
+        if: steps.patch.outcome == 'failure'
+        shell: bash
+        run: |
+          cat /tmp/business-transaction-patch.log
+          exit 1
 
       - name: Install dependencies
+        if: steps.patch.outcome == 'success'
         run: npm ci
 
       - name: Build
+        if: steps.patch.outcome == 'success'
         run: npm run build
 
       - name: Commit update to building and remove one-time files
+        if: steps.patch.outcome == 'success'
         shell: bash
         run: |
           rm -f .github/workflows/apply-business-transaction-optional-v2.yml
