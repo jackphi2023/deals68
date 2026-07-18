@@ -46,17 +46,23 @@
   box-shadow: none;
 }
 
-/* Valuation is a CSS-rendered branded box, not a cropped image. Its wrapper uses
-   the common #F7FAFC canvas; only the inner box keeps the blue brand gradient. */
+/* Valuation owns a full-width transparent section. Horizontal gutters belong
+   to the nested container; only the branded inner box owns a visible surface. */
 .d68-home-page > .d68-home-valuation {
-  background: #F7FAFC !important;
-  border: 0 !important;
+  width: 100%;
+  padding: 0 !important;
+  background: transparent;
+  border: 0;
   outline: 0;
   box-shadow: none;
 }
 
-.d68-home-page > .d68-home-valuation > .d68-home-valuation__box {
-  border: 0 !important;
+.d68-home-page > .d68-home-valuation > .d68-home-container {
+  background: transparent;
+}
+
+.d68-home-page > .d68-home-valuation .d68-home-valuation__box {
+  border: 0;
   outline: 0;
   background-clip: padding-box;
 }

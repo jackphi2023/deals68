@@ -340,7 +340,18 @@ export default function Home({ lang }: { lang: Lang }) {
         </div>
       </section>
 
-      <section className="d68-home-container d68-home-valuation"><div className="d68-home-valuation__box"><div><span>{T(lang, 'Miễn phí - Không cần đăng nhập', 'Free - No login required')}</span><h2>{T(lang, 'Định giá sơ bộ doanh nghiệp của bạn', 'Estimate your business valuation')}</h2><p>{T(lang, 'Nhập một vài chỉ số để nhận khoảng định giá tham khảo trước khi đăng hồ sơ gọi vốn hoặc chuyển nhượng.', 'Enter a few metrics to get a reference valuation range before listing to raise capital or transfer.')}</p></div><Link to={nav('/valuation')}>{T(lang, 'Định giá ngay', 'Value my business')} →</Link></div></section>
+      <section className="d68-home-valuation">
+        <div className="d68-home-container">
+          <div className="d68-home-valuation__box">
+            <div>
+              <span>{T(lang, 'Miễn phí - Không cần đăng nhập', 'Free - No login required')}</span>
+              <h2>{T(lang, 'Định giá sơ bộ doanh nghiệp của bạn', 'Estimate your business valuation')}</h2>
+              <p>{T(lang, 'Nhập một vài chỉ số để nhận khoảng định giá tham khảo trước khi đăng hồ sơ gọi vốn hoặc chuyển nhượng.', 'Enter a few metrics to get a reference valuation range before listing to raise capital or transfer.')}</p>
+            </div>
+            <Link to={nav('/valuation')}>{T(lang, 'Định giá ngay', 'Value my business')} →</Link>
+          </div>
+        </div>
+      </section>
 
       <section className="d68-home-how"><div className="d68-home-container"><div className="d68-home-title d68-home-title--center"><h2 style={{ color: '#0F2A4A' }}>{T(lang, 'Cách hoạt động', 'How it works')}</h2><p>{T(lang, 'Ba bước để bắt đầu một thương vụ trên Deals68.', 'Three steps to start a deal on Deals68.')}</p></div><div className="d68-home-steps">{steps.map((step) => <div key={step.n}><b>{step.n}</b><h3>{step.title}</h3><p>{step.desc}</p></div>)}</div></div></section>
     </main>

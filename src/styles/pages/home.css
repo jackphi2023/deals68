@@ -152,9 +152,7 @@
 .d68-home-page{
   background:#fff;
 }
-.d68-home-page .d68-home-container.d68-home-valuation{
-  background:#fff!important;
-}
+
 .d68-home-page .d68-home-valuation__box>a,
 .d68-home-page .d68-home-valuation__box>a:visited{
   color:#fff!important;
@@ -169,10 +167,7 @@
   background:#fff!important;
 }
 @media(max-width:700px){
-  .d68-home-page .d68-home-container.d68-home-valuation{
-    padding-left:16px!important;
-    padding-right:16px!important;
-  }
+  
   .d68-home-page .d68-home-valuation__box{
     width:100%!important;
     max-width:100%!important;
