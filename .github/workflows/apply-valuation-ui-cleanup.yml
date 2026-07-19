@@ -1,0 +1,73 @@
+name: Apply valuation UI cleanup
+
+on:
+  pull_request:
+    branches:
+      - building
+    types:
+      - opened
+      - synchronize
+      - reopened
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: deals68-valuation-ui-cleanup
+  cancel-in-progress: false
+
+jobs:
+  apply-verify-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout latest building
+        uses: actions/checkout@v4
+        with:
+          ref: building
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Apply valuation-only UI cleanup
+        run: python3 scripts/apply_valuation_ui_cleanup.py
+
+      - name: Verify changed-file scope
+        run: |
+          allowed='^(src/pages/Valuation.tsx|src/pages/Register.tsx|src/pages/BusinessDashboard.tsx|src/styles/pages/auth.css|src/styles/pages/dashboard.css|scripts/deals68-asset-valuation-v1-check.mjs|scripts/apply_valuation_ui_cleanup.py|.github/workflows/apply-valuation-ui-cleanup.yml)$'
+          unexpected=$(git status --short | awk '{print $2}' | grep -Ev "$allowed" || true)
+          if [ -n "$unexpected" ]; then
+            echo 'Unexpected out-of-scope files:'
+            echo "$unexpected"
+            exit 1
+          fi
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Production build
+        run: npm run build
+
+      - name: Asset valuation QA
+        run: npm run qa:asset-valuation
+
+      - name: CSS architecture QA
+        run: npm run qa:css
+
+      - name: Diff validation
+        run: git diff --check
+
+      - name: Remove temporary applicator
+        run: git rm scripts/apply_valuation_ui_cleanup.py .github/workflows/apply-valuation-ui-cleanup.yml
+
+      - name: Commit verified UI cleanup to building
+        run: |
+          git config user.name "Deals68 Release Bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add -A
+          git commit -m "style(valuation): simplify asset guidance UI"
+          git push origin HEAD:building
