@@ -1,0 +1,63 @@
+name: Apply homepage wording and background
+
+on:
+  pull_request:
+    branches:
+      - building
+    types:
+      - opened
+      - reopened
+      - synchronize
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout feature branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 1
+          show-progress: false
+
+      - name: Apply scoped Homepage update
+        run: python3 scripts/apply-home-wording-how-background-v1.py
+
+      - name: Verify source contracts
+        shell: bash
+        run: |
+          grep -q "Tham gia Deals68" src/pages/Home.tsx
+          grep -q "Nền tảng mua bán doanh nghiệp, M&A, huy động vốn và kết nối nhà đầu tư trong nước và quốc tế cho doanh nghiệp Việt Nam trên toàn cầu." src/pages/Home.tsx
+          ! grep -q "Bạn tham gia với vai trò nào?" src/pages/Home.tsx
+          ! grep -q "Deals68 phục vụ nhiều nhu cầu: gọi vốn, mua bán, cho vay và phát triển thị trường." src/pages/Home.tsx
+          ! grep -q "d68-home-how{background:#EEF2F6" src/styles/pages/home.css
+          grep -q ".d68-home-page > .d68-home-how > .d68-home-container" src/styles/pages/home-layout.css
+          ! grep -q "<h2 style={{ color: '#0F2A4A' }}" src/pages/Home.tsx
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Production build
+        run: npm run build
+
+      - name: Check diff formatting
+        run: git diff --check
+
+      - name: Commit verified source changes
+        shell: bash
+        run: |
+          rm -f scripts/apply-home-wording-how-background-v1.py
+          rm -f .github/workflows/apply-home-wording-how-background-v1.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No source changes to commit."
+            exit 0
+          fi
+          git commit -m "fix(home): update role copy and unify how-it-works background"
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}
