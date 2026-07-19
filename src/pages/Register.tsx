@@ -106,6 +106,40 @@ function safeUsername(email: string, name: string) {
     .slice(0, 42);
 }
 
+function isValidEmail(value: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+}
+
+function registrationErrorMessage(
+  lang: Lang,
+  rawError?: string,
+  errorCode?: string,
+) {
+  const raw = String(rawError || '').trim();
+  const normalized = (String(errorCode || '') + ' ' + raw).toLowerCase();
+  const isEmailError =
+    normalized.includes('email_address_invalid') ||
+    normalized.includes('invalid email') ||
+    normalized.includes('email address is invalid') ||
+    normalized.includes('user_already_exists') ||
+    normalized.includes('user already registered') ||
+    normalized.includes('already been registered') ||
+    normalized.includes('already registered') ||
+    normalized.includes('email already') ||
+    normalized.includes('email exists') ||
+    (normalized.includes('duplicate key') && normalized.includes('email'));
+
+  if (isEmailError) {
+    return T(
+      lang,
+      'Email không hợp lệ/đã đăng ký.',
+      'Invalid email or already registered.',
+    );
+  }
+
+  return raw || T(lang, 'Không thể tạo tài khoản', 'Could not create account');
+}
+
 function money(value: number, currency: string) {
   return currency === 'VND'
     ? `${Math.round(value).toLocaleString('vi-VN')} ₫`
@@ -293,7 +327,7 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
   const [country, setCountry] = useState(
     intent.country === 'GLOBAL' ? 'Singapore' : 'Việt Nam',
   );
-  const [industry, setIndustry] = useState('Thực phẩm & Đồ uống (F&B)');
+  const [industry, setIndustry] = useState('');
   const [city, setCity] = useState('TP. Hồ Chí Minh');
   const [companyName, setCompanyName] = useState('');
   const [highlights, setHighlights] = useState('');
@@ -558,8 +592,19 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
     event.preventDefault();
     setMsgType('');
     const missing: string[] = [];
+    const normalizedEmail = email.trim();
 
-    if (!email.trim()) missing.push(T(lang, 'Email đăng nhập', 'Login email'));
+    if (!isValidEmail(normalizedEmail)) {
+      setMsgType('err');
+      setMsg(
+        T(
+          lang,
+          'Email không hợp lệ/đã đăng ký.',
+          'Invalid email or already registered.',
+        ),
+      );
+      return;
+    }
     if (password.length < 8) {
       missing.push(
         T(
@@ -738,11 +783,24 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
       signup_nonce: signupNonce,
     });
 
-    if (signupResult.error || !signupResult.user) {
+    if (
+      signupResult.error ||
+      !signupResult.user ||
+      signupResult.user.identities?.length === 0
+    ) {
       setMsgType('err');
       setMsg(
-        signupResult.error ||
-          T(lang, 'Không thể tạo tài khoản', 'Could not create account'),
+        signupResult.user?.identities?.length === 0
+          ? T(
+              lang,
+              'Email không hợp lệ/đã đăng ký.',
+              'Invalid email or already registered.',
+            )
+          : registrationErrorMessage(
+              lang,
+              signupResult.error,
+              signupResult.code,
+            ),
       );
       setLoading(false);
       return;
@@ -1361,7 +1419,7 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
           </p>
         </div>
 
-        <form onSubmit={submit} className="d68-register-form">
+        <form noValidate onSubmit={submit} className="d68-register-form">
           <section className="d68-register-section d68-register-section--account">
             <h2>{T(lang, 'Thông tin tài khoản', 'Account information')}</h2>
             <div className="d68-form-grid">
@@ -1431,6 +1489,9 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
                       value={industry}
                       onChange={(event) => setIndustry(event.target.value)}
                     >
+                      <option value="" disabled>
+                        {T(lang, 'Chọn danh mục', 'Select category')}
+                      </option>
                       {industryOptions.map((item) => (
                         <option key={item.key} value={item.vi}>
                           {T(lang, item.vi, item.en)}
