@@ -13,28 +13,21 @@ on:
 permissions:
   contents: write
 
-concurrency:
-  group: deals68-asset-valuation-v1
-  cancel-in-progress: false
-
 jobs:
-  apply-and-verify:
+  diagnose-release:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout building
-        uses: actions/checkout@v4
-        with:
-          ref: building
-          fetch-depth: 0
-          show-progress: false
+      - name: Quiet checkout building
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          rm -rf .git
+          git init -q
+          git remote add origin "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git fetch -q --depth=1 origin building
+          git checkout -q -B building FETCH_HEAD
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-
-      - name: Relax non-critical valuation copy patch
+      - name: Prepare and apply asset valuation source
         run: |
           python3 - <<'PY'
           from pathlib import Path
@@ -47,12 +40,7 @@ jobs:
               raise SystemExit('Could not relax optional valuation copy patch')
           path.write_text(updated, encoding='utf-8')
           PY
-
-      - name: Apply source patch
-        run: python3 scripts/apply_asset_valuation_v1.py
-
-      - name: Preserve explicit zero net debt display
-        run: |
+          python3 scripts/apply_asset_valuation_v1.py
           python3 - <<'PY'
           from pathlib import Path
           path = Path('src/pages/BusinessDashboard.tsx')
@@ -64,28 +52,13 @@ jobs:
           path.write_text(text.replace(old, new, 1), encoding='utf-8')
           PY
 
-      - name: Install dependencies
-        run: npm ci
+      - name: Install dependencies quietly
+        run: npm ci --silent
 
-      - name: Asset valuation contract
-        run: npm run qa:asset-valuation
-
-      - name: Release QA
-        run: npm run qa:release
-
-      - name: CSS architecture QA
-        run: npm run qa:css
-
-      - name: Existing fix-series regression
-        run: npm run qa:fix-series
-
-      - name: Diff validation
-        run: git diff --check
-
-      - name: Commit tested source
+      - name: Release QA diagnostic
         run: |
-          git config user.name "Deals68 Release Bot"
-          git config user.email "actions@users.noreply.github.com"
-          git add -A
-          git commit -m "feat(valuation): add asset-adjusted reference logic"
-          git push origin HEAD:building
+          set +e
+          npm run qa:release > /tmp/release-qa.log 2>&1
+          status=$?
+          tail -n 80 /tmp/release-qa.log
+          exit "$status"
