@@ -1,0 +1,35 @@
+/* Shared Promotion Banner owner: Homepage and listing pages. */
+.d68-promo-banner {
+  width: 100%;
+  max-width: 100%;
+  margin-block: 0;
+  padding-block: 0;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+
+.d68-promo-banner__link {
+  display: block;
+  width: 100%;
+  overflow: hidden;
+  border-radius: 18px;
+  background: transparent;
+  line-height: 0;
+}
+
+.d68-promo-banner__link img {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  aspect-ratio: auto;
+  object-fit: contain;
+  object-position: center;
+  background: transparent;
+}
+
+.d68-home-page > .d68-promo-banner.d68-home-block {
+  margin-block: 0;
+  padding-block: 0;
+}

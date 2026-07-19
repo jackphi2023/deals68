@@ -29,6 +29,8 @@ type ImageRules = {
   maxWidth: number;
   maxHeight: number;
   label: string;
+  acceptedRatioMin?: number;
+  acceptedRatioMax?: number;
 };
 
 function rulesFor(placement: BannerPlacement, variant: BannerImageVariant): ImageRules {
@@ -66,13 +68,15 @@ function rulesFor(placement: BannerPlacement, variant: BannerImageVariant): Imag
     };
   }
   return {
-    targetRatio: 32 / 11,
-    ratioTolerance: 0.3,
+    targetRatio: 9 / 2,
+    ratioTolerance: 0.2,
+    acceptedRatioMin: 3.6,
+    acceptedRatioMax: 5.4,
     minWidth: 1200,
-    minHeight: 400,
+    minHeight: 220,
     maxWidth: 1920,
-    maxHeight: 660,
-    label: 'Promotion 1600×550',
+    maxHeight: 480,
+    label: 'Promotion siêu ngang 4:1–5:1',
   };
 }
 
@@ -134,8 +138,15 @@ export async function prepareBannerImage(
   const ratio = width / height;
   const warnings: string[] = [];
   const ratioDelta = Math.abs(ratio - rules.targetRatio) / rules.targetRatio;
-  if (ratioDelta > rules.ratioTolerance) {
-    warnings.push(`Tỷ lệ ${width}×${height} khác ${rules.label}; hãy kiểm tra vùng crop trong preview.`);
+  const ratioOutsideAcceptedRange =
+    rules.acceptedRatioMin !== undefined &&
+    rules.acceptedRatioMax !== undefined
+      ? ratio < rules.acceptedRatioMin || ratio > rules.acceptedRatioMax
+      : ratioDelta > rules.ratioTolerance;
+  if (ratioOutsideAcceptedRange) {
+    warnings.push(
+      `Tỷ lệ ${width}×${height} (${ratio.toFixed(2)}:1) nằm ngoài ${rules.label}; ảnh vẫn được giữ nguyên tỷ lệ và hiển thị toàn bộ.`,
+    );
   }
   if (width < rules.minWidth || height < rules.minHeight) {
     warnings.push(`Ảnh ${width}×${height} nhỏ hơn mức khuyến nghị ${rules.minWidth}×${rules.minHeight}; có thể giảm độ nét trên màn hình lớn.`);

@@ -1,22 +1,20 @@
 import { type FormEvent, useEffect, useMemo, useState } from 'react';
-import { Link, Navigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../../lib/supabase';
 import type {
   BannerLangMode,
   BannerPlacement,
   SiteBanner,
-} from '../lib/banners';
+} from '../../lib/banners';
 import {
   formatBannerBytes,
   prepareBannerImage,
   uploadPreparedBannerImage,
   type PreparedBannerImage,
-} from '../lib/bannerImagePipeline';
+} from '../../lib/bannerImagePipeline';
 import {
   heroFocusPosition,
   heroMobileFocusPosition,
-} from '../components/HeroBannerMedia';
+} from '../HeroBannerMedia';
 
 type BannerRow = SiteBanner & {
   mobile_focal_x?: number | null;
@@ -51,13 +49,13 @@ const PLACEMENTS: Array<{
     id: 'home_promotion',
     label: 'Trang chủ Promotion',
     slots: 2,
-    note: 'Khuyến nghị 1600×550px. Ảnh lớn được tự thu nhỏ và chuyển WebP khi có lợi.',
+    note: 'Chấp nhận banner siêu ngang khoảng 4:1–5:1, ví dụ 1600×400 hoặc 1600×320. Ảnh lớn được tự resize, giữ nguyên tỷ lệ và chuyển WebP khi có lợi.',
   },
   {
     id: 'listing_promotion',
     label: 'Trang danh sách Promotion',
     slots: 2,
-    note: 'Khuyến nghị 1600×550px. Ảnh lớn được tự thu nhỏ và chuyển WebP khi có lợi.',
+    note: 'Chấp nhận banner siêu ngang khoảng 4:1–5:1, ví dụ 1600×400 hoặc 1600×320. Ảnh lớn được tự resize, giữ nguyên tỷ lệ và chuyển WebP khi có lợi.',
   },
   {
     id: 'investor_cover_default',
@@ -138,6 +136,7 @@ function ImageReport({ prepared }: { prepared: PreparedBannerImage | null }) {
       <div>
         <b>{meta.width}×{meta.height}</b>
         <span>{formatBannerBytes(meta.bytes)} → {formatBannerBytes(meta.outputBytes)}</span>
+        <span>Tỷ lệ {meta.ratio.toFixed(2)}:1</span>
         <span>{meta.optimized ? 'Đã tối ưu WebP' : 'Giữ file gốc'}</span>
       </div>
       {meta.warnings.map((warning) => <p key={warning}>⚠ {warning}</p>)}
@@ -257,7 +256,7 @@ function BannerEditor({
           </div>
         ) : draft.desktopPreviewUrl ? (
           <figure className="d68-banner-live-preview d68-banner-live-preview--promotion">
-            <figcaption>Preview responsive · cover</figcaption>
+            <figcaption>Preview toàn ảnh · không crop</figcaption>
             <img src={draft.desktopPreviewUrl} alt="Banner preview" />
           </figure>
         ) : null}
@@ -292,7 +291,7 @@ function BannerEditor({
 
         <label className="d68-admin-field">
           <span>{row ? 'Thay ảnh desktop' : 'Upload ảnh desktop'}</span>
-          <small>{isHero ? 'Khuyến nghị 1600×600px.' : 'Ảnh được kiểm tra tỷ lệ và tối ưu trước upload.'}</small>
+          <small>{isHero ? 'Khuyến nghị 1600×600px.' : 'Chấp nhận tỷ lệ khoảng 4:1–5:1. Ảnh được resize giữ nguyên tỷ lệ và tối ưu trước upload.'}</small>
           <input name="file" type="file" accept="image/png,image/jpeg,image/webp" className="d68-admin-input" onChange={(event) => chooseFile('desktop', event.target.files?.[0])} />
         </label>
         <ImageReport prepared={draft.desktopPrepared} />
@@ -331,8 +330,11 @@ function BannerEditor({
   );
 }
 
-export default function AdminBanners() {
-  const { profile, loading } = useAuth();
+export default function AdminBannerManager({
+  refreshKey = '',
+}: {
+  refreshKey?: string;
+}) {
   const [rows, setRows] = useState<BannerRow[]>([]);
   const [busyKey, setBusyKey] = useState('');
   const [message, setMessage] = useState('');
@@ -345,8 +347,10 @@ export default function AdminBanners() {
   }
 
   useEffect(() => {
-    if (profile?.role === 'admin') load().catch((loadError) => setError(loadError?.message || 'Không tải được banner.'));
-  }, [profile?.role]);
+    load().catch((loadError) =>
+      setError(loadError?.message || 'Không tải được banner.'),
+    );
+  }, [refreshKey]);
 
   async function removeStoragePath(path?: string | null) {
     if (!clean(path)) return;
@@ -465,31 +469,29 @@ export default function AdminBanners() {
     }
   }
 
-  if (loading) return <main className="d68-admin-page"><div className="d68-admin-wrap"><div className="d68-admin-card">Loading admin...</div></div></main>;
-  if (profile?.role !== 'admin') return <Navigate to="/login?next=/admin/banners" replace />;
-
   return (
-    <main className="d68-admin-page d68-admin-banners-page">
-      <div className="d68-admin-wrap">
-        <div className="d68-admin-row-head d68-admin-banners-head">
-          <div><h1>Quản trị Banner</h1><p>Kiểm tra tỷ lệ, tối ưu WebP, cache dài hạn và preview đúng crop trước khi lưu.</p></div>
-          <Link to="/admin" className="d68-admin-btn light">← Admin</Link>
-        </div>
-        {message ? <div className="d68-admin-notice ok">{message}</div> : null}
-        {error ? <div className="d68-admin-notice err">{error}</div> : null}
-        {PLACEMENTS.map((placement) => (
-          <section key={placement.id} className="d68-admin-card d68-banner-admin__section">
-            <h2>{placement.label}</h2><p className="d68-admin-subtle">{placement.note}</p>
-            <div className="d68-banner-slot-grid">
-              {Array.from({ length: placement.slots }).map((_, index) => {
-                const slot = index + 1;
-                const row = slotRow(rows, placement.id, slot);
-                return <BannerEditor key={`${placement.id}-${slot}-${row?.id || 'new'}-${row?.updated_at || ''}`} row={row} placement={placement.id} slot={slot} busy={!!busyKey} onSave={save} onDelete={remove} />;
-              })}
-            </div>
-          </section>
-        ))}
+    <div className="d68-admin-banners-module">
+      <div className="d68-admin-card d68-admin-banners-head">
+        <h2>Quản trị Banner</h2>
+        <p>
+          Quản lý Hero, Promotion và cover mặc định trong cùng hệ thống Admin.
+          Promotion hỗ trợ ảnh siêu ngang, tối ưu WebP và hiển thị toàn ảnh không crop.
+        </p>
       </div>
-    </main>
+      {message ? <div className="d68-admin-notice ok">{message}</div> : null}
+      {error ? <div className="d68-admin-notice err">{error}</div> : null}
+      {PLACEMENTS.map((placement) => (
+        <section key={placement.id} className="d68-admin-card d68-banner-admin__section">
+          <h2>{placement.label}</h2><p className="d68-admin-subtle">{placement.note}</p>
+          <div className="d68-banner-slot-grid">
+            {Array.from({ length: placement.slots }).map((_, index) => {
+              const slot = index + 1;
+              const row = slotRow(rows, placement.id, slot);
+              return <BannerEditor key={`${placement.id}-${slot}-${row?.id || 'new'}-${row?.updated_at || ''}`} row={row} placement={placement.id} slot={slot} busy={!!busyKey} onSave={save} onDelete={remove} />;
+            })}
+          </div>
+        </section>
+      ))}
+    </div>
   );
 }
