@@ -24,6 +24,8 @@ export type SiteBanner = {
   mobile_image_path?: string | null;
   focal_x?: number | null;
   focal_y?: number | null;
+  mobile_focal_x?: number | null;
+  mobile_focal_y?: number | null;
   link_url?: string | null;
   sort_order: number;
   lang_mode: BannerLangMode;
