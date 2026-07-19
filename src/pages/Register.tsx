@@ -1928,7 +1928,21 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
                     <div><dt>{T(lang, 'Phương pháp', 'Method')}</dt><dd>{benchmarkResult ? valuationMethodLabel(lang, benchmarkResult) : '—'}</dd></div>
                     <div><dt>{T(lang, 'Giá trị tài sản ròng tham chiếu', 'Asset-adjusted reference equity')}</dt><dd>{benchmarkResult?.assetReferenceEquity !== null && benchmarkResult?.assetReferenceEquity !== undefined ? formatValuationMoney(benchmarkResult.assetReferenceEquity, benchmarkResult.currency, lang) : '—'}</dd></div>
                   </dl>
-                  {benchmarkResult ? <ul className="d68-valuation-asset-notes">{valuationAssetMessages(lang, benchmarkResult).map((note) => <li key={note}>{note}</li>)}</ul> : null}
+                  {benchmarkResult ? (
+                    <ul className="d68-valuation-asset-notes">
+                      {valuationAssetMessages(lang, benchmarkResult)
+                        .filter(
+                          (note) =>
+                            note !==
+                            T(
+                              lang,
+                              'Hệ thống đang trộn giá trị vận hành và giá trị tài sản theo trọng số ngành.',
+                              'The estimate blends operating value and asset value using the industry weighting.',
+                            ),
+                        )
+                        .map((note) => <li key={note}>{note}</li>)}
+                    </ul>
+                  ) : null}
                 </div>
               </section>
 

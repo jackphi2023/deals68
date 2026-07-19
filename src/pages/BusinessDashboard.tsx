@@ -16,7 +16,7 @@ import {
 import { supabase } from '../lib/supabase';
 import { ensureBusinessImagePrivate } from '../lib/businessAssetStorage';
 import { langFromPath, stripLangPrefix, toLocalizedPath } from '../lib/i18nRoutes';
-import { DEFAULT_VALUATION_CONFIG, getActiveValuationConfig, valuate, valuationInputFromBusiness, formatValuationMoney, valuationVerdictMessage, valuationMethodLabel, valuationAssetMessages, VALUATION_DISCLAIMER_VI, VALUATION_DISCLAIMER_EN } from '../lib/valuationEngine';
+import { DEFAULT_VALUATION_CONFIG, getActiveValuationConfig, valuate, valuationInputFromBusiness, formatValuationMoney, valuationVerdictMessage, valuationMethodLabel, VALUATION_DISCLAIMER_VI, VALUATION_DISCLAIMER_EN } from '../lib/valuationEngine';
 import { businessQualityPublicExplanation, normalizeQualityBreakdown, qualityItemLabel, qualityItemNote } from '../lib/businessQuality';
 import { proposalQuotaTotal } from '../lib/proposals';
 import { calculatePricing, lookupPromo, type BusinessPlan } from '../lib/pricing';
@@ -440,12 +440,6 @@ function FormattedNumberInput({ name, defaultValue, allowDecimal = false }: { na
 
 function ValuationOverviewBox({ lang, result }: any) {
   const currency = result?.currency || 'VND';
-  const assetCurrency = result?.assetCurrency || currency;
-  const hasKeyAsset = result?.keyAssetValueInput !== null &&
-    result?.keyAssetValueInput !== undefined &&
-    Number(result.keyAssetValueInput) > 0;
-  const hasNetDebt = !!result?.netDebtProvided;
-  const assetMessages = valuationAssetMessages(lang, result);
   return <div className="d68-dashboard-valuation-box d68-dashboard-valuation-box--engine">
     <div>
       <span>{T(lang, 'Giá trị doanh nghiệp tự định giá', 'Implied self valuation')}</span>
@@ -462,17 +456,7 @@ function ValuationOverviewBox({ lang, result }: any) {
       <strong>{valuationMethodLabel(lang, result)}</strong>
       <small>{result ? `EV/EBITDA ${result.adjE.toFixed(2)}× · EV/Revenue ${result.adjR.toFixed(2)}×` : T(lang, 'Không trả số giả nếu thiếu dữ liệu.', 'No fake numbers when inputs are missing.')}</small>
     </div>
-    {hasKeyAsset ? <div>
-      <span>{T(lang, 'Giá trị tài sản chính', 'Key asset value')}</span>
-      <strong>{formatValuationMoney(result.keyAssetValueInput, assetCurrency, lang)}</strong>
-      <small>{T(lang, 'Số liệu đã nhập tại bước tạo tài khoản; Dashboard hiện chỉ hiển thị.', 'Value entered during registration; the Dashboard is currently read-only.')}</small>
-    </div> : null}
-    {hasNetDebt ? <div>
-      <span>{T(lang, 'Giá trị nợ ròng', 'Net debt')}</span>
-      <strong>{Number(result.netDebtInput) === 0 ? (assetCurrency === 'USD' ? 'US$0' : '0 VNĐ') : formatValuationMoney(result.netDebtInput, assetCurrency, lang)}</strong>
-      <small>{T(lang, 'Nợ vay trừ tiền mặt và tương đương tiền.', 'Interest-bearing debt minus cash and cash equivalents.')}</small>
-    </div> : null}
-    <p>{assetMessages.length ? `${assetMessages.join(' ')} ` : ''}{T(lang, VALUATION_DISCLAIMER_VI, VALUATION_DISCLAIMER_EN)}</p>
+    <p>{T(lang, VALUATION_DISCLAIMER_VI, VALUATION_DISCLAIMER_EN)}</p>
   </div>;
 }
 

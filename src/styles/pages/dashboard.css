@@ -23,3 +23,6 @@
 
 /* D68 beta feature fix: proposal rows */
 .d68-proposal-row{align-items:center}.d68-dashboard-row-title{display:inline-block;color:#1596cc;font-weight:900;text-decoration:none;margin-bottom:4px}.d68-dashboard-badge.gold{background:#fff3cd;color:#9a6700}.d68-dashboard-badge.red{background:#fee2e2;color:#b91c1c}
+
+/* Keep the three valuation overview values compact on every viewport. */
+.d68-dashboard-valuation-box--engine>div strong{font-size:16px;line-height:1.35;letter-spacing:0}

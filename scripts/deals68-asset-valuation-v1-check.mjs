@@ -19,7 +19,7 @@ const checks = [
   ['public valuation shares currency state', valuation.includes('assetCurrency: currency')],
   ['register has both optional private inputs', register.includes('setKeyAssetValue') && register.includes('setNetDebt')],
   ['register stores benchmark asset_inputs', register.includes('asset_inputs: benchmarkAssetInputs') && register.includes('key_asset_value') && register.includes('net_debt')],
-  ['dashboard is read-only for asset values', dashboard.includes("'Giá trị tài sản chính'") && dashboard.includes("'Giá trị nợ ròng'") && !dashboard.includes('name="key_asset_value"') && !dashboard.includes('name="net_debt"')],
+  ['dashboard keeps private asset inputs out of overview UI', dashboard.includes('valuationInputFromBusiness') && !dashboard.includes("'Giá trị tài sản chính'") && !dashboard.includes("'Giá trị nợ ròng'") && !dashboard.includes('name="key_asset_value"') && !dashboard.includes('name="net_debt"')],
   ['asset and debt are not added to public Business detail', !businessDetail.includes('key_asset_value') && !businessDetail.includes('net_debt')],
   ['net debt missing warning is present', engine.includes('Chưa nhập nợ ròng, hệ thống tạm tính nợ ròng = 0.')],
 ];

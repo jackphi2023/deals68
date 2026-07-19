@@ -93,3 +93,6 @@
 @media(max-width:700px){
   .d68-asset-valuation-inputs{grid-template-columns:1fr}
 }
+
+/* Registration success message: compact borderless confirmation. */
+.d68-register-page .d68-auth-msg.ok{border:0;padding:10px}

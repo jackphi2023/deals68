@@ -22,7 +22,6 @@ import {
   valuate,
   formatValuationMoney,
   valuationMethodLabel,
-  valuationAssetMessages,
   VALUATION_DISCLAIMER_EN,
   VALUATION_DISCLAIMER_VI,
   type Currency,
@@ -114,7 +113,6 @@ export default function Valuation({
     VALUATION_DISCLAIMER_VI,
     VALUATION_DISCLAIMER_EN,
   );
-  const assetMessages = valuationAssetMessages(lang, result);
 
   return (
     <main className="d68-valuation-page">
@@ -270,13 +268,6 @@ export default function Valuation({
                       setKeyAssetValue(formatNumberTyping(event.target.value))
                     }
                   />
-                  <small>
-                    {T(
-                      lang,
-                      'Tùy chọn. Nhập giá trị thị trường ước tính của đất, tòa nhà, máy móc, nhà máy, khách sạn, quyền sử dụng đất hoặc tài sản vận hành chính; không dùng giá trị sổ sách.',
-                      'Optional. Enter the estimated market value of land, buildings, machinery, factory, hotel, land-use rights or key operating assets; do not use book value.',
-                    )}
-                  </small>
                 </label>
 
                 <label>
@@ -416,9 +407,6 @@ export default function Valuation({
                       countryLabel.en,
                     )}
                   />
-                  {assetMessages.map((message) => (
-                    <p key={message} className="d68-val-asset-note">{message}</p>
-                  ))}
                 </div>
               </>
             ) : (
