@@ -1,0 +1,68 @@
+name: Apply and verify listing wording and promotion spacing
+
+on:
+  pull_request:
+    branches:
+      - building
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+
+      - name: Apply scoped listing patch
+        run: python3 scripts/apply-listing-spacing-fix.py
+
+      - name: Verify source contracts
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          businesses = Path('src/pages/Businesses.tsx').read_text()
+          investors = Path('src/pages/Investors.tsx').read_text()
+          business_css = Path('src/styles/pages/businesses.css').read_text()
+          investor_css = Path('src/styles/pages/investors.css').read_text()
+
+          assert "T(lang, 'doanh nghiệp', 'businesses')" in businesses
+          assert "T(lang, 'hồ sơ', 'profiles')" not in businesses
+          assert businesses.count('className="d68-businesses-results-content"') == 1
+          assert investors.count('className="d68-investors-results-content"') == 1
+          assert 'padding-bottom: 80px' in business_css
+          assert 'padding-bottom: 80px' in investor_css
+          assert businesses.index('d68-businesses-results-content') < businesses.index('placement="listing_promotion"')
+          assert investors.index('d68-investors-results-content') < investors.index('placement="listing_promotion"')
+          print('Listing wording and promotion spacing contracts: PASS')
+          PY
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Production build
+        run: npm run build
+
+      - name: Check diff formatting
+        run: git diff --check
+
+      - name: Commit verified source and remove one-time tooling
+        run: |
+          rm -f scripts/apply-listing-spacing-fix.py
+          rm -f .github/workflows/apply-listing-spacing-fix.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No source changes to commit."
+            exit 0
+          fi
+          git commit -m "fix(listings): update business wording and promotion spacing"
+          git push origin HEAD:${{ github.head_ref }}
