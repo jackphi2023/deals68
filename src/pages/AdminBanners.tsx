@@ -51,13 +51,13 @@ const PLACEMENTS: Array<{
     id: 'home_promotion',
     label: 'Trang chủ Promotion',
     slots: 2,
-    note: 'Khuyến nghị 1600×550px. Ảnh lớn được tự thu nhỏ và chuyển WebP khi có lợi.',
+    note: 'Chấp nhận banner siêu ngang khoảng 4:1–5:1, ví dụ 1600×400 hoặc 1600×320. Ảnh lớn được tự resize, giữ nguyên tỷ lệ và chuyển WebP khi có lợi.',
   },
   {
     id: 'listing_promotion',
     label: 'Trang danh sách Promotion',
     slots: 2,
-    note: 'Khuyến nghị 1600×550px. Ảnh lớn được tự thu nhỏ và chuyển WebP khi có lợi.',
+    note: 'Chấp nhận banner siêu ngang khoảng 4:1–5:1, ví dụ 1600×400 hoặc 1600×320. Ảnh lớn được tự resize, giữ nguyên tỷ lệ và chuyển WebP khi có lợi.',
   },
   {
     id: 'investor_cover_default',
@@ -138,6 +138,7 @@ function ImageReport({ prepared }: { prepared: PreparedBannerImage | null }) {
       <div>
         <b>{meta.width}×{meta.height}</b>
         <span>{formatBannerBytes(meta.bytes)} → {formatBannerBytes(meta.outputBytes)}</span>
+        <span>Tỷ lệ {meta.ratio.toFixed(2)}:1</span>
         <span>{meta.optimized ? 'Đã tối ưu WebP' : 'Giữ file gốc'}</span>
       </div>
       {meta.warnings.map((warning) => <p key={warning}>⚠ {warning}</p>)}
@@ -257,7 +258,7 @@ function BannerEditor({
           </div>
         ) : draft.desktopPreviewUrl ? (
           <figure className="d68-banner-live-preview d68-banner-live-preview--promotion">
-            <figcaption>Preview responsive · cover</figcaption>
+            <figcaption>Preview toàn ảnh · không crop</figcaption>
             <img src={draft.desktopPreviewUrl} alt="Banner preview" />
           </figure>
         ) : null}
@@ -292,7 +293,7 @@ function BannerEditor({
 
         <label className="d68-admin-field">
           <span>{row ? 'Thay ảnh desktop' : 'Upload ảnh desktop'}</span>
-          <small>{isHero ? 'Khuyến nghị 1600×600px.' : 'Ảnh được kiểm tra tỷ lệ và tối ưu trước upload.'}</small>
+          <small>{isHero ? 'Khuyến nghị 1600×600px.' : 'Chấp nhận tỷ lệ khoảng 4:1–5:1. Ảnh được resize giữ nguyên tỷ lệ và tối ưu trước upload.'}</small>
           <input name="file" type="file" accept="image/png,image/jpeg,image/webp" className="d68-admin-input" onChange={(event) => chooseFile('desktop', event.target.files?.[0])} />
         </label>
         <ImageReport prepared={draft.desktopPrepared} />
@@ -472,7 +473,7 @@ export default function AdminBanners() {
     <main className="d68-admin-page d68-admin-banners-page">
       <div className="d68-admin-wrap">
         <div className="d68-admin-row-head d68-admin-banners-head">
-          <div><h1>Quản trị Banner</h1><p>Kiểm tra tỷ lệ, tối ưu WebP, cache dài hạn và preview đúng crop trước khi lưu.</p></div>
+          <div><h1>Quản trị Banner</h1><p>Kiểm tra tỷ lệ, tối ưu WebP, cache dài hạn; Promotion preview toàn ảnh và không crop.</p></div>
           <Link to="/admin" className="d68-admin-btn light">← Admin</Link>
         </div>
         {message ? <div className="d68-admin-notice ok">{message}</div> : null}

@@ -44,9 +44,6 @@ img,svg,video,canvas{max-width:100%}
 .d68-detail-hero-media{aspect-ratio:16/9;min-height:320px}
 
 /* Promotion/cards */
-.d68-promo-banner.d68-home-container{padding-top:50px!important;padding-bottom:50px!important}
-.d68-promo-banner__link{display:block;width:100%;overflow:hidden;border-radius:18px}
-.d68-promo-banner__link img{display:block;width:100%;height:auto}
 .d68-home-role-card,.d68-home-business-card,.d68-home-investor-card,.d68-home-industry-card{min-width:0}
 /* Homepage Investor CTA is scoped in home.css. */
 

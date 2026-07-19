@@ -41,7 +41,7 @@ const PLACEMENTS: {
       'Banner dưới box vai trò tại trang chủ. Upload 1-2 ảnh, ' +
       'khuyến nghị 1600×550px.',
     slotCount: 2,
-    size: '1600×550px',
+    size: 'Tỷ lệ 4:1–5:1 · rộng từ 1600px',
   },
   {
     id: 'listing_promotion',
@@ -50,7 +50,7 @@ const PLACEMENTS: {
       'Banner dưới danh sách Business/Investor. Upload 1-2 ảnh, ' +
       'khuyến nghị 1600×550px.',
     slotCount: 2,
-    size: '1600×550px',
+    size: 'Tỷ lệ 4:1–5:1 · rộng từ 1600px',
   },
   {
     id: 'investor_cover_default',
@@ -106,7 +106,7 @@ const PROMO_FALLBACK = svgData(
   'Upload promotion banner in Admin',
   '#F2B51D',
   '#1BADEA',
-  550,
+  360,
 );
 
 const HERO_FALLBACK_ROW: SiteBanner = {
