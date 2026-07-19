@@ -122,16 +122,22 @@ admin = admin.replace(
 require(admin, "<AdminBannerManager refreshKey={lastRefreshedAt} />", "Admin Banner module render")
 admin_path.write_text(admin)
 
-# SiteBanners becomes public-only; remove the obsolete second Admin implementation.
+# SiteBanners becomes public-only; remove legacy Admin configuration and manager.
 site_path = Path("src/components/SiteBanners.tsx")
 site = site_path.read_text()
-marker = "\nfunction dateIn(days: number) {"
-require(site, marker, "legacy Admin Banner manager marker")
-site = site.split(marker, 1)[0].rstrip() + "\n"
+placements_start = "\nconst PLACEMENTS: {"
+placements_end = "\nfunction svgData("
+require(site, placements_start, "legacy Banner placement configuration")
+require(site, placements_end, "public svgData marker")
+site = site.split(placements_start, 1)[0] + placements_end + site.split(placements_end, 1)[1]
+manager_marker = "\nfunction dateIn(days: number) {"
+require(site, manager_marker, "legacy Admin Banner manager marker")
+site = site.split(manager_marker, 1)[0].rstrip() + "\n"
 site = site.replace(
     "import {\n  type CSSProperties,\n  type FormEvent,\n  type ReactNode,\n  useEffect,\n  useState,\n} from 'react';",
     "import { type ReactNode, useEffect, useState } from 'react';",
 )
+site = site.replace("import { supabase } from '../lib/supabase';\n", "")
 site = site.replace(
     "  listSiteBanners,\n  uploadSiteBannerImage,\n  type BannerPlacement,\n  type SiteBanner,",
     "  listSiteBanners,\n  type SiteBanner,",
@@ -140,7 +146,15 @@ site = site.replace(
     "import HeroBannerMedia, {\n  heroFocusPosition,\n} from './HeroBannerMedia';",
     "import HeroBannerMedia from './HeroBannerMedia';",
 )
-for forbidden in ("AdminBannerManager", "uploadSiteBannerImage", "BannerPlacement", "CSSProperties", "FormEvent"):
+for forbidden in (
+    "AdminBannerManager",
+    "uploadSiteBannerImage",
+    "BannerPlacement",
+    "CSSProperties",
+    "FormEvent",
+    "supabase",
+    "PLACEMENTS",
+):
     if forbidden in site:
         raise SystemExit(f"Legacy public SiteBanners dependency remains: {forbidden}")
 site_path.write_text(site)
