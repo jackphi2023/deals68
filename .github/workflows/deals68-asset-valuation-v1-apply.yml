@@ -1,6 +1,5 @@
 name: Apply asset valuation v1
 
-# One-time building-branch applicator. It removes itself after a verified commit.
 on:
   pull_request:
     branches:
@@ -14,80 +13,18 @@ on:
 permissions:
   contents: write
 
-concurrency:
-  group: deals68-asset-valuation-v1
-  cancel-in-progress: false
-
 jobs:
-  apply-and-verify:
+  diagnose:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout building
         uses: actions/checkout@v4
         with:
           ref: building
-          fetch-depth: 0
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
+          fetch-depth: 1
+          show-progress: false
 
       - name: Apply source patch
         run: |
-          set +e
-          python3 scripts/apply_asset_valuation_v1.py > /tmp/asset-valuation-apply.log 2>&1
-          status=$?
-          cat /tmp/asset-valuation-apply.log
-          if [ "$status" -ne 0 ]; then
-            git reset --hard origin/building
-            mkdir -p .github/debug
-            cp /tmp/asset-valuation-apply.log .github/debug/asset-valuation-v1-apply.log
-            git config user.name "Deals68 Release Bot"
-            git config user.email "actions@users.noreply.github.com"
-            git switch -C debug/asset-valuation-v1-log
-            git add .github/debug/asset-valuation-v1-apply.log
-            git commit -m "debug: capture asset valuation applicator error" --allow-empty
-            git push --force origin HEAD:debug/asset-valuation-v1-log
-            exit "$status"
-          fi
-
-      - name: Preserve explicit zero net debt display
-        run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          path = Path('src/pages/BusinessDashboard.tsx')
-          text = path.read_text(encoding='utf-8')
-          old = "{formatValuationMoney(result.netDebtInput, assetCurrency, lang)}"
-          new = "{Number(result.netDebtInput) === 0 ? (assetCurrency === 'USD' ? 'US$0' : '0 VNĐ') : formatValuationMoney(result.netDebtInput, assetCurrency, lang)}"
-          if old not in text:
-              raise SystemExit('Expected net-debt display marker was not found')
-          path.write_text(text.replace(old, new, 1), encoding='utf-8')
-          PY
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Asset valuation contract
-        run: npm run qa:asset-valuation
-
-      - name: Release QA
-        run: npm run qa:release
-
-      - name: CSS architecture QA
-        run: npm run qa:css
-
-      - name: Existing fix-series regression
-        run: npm run qa:fix-series
-
-      - name: Diff validation
-        run: git diff --check
-
-      - name: Commit tested source
-        run: |
-          git config user.name "Deals68 Release Bot"
-          git config user.email "actions@users.noreply.github.com"
-          git add -A
-          git commit -m "feat(valuation): add asset-adjusted reference logic"
-          git push origin HEAD:building
+          python3 scripts/apply_asset_valuation_v1.py 2>&1 | tail -n 40
+          exit ${PIPESTATUS[0]}
