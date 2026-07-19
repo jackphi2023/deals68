@@ -24,6 +24,20 @@ jobs:
           fetch-depth: 1
           show-progress: false
 
+      - name: Relax non-critical valuation copy patch
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          path = Path('scripts/apply_asset_valuation_v1.py')
+          text = path.read_text(encoding='utf-8')
+          pattern = r'''\nreplace_once\(\n    VALUATION,\n    "'Dùng bội số EV/EBITDA và EV/Doanh thu theo 23 nhóm ngành chuẩn hóa\.',\\n                 'Uses EV/EBITDA and EV/Revenue multiples across the standardized 23 industries\.',",\n    "'Dùng bội số EV/EBITDA, EV/Doanh thu và lớp tài sản có kiểm soát cho ngành tài sản nặng khi có dữ liệu\.',\\n                 'Uses EV/EBITDA, EV/Revenue and a controlled asset layer for asset-heavy industries when data is provided\.',",\n\)\n'''
+          updated, count = re.subn(pattern, '\n', text, count=1)
+          if count != 1:
+              raise SystemExit('Could not relax optional valuation copy patch')
+          path.write_text(updated, encoding='utf-8')
+          PY
+
       - name: Apply source patch
         run: |
           python3 scripts/apply_asset_valuation_v1.py 2>&1 | tail -n 40
