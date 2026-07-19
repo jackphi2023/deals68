@@ -343,8 +343,8 @@ export default function Investors({ lang }: { lang: Lang }) {
       : Math.min((page - 1) * PAGE_SIZE + items.length, total);
   const resultRangeText =
     total !== null
-      ? `${T(lang, 'Hiển thị', 'Showing')} ${resultStart}-${resultEnd}/${total} ${T(lang, 'hồ sơ', 'profiles')}`
-      : `${T(lang, 'Hiển thị', 'Showing')} ${items.length} ${T(lang, 'hồ sơ', 'profiles')}`;
+      ? `${T(lang, 'Hiển thị', 'Showing')} ${resultStart}-${resultEnd}/${total} ${T(lang, 'nhà đầu tư, đối tác', 'investors and partners')}`
+      : `${T(lang, 'Hiển thị', 'Showing')} ${items.length} ${T(lang, 'nhà đầu tư, đối tác', 'investors and partners')}`;
   const quotaTotal = proposalQuotaTotal(myBusiness);
   const quotaUsed = Object.keys(sentMap).length;
   const quotaExceeded = !!myBusiness && quotaUsed >= quotaTotal;

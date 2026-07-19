@@ -1,12 +1,15 @@
 import { FormEvent, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  aboutBusinessValues,
-  aboutInvestorValues,
-  aboutLayers,
-  aboutTrustPrinciples,
-  type LegalItem,
-} from '../content/staticAboutContent';
+  BarChart3,
+  Briefcase,
+  Building2,
+  Globe2,
+  Handshake,
+  ShieldCheck,
+  Target,
+} from 'lucide-react';
+import { type LegalItem } from '../content/staticAboutContent';
 import { termsPart1 } from '../content/staticTermsContent1';
 import { termsPart2 } from '../content/staticTermsContent2';
 import { privacyPart1 } from '../content/staticPrivacyContent1';
@@ -72,20 +75,6 @@ function Card({ icon, title, children }: { icon?: React.ReactNode; title: string
   </article>;
 }
 
-function GoalIcon() {
-  return <svg viewBox="0 0 24 24" aria-hidden="true">
-    <circle cx="12" cy="12" r="8" />
-    <circle cx="12" cy="12" r="3" />
-    <path d="M12 2v3M22 12h-3M12 22v-3M2 12h3" />
-  </svg>;
-}
-
-function GlobeIcon() {
-  return <svg viewBox="0 0 24 24" aria-hidden="true">
-    <circle cx="12" cy="12" r="9" />
-    <path d="M3 12h18M12 3c2.4 2.5 3.6 5.5 3.6 9S14.4 18.5 12 21M12 3c-2.4 2.5-3.6 5.5-3.6 9s1.2 6.5 3.6 9" />
-  </svg>;
-}
 
 function BulletList({ items, ordered = false }: { items: string[]; ordered?: boolean }) {
   const List = ordered ? 'ol' : 'ul';
@@ -114,96 +103,53 @@ function LegalList({ lang, items }: Props & { items: LegalItem[] }) {
 }
 
 export function About({ lang }: Props) {
-  return <main className="d68-static-page d68-static-about-page">
-    <Hero
-      lang={lang}
-      kicker="Giới thiệu"
-      kickerEn="About"
-      title="Nền tảng giao dịch tư nhân cho doanh nghiệp Việt toàn cầu"
-      titleEn="A private markets platform for Vietnamese businesses worldwide"
-      desc="Deals68 kết nối doanh nghiệp Việt với nhà đầu tư, bên mua, bên cho vay, đối tác chiến lược và cố vấn trên toàn cầu; đồng thời cung cấp quy trình dữ liệu, thẩm định và quản trị giúp các bên tạo ra giá trị trước, trong và sau giao dịch."
-      descEn="Deals68 connects Vietnamese businesses with global investors, buyers, lenders, strategic partners and advisors, while providing the data, due diligence and management workflows needed to create value before, during and after a transaction."
-      slogan="Deals68 Kết nối thương vụ, khai mở lộc phát."
-      sloganEn="Deals68 Connecting Deals, Unlocking Prosperity."
-    />
-
-    <Section narrow>
-      <div className="d68-static-title">
-        <h2>{T(lang, 'Vì sao Deals68 được xây dựng', 'Why Deals68 exists')}</h2>
-      </div>
-      <div className="d68-static-prose">
-        <p>{T(lang,
-          'Phần lớn doanh nghiệp vừa và nhỏ có nhu cầu huy động vốn, bán một phần hoặc toàn bộ doanh nghiệp, tìm bên mua, vay vốn hay hợp tác chiến lược nhưng dữ liệu thường nằm rải rác trong phần mềm kế toán, hệ thống bán hàng, bảng tính và tài liệu nội bộ. Điều này làm doanh nghiệp khó trình bày đúng giá trị, còn nhà đầu tư mất nhiều thời gian để sàng lọc, kiểm tra và theo dõi rủi ro.',
-          'Many small and medium-sized businesses seek capital, a partial or full sale, debt financing, strategic buyers or commercial partners, yet their information is often fragmented across accounting software, point-of-sale systems, spreadsheets and internal documents. This makes it difficult for businesses to communicate their true value and costly for investors to screen, verify and monitor risk.'
-        )}</p>
-        <p>{T(lang,
-          'Deals68 được xây dựng để thu hẹp khoảng cách đó. Nền tảng không chỉ tạo nơi gặp gỡ giữa bên có cơ hội và bên có vốn, mà còn giúp chuẩn hóa thông tin, chỉ rõ nguồn dữ liệu, hỗ trợ doanh nghiệp cải thiện mức sẵn sàng giao dịch và tổ chức quá trình thẩm định theo một luồng có kiểm soát.',
-          'Deals68 is designed to close that gap. It is not merely a meeting place for opportunities and capital; it structures information, records data sources, helps businesses improve transaction readiness and supports due diligence through a controlled workflow.'
-        )}</p>
-      </div>
-    </Section>
-
-    <Section alt>
-      <div className="d68-static-title">
-        <h2>{T(lang, 'Tầm nhìn', 'Vision')}</h2>
-        <p>{T(lang,
-          'Deals68 ưu tiên xây dựng mạng lưới doanh nghiệp Việt Nam, doanh nghiệp do người Việt sáng lập hoặc điều hành trên toàn cầu, nhà đầu tư người Việt ở nước ngoài và nhà đầu tư quốc tế quan tâm đến cơ hội Việt Nam. Đây là mục tiêu phát triển, không phải cam kết về số lượng người dùng hoặc kết quả tài chính.',
-          'Deals68 initially prioritises Vietnamese businesses, businesses founded or led by Vietnamese people worldwide, overseas Vietnamese investors and international investors interested in Vietnam-related opportunities. These are development aspirations, not guarantees of user numbers or financial outcomes.'
-        )}</p>
-      </div>
-      <div className="d68-static-grid d68-static-grid--2">
-        <Card icon={<GoalIcon />} title={T(lang, 'Mục tiêu ba năm', 'Three-year ambition')}>
-          <strong>300.000–500.000</strong>
-          <p>{T(lang, 'Doanh nghiệp, nhà đầu tư và thành viên hệ sinh thái được phục vụ.', 'Businesses, investors and ecosystem members served.')}</p>
-        </Card>
-        <Card icon={<GlobeIcon />} title={T(lang, 'Mục tiêu năm năm tiếp theo', 'Following five-year ambition')}>
-          <strong>{T(lang, 'Tối thiểu 1 triệu', 'At least one million')}</strong>
-          <p>{T(lang, 'Thành viên được phục vụ trên toàn cầu.', 'Members served globally.')}</p>
-        </Card>
-      </div>
-    </Section>
-
+  const pillars = [
+    { icon: <ShieldCheck />, vi: 'Ẩn danh trước, công khai sau khi duyệt', en: 'Anonymous first, public after approval', descVi: 'Hồ sơ doanh nghiệp công khai chỉ dùng bản hiển thị đã được Admin duyệt; tên thật, tài liệu và thông tin liên hệ riêng tư không xuất hiện trên trang công khai.', descEn: 'Public business pages use Admin-approved snapshots only; real names, documents and private contact details are not shown publicly.' },
+    { icon: <BarChart3 />, vi: 'Dữ liệu chuẩn hóa', en: 'Structured data', descVi: 'Doanh thu, lợi nhuận, nhu cầu vốn, loại giao dịch và điểm chất lượng hồ sơ được chuẩn hóa để nhà đầu tư sàng lọc nhanh hơn.', descEn: 'Revenue, profit, ask, deal type and profile quality score are structured to help investors screen faster.' },
+    { icon: <Handshake />, vi: 'Kết nối có kiểm soát', en: 'Controlled matching', descVi: 'Nhà đầu tư, người mua và bên cho vay có thể bày tỏ quan tâm hoặc yêu cầu dữ liệu; tài liệu nhạy cảm chỉ mở theo quy trình được duyệt.', descEn: 'Investors, buyers and lenders may express interest or request data; sensitive documents unlock only through an approved workflow.' }
+  ];
+  const flows = [
+    { icon: <Building2 />, vi: 'Doanh nghiệp', en: 'Businesses', descVi: 'Đăng hồ sơ ẩn danh để tìm nhà đầu tư, người mua, bên cho vay hoặc đối tác chiến lược phù hợp.', descEn: 'Create an anonymous profile to find relevant investors, buyers, lenders or strategic partners.' },
+    { icon: <Briefcase />, vi: 'Nhà đầu tư / Người mua / Bên cho vay', en: 'Investors / Buyers / Lenders', descVi: 'Lọc cơ hội theo ngành, quốc gia, quy mô, loại giao dịch và mức độ sẵn sàng dữ liệu.', descEn: 'Filter opportunities by sector, country, size, transaction type and data-readiness level.' },
+    { icon: <Globe2 />, vi: 'Đối tác thị trường', en: 'Market Partners', descVi: 'Hỗ trợ Deals68 phát triển cộng đồng doanh nghiệp và nhà đầu tư tại từng quốc gia, thành phố hoặc cộng đồng người Việt.', descEn: 'Help Deals68 grow business and investor communities by country, city or Vietnamese diaspora market.' }
+  ];
+  return <main className="d68-static-page">
+    <Hero lang={lang} kicker="Giới thiệu" kickerEn="About" title="Về Deals68" titleEn="About Deals68" desc="Deals68.com là nền tảng kết nối doanh nghiệp Việt và doanh nghiệp toàn cầu với nhà đầu tư, người mua doanh nghiệp, bên cho vay và đối tác chiến lược trên toàn cầu." descEn="Deals68.com connects Vietnamese and global businesses with investors, business buyers, lenders and strategic partners worldwide." />
     <Section>
       <div className="d68-static-title">
-        <h2>{T(lang, 'Cấu trúc chiến lược năm lớp', 'Five-layer platform model')}</h2>
-      </div>
-      <div className="d68-static-grid d68-static-grid--3 d68-static-grid--about-layers">
-        {aboutLayers.map((item) => <Card key={item.viTitle} title={T(lang, item.viTitle, item.enTitle)}><p>{T(lang, item.viText, item.enText)}</p></Card>)}
-      </div>
-    </Section>
-
-    <Section alt>
-      <div className="d68-static-title">
-        <h2>{T(lang, 'Giá trị cho doanh nghiệp và nhà đầu tư', 'Value for businesses and investors')}</h2>
+        <h2>{T(lang, 'Tầm nhìn toàn cầu của Deals68', 'Deals68 global vision')}</h2>
+        <p>{T(lang, 'Giai đoạn đầu, Deals68 tập trung phục vụ doanh nghiệp Việt Nam, chủ cửa hàng, nhà đầu tư người Việt ở nước ngoài và các đối tác vốn quan tâm đến doanh nghiệp Việt. Sau đó, nền tảng sẽ từng bước mở rộng sang doanh nghiệp và nhà đầu tư quốc tế ở nhiều thị trường.', 'In the first stage, Deals68 focuses on Vietnamese businesses, store owners, overseas Vietnamese investors and capital partners interested in Vietnam-related opportunities. Over time, the platform will expand to international businesses and investors across multiple markets.')}</p>
       </div>
       <div className="d68-static-grid d68-static-grid--2">
-        <Card title={T(lang, 'Giá trị dành cho doanh nghiệp', 'Value for businesses')}>
-          <BulletList items={lang === 'en' ? aboutBusinessValues.en : aboutBusinessValues.vi} />
+        <Card icon={<Target />} title={T(lang, 'Mục tiêu ba năm', '3-Year Goal')}>
+          <strong>300.000 – 500.000</strong>
+          <p>{T(lang, 'Doanh nghiệp, chủ cửa hàng, nhà đầu tư, người mua doanh nghiệp, bên cho vay và đối tác vốn Việt Nam - quốc tế.', 'Businesses, store owners, investors, business buyers, lenders and capital partners across Vietnamese and international markets.')}</p>
         </Card>
-        <Card title={T(lang, 'Giá trị dành cho nhà đầu tư', 'Value for investors')}>
-          <BulletList items={lang === 'en' ? aboutInvestorValues.en : aboutInvestorValues.vi} />
-        </Card>
-      </div>
-    </Section>
-
-    <Section>
-      <div className="d68-static-about-single">
-        <Card title={T(lang, 'Giá trị dành cho cố vấn và đối tác thị trường', 'Value for advisors and market partners')}>
-          <p>{T(lang,
-            'Cố vấn pháp lý, tài chính, thuế, chiến lược, vận hành, công nghệ và mua bán doanh nghiệp có thể tham gia theo từng thương vụ, đúng phạm vi công việc và quyền truy cập được cấp. Đối tác thị trường có thể giúp Deals68 phát triển mạng lưới doanh nghiệp, nhà đầu tư và chuyên gia tại từng quốc gia hoặc cộng đồng người Việt, nhưng không được cam kết lợi nhuận, kết quả giao dịch hoặc đại diện Deals68 ngoài phạm vi được ủy quyền.',
-            'Legal, financial, tax, strategy, operations, technology and M&A advisors may participate in specific transactions within an agreed scope and authorised access level. Market Partners may help Deals68 develop networks of businesses, investors and specialists by country or Vietnamese community, but may not promise returns, transaction outcomes or represent Deals68 beyond expressly authorised activities.'
-          )}</p>
+        <Card icon={<Globe2 />} title={T(lang, 'Mục tiêu 10 năm', '10-Year Goal')}>
+          <strong>{T(lang, 'Tối thiểu 1 triệu', '1 million+')}</strong>
+          <p>{T(lang, 'Doanh nghiệp và nhà đầu tư toàn cầu được phục vụ.', 'Businesses and investors served globally.')}</p>
         </Card>
       </div>
     </Section>
-
-    <Section alt narrow>
+    <Section alt>
       <div className="d68-static-title">
-        <h2>{T(lang, 'Nguyên tắc niềm tin và quản trị rủi ro', 'Trust and risk principles')}</h2>
-        <p>{T(lang, 'Deals68 hướng tới một môi trường giao dịch có kiểm soát dựa trên năm nguyên tắc.', 'Deals68 seeks to support a controlled transaction environment based on five principles.')}</p>
+        <h2>{T(lang, 'Nền tảng được xây quanh niềm tin dữ liệu', 'Built around data trust')}</h2>
+        <p>{T(lang, 'Deals68 ưu tiên hồ sơ ẩn danh, dữ liệu được chuẩn hóa và quy trình duyệt trước khi công khai để giảm rủi ro lộ thông tin riêng tư.', 'Deals68 prioritises anonymous profiles, structured data and approval before publication to reduce private-information exposure risk.')}</p>
       </div>
-      <div className="d68-static-card d68-static-card--wide">
-        <BulletList ordered items={lang === 'en' ? aboutTrustPrinciples.en : aboutTrustPrinciples.vi} />
+      <div className="d68-static-grid d68-static-grid--3">
+        {pillars.map((p) => <Card key={p.vi} icon={p.icon} title={T(lang, p.vi, p.en)}><p>{T(lang, p.descVi, p.descEn)}</p></Card>)}
+      </div>
+    </Section>
+    <Section>
+      <div className="d68-static-title">
+        <h2>{T(lang, 'Ba nhóm người dùng chính', 'Three core user groups')}</h2>
+        <p>{T(lang, 'Mỗi nhóm có luồng hiển thị và quyền xem riêng để bảo vệ dữ liệu và tăng chất lượng kết nối.', 'Each group has a dedicated display and access flow to protect data and improve matching quality.')}</p>
+      </div>
+      <div className="d68-static-grid d68-static-grid--3">
+        {flows.map((p) => <Card key={p.vi} icon={p.icon} title={T(lang, p.vi, p.en)}><p>{T(lang, p.descVi, p.descEn)}</p></Card>)}
+      </div>
+      <div className="d68-static-cta d68-static-cta--partnership">
+        <p>{T(lang, 'Hân hạnh được hợp tác và đồng hành', 'Honoured to collaborate and grow together')}</p>
       </div>
     </Section>
   </main>;
