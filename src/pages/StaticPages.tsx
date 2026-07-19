@@ -50,8 +50,8 @@ function Hero({ lang, kicker, kickerEn, title, titleEn, desc, descEn, slogan, sl
   </section>;
 }
 
-function Section({ children, narrow = false, alt = false }: { children: React.ReactNode; narrow?: boolean; alt?: boolean }) {
-  return <section className={`d68-static-section${alt ? ' d68-static-section--alt' : ''}`}>
+function Section({ children, narrow = false, alt = false, className = '' }: { children: React.ReactNode; narrow?: boolean; alt?: boolean; className?: string }) {
+  return <section className={`d68-static-section${alt ? ' d68-static-section--alt' : ''}${className ? ` ${className}` : ''}`}>
     <div className={narrow ? 'd68-static-container d68-static-container--narrow' : 'd68-static-container'}>{children}</div>
   </section>;
 }
@@ -111,14 +111,14 @@ export function About({ lang }: Props) {
   const flows = [
     { icon: <Building2 />, vi: 'Doanh nghiệp', en: 'Businesses', descVi: 'Đăng hồ sơ ẩn danh để tìm nhà đầu tư, người mua, bên cho vay hoặc đối tác chiến lược phù hợp.', descEn: 'Create an anonymous profile to find relevant investors, buyers, lenders or strategic partners.' },
     { icon: <Briefcase />, vi: 'Nhà đầu tư / Người mua / Bên cho vay', en: 'Investors / Buyers / Lenders', descVi: 'Lọc cơ hội theo ngành, quốc gia, quy mô, loại giao dịch và mức độ sẵn sàng dữ liệu.', descEn: 'Filter opportunities by sector, country, size, transaction type and data-readiness level.' },
-    { icon: <Globe2 />, vi: 'Đối tác thị trường', en: 'Market Partners', descVi: 'Hỗ trợ Deals68 phát triển cộng đồng doanh nghiệp và nhà đầu tư tại từng quốc gia, thành phố hoặc cộng đồng người Việt.', descEn: 'Help Deals68 grow business and investor communities by country, city or Vietnamese diaspora market.' }
+    { icon: <Globe2 />, vi: 'Đối tác thị trường', en: 'Market Partners', descVi: 'Đối tác luật, tài chính, cố vấn, môi giới có thể tham gia Deals68 để giúp giao dịch hoàn thành nhanh chóng và hiệu quả.', descEn: 'Legal, financial, advisory and brokerage partners can join Deals68 to help transactions close faster and more effectively.' }
   ];
-  return <main className="d68-static-page">
-    <Hero lang={lang} kicker="Giới thiệu" kickerEn="About" title="Về Deals68" titleEn="About Deals68" desc="Deals68.com là nền tảng kết nối doanh nghiệp Việt và doanh nghiệp toàn cầu với nhà đầu tư, người mua doanh nghiệp, bên cho vay và đối tác chiến lược trên toàn cầu." descEn="Deals68.com connects Vietnamese and global businesses with investors, business buyers, lenders and strategic partners worldwide." />
+  return <main className="d68-static-page d68-static-page--about">
+    <Hero lang={lang} kicker="Giới thiệu" kickerEn="About" title="Deals68 - Kết nối thương vụ, Khai mở lộc phát" titleEn="Deals68 - Connecting Deals, Unlocking Prosperity" desc="Deals68.com là nền tảng kết nối doanh nghiệp Việt và doanh nghiệp toàn cầu với nhà đầu tư, người mua doanh nghiệp, bên cho vay và đối tác chiến lược trên toàn cầu." descEn="Deals68.com connects Vietnamese and global businesses with investors, business buyers, lenders and strategic partners worldwide." />
     <Section>
       <div className="d68-static-title">
-        <h2>{T(lang, 'Tầm nhìn toàn cầu của Deals68', 'Deals68 global vision')}</h2>
-        <p>{T(lang, 'Giai đoạn đầu, Deals68 tập trung phục vụ doanh nghiệp Việt Nam, chủ cửa hàng, nhà đầu tư người Việt ở nước ngoài và các đối tác vốn quan tâm đến doanh nghiệp Việt. Sau đó, nền tảng sẽ từng bước mở rộng sang doanh nghiệp và nhà đầu tư quốc tế ở nhiều thị trường.', 'In the first stage, Deals68 focuses on Vietnamese businesses, store owners, overseas Vietnamese investors and capital partners interested in Vietnam-related opportunities. Over time, the platform will expand to international businesses and investors across multiple markets.')}</p>
+        <h2>{T(lang, 'Tầm nhìn Deals68', 'Deals68 Vision')}</h2>
+        <p>{T(lang, 'Chúng tôi hướng tới phục vụ cộng đồng doanh nghiệp Việt Nam trên toàn cầu với các nhà đầu tư, đối tác trong nước và trên toàn thế giới.', 'We aim to serve Vietnamese business communities worldwide by connecting them with investors and partners in Vietnam and across the globe.')}</p>
       </div>
       <div className="d68-static-grid d68-static-grid--2">
         <Card icon={<Target />} title={T(lang, 'Mục tiêu ba năm', '3-Year Goal')}>
@@ -131,10 +131,10 @@ export function About({ lang }: Props) {
         </Card>
       </div>
     </Section>
-    <Section alt>
+    <Section alt className="d68-static-section--about-platform">
       <div className="d68-static-title">
-        <h2>{T(lang, 'Nền tảng được xây quanh niềm tin dữ liệu', 'Built around data trust')}</h2>
-        <p>{T(lang, 'Deals68 ưu tiên hồ sơ ẩn danh, dữ liệu được chuẩn hóa và quy trình duyệt trước khi công khai để giảm rủi ro lộ thông tin riêng tư.', 'Deals68 prioritises anonymous profiles, structured data and approval before publication to reduce private-information exposure risk.')}</p>
+        <h2>{T(lang, 'Nền tảng giao dịch M&A, Huy động vốn toàn diện', 'A Comprehensive M&A and Fundraising Transaction Platform')}</h2>
+        <p>{T(lang, 'Deals68 là nền tảng giao dịch tư nhân dành cho doanh nghiệp Việt và nhà đầu tư trên toàn cầu, từ khám phá cơ hội, chuẩn hóa và xác minh dữ liệu, cải thiện chất lượng doanh nghiệp, tổ chức thẩm định và giao dịch, đến quản trị giá trị sau đầu tư.', 'Deals68 is a private transaction platform for Vietnamese businesses and investors worldwide, covering opportunity discovery, data standardisation and verification, business quality improvement, due diligence and transaction execution, and post-investment value management.')}</p>
       </div>
       <div className="d68-static-grid d68-static-grid--3">
         {pillars.map((p) => <Card key={p.vi} icon={p.icon} title={T(lang, p.vi, p.en)}><p>{T(lang, p.descVi, p.descEn)}</p></Card>)}
@@ -142,8 +142,8 @@ export function About({ lang }: Props) {
     </Section>
     <Section>
       <div className="d68-static-title">
-        <h2>{T(lang, 'Ba nhóm người dùng chính', 'Three core user groups')}</h2>
-        <p>{T(lang, 'Mỗi nhóm có luồng hiển thị và quyền xem riêng để bảo vệ dữ liệu và tăng chất lượng kết nối.', 'Each group has a dedicated display and access flow to protect data and improve matching quality.')}</p>
+        <h2>{T(lang, 'Đối tác chúng tôi phục vụ', 'Partners We Serve')}</h2>
+        <p>{T(lang, 'Chúng tôi chào đón các đối tác cùng đồng hành.', 'We welcome partners to join and grow with us.')}</p>
       </div>
       <div className="d68-static-grid d68-static-grid--3">
         {flows.map((p) => <Card key={p.vi} icon={p.icon} title={T(lang, p.vi, p.en)}><p>{T(lang, p.descVi, p.descEn)}</p></Card>)}

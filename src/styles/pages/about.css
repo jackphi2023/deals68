@@ -1,0 +1,33 @@
+/* About page ownership.
+   Static legal pages remain governed by static.css; this file only styles About. */
+
+.d68-static-page--about .d68-static-container {
+  max-width: 1200px;
+}
+
+.d68-static-page--about .d68-static-title h2 {
+  color: #F2B51D;
+}
+
+/* Full-width brand surface; readable content remains aligned to the 1200px grid. */
+.d68-static-page--about .d68-static-section--about-platform {
+  width: 100%;
+  max-width: none;
+  background: #E7F6FD;
+  border: 0;
+}
+
+.d68-static-page--about .d68-static-section--about-platform .d68-static-title p {
+  color: #334155;
+}
+
+.d68-static-page--about .d68-static-cta--partnership {
+  background: #1BADEA;
+  border: 0;
+  box-shadow: none;
+  color: #F2B51D;
+}
+
+.d68-static-page--about .d68-static-cta--partnership p {
+  color: #F2B51D;
+}
