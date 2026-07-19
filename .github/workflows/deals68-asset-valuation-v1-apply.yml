@@ -2,11 +2,13 @@ name: Apply asset valuation v1
 
 # One-time building-branch applicator. It removes itself after a verified commit.
 on:
-  push:
+  pull_request:
     branches:
       - building
-    paths:
-      - '.github/workflows/deals68-asset-valuation-v1-apply.yml'
+    types:
+      - opened
+      - synchronize
+      - reopened
   workflow_dispatch:
 
 permissions:
