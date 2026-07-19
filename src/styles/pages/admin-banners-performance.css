@@ -1,5 +1,5 @@
 /* Admin Banner image report and Promotion preview. */
-.d68-admin-banners-page .d68-banner-image-report {
+.d68-admin-banners-module .d68-banner-image-report {
   margin: -2px 0 16px;
   padding: 12px 14px;
   border: 1px solid #DCE8F0;
@@ -8,27 +8,27 @@
   color: #334155;
 }
 
-.d68-admin-banners-page .d68-banner-image-report > div {
+.d68-admin-banners-module .d68-banner-image-report > div {
   display: flex;
   align-items: center;
   gap: 10px;
   flex-wrap: wrap;
 }
 
-.d68-admin-banners-page .d68-banner-image-report b { color: #0F2A4A; }
-.d68-admin-banners-page .d68-banner-image-report span {
+.d68-admin-banners-module .d68-banner-image-report b { color: #0F2A4A; }
+.d68-admin-banners-module .d68-banner-image-report span {
   font-size: 12px;
   font-weight: 700;
   color: #64748B;
 }
-.d68-admin-banners-page .d68-banner-image-report p {
+.d68-admin-banners-module .d68-banner-image-report p {
   margin: 8px 0 0;
   color: #9A6700;
   font-size: 12.5px;
   line-height: 1.5;
 }
 
-.d68-admin-banners-page .d68-banner-live-preview--promotion {
+.d68-admin-banners-module .d68-banner-live-preview--promotion {
   width: 100%;
   margin: 0 0 18px;
   overflow: hidden;
@@ -39,7 +39,7 @@
   line-height: 0;
 }
 
-.d68-admin-banners-page .d68-banner-live-preview--promotion img {
+.d68-admin-banners-module .d68-banner-live-preview--promotion img {
   width: 100%;
   height: auto;
   display: block;
@@ -47,7 +47,7 @@
   object-position: center;
 }
 
-.d68-admin-banners-page .d68-banner-live-preview--promotion figcaption {
+.d68-admin-banners-module .d68-banner-live-preview--promotion figcaption {
   position: absolute;
   left: 10px;
   top: 10px;
@@ -61,14 +61,14 @@
   line-height: 1.2;
 }
 
-.d68-admin-banners-page input[type=file]:disabled,
-.d68-admin-banners-page button:disabled {
+.d68-admin-banners-module input[type=file]:disabled,
+.d68-admin-banners-module button:disabled {
   cursor: not-allowed;
   opacity: .58;
 }
 
 @media (max-width: 700px) {
-  .d68-admin-banners-page .d68-banner-image-report > div {
+  .d68-admin-banners-module .d68-banner-image-report > div {
     align-items: flex-start;
     flex-direction: column;
     gap: 4px;

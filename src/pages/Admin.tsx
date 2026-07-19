@@ -16,7 +16,7 @@ import {
   updateProposalStatus,
   type ProposalStatus,
 } from '../lib/proposals';
-import { AdminBannerManager } from '../components/SiteBanners';
+import AdminBannerManager from '../components/admin/AdminBannerManager';
 import { industryKeyFromLabel } from '../lib/industryTaxonomy';
 import {
   getLocationOptionsForCountry,
@@ -956,7 +956,9 @@ export default function Admin() {
               total={proposals.length}
               pending={pendingProposals.length}
             />}
-            {tab === 'banners' && <AdminBannerManager />}
+            {tab === 'banners' && (
+              <AdminBannerManager refreshKey={lastRefreshedAt} />
+            )}
             {tab === 'business_review' && (
               <BusinessReviewList
                 rows={pendingBusinesses}
