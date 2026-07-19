@@ -1,0 +1,63 @@
+name: Apply and verify About wording UI v2
+
+on:
+  pull_request:
+    branches:
+      - building
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+
+      - name: Apply scoped About patch
+        run: python3 scripts/apply-about-wording-ui-v2.py
+
+      - name: Verify About source contracts
+        shell: bash
+        run: |
+          grep -q 'Deals68 - Kết nối thương vụ, Khai mở lộc phát' src/pages/StaticPages.tsx
+          grep -q 'Tầm nhìn Deals68' src/pages/StaticPages.tsx
+          grep -q 'Nền tảng giao dịch M&A, Huy động vốn toàn diện' src/pages/StaticPages.tsx
+          grep -q 'Đối tác chúng tôi phục vụ' src/pages/StaticPages.tsx
+          grep -q 'Chúng tôi chào đón các đối tác cùng đồng hành' src/pages/StaticPages.tsx
+          grep -q 'Đối tác luật, tài chính, cố vấn, môi giới' src/pages/StaticPages.tsx
+          grep -q 'd68-static-section--about-platform' src/pages/StaticPages.tsx
+          grep -q 'background: #E7F6FD' src/styles/pages/about.css
+          grep -q 'background: #1BADEA' src/styles/pages/about.css
+          grep -q 'color: #F2B51D' src/styles/pages/about.css
+          grep -q "@import './pages/about.css'" src/styles/index.css
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Production build
+        run: npm run build
+
+      - name: Check diff formatting
+        run: git diff --check
+
+      - name: Commit verified source and remove one-time tooling
+        shell: bash
+        run: |
+          rm -f scripts/apply-about-wording-ui-v2.py
+          rm -f .github/workflows/apply-about-wording-ui-v2.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No source changes to commit."
+            exit 0
+          fi
+          git commit -m "fix(about): update positioning copy and brand surfaces"
+          git push origin HEAD:${{ github.head_ref }}
