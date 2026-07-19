@@ -21,6 +21,8 @@ export type ValuationConfig = {
   industry: Record<string, {
     ebitda: number;
     revenue: number;
+    pb?: number;
+    w?: [number, number, number];
     valuation_mode?: AssetValuationMode;
     w_asset?: number;
   }>;
@@ -43,6 +45,11 @@ export type ValuationInput = {
   keyAssetValue?: number;
   netDebt?: number;
   assetCurrency?: Currency;
+  bookEquity?: number;
+  intangibles?: number;
+  propertyMarketValue?: number;
+  propertyBookValue?: number;
+  surplusAssetValue?: number;
 };
 
 export type ValuationResult = {
@@ -64,6 +71,15 @@ export type ValuationResult = {
   evFromRevenue: number;
   evOperating: number;
   equityOperating: number;
+  eqFromEbitda: number | null;
+  eqFromRevenue: number;
+  eqFromPb: number | null;
+  central: number;
+  floorUsed: number | null;
+  weightsUsed: { ebitda: number; revenue: number; pb: number };
+  bookEquity: number | null;
+  intangibles: number;
+  surplusAssetValue: number;
   keyAssetValueInput: number | null;
   keyAssetValue: number | null;
   netDebtInput: number | null;
@@ -84,9 +100,9 @@ export type ValuationResult = {
 };
 
 export const DEFAULT_VALUATION_CONFIG: ValuationConfig = {
-  version: 1,
+  version: 2,
   params: {
-    version: 1,
+    version: 2,
     w_ebitda: 0.70,
     w_revenue: 0.30,
     ebitda_margin_floor: 5,
@@ -96,29 +112,29 @@ export const DEFAULT_VALUATION_CONFIG: ValuationConfig = {
     growth_cap: 50
   },
   industry: {
-    agriculture: { ebitda: 5.5, revenue: 0.90, valuation_mode: 'asset_floor' },
-    automobile: { ebitda: 5.5, revenue: 0.65 },
-    beauty_personal_care: { ebitda: 7.5, revenue: 1.20 },
-    construction_materials: { ebitda: 5.0, revenue: 0.60 },
-    chemicals: { ebitda: 6.5, revenue: 1.10 },
-    education_training: { ebitda: 8.0, revenue: 1.50 },
-    energy_utilities: { ebitda: 7.0, revenue: 1.30 },
-    entertainment_leisure: { ebitda: 6.5, revenue: 1.20 },
-    finance: { ebitda: 8.0, revenue: 2.00 },
-    food_beverage: { ebitda: 5.5, revenue: 0.80 },
-    healthcare: { ebitda: 9.0, revenue: 2.00 },
-    hotels_resorts: { ebitda: 8.0, revenue: 2.20, valuation_mode: 'asset_blend', w_asset: 0.50 },
-    it_software: { ebitda: 11.0, revenue: 2.80 },
-    manufacturing: { ebitda: 6.0, revenue: 0.85, valuation_mode: 'asset_floor' },
-    media_advertising: { ebitda: 7.0, revenue: 1.30 },
-    real_estate: { ebitda: 9.0, revenue: 3.00, valuation_mode: 'asset_blend', w_asset: 0.75 },
-    retail: { ebitda: 5.5, revenue: 0.60 },
-    services: { ebitda: 7.0, revenue: 1.20 },
-    transportation_logistics: { ebitda: 6.0, revenue: 0.85 },
-    travel: { ebitda: 6.5, revenue: 1.20 },
-    ecommerce: { ebitda: 8.5, revenue: 1.40 },
-    textiles_apparel: { ebitda: 5.0, revenue: 0.70 },
-    seafood_export: { ebitda: 5.0, revenue: 0.70 }
+    agriculture: { ebitda: 5.5, revenue: 0.90, pb: 1.1, w: [0.40, 0.20, 0.40] },
+    automobile: { ebitda: 5.5, revenue: 0.65, pb: 1.2, w: [0.50, 0.30, 0.20] },
+    beauty_personal_care: { ebitda: 7.5, revenue: 1.20, pb: 1.8, w: [0.60, 0.25, 0.15] },
+    construction_materials: { ebitda: 5.0, revenue: 0.60, pb: 1.1, w: [0.45, 0.35, 0.20] },
+    chemicals: { ebitda: 6.5, revenue: 1.10, pb: 1.4, w: [0.50, 0.25, 0.25] },
+    education_training: { ebitda: 8.0, revenue: 1.50, pb: 2.0, w: [0.60, 0.25, 0.15] },
+    energy_utilities: { ebitda: 7.0, revenue: 1.30, pb: 1.3, w: [0.45, 0.20, 0.35] },
+    entertainment_leisure: { ebitda: 6.5, revenue: 1.20, pb: 1.5, w: [0.55, 0.25, 0.20] },
+    finance: { ebitda: 8.0, revenue: 2.00, pb: 1.3, w: [0.30, 0.20, 0.50] },
+    food_beverage: { ebitda: 5.5, revenue: 0.80, pb: 1.5, w: [0.55, 0.30, 0.15] },
+    healthcare: { ebitda: 9.0, revenue: 2.00, pb: 2.2, w: [0.55, 0.25, 0.20] },
+    hotels_resorts: { ebitda: 8.0, revenue: 2.20, pb: 1.3, w: [0.35, 0.20, 0.45] },
+    it_software: { ebitda: 11.0, revenue: 2.80, pb: 3.0, w: [0.55, 0.35, 0.10] },
+    manufacturing: { ebitda: 6.0, revenue: 0.85, pb: 1.2, w: [0.45, 0.20, 0.35] },
+    media_advertising: { ebitda: 7.0, revenue: 1.30, pb: 1.8, w: [0.60, 0.30, 0.10] },
+    real_estate: { ebitda: 9.0, revenue: 3.00, pb: 1.1, w: [0.20, 0.15, 0.65] },
+    retail: { ebitda: 5.5, revenue: 0.60, pb: 1.3, w: [0.50, 0.30, 0.20] },
+    services: { ebitda: 7.0, revenue: 1.20, pb: 1.6, w: [0.60, 0.25, 0.15] },
+    transportation_logistics: { ebitda: 6.0, revenue: 0.85, pb: 1.3, w: [0.45, 0.25, 0.30] },
+    travel: { ebitda: 6.5, revenue: 1.20, pb: 1.6, w: [0.55, 0.30, 0.15] },
+    ecommerce: { ebitda: 8.5, revenue: 1.40, pb: 2.2, w: [0.45, 0.45, 0.10] },
+    textiles_apparel: { ebitda: 5.0, revenue: 0.70, pb: 1.1, w: [0.45, 0.30, 0.25] },
+    seafood_export: { ebitda: 5.0, revenue: 0.70, pb: 1.1, w: [0.45, 0.30, 0.25] }
   },
   country: { VN: 1.00, SG: 1.25, US: 1.35, KR: 1.15, JP: 1.20, HK: 1.20, CN: 1.05, TH: 1.00, CA: 1.25, AU: 1.25, DE: 1.20, CZ: 1.05, OTHER: 1.00 },
   growth_curve: [
@@ -204,15 +220,14 @@ export function valuate(input: ValuationInput, cfg: ValuationConfig = DEFAULT_VA
   const revUSD = currency === 'USD' ? revenueYear : revenueYear / Number(p.usd_vnd || 25000);
   const countryFactor = Number(cfg.country[countryKey] ?? cfg.country.OTHER ?? cfg.country.VN ?? 1);
   const growthFactor = factorFromCurve(growth, cfg.growth_curve);
-  const sizeFactor = factorFromCurve(revUSD, cfg.size_bands.map((b) => ({ max: b.max_usd, factor: b.factor })));
-  const adjE = ind.ebitda * countryFactor * growthFactor * sizeFactor;
-  const adjR = ind.revenue * countryFactor * growthFactor * sizeFactor;
+  const sizeFactor = factorFromCurve(revUSD, cfg.size_bands.map((band) => ({ max: band.max_usd, factor: band.factor })));
+  const earningsFactor = countryFactor * growthFactor * sizeFactor;
+  const adjE = Number(ind.ebitda || 0) * earningsFactor;
+  const adjR = Number(ind.revenue || 0) * earningsFactor;
+  const adjPb = Number(ind.pb ?? DEFAULT_VALUATION_CONFIG.industry[industryKey]?.pb ?? 1) * countryFactor;
   const evFromEbitda = ebitda * adjE;
   const evFromRevenue = revenueYear * adjR;
   const useEbitda = margin >= Number(p.ebitda_margin_floor || 5) && ebitda > 0;
-  const evOperating = useEbitda
-    ? Number(p.w_ebitda || 0.7) * evFromEbitda + Number(p.w_revenue || 0.3) * evFromRevenue
-    : evFromRevenue;
 
   const optionalNumber = (value: unknown) => {
     if (value === null || value === undefined || value === '') return null;
@@ -223,6 +238,10 @@ export function valuate(input: ValuationInput, cfg: ValuationConfig = DEFAULT_VA
     if (from === to) return value;
     const usdVnd = Number(p.usd_vnd || 25000);
     return from === 'USD' ? value * usdVnd : value / usdVnd;
+  };
+  const convertedOptional = (value: unknown) => {
+    const parsed = optionalNumber(value);
+    return parsed === null ? null : convertAmount(parsed, assetCurrency, currency);
   };
 
   const keyAssetValueInputRaw = optionalNumber(input.keyAssetValue);
@@ -237,32 +256,84 @@ export function valuate(input: ValuationInput, cfg: ValuationConfig = DEFAULT_VA
   const netDebt = netDebtProvided
     ? convertAmount(netDebtInput || 0, assetCurrency, currency)
     : 0;
-  const equityOperating = evOperating - netDebt;
-  const assetReferenceEquity = keyAssetValue !== null
-    ? Math.max(keyAssetValue - netDebt, 0)
-    : null;
-  const configuredMode: AssetValuationMode = ind.valuation_mode || 'earnings';
-  const assetInputApplied = assetReferenceEquity !== null && configuredMode !== 'earnings';
-  const assetInputStoredOnly = assetReferenceEquity !== null && configuredMode === 'earnings';
-  const valuationMode: AssetValuationMode = assetInputApplied ? configuredMode : 'earnings';
 
-  let assetWeight: number | null = null;
-  let mid: number;
-  if (valuationMode === 'asset_blend' && assetReferenceEquity !== null) {
-    assetWeight = Math.max(0, Math.min(1, Number(ind.w_asset ?? 0.5)));
-    mid = assetWeight * assetReferenceEquity + (1 - assetWeight) * Math.max(equityOperating, 0);
-  } else if (valuationMode === 'asset_floor' && assetReferenceEquity !== null) {
-    mid = Math.max(equityOperating, assetReferenceEquity, 0);
-  } else {
-    mid = Math.max(equityOperating, 0);
+  const explicitBookEquity = convertedOptional(input.bookEquity);
+  const bookEquity = explicitBookEquity !== null
+    ? explicitBookEquity
+    : keyAssetValue !== null
+      ? Math.max(keyAssetValue - netDebt, 0)
+      : null;
+  const intangibles = convertedOptional(input.intangibles) ?? 0;
+  const propertyMarketValue = convertedOptional(input.propertyMarketValue);
+  const propertyBookValue = convertedOptional(input.propertyBookValue);
+  const surplusAssetValue = convertedOptional(input.surplusAssetValue) ?? 0;
+
+  const defaultWeights = DEFAULT_VALUATION_CONFIG.industry[industryKey]?.w || [0.55, 0.30, 0.15];
+  const configuredWeights = Array.isArray(ind.w) && ind.w.length === 3
+    ? ind.w
+    : [
+        Number((ind as any).w_ebitda ?? defaultWeights[0]),
+        Number((ind as any).w_revenue ?? defaultWeights[1]),
+        Number((ind as any).w_pb ?? defaultWeights[2]),
+      ];
+  const nonNegativeWeights = configuredWeights.map((weight, index) => {
+    const parsed = Number(weight);
+    return Number.isFinite(parsed) && parsed >= 0 ? parsed : Number(defaultWeights[index] || 0);
+  }) as [number, number, number];
+  const configuredWeightTotal = nonNegativeWeights.reduce((sum, weight) => sum + weight, 0);
+  const baseWeights: [number, number, number] = configuredWeightTotal > 0
+    ? nonNegativeWeights.map((weight) => weight / configuredWeightTotal) as [number, number, number]
+    : defaultWeights;
+
+  const eqFromEbitda = useEbitda ? evFromEbitda - netDebt : null;
+  const eqFromRevenue = evFromRevenue - netDebt;
+  const eqFromPb = bookEquity !== null ? bookEquity * adjPb : null;
+  const methods: { key: 'ebitda' | 'revenue' | 'pb'; weight: number; equity: number }[] = [];
+  if (eqFromEbitda !== null) methods.push({ key: 'ebitda', weight: baseWeights[0], equity: eqFromEbitda });
+  methods.push({ key: 'revenue', weight: baseWeights[1], equity: eqFromRevenue });
+  if (eqFromPb !== null) methods.push({ key: 'pb', weight: baseWeights[2], equity: eqFromPb });
+
+  let availableWeightTotal = methods.reduce((sum, method) => sum + method.weight, 0);
+  if (availableWeightTotal <= 0) {
+    methods.splice(0, methods.length, { key: 'revenue', weight: 1, equity: eqFromRevenue });
+    availableWeightTotal = 1;
   }
 
+  const weightsUsed = { ebitda: 0, revenue: 0, pb: 0 };
+  let central = 0;
+  for (const method of methods) {
+    const normalizedWeight = method.weight / availableWeightTotal;
+    weightsUsed[method.key] = normalizedWeight;
+    central += normalizedWeight * method.equity;
+  }
+
+  const netTangibleBook = bookEquity !== null ? bookEquity - intangibles : null;
+  let floor: number | null = null;
+  if (netTangibleBook !== null && propertyMarketValue !== null && propertyBookValue !== null) {
+    floor = netTangibleBook + (propertyMarketValue - propertyBookValue);
+  } else if (netTangibleBook !== null) {
+    floor = netTangibleBook;
+  }
+  if (floor !== null && !Number.isFinite(floor)) floor = null;
+
+  const core = floor !== null ? Math.max(central, floor) : central;
+  const mid = Math.max(core + surplusAssetValue, 0);
   const low = mid * (1 - Number(p.spread_low || 0.15));
   const high = mid * (1 + Number(p.spread_high || 0.15));
-  const operatingEquityForWarning = Math.max(equityOperating, 0);
-  const assetValueWarning = assetReferenceEquity !== null &&
-    operatingEquityForWarning > 0 &&
-    assetReferenceEquity > operatingEquityForWarning * 2;
+  const floorUsed = floor !== null && floor > central ? floor : null;
+
+  const earningsWeightTotal = (useEbitda ? baseWeights[0] : 0) + baseWeights[1];
+  const evOperating = earningsWeightTotal > 0
+    ? ((useEbitda ? baseWeights[0] * evFromEbitda : 0) + baseWeights[1] * evFromRevenue) / earningsWeightTotal
+    : evFromRevenue;
+  const equityOperating = central;
+  const assetReferenceEquity = floor;
+  const assetInputApplied = bookEquity !== null;
+  const assetInputStoredOnly = false;
+  const valuationMode: AssetValuationMode = floor !== null ? 'asset_floor' : 'earnings';
+  const assetWeight = weightsUsed.pb > 0 ? weightsUsed.pb : null;
+  const operatingEquityForWarning = Math.max(central, 0);
+  const assetValueWarning = floor !== null && operatingEquityForWarning > 0 && floor > operatingEquityForWarning * 2;
   const netDebtExceedsAsset = keyAssetValue !== null && netDebt > keyAssetValue;
 
   let self: number | undefined;
@@ -284,9 +355,9 @@ export function valuate(input: ValuationInput, cfg: ValuationConfig = DEFAULT_VA
     low,
     mid,
     high,
-    method: useEbitda ? 'blend' : 'revenue_only',
+    method: methods.length === 1 && methods[0].key === 'revenue' ? 'revenue_only' : 'blend',
     valuationMode,
-    assetMethodConfidence: keyAssetValueInput !== null ? 'low' : null,
+    assetMethodConfidence: explicitBookEquity !== null ? 'medium' : keyAssetValueInput !== null ? 'low' : null,
     assetInputApplied,
     assetInputStoredOnly,
     currency,
@@ -299,6 +370,15 @@ export function valuate(input: ValuationInput, cfg: ValuationConfig = DEFAULT_VA
     evFromRevenue,
     evOperating,
     equityOperating,
+    eqFromEbitda,
+    eqFromRevenue,
+    eqFromPb,
+    central,
+    floorUsed,
+    weightsUsed,
+    bookEquity,
+    intangibles,
+    surplusAssetValue,
     keyAssetValueInput,
     keyAssetValue,
     netDebtInput,
@@ -311,7 +391,7 @@ export function valuate(input: ValuationInput, cfg: ValuationConfig = DEFAULT_VA
     self,
     verdict,
     pctAbove,
-    configVersion: cfg.version,
+    configVersion: Math.max(2, Number(cfg.version || 2)),
     industryKey,
     countryFactor,
     growthFactor,
@@ -347,6 +427,11 @@ export function valuationInputFromBusiness(b: any): ValuationInput {
     offerAmount: Number(b?.offer_amount ?? b?.ask_amount ?? 0),
     keyAssetValue: optionalNumber(assetInputs.key_asset_value ?? assetInputs.keyAssetValue),
     netDebt: optionalNumber(assetInputs.net_debt ?? assetInputs.netDebt),
+    bookEquity: optionalNumber(assetInputs.book_equity ?? assetInputs.bookEquity),
+    intangibles: optionalNumber(assetInputs.intangibles),
+    propertyMarketValue: optionalNumber(assetInputs.property_market_value ?? assetInputs.propertyMarketValue),
+    propertyBookValue: optionalNumber(assetInputs.property_book_value ?? assetInputs.propertyBookValue),
+    surplusAssetValue: optionalNumber(assetInputs.surplus_asset_value ?? assetInputs.surplusAssetValue),
     assetCurrency: String(assetInputs.currency || b?.revenue_currency || 'VND').toUpperCase() === 'USD'
       ? 'USD'
       : 'VND',
