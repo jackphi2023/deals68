@@ -55,10 +55,17 @@
   background-clip: padding-box;
 }
 
-/* How-it-works keeps its own section surface and internal content padding.
-   No additional external spacing is introduced here. */
+/* How-it-works inherits the common Homepage canvas. Its nested container
+   keeps only internal content padding; step cards remain white surfaces. */
+.d68-home-page > .d68-home-how,
+.d68-home-page > .d68-home-how > .d68-home-container {
+  background: transparent;
+}
+
 .d68-home-page > .d68-home-how {
   margin-block: 0;
+  border: 0;
+  box-shadow: none;
 }
 
 @media (max-width: 700px) {

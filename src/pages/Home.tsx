@@ -320,7 +320,7 @@ export default function Home({ lang }: { lang: Lang }) {
       </section>
 
       <section className="d68-home-container d68-home-block d68-home-section--roles">
-        <div className="d68-home-title d68-home-title--center"><h2>{T(lang, 'Bạn tham gia với vai trò nào?', 'Which role fits you?')}</h2><p>{T(lang, 'Deals68 phục vụ nhiều nhu cầu: gọi vốn, mua bán, cho vay và phát triển thị trường.', 'Deals68 serves many needs: fundraising, M&A, lending and market development.')}</p></div>
+        <div className="d68-home-title d68-home-title--center"><h2>{T(lang, 'Tham gia Deals68', 'Which role fits you?')}</h2><p>{T(lang, 'Nền tảng mua bán doanh nghiệp, M&A, huy động vốn và kết nối nhà đầu tư trong nước và quốc tế cho doanh nghiệp Việt Nam trên toàn cầu.', 'Deals68 serves many needs: fundraising, M&A, lending and market development.')}</p></div>
         <div className="d68-home-role-grid">{roleCards.map((role) => <div key={role.title} className="d68-home-role-card"><div style={{ background: role.bg, color: role.color }}>{role.icon}</div><h3>{role.title}</h3><p>{role.desc}</p><Link to={nav(role.to)}><span>{role.cta} →</span></Link></div>)}</div>
       </section>
 
@@ -353,7 +353,7 @@ export default function Home({ lang }: { lang: Lang }) {
         </div>
       </section>
 
-      <section className="d68-home-block d68-home-how"><div className="d68-home-container"><div className="d68-home-title d68-home-title--center"><h2 style={{ color: '#0F2A4A' }}>{T(lang, 'Cách hoạt động', 'How it works')}</h2><p>{T(lang, 'Ba bước để bắt đầu một thương vụ trên Deals68.', 'Three steps to start a deal on Deals68.')}</p></div><div className="d68-home-steps">{steps.map((step) => <div key={step.n}><b>{step.n}</b><h3>{step.title}</h3><p>{step.desc}</p></div>)}</div></div></section>
+      <section className="d68-home-block d68-home-how"><div className="d68-home-container"><div className="d68-home-title d68-home-title--center"><h2>{T(lang, 'Cách hoạt động', 'How it works')}</h2><p>{T(lang, 'Ba bước để bắt đầu một thương vụ trên Deals68.', 'Three steps to start a deal on Deals68.')}</p></div><div className="d68-home-steps">{steps.map((step) => <div key={step.n}><b>{step.n}</b><h3>{step.title}</h3><p>{step.desc}</p></div>)}</div></div></section>
     </main>
   );
 }
