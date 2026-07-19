@@ -1,0 +1,46 @@
+name: Diagnose investors About release QA
+
+on:
+  pull_request:
+    branches:
+      - building
+    types:
+      - synchronize
+
+permissions:
+  contents: write
+
+jobs:
+  diagnose:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout feature branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 1
+          show-progress: false
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Capture release QA diagnostics
+        shell: bash
+        run: |
+          set +e
+          npm run qa:release > docs/qa/TEMP_INVESTORS_ABOUT_RELEASE_QA.txt 2>&1
+          status=$?
+          set -e
+          printf '\nQA_EXIT_STATUS=%s\n' "$status" >> docs/qa/TEMP_INVESTORS_ABOUT_RELEASE_QA.txt
+          tail -n 160 docs/qa/TEMP_INVESTORS_ABOUT_RELEASE_QA.txt
+
+      - name: Commit diagnostics
+        shell: bash
+        run: |
+          rm -f .github/workflows/diagnose-investors-about-release-qa.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "chore: capture investors About release QA diagnostics"
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}
