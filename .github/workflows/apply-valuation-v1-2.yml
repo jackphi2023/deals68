@@ -12,26 +12,19 @@ on:
 permissions:
   contents: write
 
-concurrency:
-  group: deals68-valuation-v1-2
-  cancel-in-progress: false
-
 jobs:
   diagnose-qa:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout latest building
-        uses: actions/checkout@v4
-        with:
-          ref: building
-          fetch-depth: 1
-          show-progress: false
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
+      - name: Quiet checkout building
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          rm -rf .git
+          git init -q
+          git remote add origin "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git fetch -q --depth=1 origin building
+          git checkout -q -B building FETCH_HEAD
 
       - name: Apply formula-only update
         run: python3 scripts/apply_valuation_v1_2.py
@@ -44,5 +37,5 @@ jobs:
           set +e
           npm run qa:asset-valuation > /tmp/valuation-v1-2.log 2>&1
           status=$?
-          tail -n 80 /tmp/valuation-v1-2.log
+          cat /tmp/valuation-v1-2.log
           exit "$status"
