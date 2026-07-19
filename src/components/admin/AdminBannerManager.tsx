@@ -16,10 +16,7 @@ import {
   heroMobileFocusPosition,
 } from '../HeroBannerMedia';
 
-type BannerRow = SiteBanner & {
-  mobile_focal_x?: number | null;
-  mobile_focal_y?: number | null;
-};
+type BannerRow = SiteBanner;
 
 type EditorDraft = {
   desktopX: number;
@@ -407,8 +404,12 @@ export default function AdminBannerManager({
         mobile_image_path: placement === 'home_hero' ? mobileImagePath : null,
         focal_x: placement === 'home_hero' ? clampFocus(draft.desktopX) : 50,
         focal_y: placement === 'home_hero' ? clampFocus(draft.desktopY) : 50,
-        mobile_focal_x: placement === 'home_hero' ? clampFocus(draft.mobileX) : 50,
-        mobile_focal_y: placement === 'home_hero' ? clampFocus(draft.mobileY) : 50,
+        ...(placement === 'home_hero'
+          ? {
+              mobile_focal_x: clampFocus(draft.mobileX),
+              mobile_focal_y: clampFocus(draft.mobileY),
+            }
+          : {}),
         link_url: clean(data.get('link_url')) || null,
         sort_order: slot,
         lang_mode: (clean(data.get('lang_mode')) || 'both') as BannerLangMode,
