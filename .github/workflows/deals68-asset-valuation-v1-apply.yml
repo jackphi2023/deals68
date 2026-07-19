@@ -11,14 +11,10 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
-
-concurrency:
-  group: deals68-asset-valuation-v1-final
-  cancel-in-progress: false
+  contents: read
 
 jobs:
-  apply-verify-and-push:
+  diagnose-packages:
     runs-on: ubuntu-latest
     steps:
       - name: Quiet checkout building
@@ -59,41 +55,10 @@ jobs:
       - name: Install dependencies quietly
         run: npm ci --silent
 
-      - name: Asset valuation contract
-        run: npm run qa:asset-valuation
-
-      - name: Build and compare release QA with baseline
+      - name: Package QA diagnostic
         run: |
           set +e
-          npm run qa:release > /tmp/release-qa.log 2>&1
+          npm run qa:packages > /tmp/package-qa.log 2>&1
           status=$?
-          set -e
-          tail -n 25 /tmp/release-qa.log
-          if [ "$status" -eq 0 ]; then
-            exit 0
-          fi
-          failure_count=$(grep -c '✗' /tmp/release-qa.log || true)
-          grep -Fq '✗ business industry links and filters use canonical taxonomy keys' /tmp/release-qa.log
-          grep -Fq 'Release QA static check failed: 1/25' /tmp/release-qa.log
-          test "$failure_count" -eq 1
-          echo 'Accepted the single pre-existing baseline taxonomy failure; no additional release QA regression detected.'
-
-      - name: Package QA
-        run: npm run qa:packages
-
-      - name: CSS architecture QA
-        run: npm run qa:css
-
-      - name: Existing fix-series regression
-        run: npm run qa:fix-series
-
-      - name: Diff validation
-        run: git diff --check
-
-      - name: Commit tested source to building
-        run: |
-          git config user.name "Deals68 Release Bot"
-          git config user.email "actions@users.noreply.github.com"
-          git add -A
-          git commit -m "feat(valuation): add asset-adjusted reference logic"
-          git push origin HEAD:building
+          tail -n 30 /tmp/package-qa.log
+          exit "$status"
