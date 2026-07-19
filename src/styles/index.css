@@ -18,6 +18,7 @@
 @import './pages/business-detail.css' layer(d68-overrides);
 @import './pages/investors.css' layer(d68-overrides);
 @import './pages/investor-detail.css' layer(d68-overrides);
+@import './pages/related-investors.css' layer(d68-overrides);
 @import './pages/pricing.css' layer(d68-overrides);
 @import './pages/valuation.css' layer(d68-overrides);
 @import './pages/auth.css' layer(d68-overrides);
