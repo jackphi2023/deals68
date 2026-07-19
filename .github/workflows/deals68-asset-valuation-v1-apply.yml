@@ -60,5 +60,5 @@ jobs:
           set +e
           npm run qa:release > /tmp/release-qa.log 2>&1
           status=$?
-          tail -n 80 /tmp/release-qa.log
+          tail -n 20 /tmp/release-qa.log
           exit "$status"
