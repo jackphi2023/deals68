@@ -17,7 +17,7 @@ import {
   investorTicketLabel,
 } from '../../lib/investorDisplay';
 import { approvedInvestorSectors } from '../../lib/investorCriteria';
-import { labelCountry, labelIndustry, T } from '../../lib/labels';
+import { labelCountry, T } from '../../lib/labels';
 import { toLocalizedPath } from '../../lib/i18nRoutes';
 import { sendBusinessProposalToInvestor } from '../../lib/proposals';
 import type { Lang } from '../../lib/i18n';
@@ -308,11 +308,8 @@ export default function RelatedInvestorsSection({ code, lang }: Props) {
         <header className="d68-related-investors__head">
           <div>
             <h2 id="related-investors-title">
-              {T(lang, 'Nhà đầu tư cùng danh mục', 'Investors in the same category')}
+              {T(lang, 'Nhà đầu tư tương tự', 'Similar investors')}
             </h2>
-            {category ? (
-              <p>{labelIndustry(category, lang)}</p>
-            ) : null}
           </div>
           <Link to={allPath}>
             {T(lang, 'Xem tất cả', 'View all')} →
