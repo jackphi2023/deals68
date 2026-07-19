@@ -1,3 +1,3 @@
 Trigger the one-time asset-adjusted valuation applicator for the `building` branch.
 
-Baseline package QA: 9.
+Valuation-only final run: 10.
