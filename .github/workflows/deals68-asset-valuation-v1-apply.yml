@@ -13,16 +13,26 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: deals68-asset-valuation-v1
+  cancel-in-progress: false
+
 jobs:
-  diagnose:
+  apply-and-verify:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout building
         uses: actions/checkout@v4
         with:
           ref: building
-          fetch-depth: 1
+          fetch-depth: 0
           show-progress: false
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
 
       - name: Relax non-critical valuation copy patch
         run: |
@@ -39,6 +49,43 @@ jobs:
           PY
 
       - name: Apply source patch
+        run: python3 scripts/apply_asset_valuation_v1.py
+
+      - name: Preserve explicit zero net debt display
         run: |
-          python3 scripts/apply_asset_valuation_v1.py 2>&1 | tail -n 40
-          exit ${PIPESTATUS[0]}
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('src/pages/BusinessDashboard.tsx')
+          text = path.read_text(encoding='utf-8')
+          old = "{formatValuationMoney(result.netDebtInput, assetCurrency, lang)}"
+          new = "{Number(result.netDebtInput) === 0 ? (assetCurrency === 'USD' ? 'US$0' : '0 VNĐ') : formatValuationMoney(result.netDebtInput, assetCurrency, lang)}"
+          if old not in text:
+              raise SystemExit('Expected net-debt display marker was not found')
+          path.write_text(text.replace(old, new, 1), encoding='utf-8')
+          PY
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Asset valuation contract
+        run: npm run qa:asset-valuation
+
+      - name: Release QA
+        run: npm run qa:release
+
+      - name: CSS architecture QA
+        run: npm run qa:css
+
+      - name: Existing fix-series regression
+        run: npm run qa:fix-series
+
+      - name: Diff validation
+        run: git diff --check
+
+      - name: Commit tested source
+        run: |
+          git config user.name "Deals68 Release Bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add -A
+          git commit -m "feat(valuation): add asset-adjusted reference logic"
+          git push origin HEAD:building
