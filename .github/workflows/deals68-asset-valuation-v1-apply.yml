@@ -35,7 +35,23 @@ jobs:
           cache: npm
 
       - name: Apply source patch
-        run: python3 scripts/apply_asset_valuation_v1.py
+        run: |
+          set +e
+          python3 scripts/apply_asset_valuation_v1.py > /tmp/asset-valuation-apply.log 2>&1
+          status=$?
+          cat /tmp/asset-valuation-apply.log
+          if [ "$status" -ne 0 ]; then
+            git reset --hard origin/building
+            mkdir -p .github/debug
+            cp /tmp/asset-valuation-apply.log .github/debug/asset-valuation-v1-apply.log
+            git config user.name "Deals68 Release Bot"
+            git config user.email "actions@users.noreply.github.com"
+            git switch -C debug/asset-valuation-v1-log
+            git add .github/debug/asset-valuation-v1-apply.log
+            git commit -m "debug: capture asset valuation applicator error" --allow-empty
+            git push --force origin HEAD:debug/asset-valuation-v1-log
+            exit "$status"
+          fi
 
       - name: Preserve explicit zero net debt display
         run: |
