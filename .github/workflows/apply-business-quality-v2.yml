@@ -1,0 +1,66 @@
+name: Apply and verify Business Quality Score v2
+
+on:
+  pull_request:
+    branches:
+      - building
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+
+      - name: Apply scoped dashboard patch
+        run: python3 scripts/apply-business-quality-v2-dashboard.py
+
+      - name: Verify source contracts
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          quality = Path('src/lib/businessQuality.ts').read_text()
+          dashboard = Path('src/pages/BusinessDashboard.tsx').read_text()
+          migration = Path('supabase/migrations/20260719143000_business_quality_score_v2.sql').read_text()
+          assert "readiness: 20" in quality
+          assert "valuation: 15" in quality
+          assert "status_vi" in quality
+          assert "Đã khai báo, chưa được chứng minh" in dashboard
+          assert "approvedFiles" in dashboard
+          assert "'hidden',true" in migration or "'hidden', true" in migration
+          assert "'data_room_score'" in migration
+          assert "'transaction_score'" in migration
+          assert "'max',w_readiness" in migration
+          print('Business Quality Score v2 source contracts: PASS')
+          PY
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Production build
+        run: npm run build
+
+      - name: Check diff formatting
+        run: git diff --check
+
+      - name: Commit verified source and remove one-time tooling
+        run: |
+          rm -f scripts/apply-business-quality-v2-dashboard.py
+          rm -f .github/workflows/apply-business-quality-v2.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No source changes to commit."
+            exit 0
+          fi
+          git commit -m "fix(quality): apply Business Quality Score v2 UI"
+          git push origin HEAD:${{ github.head_ref }}
