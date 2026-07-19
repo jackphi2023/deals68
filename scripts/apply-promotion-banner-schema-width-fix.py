@@ -41,9 +41,10 @@ manager_path.write_text(manager, encoding='utf-8')
 # available width: Homepage uses d68-home-container; listings use their result column.
 css_path = Path('src/styles/components/promotion-banner.css')
 css = css_path.read_text(encoding='utf-8')
+outer_width_block = "  width: 100%;\n  max-width: 100%;\n  margin-block: 0;"
 css = replace_required(
     css,
-    "  width: 100%;\n  max-width: 100%;\n  margin-block: 0;",
+    outer_width_block,
     "  width: 100%;\n  margin-block: 0;",
     'remove global max-width override',
 )
@@ -57,7 +58,8 @@ checks = {
     'shared mobile focal type': 'mobile_focal_x?: number | null;' in banners,
     'promotion excludes mobile focal': "...(placement === 'home_hero'" in manager,
     'no unconditional mobile focal': "mobile_focal_x: placement === 'home_hero'" not in manager,
-    'container max width preserved': 'max-width: 100%;' not in css,
+    'outer banner no longer overrides container max width': outer_width_block not in css,
+    'image max width retained': '.d68-promo-banner__link img' in css and 'max-width: 100%;' in css,
     'homepage keeps container class': 'd68-home-container d68-home-block' in Path('src/pages/Home.tsx').read_text(encoding='utf-8'),
 }
 failed = [name for name, ok in checks.items() if not ok]
