@@ -1,5 +1,6 @@
 name: Apply asset valuation v1
 
+# One-time building-branch applicator. It removes itself after a verified commit.
 on:
   push:
     branches:
