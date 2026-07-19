@@ -2,4 +2,4 @@
 
 Temporary same-repository PR trigger used to run the one-time asset-adjusted valuation applicator against the `building` branch with observable GitHub Actions logs. This file is not intended for merge.
 
-Final verified source update rerun: 9.
+Package QA diagnostic rerun: 10.
