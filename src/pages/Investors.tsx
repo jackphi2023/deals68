@@ -597,6 +597,7 @@ export default function Investors({ lang }: { lang: Lang }) {
         </aside>
 
         <div className="d68-investors-results">
+          <div className="d68-investors-results-content">
           <div className="d68-investors-toolbar">
             <span>
               {loading ? T(lang, 'Đang tải…', 'Loading…') : resultRangeText}
@@ -660,6 +661,7 @@ export default function Investors({ lang }: { lang: Lang }) {
             </button>
           </div>
 
+          </div>
           <PromotionBanner
             placement="listing_promotion"
             lang={lang}
