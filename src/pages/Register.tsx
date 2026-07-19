@@ -313,10 +313,8 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
       ? requestedMonths
       : null;
   });
-  const [promoCode, setPromoCode] = useState(String(intent.promoCode || ''));
-  const [promoPct, setPromoPct] = useState<number>(
-    Number(intent.price?.promoDiscountPct || 0),
-  );
+  const [promoCode, setPromoCode] = useState('');
+  const [promoPct, setPromoPct] = useState<number>(0);
   const [promoMsg, setPromoMsg] = useState('');
   const [promoLoading, setPromoLoading] = useState(false);
   const [paymentAck, setPaymentAck] = useState(false);
@@ -328,10 +326,10 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
     intent.country === 'GLOBAL' ? 'Singapore' : 'Việt Nam',
   );
   const [industry, setIndustry] = useState('');
-  const [city, setCity] = useState('TP. Hồ Chí Minh');
+  const [city, setCity] = useState('');
   const [companyName, setCompanyName] = useState('');
   const [highlights, setHighlights] = useState('');
-  const [dealType, setDealType] = useState('Gọi vốn');
+  const [dealType, setDealType] = useState('');
   const [revenueMonth, setRevenueMonth] = useState('');
   const [revenue, setRevenue] = useState('');
   const [ebitda, setEbitda] = useState('');
@@ -395,18 +393,18 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
       : true;
 
   useEffect(() => {
+    if (!isBusiness || !city) return;
     const options = getLocationOptionsForCountry(countryCode);
     if (
-      isBusiness &&
       options.length &&
       !options.some(
         (option) =>
           option.vi === city || option.en === city || option.key === city,
       )
     ) {
-      setCity(lang === 'en' ? options[0].en : options[0].vi);
+      setCity('');
     }
-  }, [countryCode, isBusiness, lang, city]);
+  }, [countryCode, isBusiness, city]);
 
   const price = calculatePricing(
     {
@@ -624,6 +622,7 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
       }
       if (!city.trim()) missing.push(T(lang, 'Tỉnh/Thành phố', 'Province/City'));
       if (!industry.trim()) missing.push(T(lang, 'Ngành', 'Industry'));
+      if (!dealType.trim()) missing.push(T(lang, 'Giao dịch', 'Transaction'));
       if (!revenue.trim() && !revenueMonth.trim()) {
         missing.push(
           T(
@@ -1222,7 +1221,7 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
               onChange={(event) =>
                 setPromoCode(event.target.value.toUpperCase())
               }
-              placeholder="DEALS68"
+              placeholder={T(lang, 'Nhập mã (nếu có)', 'Enter code (optional)')}
             />
             <button
               type="button"
@@ -1508,6 +1507,13 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
                       value={city}
                       onChange={(event) => setCity(event.target.value)}
                     >
+                      <option value="" disabled>
+                        {T(
+                          lang,
+                          'Chọn Tỉnh/Thành phố',
+                          'Select Province/City',
+                        )}
+                      </option>
                       {locationChoices.length ? (
                         locationChoices.map((item) => (
                           <option
@@ -1529,6 +1535,9 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
                       value={dealType}
                       onChange={(event) => setDealType(event.target.value)}
                     >
+                      <option value="" disabled>
+                        {T(lang, 'Chọn giao dịch', 'Select transaction')}
+                      </option>
                       {businessDealOptions.map((item) => (
                         <option key={item.vi} value={item.vi}>
                           {T(lang, item.vi, item.en)}
