@@ -9,6 +9,22 @@
   color: #F2B51D;
 }
 
+/* Let the long bilingual About headline use the available desktop width.
+   Content sections below remain aligned to the 1200px grid. */
+@media (min-width: 1024px) {
+  .d68-static-page--about .d68-static-hero .d68-static-container {
+    max-width: 1440px;
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+
+  .d68-static-page--about .d68-static-hero h1 {
+    font-size: clamp(36px, 3.05vw, 42px);
+    max-width: none;
+    white-space: nowrap;
+  }
+}
+
 /* Full-width brand surface; readable content remains aligned to the 1200px grid. */
 .d68-static-page--about .d68-static-section--about-platform {
   width: 100%;
