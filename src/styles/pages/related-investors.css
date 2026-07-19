@@ -1,11 +1,10 @@
 /* Related investors block shown only above Footer on investor detail routes. */
 .d68-related-investors{
   width:100%;
-  margin:16px 0 80px;
-  padding:36px 0;
-  background:#fff;
-  border-top:1px solid #E7EDF3;
-  border-bottom:1px solid #E7EDF3;
+  margin:0 0 80px;
+  padding:0;
+  background:transparent;
+  border:0;
   color:#0F2A4A;
 }
 .d68-related-investors__inner{max-width:1240px;margin:0 auto;padding:0 24px}
@@ -38,7 +37,7 @@
   .d68-related-investor-card--loading{min-height:340px}
 }
 @media(max-width:700px){
-  .d68-related-investors{margin:34px 0 80px;padding:30px 0}
+  .d68-related-investors{margin:0 0 80px;padding:0}
   .d68-related-investors__inner{padding:0 14px}
   .d68-related-investors__head{align-items:flex-start;margin-bottom:18px}
   .d68-related-investors__head h2{font-size:22px;line-height:1.25}
