@@ -5,7 +5,7 @@ import { labelLocation, locationOptions, getLocationOptionsForCountry, locationK
 
 export { T } from './labelsBase';
 export { industryOptions, industryKeyFromLabel, industrySeoText, normalizeIndustryForDb } from './industryTaxonomy';
-export { locationOptions, getLocationOptionsForCountry, locationKeyFromLabel, labelLocation } from './locationTaxonomy';
+export { locationOptions, getLocationOptionsForCountry, locationKeyFromLabel, locationOptionFromValue, locationDbLabel, labelLocation } from './locationTaxonomy';
 
 export const FX_VND_PER_USD = 26000;
 

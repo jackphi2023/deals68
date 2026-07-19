@@ -1,0 +1,69 @@
+/* Homepage Hero — Session 9
+   Owns only the loading fallback, slider dots and hero statistics surface.
+   Keep business content and slider behaviour in their existing components. */
+
+/* Loading/fallback state: retain a soft branded surface without rendering
+   the text embedded in the generated placeholder SVG. */
+.d68-home-page .d68-hero-slider--fallback {
+  background:
+    radial-gradient(circle at 78% 24%, rgba(27, 173, 234, 0.34), transparent 36%),
+    linear-gradient(120deg, #0f2a4a 0%, #173b64 54%, #1596cc 100%);
+}
+
+.d68-home-page .d68-hero-slider--fallback .d68-hero-media,
+.d68-home-page .d68-hero-slider--fallback picture,
+.d68-home-page .d68-hero-slider--fallback img {
+  visibility: hidden;
+}
+
+/* Slider navigation uses the same centred position on desktop and mobile. */
+.d68-home-page .d68-hero-dots {
+  position: absolute;
+  left: 50%;
+  right: auto;
+  bottom: 16px;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: max-content;
+  max-width: calc(100% - 32px);
+  margin: 0;
+  z-index: 5;
+}
+
+/* Remove the shared plate under the three statistics. Each statistic remains
+   an independent translucent card. */
+.d68-home-page .d68-home-hero-stats {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  overflow: visible;
+  gap: 12px;
+}
+
+.d68-home-page .d68-home-hero-stats > div {
+  background: rgba(15, 42, 74, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  border-radius: 14px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+@media (max-width: 700px) {
+  .d68-home-page .d68-hero-dots {
+    bottom: 16px;
+  }
+
+  .d68-home-page .d68-home-hero-stats {
+    gap: 10px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .d68-home-page .d68-hero-slider--fallback,
+  .d68-home-page .d68-home-hero-stats > div {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}

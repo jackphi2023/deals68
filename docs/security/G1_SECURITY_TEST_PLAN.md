@@ -60,7 +60,7 @@ Lặp lại với Investor test.
 - Gửi update trực tiếp `title_vi`, `title_en`, `visible`, `status`.
 - Kết quả bắt buộc: thất bại.
 - Sửa hồ sơ qua RPC Dashboard vẫn thành công.
-- Chỉ `desc_vi/desc_en` mới nằm trong pending để Admin duyệt.
+- Chỉ `desc_vi/desc_en` và `criteria.investment_appetite_vi/en` nằm trong pending để Admin duyệt; các tiêu chí khác lưu ngay.
 
 ### D. Không còn mật khẩu lưu trong profiles
 

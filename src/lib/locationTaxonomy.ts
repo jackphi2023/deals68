@@ -28,7 +28,7 @@ export const vietnamProvinceOptions: LocationOption[] = [
   aliases: key === 'ho-chi-minh' ? ['TP.HCM','TP HCM','HCMC','Saigon','Sài Gòn','Ho Chi Minh City'] : key === 'ha-noi' ? ['Hanoi','HN'] : key === 'hai-phong' ? ['Hai Phong'] : key === 'da-nang' ? ['Da Nang'] : []
 }));
 
-const usStates = 'Alabama,Alaska,Arizona,Arkansas,California,Colorado,Connecticut,Delaware,Florida,Georgia,Hawaii,Idaho,Illinois,Indiana,Iowa,Kansas,Kentucky,Louisiana,Maine,Maryland,Massachusetts,Michigan,Minnesota,Mississippi,Missouri,Montana,Nebraska,Nevada,New Hampshire,New Jersey,New Mexico,New York,North Carolina,North Dakota,Ohio,Oklahoma,Oregon,Pennsylvania,Rhode Island,South Carolina,South Dakota,Tennessee,Texas,Utah,Vermont,Virginia,Washington,West Virginia,Wisconsin,Wyoming'.split(',');
+const usStates = 'Alabama,Alaska,Arizona,Arkansas,California,Colorado,Connecticut,Delaware,Florida,Georgia,Hawaii,Idaho,Illinois,Indiana,Iowa,Kansas,Louisiana,Maine,Maryland,Massachusetts,Michigan,Minnesota,Mississippi,Missouri,Montana,Nebraska,Nevada,New Hampshire,New Jersey,New Mexico,New York,North Carolina,North Dakota,Ohio,Oklahoma,Oregon,Pennsylvania,Rhode Island,South Carolina,South Dakota,Tennessee,Texas,Utah,Vermont,Virginia,Washington,West Virginia,Wisconsin,Wyoming'.split(',');
 const caRegions = ['Alberta','British Columbia','Manitoba','New Brunswick','Newfoundland and Labrador','Nova Scotia','Ontario','Prince Edward Island','Quebec','Saskatchewan','Northwest Territories','Nunavut','Yukon'];
 const auRegions = ['Australian Capital Territory','New South Wales','Northern Territory','Queensland','South Australia','Tasmania','Victoria','Western Australia'];
 
@@ -47,22 +47,52 @@ export const locationOptions: LocationOption[] = [
   { key: 'OTHER-other', countryIso2: 'OTHER', vi: 'Khác / nhập tự do', en: 'Other / free text', type: 'other', sortOrder: 999 }
 ];
 
+const locationByCanonicalKey = new Map(
+  locationOptions.map((option) => [option.key.toLowerCase(), option]),
+);
+
+function canonicalLocationOption(raw: any, countryIso2 = '') {
+  const value = String(raw || '').trim();
+  if (!value) return undefined;
+
+  const direct = locationByCanonicalKey.get(value.toLowerCase());
+  if (!direct) return undefined;
+
+  const iso = String(countryIso2 || '').trim().toUpperCase();
+  return !iso || direct.countryIso2 === iso ? direct : undefined;
+}
+
 export function getLocationOptionsForCountry(countryIso2: string) {
   const iso = String(countryIso2 || 'VN').toUpperCase();
   const matches = locationOptions.filter((x) => x.countryIso2 === iso).sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
   return matches.length ? matches : [];
 }
 
-export function locationKeyFromLabel(label: string, countryIso2 = 'VN') {
-  const n = norm(label);
+export function locationOptionFromValue(raw: any, countryIso2 = '') {
+  const direct = canonicalLocationOption(raw, countryIso2);
+  if (direct) return direct;
+
+  const n = norm(raw);
   const iso = String(countryIso2 || '').toUpperCase();
-  const item = locationOptions.find((x) => (!iso || x.countryIso2 === iso) && (norm(x.key) === n || norm(x.vi) === n || norm(x.en) === n || (x.aliases || []).some((a) => norm(a) === n)));
-  return item?.key || '';
+  if (!n) return undefined;
+  return locationOptions.find((x) =>
+    (!iso || x.countryIso2 === iso) &&
+    (norm(x.vi) === n || norm(x.en) === n ||
+      (x.aliases || []).some((alias) => norm(alias) === n)),
+  );
+}
+
+export function locationKeyFromLabel(label: string, countryIso2 = 'VN') {
+  return locationOptionFromValue(label, countryIso2)?.key || '';
+}
+
+export function locationDbLabel(raw: any, countryIso2 = 'VN') {
+  const item = locationOptionFromValue(raw, countryIso2);
+  return item?.vi || String(raw || '').trim();
 }
 
 export function labelLocation(raw: any, lang: Lang) {
   const r = String(raw || '').trim();
-  const n = norm(r);
-  const item = locationOptions.find((x) => norm(x.key) === n || norm(x.vi) === n || norm(x.en) === n || (x.aliases || []).some((a) => norm(a) === n));
+  const item = locationOptionFromValue(r);
   return item ? T(lang, item.vi, item.en) : (r || T(lang, 'Đang cập nhật', 'Updating'));
 }

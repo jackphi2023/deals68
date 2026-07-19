@@ -1,0 +1,75 @@
+/* Homepage layout contract.
+   This file is the only owner of direct-child spacing and outer section surfaces.
+   Component internals remain in their component/page stylesheets. */
+
+.d68-home-page {
+  --d68-home-section-gap: 80px;
+  display: flex;
+  flex-direction: column;
+  row-gap: var(--d68-home-section-gap);
+  padding-bottom: var(--d68-home-section-gap);
+  background: #F7FAFC;
+}
+
+.d68-home-page > .d68-home-hero,
+.d68-home-page > .d68-home-block {
+  min-width: 0;
+}
+
+/* Every non-hero block participates in exactly one 80px flex gap. No direct
+   block may add external vertical margin or padding; container gutters remain. */
+.d68-home-page > .d68-home-block {
+  width: 100%;
+  margin-block: 0;
+  padding-block: 0;
+}
+
+/* Featured Industries is a full-width transparent section on the common canvas.
+   Its nested container owns only width/gutters; cards retain their white surface. */
+.d68-home-page > .d68-home-industries,
+.d68-home-page > .d68-home-industries > .d68-home-container {
+  background: transparent;
+}
+
+.d68-home-page > .d68-home-industries {
+  border: 0;
+  box-shadow: none;
+}
+
+/* Valuation follows the same section/container pattern. Only the inner branded
+   box owns a visible background. */
+.d68-home-page > .d68-home-valuation {
+  background: transparent;
+  border: 0;
+  outline: 0;
+  box-shadow: none;
+}
+
+.d68-home-page > .d68-home-valuation > .d68-home-container {
+  background: transparent;
+}
+
+.d68-home-page > .d68-home-valuation .d68-home-valuation__box {
+  border: 0;
+  outline: 0;
+  background-clip: padding-box;
+}
+
+/* How-it-works inherits the common Homepage canvas. Its nested container
+   keeps only internal content padding; step cards remain white surfaces. */
+.d68-home-page > .d68-home-how,
+.d68-home-page > .d68-home-how > .d68-home-container {
+  background: transparent;
+}
+
+.d68-home-page > .d68-home-how {
+  margin-block: 0;
+  border: 0;
+  box-shadow: none;
+}
+
+@media (max-width: 700px) {
+  .d68-home-page {
+    --d68-home-section-gap: 50px;
+  }
+}

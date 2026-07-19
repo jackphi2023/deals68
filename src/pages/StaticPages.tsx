@@ -1,11 +1,24 @@
 import { FormEvent, useState } from 'react';
 import { Link } from 'react-router-dom';
+import {
+  BarChart3,
+  Briefcase,
+  Building2,
+  Globe2,
+  Handshake,
+  ShieldCheck,
+  Target,
+} from 'lucide-react';
+import { type LegalItem } from '../content/staticAboutContent';
+import { termsPart1 } from '../content/staticTermsContent1';
+import { termsPart2 } from '../content/staticTermsContent2';
+import { privacyPart1 } from '../content/staticPrivacyContent1';
+import { privacyPart2 } from '../content/staticPrivacyContent2';
 import { supabase } from '../lib/supabase';
 import { toLocalizedPath } from '../lib/i18nRoutes';
 import type { Lang } from '../lib/i18n';
 
 type Props = { lang: Lang };
-type LegalItem = { viTitle: string; enTitle: string; viText: string; enText: string };
 
 type HeroProps = Props & {
   kicker: string;
@@ -14,92 +27,114 @@ type HeroProps = Props & {
   titleEn: string;
   desc: string;
   descEn: string;
+  slogan?: string;
+  sloganEn?: string;
+  meta?: string;
+  metaEn?: string;
 };
 
 const T = (lang: Lang, vi: string, en: string) => (lang === 'en' ? en : vi);
 const path = (to: string, lang: Lang) => toLocalizedPath(to, lang);
+const terms: LegalItem[] = [...termsPart1, ...termsPart2];
+const privacy: LegalItem[] = [...privacyPart1, ...privacyPart2];
 
-function Hero({ lang, kicker, kickerEn, title, titleEn, desc, descEn }: HeroProps) {
+function Hero({ lang, kicker, kickerEn, title, titleEn, desc, descEn, slogan, sloganEn, meta, metaEn }: HeroProps) {
   return <section className="d68-static-hero">
     <div className="d68-static-container d68-static-hero__inner">
       <span className="d68-static-eyebrow">{T(lang, kicker, kickerEn)}</span>
       <h1>{T(lang, title, titleEn)}</h1>
       <p>{T(lang, desc, descEn)}</p>
+      {slogan && sloganEn ? <strong className="d68-static-hero__slogan">{T(lang, slogan, sloganEn)}</strong> : null}
+      {meta && metaEn ? <small className="d68-static-hero__meta">{T(lang, meta, metaEn)}</small> : null}
     </div>
   </section>;
 }
 
-function Section({ children, narrow = false, alt = false }: { children: React.ReactNode; narrow?: boolean; alt?: boolean }) {
-  return <section className={`d68-static-section${alt ? ' d68-static-section--alt' : ''}`}>
+function Section({ children, narrow = false, alt = false, className = '' }: { children: React.ReactNode; narrow?: boolean; alt?: boolean; className?: string }) {
+  return <section className={`d68-static-section${alt ? ' d68-static-section--alt' : ''}${className ? ` ${className}` : ''}`}>
     <div className={narrow ? 'd68-static-container d68-static-container--narrow' : 'd68-static-container'}>{children}</div>
   </section>;
 }
 
-function CTA({ lang, to, title, titleEn, cta, ctaEn }: Props & { to: string; title: string; titleEn: string; cta: string; ctaEn: string }) {
+function CTA({ lang, to, title, titleEn, text, textEn, cta, ctaEn }: Props & { to: string; title: string; titleEn: string; text?: string; textEn?: string; cta: string; ctaEn: string }) {
   const inner = <>{T(lang, cta, ctaEn)} <span>→</span></>;
   return <div className="d68-static-cta">
-    <h2>{T(lang, title, titleEn)}</h2>
+    <div>
+      <h2>{T(lang, title, titleEn)}</h2>
+      {text && textEn ? <p>{T(lang, text, textEn)}</p> : null}
+    </div>
     {to.startsWith('mailto:') ? <a href={to}>{inner}</a> : <Link to={path(to, lang)}>{inner}</Link>}
   </div>;
 }
 
-function Card({ icon, title, children }: { icon: string; title: string; children: React.ReactNode }) {
+function Card({ icon, title, children }: { icon?: React.ReactNode; title: string; children: React.ReactNode }) {
   return <article className="d68-static-card">
-    <div className="d68-static-card__icon">{icon}</div>
+    {icon ? <div className={typeof icon === 'string' ? 'd68-static-card__icon' : 'd68-static-card__icon d68-static-card__icon--line'}>{icon}</div> : null}
     <h3>{title}</h3>
     <div>{children}</div>
   </article>;
 }
 
-function LegalList({ lang, items }: Props & { items: LegalItem[] }) {
-  return <div className="d68-static-legal-list">
-    {items.map((it, i) => <article id={`sec-${i + 1}`} key={it.viTitle} className="d68-static-legal-card">
-      <h2>{T(lang, it.viTitle, it.enTitle)}</h2>
-      <p>{T(lang, it.viText, it.enText)}</p>
-    </article>)}
-  </div>;
+
+function BulletList({ items, ordered = false }: { items: string[]; ordered?: boolean }) {
+  const List = ordered ? 'ol' : 'ul';
+  return <List className="d68-static-bullets">{items.map((item) => <li key={item}>{item}</li>)}</List>;
 }
 
-function Notice({ lang }: Props) {
-  return <div className="d68-static-notice">
-    <b>⚠️</b>
-    <span>{T(lang, 'Thông tin trên Deals68 không phải là lời khuyên đầu tư, pháp lý, thuế hoặc tín dụng. Người dùng cần tự thẩm định và chịu trách nhiệm cho quyết định của mình.', 'Information on Deals68 is not investment, legal, tax or credit advice. Users should conduct their own due diligence and take responsibility for their decisions.')}</span>
+function LegalToc({ lang, items }: Props & { items: LegalItem[] }) {
+  return <nav className="d68-static-legal-toc" aria-label={T(lang, 'Mục lục', 'Table of contents')}>
+    <h2>{T(lang, 'Mục lục', 'Table of contents')}</h2>
+    <div>{items.map((item, index) => <a key={item.viTitle} href={`#sec-${index + 1}`}><span>{index + 1}</span>{T(lang, item.viTitle, item.enTitle)}</a>)}</div>
+  </nav>;
+}
+
+function LegalList({ lang, items }: Props & { items: LegalItem[] }) {
+  return <div className="d68-static-legal-list">
+    {items.map((item, index) => {
+      const paragraphs = lang === 'en' ? item.enParagraphs : item.viParagraphs;
+      const bullets = lang === 'en' ? item.enBullets : item.viBullets;
+      return <article id={`sec-${index + 1}`} key={item.viTitle} className="d68-static-legal-card">
+        <h2>{index + 1}. {T(lang, item.viTitle, item.enTitle)}</h2>
+        {paragraphs.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
+        {bullets?.length ? <BulletList items={bullets} /> : null}
+      </article>;
+    })}
   </div>;
 }
 
 export function About({ lang }: Props) {
   const pillars = [
-    { icon: '🛡️', vi: 'Ẩn danh trước, công khai sau khi duyệt', en: 'Anonymous first, public after approval', descVi: 'Hồ sơ doanh nghiệp công khai chỉ dùng bản hiển thị đã được Admin duyệt; tên thật, tài liệu và thông tin liên hệ riêng tư không xuất hiện trên trang công khai.', descEn: 'Public business pages use Admin-approved snapshots only; real names, documents and private contact details are not shown publicly.' },
-    { icon: '📊', vi: 'Dữ liệu chuẩn hóa', en: 'Structured data', descVi: 'Doanh thu, lợi nhuận, nhu cầu vốn, loại giao dịch và điểm chất lượng hồ sơ được chuẩn hóa để nhà đầu tư sàng lọc nhanh hơn.', descEn: 'Revenue, profit, ask, deal type and profile quality score are structured to help investors screen faster.' },
-    { icon: '🤝', vi: 'Kết nối có kiểm soát', en: 'Controlled matching', descVi: 'Nhà đầu tư, người mua và bên cho vay có thể bày tỏ quan tâm hoặc yêu cầu dữ liệu; tài liệu nhạy cảm chỉ mở theo quy trình được duyệt.', descEn: 'Investors, buyers and lenders may express interest or request data; sensitive documents unlock only through an approved workflow.' }
+    { icon: <ShieldCheck />, vi: 'Ẩn danh trước, công khai sau khi duyệt', en: 'Anonymous first, public after approval', descVi: 'Hồ sơ doanh nghiệp công khai chỉ dùng bản hiển thị đã được Admin duyệt; tên thật, tài liệu và thông tin liên hệ riêng tư không xuất hiện trên trang công khai.', descEn: 'Public business pages use Admin-approved snapshots only; real names, documents and private contact details are not shown publicly.' },
+    { icon: <BarChart3 />, vi: 'Dữ liệu chuẩn hóa', en: 'Structured data', descVi: 'Doanh thu, lợi nhuận, nhu cầu vốn, loại giao dịch và điểm chất lượng hồ sơ được chuẩn hóa để nhà đầu tư sàng lọc nhanh hơn.', descEn: 'Revenue, profit, ask, deal type and profile quality score are structured to help investors screen faster.' },
+    { icon: <Handshake />, vi: 'Kết nối có kiểm soát', en: 'Controlled matching', descVi: 'Nhà đầu tư, người mua và bên cho vay có thể bày tỏ quan tâm hoặc yêu cầu dữ liệu; tài liệu nhạy cảm chỉ mở theo quy trình được duyệt.', descEn: 'Investors, buyers and lenders may express interest or request data; sensitive documents unlock only through an approved workflow.' }
   ];
   const flows = [
-    { icon: '🏢', vi: 'Doanh nghiệp', en: 'Businesses', descVi: 'Đăng hồ sơ ẩn danh để tìm nhà đầu tư, người mua, bên cho vay hoặc đối tác chiến lược phù hợp.', descEn: 'Create an anonymous profile to find relevant investors, buyers, lenders or strategic partners.' },
-    { icon: '💼', vi: 'Nhà đầu tư / Người mua / Bên cho vay', en: 'Investors / Buyers / Lenders', descVi: 'Lọc cơ hội theo ngành, quốc gia, quy mô, loại giao dịch và mức độ sẵn sàng dữ liệu.', descEn: 'Filter opportunities by sector, country, size, transaction type and data-readiness level.' },
-    { icon: '🌐', vi: 'Đối tác thị trường', en: 'Market Partners', descVi: 'Hỗ trợ Deals68 phát triển cộng đồng doanh nghiệp và nhà đầu tư tại từng quốc gia, thành phố hoặc cộng đồng người Việt.', descEn: 'Help Deals68 grow business and investor communities by country, city or Vietnamese diaspora market.' }
+    { icon: <Building2 />, vi: 'Doanh nghiệp', en: 'Businesses', descVi: 'Đăng hồ sơ ẩn danh để tìm nhà đầu tư, người mua, bên cho vay hoặc đối tác chiến lược phù hợp.', descEn: 'Create an anonymous profile to find relevant investors, buyers, lenders or strategic partners.' },
+    { icon: <Briefcase />, vi: 'Nhà đầu tư / Người mua / Bên cho vay', en: 'Investors / Buyers / Lenders', descVi: 'Lọc cơ hội theo ngành, quốc gia, quy mô, loại giao dịch và mức độ sẵn sàng dữ liệu.', descEn: 'Filter opportunities by sector, country, size, transaction type and data-readiness level.' },
+    { icon: <Globe2 />, vi: 'Đối tác thị trường', en: 'Market Partners', descVi: 'Đối tác luật, tài chính, cố vấn, môi giới có thể tham gia Deals68 để giúp giao dịch hoàn thành nhanh chóng và hiệu quả.', descEn: 'Legal, financial, advisory and brokerage partners can join Deals68 to help transactions close faster and more effectively.' }
   ];
-  return <main className="d68-static-page">
-    <Hero lang={lang} kicker="Giới thiệu" kickerEn="About" title="Về Deals68" titleEn="About Deals68" desc="Deals68.com là nền tảng kết nối doanh nghiệp Việt và doanh nghiệp toàn cầu với nhà đầu tư, người mua doanh nghiệp, bên cho vay và đối tác chiến lược trên toàn cầu." descEn="Deals68.com connects Vietnamese and global businesses with investors, business buyers, lenders and strategic partners worldwide." />
+  return <main className="d68-static-page d68-static-page--about">
+    <Hero lang={lang} kicker="Giới thiệu" kickerEn="About" title="Deals68 - Kết nối thương vụ, Khai mở lộc phát" titleEn="Deals68 - Connecting Deals, Unlocking Prosperity" desc="Deals68.com là nền tảng kết nối doanh nghiệp Việt và doanh nghiệp toàn cầu với nhà đầu tư, người mua doanh nghiệp, bên cho vay và đối tác chiến lược trên toàn cầu." descEn="Deals68.com connects Vietnamese and global businesses with investors, business buyers, lenders and strategic partners worldwide." />
     <Section>
       <div className="d68-static-title">
-        <h2>{T(lang, 'Tầm nhìn toàn cầu của Deals68', 'Deals68 global vision')}</h2>
-        <p>{T(lang, 'Giai đoạn đầu, Deals68 tập trung phục vụ doanh nghiệp Việt Nam, chủ cửa hàng, nhà đầu tư người Việt ở nước ngoài và các đối tác vốn quan tâm đến doanh nghiệp Việt. Sau đó, nền tảng sẽ từng bước mở rộng sang doanh nghiệp và nhà đầu tư quốc tế ở nhiều thị trường.', 'In the first stage, Deals68 focuses on Vietnamese businesses, store owners, overseas Vietnamese investors and capital partners interested in Vietnam-related opportunities. Over time, the platform will expand to international businesses and investors across multiple markets.')}</p>
+        <h2>{T(lang, 'Tầm nhìn Deals68', 'Deals68 Vision')}</h2>
+        <p>{T(lang, 'Chúng tôi hướng tới phục vụ cộng đồng doanh nghiệp Việt Nam trên toàn cầu với các nhà đầu tư, đối tác trong nước và trên toàn thế giới.', 'We aim to serve Vietnamese business communities worldwide by connecting them with investors and partners in Vietnam and across the globe.')}</p>
       </div>
       <div className="d68-static-grid d68-static-grid--2">
-        <Card icon="🎯" title={T(lang, 'Mục tiêu ba năm', '3-Year Goal')}>
+        <Card icon={<Target />} title={T(lang, 'Mục tiêu ba năm', '3-Year Goal')}>
           <strong>300.000 – 500.000</strong>
           <p>{T(lang, 'Doanh nghiệp, chủ cửa hàng, nhà đầu tư, người mua doanh nghiệp, bên cho vay và đối tác vốn Việt Nam - quốc tế.', 'Businesses, store owners, investors, business buyers, lenders and capital partners across Vietnamese and international markets.')}</p>
         </Card>
-        <Card icon="🌍" title={T(lang, 'Mục tiêu 10 năm', '10-Year Goal')}>
+        <Card icon={<Globe2 />} title={T(lang, 'Mục tiêu 10 năm', '10-Year Goal')}>
           <strong>{T(lang, 'Tối thiểu 1 triệu', '1 million+')}</strong>
           <p>{T(lang, 'Doanh nghiệp và nhà đầu tư toàn cầu được phục vụ.', 'Businesses and investors served globally.')}</p>
         </Card>
       </div>
     </Section>
-    <Section alt>
+    <Section alt className="d68-static-section--about-platform">
       <div className="d68-static-title">
-        <h2>{T(lang, 'Nền tảng được xây quanh niềm tin dữ liệu', 'Built around data trust')}</h2>
-        <p>{T(lang, 'Deals68 ưu tiên hồ sơ ẩn danh, dữ liệu được chuẩn hóa và quy trình duyệt trước khi công khai để giảm rủi ro lộ thông tin riêng tư.', 'Deals68 prioritises anonymous profiles, structured data and approval before publication to reduce private-information exposure risk.')}</p>
+        <h2>{T(lang, 'Nền tảng giao dịch M&A, Huy động vốn toàn diện', 'A Comprehensive M&A and Fundraising Transaction Platform')}</h2>
+        <p>{T(lang, 'Deals68 là nền tảng giao dịch tư nhân dành cho doanh nghiệp Việt và nhà đầu tư trên toàn cầu, từ khám phá cơ hội, chuẩn hóa và xác minh dữ liệu, cải thiện chất lượng doanh nghiệp, tổ chức thẩm định và giao dịch, đến quản trị giá trị sau đầu tư.', 'Deals68 is a private transaction platform for Vietnamese businesses and investors worldwide, covering opportunity discovery, data standardisation and verification, business quality improvement, due diligence and transaction execution, and post-investment value management.')}</p>
       </div>
       <div className="d68-static-grid d68-static-grid--3">
         {pillars.map((p) => <Card key={p.vi} icon={p.icon} title={T(lang, p.vi, p.en)}><p>{T(lang, p.descVi, p.descEn)}</p></Card>)}
@@ -107,8 +142,8 @@ export function About({ lang }: Props) {
     </Section>
     <Section>
       <div className="d68-static-title">
-        <h2>{T(lang, 'Ba nhóm người dùng chính', 'Three core user groups')}</h2>
-        <p>{T(lang, 'Mỗi nhóm có luồng hiển thị và quyền xem riêng để bảo vệ dữ liệu và tăng chất lượng kết nối.', 'Each group has a dedicated display and access flow to protect data and improve matching quality.')}</p>
+        <h2>{T(lang, 'Đối tác chúng tôi phục vụ', 'Partners We Serve')}</h2>
+        <p>{T(lang, 'Chúng tôi chào đón các đối tác cùng đồng hành.', 'We welcome partners to join and grow with us.')}</p>
       </div>
       <div className="d68-static-grid d68-static-grid--3">
         {flows.map((p) => <Card key={p.vi} icon={p.icon} title={T(lang, p.vi, p.en)}><p>{T(lang, p.descVi, p.descEn)}</p></Card>)}
@@ -120,34 +155,43 @@ export function About({ lang }: Props) {
   </main>;
 }
 
-const terms: LegalItem[] = [
-  { viTitle: 'Vai trò của Deals68', enTitle: 'Role of Deals68', viText: 'Deals68 là nền tảng hỗ trợ hiển thị, sàng lọc, chuẩn hóa thông tin ban đầu và kết nối các bên có nhu cầu phù hợp. Deals68 không cam kết thương vụ thành công.', enText: 'Deals68 supports presentation, screening, initial standardisation and connection between relevant parties. Deals68 does not guarantee deal completion.' },
-  { viTitle: 'Không phải tư vấn đầu tư', enTitle: 'No investment advice', viText: 'Thông tin trên Deals68 chỉ nhằm mục đích tham khảo và sàng lọc ban đầu. Người dùng cần tự thẩm định và tự chịu trách nhiệm cho quyết định đầu tư, mua bán, cho vay hoặc hợp tác.', enText: 'Information on Deals68 is for reference and initial screening only. Users should conduct their own due diligence and take responsibility for investment, acquisition, lending or partnership decisions.' },
-  { viTitle: 'Nghĩa vụ của người dùng', enTitle: 'User obligations', viText: 'Người dùng phải cung cấp thông tin trung thực, hợp pháp và có quyền chia sẻ; không đăng nội dung gây hiểu lầm, xâm phạm quyền của bên thứ ba hoặc vi phạm quy định pháp luật.', enText: 'Users must provide accurate, lawful information they are entitled to share, and must not post misleading content, infringe third-party rights or violate applicable law.' },
-  { viTitle: 'Dữ liệu và tài liệu', enTitle: 'Data and documents', viText: 'Tài liệu nhạy cảm chỉ được mở theo quy trình kết nối được duyệt. Deals68 có thể yêu cầu bổ sung, chỉnh sửa hoặc ẩn dữ liệu trước khi công khai.', enText: 'Sensitive documents unlock only through an approved connection process. Deals68 may request additions, corrections or hide data before publication.' },
-  { viTitle: 'Cập nhật hồ sơ sau khi đã công khai', enTitle: 'Profile updates after publication', viText: 'Khi doanh nghiệp chỉnh sửa dashboard, thay đổi chỉ ở trạng thái chờ duyệt. Bản hiển thị công khai chỉ cập nhật sau khi Admin duyệt theo quy trình kiểm soát dữ liệu.', enText: 'When a business edits its dashboard, changes remain pending. The public page updates only after Admin approval under the data-control workflow.' },
-  { viTitle: 'Phí dịch vụ và thanh toán', enTitle: 'Fees and payment', viText: 'Tài khoản mới có thể ở trạng thái chờ thanh toán. Dashboard chỉ mở sau khi Admin xác nhận thanh toán hoặc kích hoạt tài khoản theo chính sách nội bộ.', enText: 'New accounts may remain payment-pending. Dashboard access opens only after Admin confirms payment or activates the account under internal policy.' }
-];
-
 export function Terms({ lang }: Props) {
   return <main className="d68-static-page">
-    <Hero lang={lang} kicker="Điều khoản" kickerEn="Terms" title="Điều khoản sử dụng" titleEn="Terms of Use" desc="Bằng việc sử dụng nền tảng, người dùng xác nhận đã đọc, hiểu và đồng ý tuân thủ các điều khoản dưới đây." descEn="By using the platform, users confirm that they have read, understood and agree to these terms." />
-    <Section narrow><Notice lang={lang}/><LegalList lang={lang} items={terms}/></Section>
+    <Hero
+      lang={lang}
+      kicker="Điều khoản"
+      kickerEn="Terms"
+      title="Điều khoản sử dụng Deals68"
+      titleEn="Deals68 Terms of Use"
+      desc="Các điều khoản này điều chỉnh việc truy cập và sử dụng Deals68 của khách truy cập, doanh nghiệp, nhà đầu tư, bên mua, bên cho vay, cố vấn và đối tác thị trường."
+      descEn="These Terms govern access to and use of Deals68 by visitors, businesses, investors, buyers, lenders, advisors and Market Partners."
+      meta="Ngày hiệu lực: Tháng 6/2026"
+      metaEn="Effective date: June 2026"
+    />
+    <Section narrow>
+      <LegalToc lang={lang} items={terms} />
+      <LegalList lang={lang} items={terms} />
+    </Section>
   </main>;
 }
 
-const privacy: LegalItem[] = [
-  { viTitle: 'Hồ sơ ẩn danh', enTitle: 'Anonymous profiles', viText: 'Tên pháp lý, thương hiệu, thông tin liên hệ, tài liệu tài chính và dữ liệu nhạy cảm không hiển thị công khai nếu chưa được duyệt để công khai.', enText: 'Legal names, brands, contact details, financial documents and sensitive data are not displayed publicly unless approved for publication.' },
-  { viTitle: 'Bản hiển thị công khai', enTitle: 'Public snapshot', viText: 'Trang công khai của doanh nghiệp chỉ lấy dữ liệu từ bản hiển thị đã được Admin duyệt. Khi doanh nghiệp tự sửa dashboard, thay đổi sẽ chờ duyệt và bản công khai cũ vẫn giữ nguyên.', enText: 'Public business pages use Admin-approved snapshots only. When a business edits its dashboard, changes remain pending while the existing public page stays unchanged.' },
-  { viTitle: 'Thông tin liên hệ của nhà đầu tư', enTitle: 'Investor contact information', viText: 'Thông tin liên hệ riêng tư của nhà đầu tư không hiển thị công khai. Chỉ doanh nghiệp có kết nối hoặc đề xuất được duyệt mới được xem theo quyền phù hợp.', enText: 'Private investor contact information is not displayed publicly. Only businesses with an approved connection or proposal may view it according to access permissions.' },
-  { viTitle: 'Mở khóa thông tin', enTitle: 'Information unlock', viText: 'Thông tin liên hệ, tài liệu và dữ liệu chi tiết chỉ mở sau khi có đề xuất hoặc kết nối được duyệt theo quy trình của Deals68.', enText: 'Contact information, documents and detailed data unlock only after an approved proposal or connection under Deals68 workflow.' },
-  { viTitle: 'Quyền của người dùng', enTitle: 'User rights', viText: 'Người dùng có thể yêu cầu xem, chỉnh sửa, cập nhật, ẩn hoặc xóa thông tin cá nhân của mình theo quy trình hỗ trợ của Deals68.', enText: 'Users may request to view, edit, update, hide or delete their personal information through Deals68 support workflow.' }
-];
-
 export function Privacy({ lang }: Props) {
   return <main className="d68-static-page">
-    <Hero lang={lang} kicker="Bảo mật" kickerEn="Privacy" title="Chính sách bảo mật" titleEn="Privacy Policy" desc="Deals68 ưu tiên hồ sơ ẩn danh, kiểm soát quyền xem và chỉ mở thông tin nhạy cảm khi có kết nối được duyệt." descEn="Deals68 prioritises anonymous profiles, access control and unlocking sensitive information only after approved connections." />
-    <Section narrow><LegalList lang={lang} items={privacy}/><CTA lang={lang} to="/contact" title="Câu hỏi về dữ liệu riêng tư?" titleEn="Questions about privacy?" cta="Liên hệ" ctaEn="Contact us" /></Section>
+    <Hero
+      lang={lang}
+      kicker="Bảo mật"
+      kickerEn="Privacy"
+      title="Chính sách bảo mật và dữ liệu Deals68"
+      titleEn="Deals68 Privacy and Data Policy"
+      desc="Chính sách này giải thích Deals68 thu thập, sử dụng, chia sẻ, lưu trữ và bảo vệ dữ liệu cá nhân, dữ liệu doanh nghiệp và tài liệu giao dịch như thế nào."
+      descEn="This Policy explains how Deals68 collects, uses, shares, retains and protects personal data, business information and transaction materials."
+      meta="Ngày hiệu lực: Tháng 6/2026"
+      metaEn="Effective date: June 2026"
+    />
+    <Section narrow>
+      <LegalToc lang={lang} items={privacy} />
+      <LegalList lang={lang} items={privacy} />
+    </Section>
   </main>;
 }
 

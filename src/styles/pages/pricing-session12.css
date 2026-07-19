@@ -1,0 +1,83 @@
+/* Pricing Session 12 — advisor availability contract. */
+.d68-pricing-page .d68-pricing-checkout-wrap{
+  position:relative;
+  display:block;
+  width:100%;
+  margin-top:18px;
+  border-radius:12px;
+  outline:none;
+}
+
+.d68-pricing-page .d68-pricing-checkout-wrap>button{
+  margin-top:0;
+}
+
+.d68-pricing-page .d68-pricing-checkout-wrap>button:disabled{
+  border:1px solid rgba(255,255,255,.16);
+  background:#64748B;
+  color:#E2E8F0;
+  box-shadow:none;
+  cursor:not-allowed;
+  opacity:.68;
+}
+
+.d68-pricing-page .d68-pricing-checkout-wrap[data-tooltip]::after{
+  content:attr(data-tooltip);
+  position:absolute;
+  left:50%;
+  bottom:calc(100% + 10px);
+  z-index:8;
+  min-width:max-content;
+  max-width:min(240px,calc(100vw - 40px));
+  padding:8px 11px;
+  border-radius:8px;
+  background:#fff;
+  color:#0F2A4A;
+  box-shadow:0 8px 24px rgba(6,20,40,.24);
+  font-size:12px;
+  font-weight:800;
+  line-height:1.3;
+  text-align:center;
+  pointer-events:none;
+  opacity:0;
+  transform:translate(-50%,4px);
+  transition:opacity .16s ease,transform .16s ease;
+}
+
+.d68-pricing-page .d68-pricing-checkout-wrap[data-tooltip]::before{
+  content:"";
+  position:absolute;
+  left:50%;
+  bottom:calc(100% + 4px);
+  z-index:9;
+  width:10px;
+  height:10px;
+  background:#fff;
+  opacity:0;
+  pointer-events:none;
+  transform:translateX(-50%) rotate(45deg);
+  transition:opacity .16s ease;
+}
+
+.d68-pricing-page .d68-pricing-checkout-wrap[data-tooltip]:hover::after,
+.d68-pricing-page .d68-pricing-checkout-wrap[data-tooltip]:hover::before,
+.d68-pricing-page .d68-pricing-checkout-wrap[data-tooltip]:focus-visible::after,
+.d68-pricing-page .d68-pricing-checkout-wrap[data-tooltip]:focus-visible::before{
+  opacity:1;
+}
+
+.d68-pricing-page .d68-pricing-checkout-wrap[data-tooltip]:hover::after,
+.d68-pricing-page .d68-pricing-checkout-wrap[data-tooltip]:focus-visible::after{
+  transform:translate(-50%,0);
+}
+
+.d68-pricing-page .d68-pricing-checkout-wrap:focus-visible{
+  box-shadow:0 0 0 3px rgba(242,181,29,.38);
+}
+
+@media (prefers-reduced-motion:reduce){
+  .d68-pricing-page .d68-pricing-checkout-wrap[data-tooltip]::after,
+  .d68-pricing-page .d68-pricing-checkout-wrap[data-tooltip]::before{
+    transition:none;
+  }
+}

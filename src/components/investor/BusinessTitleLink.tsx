@@ -41,6 +41,7 @@ export default function BusinessTitleLink({
   const slug = String(business?.slug || '').trim();
   const classes = [
     'd68-investor-business-title-link',
+    'd68-entity-title-link',
     className,
   ]
     .filter(Boolean)

@@ -27,7 +27,9 @@
     "postbuild": "node scripts/generate-sitemap.mjs dist",
     "qa:packages": "node scripts/deals68-package-checks.mjs",
     "qa:css": "node scripts/deals68-css-architecture-check.mjs",
-    "qa:migrations": "node scripts/deals68-migration-state-check.mjs"
+    "qa:migrations": "node scripts/deals68-migration-state-check.mjs",
+    "qa:fix-series": "node scripts/deals68-ui-business-fixes-v1-contract-check.mjs",
+    "qa:asset-valuation": "node scripts/deals68-asset-valuation-v1-check.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.45.4",
@@ -40,10 +42,11 @@
     "vite": "5.4.11"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.4",
+    "@playwright/test": "^1.49.0",
     "@types/react": "18.3.12",
     "@types/react-dom": "18.3.1",
     "node-html-parser": "^6.1.13",
-    "@playwright/test": "^1.49.0",
     "pixelmatch": "^6.0.0",
     "pngjs": "^7.0.0"
   }

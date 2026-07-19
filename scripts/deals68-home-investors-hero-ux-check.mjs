@@ -26,7 +26,7 @@ const adminCss = read('src/styles/pages/admin.css');
 const releaseFoundationCss = read(
   'src/styles/final/release-foundation.css',
 );
-const heroCss = [homeCss, releaseFoundationCss].join('\n');
+const heroCss = homeCss;
 const migration = read(
   'supabase/migrations/' +
     '20260712112248_home_hero_responsive_fields.sql',
@@ -47,6 +47,19 @@ requireToken(
   '.d68-home-investor-cta:focus-visible',
   'Investor CTA focus state is missing',
 );
+for (const token of [
+  '.d68-home-investor-card__heading',
+  '.d68-home-investor-title-link',
+  'background:transparent!important',
+  '-webkit-line-clamp:2',
+  'box-shadow:0 2px 8px',
+]) {
+  requireToken(
+    homeCss,
+    token,
+    `Featured Investor card CSS missing ${token}`,
+  );
+}
 
 for (const token of [
   'mobile_image_url',
@@ -56,6 +69,8 @@ for (const token of [
   'media="(max-width: 700px)"',
   '--d68-hero-position',
   'heroFocusPosition',
+  'd68-hero-media__image',
+  'mobileEnabled ?',
 ]) {
   requireToken(hero, token, `Hero media missing ${token}`);
 }
@@ -133,8 +148,10 @@ if (
 for (const token of [
   'aspect-ratio:8/3',
   'aspect-ratio:3/4',
-  '.d68-hero-media--has-mobile img',
+  '.d68-hero-media--has-mobile .d68-hero-media__image',
   'object-fit:contain!important',
+  'Deals68 canonical Homepage Hero',
+  'prefers-reduced-motion:reduce',
 ]) {
   requireToken(
     heroCss,
@@ -144,6 +161,12 @@ for (const token of [
 }
 
 for (const token of [
+  'HERO_FALLBACK_ROW',
+  'd68-hero-slider--fallback',
+  '!loaded || !rows.length',
+  "'(prefers-reduced-motion: reduce)'",
+  'ariaHidden={index !== active}',
+  'tabIndex={index === active ? undefined : -1}',
   ".order('updated_at', { ascending: false })",
   "row?.updated_at || ''",
   'const savedId = String(',
@@ -156,16 +179,17 @@ for (const token of [
   );
 }
 
-requireToken(
-  releaseFoundationCss,
-  'aspect-ratio:8/3',
-  'Release Foundation desktop Hero frame is missing',
-);
-requireToken(
-  releaseFoundationCss,
-  'Deals68 Hero responsive full-frame v4',
-  'Release Foundation mobile Hero override is missing',
-);
+for (const token of [
+  '.d68-home-page .d68-home-hero',
+  'Deals68 Hero responsive full-frame',
+  '.d68-hero-slide img',
+]) {
+  forbidToken(
+    releaseFoundationCss,
+    token,
+    `Release Foundation still overrides Homepage Hero: ${token}`,
+  );
+}
 
 requireToken(
   banners,
@@ -175,7 +199,7 @@ requireToken(
 
 requireToken(
   hero,
-  "mobileUrl ? ' d68-hero-media--has-mobile' : ''",
+  "mobileEnabled ? ' d68-hero-media--has-mobile' : ''",
   'Hero media does not mark mobile-specific images',
 );
 
@@ -215,6 +239,9 @@ if (failures.length) {
 }
 
 console.log('✓ Deals68 G5 Home/Investors/Hero UX static check: PASS');
+console.log('✓ Homepage Hero is owned by home.css without late overrides.');
+console.log('✓ Hero always renders a branded fallback while empty or unavailable.');
+console.log('✓ Hidden slides are removed from keyboard navigation.');
 console.log('✓ No Home Investor CTA is active by default.');
 console.log('✓ Hero supports desktop and optional mobile images.');
 console.log('✓ Hero focal point controls object-position.');

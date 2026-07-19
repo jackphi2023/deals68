@@ -62,3 +62,37 @@
     padding: 20px;
   }
 }
+
+
+/* Investor registration: membership is implicit; user selects only the service duration. */
+.d68-register-page .d68-bizreg-section-help {
+  color: #64748b;
+  font-size: 14px;
+  line-height: 1.55;
+  margin: -8px 0 16px;
+}
+
+/* Register asset-adjusted valuation inputs */
+.d68-asset-valuation-inputs{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:16px;
+  margin:16px 0;
+}
+.d68-asset-valuation-inputs .d68-auth-field{margin:0}
+.d68-valuation-asset-notes{
+  grid-column:1/-1;
+  margin:12px 0 0;
+  padding:12px 14px 12px 30px;
+  border-radius:12px;
+  background:#F8FAFC;
+  color:#64748B;
+  font-size:12.5px;
+  line-height:1.55;
+}
+@media(max-width:700px){
+  .d68-asset-valuation-inputs{grid-template-columns:1fr}
+}
+
+/* Registration success message: compact borderless confirmation. */
+.d68-register-page .d68-auth-msg.ok{border:0;padding:10px}

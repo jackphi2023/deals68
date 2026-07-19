@@ -100,6 +100,153 @@
   }
 }
 
+/* Investor Admin V2 — beta-safe list/editor layout. */
+.d68-admin-investor-filter-grid{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(150px,1fr));
+  gap:12px;
+  align-items:end;
+}
+.d68-admin-investor-filter-grid label{
+  display:flex;
+  min-width:0;
+  flex-direction:column;
+  gap:6px;
+  color:#334155;
+  font-size:12.5px;
+  font-weight:800;
+}
+.d68-admin-investor-review-card{
+  overflow:visible;
+}
+.d68-admin-investor-summary-grid{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:12px;
+  margin:14px 0 18px;
+}
+.d68-admin-investor-summary-grid>div{
+  display:flex;
+  min-width:0;
+  flex-direction:column;
+  gap:6px;
+  padding:14px;
+  border:1px solid #E2E8F0;
+  border-radius:12px;
+  background:#F8FAFC;
+}
+.d68-admin-investor-summary-grid b{color:#0F2A4A}
+.d68-admin-investor-summary-grid span{
+  color:#64748B;
+  font-size:12.5px;
+  line-height:1.45;
+  overflow-wrap:anywhere;
+}
+.d68-admin-investor-comparison-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:12px;
+  margin:14px 0 18px;
+}
+.d68-admin-investor-comparison{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+  min-width:0;
+  padding:14px;
+  border:1px solid #E2E8F0;
+  border-radius:12px;
+  background:#fff;
+}
+.d68-admin-investor-comparison>b{grid-column:1/-1;color:#0F2A4A}
+.d68-admin-investor-comparison>div{
+  min-width:0;
+  padding:10px;
+  border-radius:9px;
+  background:#F8FAFC;
+}
+.d68-admin-investor-comparison.changed{border-color:#F2B51D;background:#FFFBEB}
+.d68-admin-investor-comparison span{
+  display:block;
+  margin-bottom:5px;
+  color:#64748B;
+  font-size:11px;
+  font-weight:900;
+  text-transform:uppercase;
+}
+.d68-admin-investor-comparison p{
+  margin:0;
+  color:#334155;
+  font-size:12.5px;
+  line-height:1.5;
+  white-space:pre-wrap;
+  overflow-wrap:anywhere;
+}
+.d68-admin-investor-review-form{
+  display:flex;
+  min-width:0;
+  flex-direction:column;
+  gap:16px;
+}
+.d68-admin-investor-private-form{
+  padding-top:16px;
+  border-top:1px solid #E2E8F0;
+}
+
+@media(max-width:1100px){
+  .d68-admin-investor-filter-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .d68-admin-investor-summary-grid{grid-template-columns:1fr}
+}
+@media(max-width:700px){
+  .d68-admin-investor-filter-grid,
+  .d68-admin-investor-comparison-grid{grid-template-columns:1fr}
+  .d68-admin-investor-comparison{grid-template-columns:1fr}
+  .d68-admin-investor-comparison>b{grid-column:auto}
+}
+
+.d68-admin-investor-cover-editor{
+  display:grid;
+  grid-template-columns:minmax(260px,.9fr) minmax(260px,1.1fr);
+  gap:18px;
+  align-items:stretch;
+  margin:18px 0;
+  padding:18px;
+  border:1px solid #E7EDF3;
+  border-radius:14px;
+  background:#F8FAFC;
+}
+.d68-admin-investor-cover-preview{
+  min-height:190px;
+  overflow:hidden;
+  border-radius:12px;
+  background:#0F2A4A;
+}
+.d68-admin-investor-cover-preview img{
+  display:block;
+  width:100%;
+  height:100%;
+  min-height:190px;
+  object-fit:cover;
+}
+.d68-admin-investor-cover-controls{
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  justify-content:center;
+  gap:10px;
+}
+.d68-admin-investor-cover-controls>b{color:#0F2A4A}
+.d68-admin-investor-cover-controls>span{
+  color:#64748B;
+  font-size:13px;
+  line-height:1.55;
+}
+.d68-admin-investor-cover-controls input{max-width:100%}
+
+@media(max-width:760px){
+  .d68-admin-investor-cover-editor{grid-template-columns:1fr;padding:14px}
+}
+
 /* G8 — Admin Operations overview, queue badges and URL-filter UX. */
 .d68-admin-nav-link{
   display:flex!important;
@@ -341,3 +488,22 @@
     max-height:none;
   }
 }
+
+
+/* Session 6 — nested Business assets & transaction moderation. */
+.d68-admin-span4{grid-column:1 / -1}
+.d68-admin-financial-review-box{border:1px solid #E2E8F0;background:#F8FAFC;border-radius:12px;padding:14px;margin:4px 0}
+.d68-admin-financial-review-box h3{margin:0 0 4px;color:#0F2A4A}
+.d68-admin-financial-review-box .d68-admin-row-head{align-items:flex-start;margin-bottom:12px}
+.d68-admin-financial-review-box .d68-admin-field textarea{min-height:104px;background:#fff}
+@media(max-width:980px){.d68-admin-span4{grid-column:span 1}}
+
+/* Config-driven Admin navigation. Groups scale without changing the shell. */
+.d68-admin-nav-section{display:flex;flex-direction:column;gap:2px;padding:4px 0 8px}
+.d68-admin-nav-section+.d68-admin-nav-section{border-top:1px solid #EEF2F6;padding-top:12px}
+.d68-admin-nav-section__label{padding:0 12px 5px;color:#94A3B8;font-size:10.5px;font-weight:900;letter-spacing:.55px;text-transform:uppercase}
+.d68-admin-nav-link{display:flex!important;align-items:center;justify-content:space-between;gap:10px;min-width:0}
+.d68-admin-nav-link>span{min-width:0}
+.d68-admin-nav-count{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:22px;padding:0 6px;border-radius:999px;background:#FEF3D3;color:#92400E;font-size:11px;font-weight:900}
+.d68-admin-nav-link.active .d68-admin-nav-count{background:#fff;color:#0F2A4A}
+

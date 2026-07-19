@@ -1,0 +1,46 @@
+/* Homepage featured-investor component ownership.
+   Outer section spacing belongs exclusively to home-layout.css. */
+
+.d68-home-page .d68-home-investor-grid {
+  align-items: stretch;
+}
+
+.d68-home-page .d68-home-investor-card {
+  min-height: 356px !important;
+}
+
+/* Remove the legacy absolute verification decoration that overlaps long names. */
+.d68-home-page .d68-home-investor-card::after {
+  content: none !important;
+  display: none !important;
+}
+
+.d68-home-page .d68-home-investor-card__heading {
+  margin-right: 0 !important;
+}
+
+.d68-home-page .d68-home-investor-card__meta {
+  display: grid;
+  gap: 8px;
+  align-content: start;
+}
+
+.d68-home-page .d68-home-investor-card__meta > span {
+  display: block;
+  min-width: 0;
+  color: #475569;
+  font-size: 13px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.d68-home-page .d68-home-investor-card__meta b {
+  color: #0F2A4A;
+  font-weight: 800;
+}
+
+@media (max-width: 700px) {
+  .d68-home-page .d68-home-investor-card {
+    min-height: 0 !important;
+  }
+}

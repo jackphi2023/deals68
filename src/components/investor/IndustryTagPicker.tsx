@@ -180,3 +180,7 @@ export function DealTypeTagPicker({
     </div>
   );
 }
+
+// Explicit alias used by Register/Dashboard/Admin while preserving the
+// original export for existing MAIN call sites.
+export const InvestorDealTypeTagPicker = DealTypeTagPicker;

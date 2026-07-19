@@ -23,6 +23,21 @@
   justify-content: flex-end;
 }
 
+/* Session 6 — Business profile form density and amount/unit alignment. */
+.d68-business-dashboard-page .d68-business-profile-form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.d68-business-dashboard-page .d68-business-profile-intro {
+  margin: 0;
+}
+
+.d68-business-dashboard-page .d68-business-financial-span2 {
+  grid-column: 1 / -1;
+}
+
 @media (min-width: 981px) {
   .d68-business-dashboard-page .d68-dashboard-side {
     position: sticky;

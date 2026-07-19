@@ -15,11 +15,14 @@
 @media(max-width:700px){.d68-dashboard-valuation-box{grid-template-columns:1fr;padding:18px}.d68-dashboard-valuation-box strong{font-size:26px}}
 
 /* Valuation engine v1.0 dashboard box */
-.d68-dashboard-valuation-box--engine{grid-template-columns:1fr 1.4fr 1fr}.d68-dashboard-valuation-box--engine>div strong{color:#F2B51D}.d68-dashboard-valuation-box--engine p{grid-column:1/-1;margin:0;color:#5F6F83;font-size:12.5px;line-height:1.55;background:rgba(255,255,255,.52);border:1px solid rgba(255,255,255,.62);border-radius:12px;padding:10px 12px}@media(max-width:900px){.d68-dashboard-valuation-box--engine{grid-template-columns:1fr}}
+.d68-dashboard-valuation-box--engine{grid-template-columns:repeat(3,minmax(0,1fr))}.d68-dashboard-valuation-box--engine>div strong{color:#F2B51D}.d68-dashboard-valuation-box--engine p{grid-column:1/-1;margin:0;color:#5F6F83;font-size:12.5px;line-height:1.55;background:rgba(255,255,255,.52);border:1px solid rgba(255,255,255,.62);border-radius:12px;padding:10px 12px}@media(max-width:900px){.d68-dashboard-valuation-box--engine{grid-template-columns:1fr}}
 
 
 /* Deals68 Beta v1.3 — Investor received proposals */
 .d68-proposal-metric{background:#F8FAFC;border:1px solid #E7EDF3;border-radius:14px;padding:14px}.d68-proposal-metric b{display:block;font-size:28px;font-weight:900;color:#0F2A4A}.d68-proposal-metric span{display:block;color:#64748B;font-size:12.5px;font-weight:800}.d68-proposal-row{align-items:flex-start}.d68-proposal-row p{margin:8px 0 10px}.d68-proposal-row .d68-dashboard-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}@media(max-width:700px){.d68-proposal-row .d68-dashboard-actions{width:100%;justify-content:stretch}.d68-proposal-row .d68-dashboard-actions .d68-dashboard-btn{flex:1}}
 
 /* D68 beta feature fix: proposal rows */
-.d68-proposal-row{align-items:center}.d68-dashboard-row-title{display:inline-block;color:#1596cc;font-weight:900;text-decoration:none;margin-bottom:4px}.d68-dashboard-row-title:hover{text-decoration:underline}.d68-dashboard-badge.gold{background:#fff3cd;color:#9a6700}.d68-dashboard-badge.red{background:#fee2e2;color:#b91c1c}
+.d68-proposal-row{align-items:center}.d68-dashboard-row-title{display:inline-block;color:#1596cc;font-weight:900;text-decoration:none;margin-bottom:4px}.d68-dashboard-badge.gold{background:#fff3cd;color:#9a6700}.d68-dashboard-badge.red{background:#fee2e2;color:#b91c1c}
+
+/* Keep the three valuation overview values compact on every viewport. */
+.d68-dashboard-valuation-box--engine>div strong{font-size:16px;line-height:1.35;letter-spacing:0}
