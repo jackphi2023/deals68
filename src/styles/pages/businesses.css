@@ -334,3 +334,8 @@
 .d68-businesses-page .d68-sidebar .d68-filter-submit{
   padding:12px 14px!important;
 }
+
+/* Keep the result list visually separate from the listing Promotion banner. */
+.d68-businesses-page .d68-businesses-results-content {
+  padding-bottom: 80px;
+}

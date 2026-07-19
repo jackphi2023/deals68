@@ -72,3 +72,8 @@
 @media(max-width:420px){
   .d68-investor-card__actions{flex-direction:column!important}
 }
+
+/* Keep the result list visually separate from the listing Promotion banner. */
+.d68-investors-page .d68-investors-results-content {
+  padding-bottom: 80px;
+}
