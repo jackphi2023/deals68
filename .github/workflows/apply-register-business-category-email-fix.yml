@@ -1,0 +1,69 @@
+name: Apply Register Business Category and Email Fix
+
+on:
+  pull_request:
+    branches: [building]
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+
+jobs:
+  apply-and-verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout feature branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Apply focused patch
+        run: node scripts/apply-register-business-category-email-fix.mjs
+
+      - name: Verify registration contracts
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const source = fs.readFileSync('src/pages/Register.tsx', 'utf8');
+          const checks = [
+            ["const [industry, setIndustry] = useState('');", 'Business category starts unselected'],
+            ["{T(lang, 'Chọn danh mục', 'Select category')}", 'Business category placeholder is bilingual'],
+            ['<form noValidate onSubmit={submit}', 'Native browser validation is disabled'],
+            ["'Email không hợp lệ/đã đăng ký.'", 'Vietnamese email error is localized'],
+            ["'Invalid email or already registered.'", 'English email error is localized'],
+            ['signupResult.user.identities?.length === 0', 'Existing Supabase email response is detected'],
+          ];
+          for (const [needle, label] of checks) {
+            if (!source.includes(needle)) throw new Error(`Missing contract: ${label}`);
+            console.log(`PASS: ${label}`);
+          }
+          if (source.includes("useState('Thực phẩm & Đồ uống (F&B)')")) {
+            throw new Error('Legacy default Business category is still present');
+          }
+          NODE
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Production build
+        run: npm run build
+
+      - name: Validate diff
+        run: git diff --check
+
+      - name: Commit source and remove one-time files
+        run: |
+          git config user.name "deals68-build-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add src/pages/Register.tsx
+          git rm scripts/apply-register-business-category-email-fix.mjs
+          git rm .github/workflows/apply-register-business-category-email-fix.yml
+          git commit -m "fix(register): require Business category and localize email errors"
+          git push origin HEAD:${{ github.head_ref }}
