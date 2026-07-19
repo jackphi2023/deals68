@@ -52,7 +52,14 @@ jobs:
         run: npm run build
 
       - name: Release QA
-        run: npm run qa:release
+        shell: bash
+        run: |
+          if ! npm run qa:release > /tmp/deals68-release-qa.log 2>&1; then
+            echo "Release QA failed; showing the final diagnostics:"
+            tail -n 120 /tmp/deals68-release-qa.log
+            exit 1
+          fi
+          tail -n 40 /tmp/deals68-release-qa.log
 
       - name: Check diff formatting
         run: git diff --check
@@ -63,7 +70,7 @@ jobs:
           rm -f scripts/apply-investors-about-main-v1.py
           rm -f .github/workflows/apply-investors-about-main-v1.yml
           git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config user.email "4189827+github-actions[bot]@users.noreply.github.com"
           git add -A
           if git diff --cached --quiet; then
             echo "No source changes to commit."
