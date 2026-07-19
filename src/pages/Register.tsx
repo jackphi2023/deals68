@@ -1079,12 +1079,16 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
     } catch (submitError: any) {
       setMsgType('err');
       setMsg(
-        submitError?.message ||
-          T(
-            lang,
-            'Tài khoản đã tạo, nhưng hồ sơ/đơn thanh toán cần Admin kiểm tra lại.',
-            'Account created, but profile/payment order needs Admin review.',
-          ),
+        registrationErrorMessage(
+          lang,
+          submitError?.message ||
+            T(
+              lang,
+              'Tài khoản đã tạo, nhưng hồ sơ/đơn thanh toán cần Admin kiểm tra lại.',
+              'Account created, but profile/payment order needs Admin review.',
+            ),
+          submitError?.code,
+        ),
       );
     } finally {
       setLoading(false);
