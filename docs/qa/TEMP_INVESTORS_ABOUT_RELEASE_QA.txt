@@ -1,0 +1,67 @@
+
+> deals68-production-full-beta@2.0.2-ui-match qa:release
+> npm run build && node scripts/deals68-release-qa-check.mjs && npm run qa:packages
+
+
+> deals68-production-full-beta@2.0.2-ui-match build
+> tsc -b && vite build
+
+[36mvite v5.4.11 [32mbuilding for production...[36m[39m
+transforming...
+[32m✓[39m 1732 modules transformed.
+rendering chunks...
+computing gzip size...
+[2mdist/[22m[32mindex.html                            [39m[1m[2m  3.70 kB[22m[1m[22m[2m │ gzip:   1.09 kB[22m
+[2mdist/[22m[2massets/[22m[35mAdmin-2cYf2plm.css             [39m[1m[2m  3.68 kB[22m[1m[22m[2m │ gzip:   0.94 kB[22m
+[2mdist/[22m[2massets/[22m[35mindex-CWYI3-nu.css             [39m[1m[2m407.84 kB[22m[1m[22m[2m │ gzip:  61.18 kB[22m
+[2mdist/[22m[2massets/[22m[36mchart-column-Bv0drTOL.js       [39m[1m[2m  0.42 kB[22m[1m[22m[2m │ gzip:   0.30 kB[22m
+[2mdist/[22m[2massets/[22m[36mbrowser-Cg3iDY_L.js            [39m[1m[2m  0.57 kB[22m[1m[22m[2m │ gzip:   0.40 kB[22m
+[2mdist/[22m[2massets/[22m[36mlayout-dashboard-BAYD9ST_.js   [39m[1m[2m  2.15 kB[22m[1m[22m[2m │ gzip:   0.69 kB[22m
+[2mdist/[22m[2massets/[22m[36mAdminProposals-BXgR5Y3s.js     [39m[1m[2m  5.81 kB[22m[1m[22m[2m │ gzip:   2.04 kB[22m
+[2mdist/[22m[2massets/[22m[36mAdminValuation-C8BITvhH.js     [39m[1m[2m  6.65 kB[22m[1m[22m[2m │ gzip:   2.28 kB[22m
+[2mdist/[22m[2massets/[22m[36mAdminBanners-Bz_X_QTL.js       [39m[1m[2m 16.60 kB[22m[1m[22m[2m │ gzip:   5.70 kB[22m
+[2mdist/[22m[2massets/[22m[36mInvestorDashboard-C-IiCRLZ.js  [39m[1m[2m 38.64 kB[22m[1m[22m[2m │ gzip:  11.16 kB[22m
+[2mdist/[22m[2massets/[22m[36mBusinessDashboard-Dbd7iCc1.js  [39m[1m[2m 54.52 kB[22m[1m[22m[2m │ gzip:  16.58 kB[22m
+[2mdist/[22m[2massets/[22m[36mStaticPages-5_g-m2_5.js        [39m[1m[2m 59.56 kB[22m[1m[22m[2m │ gzip:  20.56 kB[22m
+[2mdist/[22m[2massets/[22m[36mAdmin-OdIYOUfu.js              [39m[1m[2m 99.68 kB[22m[1m[22m[2m │ gzip:  26.03 kB[22m
+[2mdist/[22m[2massets/[22m[36mindex--w3zPCXt.js              [39m[1m[33m586.48 kB[39m[22m[2m │ gzip: 175.13 kB[22m
+[33m
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.[39m
+[32m✓ built in 3.32s[39m
+
+> deals68-production-full-beta@2.0.2-ui-match postbuild
+> node scripts/generate-sitemap.mjs dist
+
+Generated /home/runner/work/deals68/deals68/dist/sitemap.xml with 36 URLs.
+✓ build script exists — package.json scripts.build
+✓ test:e2e scripts exist — package.json e2e scripts
+✓ release-cleanup imported after page CSS — src/styles/index.css imports release-cleanup
+✓ home final CSS moved to home.css — home.css contains RC1 final layout
+✓ release-cleanup no stacked homepage v12-v14 blocks — remove old homepage hotfix markers from release-cleanup.css
+✓ register valuation disclaimer removed — Register.tsx should not render/import valuation disclaimer
+✓ business quota override is explicit — proposalQuotaTotal honors Admin quota_total override
+✓ admin business detail route exists — Admin business detail tabs
+✓ admin investor pagination exists — Admin investor pagination 30/page
+✓ admin office country filter exists — Admin investor office country filter
+✓ business signup assets survive OTP — Register queues File/Blob; Login resumes after verifyOtp
+✓ signup uploads are idempotent — storage/database retries must not duplicate files
+✓ business dashboard shows pending owner data — owner sees latest submitted values while public keeps approved snapshot
+✓ business and admin realtime refresh exist — refresh after Admin approval and Business edits
+✓ admin approves full pending transaction — Admin sees old/new and uses transactional RPC
+✓ homepage businesses use Admin editorial selection — Admin selection is independent from plan; RPC fills or randomizes up to 6
+✗ business industry links and filters use canonical taxonomy keys — Homepage URLs, facet counts and Supabase filters use the same 23-industry keys
+✓ SEO title structure configured — Tên trang | Sàn mua bán Doanh nghiệp, M&A, Chuyển nhượng, Huy động vốn, Cho vay
+✓ route SEO manager is mounted — public routes get metadata; login/dashboard/admin routes are noindex
+✓ default social image and favicon configured — 1200x630 Deals68 image plus favicon links
+✓ business detail uses approved hero SEO image — client and Netlify Edge prefer Business hero image
+✓ all other pages use shared Deals68 image — shared image is the fallback for non-Business pages
+✓ Netlify server-rendered metadata enabled — social crawlers receive title, description, canonical and OG tags
+✓ robots and sitemap configured — public URLs are listed; private URLs are blocked/noindex
+✓ canonical Open Graph and Twitter metadata complete — canonical, Open Graph, Twitter Card and JSON-LD
+
+Release QA static check failed: 1/25
+
+QA_EXIT_STATUS=1
