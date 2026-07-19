@@ -4,6 +4,8 @@ import { T } from './labelsBase';
 import { industryKeyFromLabel } from './industryTaxonomy';
 
 export type Currency = 'VND' | 'USD';
+export type AssetValuationMode = 'earnings' | 'asset_floor' | 'asset_blend';
+export type AssetMethodConfidence = 'low' | 'medium' | 'high';
 export type ValuationConfig = {
   version: number;
   params: {
@@ -16,7 +18,12 @@ export type ValuationConfig = {
     usd_vnd: number;
     growth_cap: number;
   };
-  industry: Record<string, { ebitda: number; revenue: number }>;
+  industry: Record<string, {
+    ebitda: number;
+    revenue: number;
+    valuation_mode?: AssetValuationMode;
+    w_asset?: number;
+  }>;
   country: Record<string, number>;
   growth_curve: { max: number | null; factor: number }[];
   size_bands: { max_usd: number | null; factor: number }[];
@@ -33,6 +40,9 @@ export type ValuationInput = {
   currency?: Currency;
   offerStakePct?: number;
   offerAmount?: number;
+  keyAssetValue?: number;
+  netDebt?: number;
+  assetCurrency?: Currency;
 };
 
 export type ValuationResult = {
@@ -40,13 +50,29 @@ export type ValuationResult = {
   mid: number;
   high: number;
   method: 'blend' | 'revenue_only';
+  valuationMode: AssetValuationMode;
+  assetMethodConfidence: AssetMethodConfidence | null;
+  assetInputApplied: boolean;
+  assetInputStoredOnly: boolean;
   currency: Currency;
+  assetCurrency: Currency;
   revenueYear: number;
   ebitda: number;
   adjE: number;
   adjR: number;
   evFromEbitda: number;
   evFromRevenue: number;
+  evOperating: number;
+  equityOperating: number;
+  keyAssetValueInput: number | null;
+  keyAssetValue: number | null;
+  netDebtInput: number | null;
+  netDebt: number;
+  netDebtProvided: boolean;
+  assetReferenceEquity: number | null;
+  assetWeight: number | null;
+  assetValueWarning: boolean;
+  netDebtExceedsAsset: boolean;
   self?: number;
   verdict?: 'low_of' | 'in_range' | 'above';
   pctAbove?: number;
@@ -70,7 +96,7 @@ export const DEFAULT_VALUATION_CONFIG: ValuationConfig = {
     growth_cap: 50
   },
   industry: {
-    agriculture: { ebitda: 5.5, revenue: 0.90 },
+    agriculture: { ebitda: 5.5, revenue: 0.90, valuation_mode: 'asset_floor' },
     automobile: { ebitda: 5.5, revenue: 0.65 },
     beauty_personal_care: { ebitda: 7.5, revenue: 1.20 },
     construction_materials: { ebitda: 5.0, revenue: 0.60 },
@@ -81,11 +107,11 @@ export const DEFAULT_VALUATION_CONFIG: ValuationConfig = {
     finance: { ebitda: 8.0, revenue: 2.00 },
     food_beverage: { ebitda: 5.5, revenue: 0.80 },
     healthcare: { ebitda: 9.0, revenue: 2.00 },
-    hotels_resorts: { ebitda: 8.0, revenue: 2.20 },
+    hotels_resorts: { ebitda: 8.0, revenue: 2.20, valuation_mode: 'asset_blend', w_asset: 0.50 },
     it_software: { ebitda: 11.0, revenue: 2.80 },
-    manufacturing: { ebitda: 6.0, revenue: 0.85 },
+    manufacturing: { ebitda: 6.0, revenue: 0.85, valuation_mode: 'asset_floor' },
     media_advertising: { ebitda: 7.0, revenue: 1.30 },
-    real_estate: { ebitda: 9.0, revenue: 3.00 },
+    real_estate: { ebitda: 9.0, revenue: 3.00, valuation_mode: 'asset_blend', w_asset: 0.75 },
     retail: { ebitda: 5.5, revenue: 0.60 },
     services: { ebitda: 7.0, revenue: 1.20 },
     transportation_logistics: { ebitda: 6.0, revenue: 0.85 },
@@ -117,12 +143,29 @@ function factorFromCurve(x: number, curve: { max: number | null; factor: number 
   return Number(curve[curve.length - 1]?.factor || 1);
 }
 
+function mergeIndustryConfig(raw: any): ValuationConfig['industry'] {
+  const source = raw && typeof raw === 'object' ? raw : {};
+  const keys = new Set([
+    ...Object.keys(DEFAULT_VALUATION_CONFIG.industry),
+    ...Object.keys(source),
+  ]);
+  return Object.fromEntries(
+    [...keys].map((key) => [
+      key,
+      {
+        ...(DEFAULT_VALUATION_CONFIG.industry[key] || {}),
+        ...(source[key] || {}),
+      },
+    ]),
+  ) as ValuationConfig['industry'];
+}
+
 function safeConfig(row: any): ValuationConfig {
   if (!row) return DEFAULT_VALUATION_CONFIG;
   return {
     version: Number(row.version || row.params?.version || DEFAULT_VALUATION_CONFIG.version),
     params: { ...DEFAULT_VALUATION_CONFIG.params, ...(row.params || {}), version: Number(row.version || row.params?.version || DEFAULT_VALUATION_CONFIG.version) },
-    industry: { ...DEFAULT_VALUATION_CONFIG.industry, ...(row.industry || {}) },
+    industry: mergeIndustryConfig(row.industry),
     country: { ...DEFAULT_VALUATION_CONFIG.country, ...(row.country || {}) },
     growth_curve: Array.isArray(row.growth_curve) && row.growth_curve.length ? row.growth_curve : DEFAULT_VALUATION_CONFIG.growth_curve,
     size_bands: Array.isArray(row.size_bands) && row.size_bands.length ? row.size_bands : DEFAULT_VALUATION_CONFIG.size_bands
@@ -151,7 +194,9 @@ export function valuate(input: ValuationInput, cfg: ValuationConfig = DEFAULT_VA
   const ind = cfg.industry[industryKey];
   const revenueYear = Number(input.revenueYear || 0) || (Number(input.revenueMonth || 0) * 12);
   if (!ind || !Number.isFinite(revenueYear) || revenueYear <= 0) return null;
-  const currency = String(input.currency || 'VND').toUpperCase() === 'USD' ? 'USD' : 'VND';
+
+  const currency: Currency = String(input.currency || 'VND').toUpperCase() === 'USD' ? 'USD' : 'VND';
+  const assetCurrency: Currency = String(input.assetCurrency || currency).toUpperCase() === 'USD' ? 'USD' : 'VND';
   const countryKey = String(input.countryKey || 'VN').toUpperCase();
   const margin = Number(input.ebitdaMargin ?? 0) || 0;
   const growth = Math.min(Number(input.growthPct ?? 0) || 0, Number(p.growth_cap || 50));
@@ -165,10 +210,61 @@ export function valuate(input: ValuationInput, cfg: ValuationConfig = DEFAULT_VA
   const evFromEbitda = ebitda * adjE;
   const evFromRevenue = revenueYear * adjR;
   const useEbitda = margin >= Number(p.ebitda_margin_floor || 5) && ebitda > 0;
-  const evMid = useEbitda ? Number(p.w_ebitda || 0.7) * evFromEbitda + Number(p.w_revenue || 0.3) * evFromRevenue : evFromRevenue;
-  const mid = Math.max(0, evMid);
+  const evOperating = useEbitda
+    ? Number(p.w_ebitda || 0.7) * evFromEbitda + Number(p.w_revenue || 0.3) * evFromRevenue
+    : evFromRevenue;
+
+  const optionalNumber = (value: unknown) => {
+    if (value === null || value === undefined || value === '') return null;
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  };
+  const convertAmount = (value: number, from: Currency, to: Currency) => {
+    if (from === to) return value;
+    const usdVnd = Number(p.usd_vnd || 25000);
+    return from === 'USD' ? value * usdVnd : value / usdVnd;
+  };
+
+  const keyAssetValueInputRaw = optionalNumber(input.keyAssetValue);
+  const keyAssetValueInput = keyAssetValueInputRaw !== null && keyAssetValueInputRaw > 0
+    ? keyAssetValueInputRaw
+    : null;
+  const netDebtInput = optionalNumber(input.netDebt);
+  const netDebtProvided = netDebtInput !== null;
+  const keyAssetValue = keyAssetValueInput !== null
+    ? convertAmount(keyAssetValueInput, assetCurrency, currency)
+    : null;
+  const netDebt = netDebtProvided
+    ? convertAmount(netDebtInput || 0, assetCurrency, currency)
+    : 0;
+  const equityOperating = evOperating - netDebt;
+  const assetReferenceEquity = keyAssetValue !== null
+    ? Math.max(keyAssetValue - netDebt, 0)
+    : null;
+  const configuredMode: AssetValuationMode = ind.valuation_mode || 'earnings';
+  const assetInputApplied = assetReferenceEquity !== null && configuredMode !== 'earnings';
+  const assetInputStoredOnly = assetReferenceEquity !== null && configuredMode === 'earnings';
+  const valuationMode: AssetValuationMode = assetInputApplied ? configuredMode : 'earnings';
+
+  let assetWeight: number | null = null;
+  let mid: number;
+  if (valuationMode === 'asset_blend' && assetReferenceEquity !== null) {
+    assetWeight = Math.max(0, Math.min(1, Number(ind.w_asset ?? 0.5)));
+    mid = assetWeight * assetReferenceEquity + (1 - assetWeight) * Math.max(equityOperating, 0);
+  } else if (valuationMode === 'asset_floor' && assetReferenceEquity !== null) {
+    mid = Math.max(equityOperating, assetReferenceEquity, 0);
+  } else {
+    mid = Math.max(equityOperating, 0);
+  }
+
   const low = mid * (1 - Number(p.spread_low || 0.15));
   const high = mid * (1 + Number(p.spread_high || 0.15));
+  const operatingEquityForWarning = Math.max(equityOperating, 0);
+  const assetValueWarning = assetReferenceEquity !== null &&
+    operatingEquityForWarning > 0 &&
+    assetReferenceEquity > operatingEquityForWarning * 2;
+  const netDebtExceedsAsset = keyAssetValue !== null && netDebt > keyAssetValue;
+
   let self: number | undefined;
   let verdict: ValuationResult['verdict'];
   let pctAbove: number | undefined;
@@ -178,13 +274,66 @@ export function valuate(input: ValuationInput, cfg: ValuationConfig = DEFAULT_VA
     self = offer / (stake / 100);
     if (self < low) verdict = 'low_of';
     else if (self <= high) verdict = 'in_range';
-    else { verdict = 'above'; pctAbove = Math.round((self - high) / Math.max(high, 1) * 100); }
+    else {
+      verdict = 'above';
+      pctAbove = Math.round((self - high) / Math.max(high, 1) * 100);
+    }
   }
-  return { low, mid, high, method: useEbitda ? 'blend' : 'revenue_only', currency, revenueYear, ebitda, adjE, adjR, evFromEbitda, evFromRevenue, self, verdict, pctAbove, configVersion: cfg.version, industryKey, countryFactor, growthFactor, sizeFactor };
+
+  return {
+    low,
+    mid,
+    high,
+    method: useEbitda ? 'blend' : 'revenue_only',
+    valuationMode,
+    assetMethodConfidence: keyAssetValueInput !== null ? 'low' : null,
+    assetInputApplied,
+    assetInputStoredOnly,
+    currency,
+    assetCurrency,
+    revenueYear,
+    ebitda,
+    adjE,
+    adjR,
+    evFromEbitda,
+    evFromRevenue,
+    evOperating,
+    equityOperating,
+    keyAssetValueInput,
+    keyAssetValue,
+    netDebtInput,
+    netDebt,
+    netDebtProvided,
+    assetReferenceEquity,
+    assetWeight,
+    assetValueWarning,
+    netDebtExceedsAsset,
+    self,
+    verdict,
+    pctAbove,
+    configVersion: cfg.version,
+    industryKey,
+    countryFactor,
+    growthFactor,
+    sizeFactor,
+  };
 }
 
 export function valuationInputFromBusiness(b: any): ValuationInput {
   const financialInput = b?.financial_input && typeof b.financial_input === 'object' ? b.financial_input : {};
+  const benchmark = financialInput.benchmark && typeof financialInput.benchmark === 'object'
+    ? financialInput.benchmark
+    : {};
+  const assetInputs = benchmark.asset_inputs && typeof benchmark.asset_inputs === 'object'
+    ? benchmark.asset_inputs
+    : financialInput.asset_inputs && typeof financialInput.asset_inputs === 'object'
+      ? financialInput.asset_inputs
+      : {};
+  const optionalNumber = (value: unknown) => {
+    if (value === null || value === undefined || value === '') return undefined;
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : undefined;
+  };
   return {
     revenueYear: Number(b?.revenue_2025 || b?.revenue_year || 0),
     revenueMonth: Number(b?.revenue_month || financialInput.revenue_month || 0),
@@ -195,8 +344,79 @@ export function valuationInputFromBusiness(b: any): ValuationInput {
     countryKey: b?.country_iso2 || 'VN',
     currency: String(b?.revenue_currency || 'VND').toUpperCase() === 'USD' ? 'USD' : 'VND',
     offerStakePct: Number(b?.offer_stake_pct ?? b?.stake_pct ?? 0),
-    offerAmount: Number(b?.offer_amount ?? b?.ask_amount ?? 0)
+    offerAmount: Number(b?.offer_amount ?? b?.ask_amount ?? 0),
+    keyAssetValue: optionalNumber(assetInputs.key_asset_value ?? assetInputs.keyAssetValue),
+    netDebt: optionalNumber(assetInputs.net_debt ?? assetInputs.netDebt),
+    assetCurrency: String(assetInputs.currency || b?.revenue_currency || 'VND').toUpperCase() === 'USD'
+      ? 'USD'
+      : 'VND',
   };
+}
+
+export function valuationMethodLabel(lang: Lang, result: ValuationResult | null) {
+  if (!result) return '—';
+  if (result.assetInputApplied) {
+    return T(
+      lang,
+      'Bội số Tài sản, Bội số doanh thu & lợi nhuận',
+      'Asset, revenue & profit multiples',
+    );
+  }
+  return result.method === 'blend'
+    ? T(lang, 'Thu nhập — Doanh thu & EBITDA', 'Earnings — Revenue & EBITDA')
+    : T(lang, 'Thu nhập — Doanh thu', 'Earnings — Revenue');
+}
+
+export function valuationAssetMessages(lang: Lang, result: ValuationResult | null) {
+  if (!result) return [] as string[];
+  const messages: string[] = [];
+  if (result.keyAssetValueInput === null) {
+    messages.push(T(
+      lang,
+      'Chưa nhập giá trị tài sản chính. Hệ thống đang dùng phương pháp thu nhập dựa trên doanh thu, EBITDA và hệ số ngành.',
+      'Key asset value has not been provided. The estimate is based on revenue, EBITDA and industry multiples.',
+    ));
+  } else if (result.assetInputStoredOnly) {
+    messages.push(T(
+      lang,
+      'Ngành này hiện ưu tiên phương pháp thu nhập. Giá trị tài sản được lưu để tham khảo và có thể được Admin/Advisor xem xét thêm.',
+      'This industry currently prioritizes the earnings method. The asset value is stored for reference and may be reviewed by an Admin/Advisor.',
+    ));
+  } else if (result.valuationMode === 'asset_blend') {
+    messages.push(T(
+      lang,
+      'Hệ thống đang trộn giá trị vận hành và giá trị tài sản theo trọng số ngành.',
+      'The estimate blends operating value and asset value using the industry weighting.',
+    ));
+  } else if (result.valuationMode === 'asset_floor') {
+    messages.push(T(
+      lang,
+      'Hệ thống đang dùng giá trị tài sản như sàn tham chiếu, tránh định giá thấp hơn giá trị tài sản chính.',
+      'The asset value is used as a reference floor to avoid valuing the business below its key asset value.',
+    ));
+  }
+  if (!result.netDebtProvided) {
+    messages.push(T(
+      lang,
+      'Chưa nhập nợ ròng, hệ thống tạm tính nợ ròng = 0.',
+      'Net debt was not provided; the estimate assumes net debt = 0.',
+    ));
+  }
+  if (result.assetValueWarning) {
+    messages.push(T(
+      lang,
+      'Giá trị tài sản chính đang cao hơn đáng kể so với giá trị vận hành. Kết quả cần được kiểm chứng bằng giấy tờ tài sản, định giá độc lập hoặc dữ liệu giao dịch tương đương.',
+      'The key asset value is significantly higher than the operating valuation. Validate it with asset documents, an independent appraisal or comparable transactions.',
+    ));
+  }
+  if (result.netDebtExceedsAsset) {
+    messages.push(T(
+      lang,
+      'Nợ ròng lớn hơn giá trị tài sản chính đã nhập. Giá trị vốn chủ theo tài sản có thể rất thấp hoặc bằng 0.',
+      'Net debt is higher than the entered key asset value. Asset-based equity value may be very low or zero.',
+    ));
+  }
+  return messages;
 }
 
 export function formatValuationMoney(value: any, currency: any, lang: Lang) {

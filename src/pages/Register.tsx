@@ -42,6 +42,8 @@ import {
   valuate,
   formatValuationMoney,
   valuationVerdictMessage,
+  valuationMethodLabel,
+  valuationAssetMessages,
 } from '../lib/valuationEngine';
 import {
   BUSINESS_FEATURED_PROPOSAL_QUOTA,
@@ -334,6 +336,8 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
   const [revenue, setRevenue] = useState('');
   const [ebitda, setEbitda] = useState('');
   const [growthPct, setGrowthPct] = useState('');
+  const [keyAssetValue, setKeyAssetValue] = useState('');
+  const [netDebt, setNetDebt] = useState('');
   const [ask, setAsk] = useState('');
   const [stake, setStake] = useState('');
   const [reason, setReason] = useState('');
@@ -378,6 +382,7 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
     ),
   );
   const countryCode = countryIso[country] || 'VN';
+  const assetInputCurrency: 'VND' | 'USD' = lang === 'en' ? 'USD' : 'VND';
   const locationChoices = getLocationOptionsForCountry(countryCode);
   const effectiveWeeks = isBusiness
     ? serviceWeeks ?? 1
@@ -463,6 +468,9 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
           industry,
           countryKey: countryCode,
           currency: countryCode === 'VN' ? 'VND' : 'USD',
+          keyAssetValue: parseFormattedNumber(keyAssetValue) || undefined,
+          netDebt: netDebt.trim() ? parseFormattedNumber(netDebt) : undefined,
+          assetCurrency: assetInputCurrency,
           offerAmount: parseFormattedNumber(ask),
           offerStakePct: parseFormattedNumber(stake, true),
         },
@@ -474,6 +482,9 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
       ebitda,
       growthPct,
       industry,
+      keyAssetValue,
+      netDebt,
+      assetInputCurrency,
       revenue,
       revenueMonth,
       stake,
@@ -836,6 +847,20 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
             size_bytes: asset.file.size,
           })),
         };
+        const keyAssetAmount = parseFormattedNumber(keyAssetValue);
+        const netDebtProvided = !!netDebt.trim();
+        const netDebtAmount = netDebtProvided ? parseFormattedNumber(netDebt) : null;
+        const benchmarkAssetInputs = {
+          key_asset_value: keyAssetAmount > 0 ? keyAssetAmount : null,
+          net_debt: netDebtAmount,
+          currency: assetInputCurrency,
+          source: 'user_estimate',
+          asset_input_source: 'user_estimate',
+          asset_valuation_mode_applied: benchmarkResult?.valuationMode || 'earnings',
+          asset_method_confidence: keyAssetAmount > 0
+            ? benchmarkResult?.assetMethodConfidence || 'low'
+            : null,
+        };
 
         businessPayload = {
           username,
@@ -890,7 +915,10 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
               lang === 'en' ? includedTangibleAssets : '',
             financial_source: financialSource,
             valuation_check: valuationCheck,
-            benchmark: benchmarkResult,
+            benchmark: {
+              ...(benchmarkResult || {}),
+              asset_inputs: benchmarkAssetInputs,
+            },
             revenue_month: parseFormattedNumber(revenueMonth),
             growth_pct: parseFormattedNumber(growthPct, true),
             upload_plan: uploadPlan,
@@ -905,6 +933,8 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
               highlights,
               reason,
               financialSource,
+              keyAssetValue,
+              netDebt,
               assetsOwned,
               includedTangibleAssets,
             ].filter((value) => String(value || '').trim()).length * 8,
@@ -1809,6 +1839,56 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
 
               <section className="d68-register-section">
                 <h2>{T(lang, 'Gợi ý kiểm tra định giá', 'Valuation sanity check')}</h2>
+
+                <div className="d68-asset-valuation-inputs">
+                  <Field
+                    label={T(
+                      lang,
+                      `Giá trị tài sản chính (${assetInputCurrency === 'VND' ? 'VNĐ' : 'USD'}) — tùy chọn`,
+                      `Key asset value (${assetInputCurrency}) — optional`,
+                    )}
+                    hint={T(
+                      lang,
+                      'Giá trị thị trường ước tính của đất, tòa nhà, máy móc, nhà máy hoặc tài sản chính đi kèm giao dịch.',
+                      'Estimated market value of land, buildings, machinery, factory or key assets included in the transaction.',
+                    )}
+                  >
+                    <input
+                      inputMode="numeric"
+                      value={keyAssetValue}
+                      onChange={(event) =>
+                        setKeyAssetValue(formatNumberTyping(event.target.value))
+                      }
+                      placeholder={T(
+                        lang,
+                        'Nhập số: đất đai, nhà máy, khách sạn, tòa nhà...',
+                        'Enter a number for land, factory, hotel, building...',
+                      )}
+                    />
+                  </Field>
+                  <Field
+                    label={T(
+                      lang,
+                      `Giá trị nợ ròng (${assetInputCurrency === 'VND' ? 'VNĐ' : 'USD'}) — tùy chọn`,
+                      `Net debt (${assetInputCurrency}) — optional`,
+                    )}
+                    hint={T(
+                      lang,
+                      'Nợ ròng = nợ vay trừ tiền mặt và tương đương tiền. Nếu chưa rõ, có thể để trống.',
+                      'Net debt = interest-bearing debt minus cash and cash equivalents. Leave blank if unknown.',
+                    )}
+                  >
+                    <input
+                      inputMode="numeric"
+                      value={netDebt}
+                      onChange={(event) =>
+                        setNetDebt(formatNumberTyping(event.target.value))
+                      }
+                      placeholder={T(lang, 'Không bắt buộc', 'Optional')}
+                    />
+                  </Field>
+                </div>
+
                 <div className={`d68-valuation-check d68-valuation-check--${valuationCheck.level}`}>
                   <div>
                     <b>{valuationCheck.label}</b>
@@ -1845,7 +1925,10 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
                     </div>
                     <div><dt>EV/Revenue</dt><dd>{valuationCheck.adjR ? `${valuationCheck.adjR.toFixed(2)}×` : '—'}</dd></div>
                     <div><dt>EV/EBITDA</dt><dd>{valuationCheck.adjE ? `${valuationCheck.adjE.toFixed(2)}×` : '—'}</dd></div>
+                    <div><dt>{T(lang, 'Phương pháp', 'Method')}</dt><dd>{benchmarkResult ? valuationMethodLabel(lang, benchmarkResult) : '—'}</dd></div>
+                    <div><dt>{T(lang, 'Giá trị tài sản ròng tham chiếu', 'Asset-adjusted reference equity')}</dt><dd>{benchmarkResult?.assetReferenceEquity !== null && benchmarkResult?.assetReferenceEquity !== undefined ? formatValuationMoney(benchmarkResult.assetReferenceEquity, benchmarkResult.currency, lang) : '—'}</dd></div>
                   </dl>
+                  {benchmarkResult ? <ul className="d68-valuation-asset-notes">{valuationAssetMessages(lang, benchmarkResult).map((note) => <li key={note}>{note}</li>)}</ul> : null}
                 </div>
               </section>
 

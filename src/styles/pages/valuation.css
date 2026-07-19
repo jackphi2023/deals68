@@ -30,3 +30,15 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* Asset-adjusted valuation v1 */
+.d68-val-asset-note{
+  margin:0;
+  padding:9px 11px;
+  border-radius:10px;
+  background:rgba(255,255,255,.08);
+  color:#cfe0ef!important;
+  font-size:12.5px;
+  line-height:1.55;
+}
+.d68-val-asset-row small{line-height:1.45}

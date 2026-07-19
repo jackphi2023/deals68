@@ -21,6 +21,8 @@ import {
   getActiveValuationConfig,
   valuate,
   formatValuationMoney,
+  valuationMethodLabel,
+  valuationAssetMessages,
   VALUATION_DISCLAIMER_EN,
   VALUATION_DISCLAIMER_VI,
   type Currency,
@@ -55,6 +57,7 @@ export default function Valuation({
   const [currency, setCurrency] = useState<Currency>('VND');
   const [margin, setMargin] = useState('');
   const [growth, setGrowth] = useState('');
+  const [keyAssetValue, setKeyAssetValue] = useState('');
 
   useEffect(() => {
     getActiveValuationConfig()
@@ -63,6 +66,7 @@ export default function Valuation({
   }, []);
 
   const parsedRevenue = parseFormattedNumber(revenueYear);
+  const parsedAssetValue = parseFormattedNumber(keyAssetValue);
   const hasRequiredInputs =
     !!country &&
     !!industryKey &&
@@ -81,6 +85,8 @@ export default function Valuation({
         industryKey,
         countryKey: country,
         currency,
+        keyAssetValue: parsedAssetValue > 0 ? parsedAssetValue : undefined,
+        assetCurrency: currency,
       },
       config,
     );
@@ -91,7 +97,9 @@ export default function Valuation({
     growth,
     hasRequiredInputs,
     industryKey,
+    keyAssetValue,
     margin,
+    parsedAssetValue,
     parsedRevenue,
   ]);
 
@@ -106,6 +114,7 @@ export default function Valuation({
     VALUATION_DISCLAIMER_VI,
     VALUATION_DISCLAIMER_EN,
   );
+  const assetMessages = valuationAssetMessages(lang, result);
 
   return (
     <main className="d68-valuation-page">
@@ -249,6 +258,41 @@ export default function Valuation({
                 </label>
               </div>
 
+
+              <div className="d68-val-revenue-row d68-val-asset-row">
+                <label>
+                  {T(lang, 'Giá trị tài sản chính', 'Key asset value')}
+                  <input
+                    inputMode="numeric"
+                    value={keyAssetValue}
+                    placeholder={T(lang, 'Ví dụ: 50.000.000.000', 'Example: 2,000,000')}
+                    onChange={(event: ChangeEvent<HTMLInputElement>) =>
+                      setKeyAssetValue(formatNumberTyping(event.target.value))
+                    }
+                  />
+                  <small>
+                    {T(
+                      lang,
+                      'Tùy chọn. Nhập giá trị thị trường ước tính của đất, tòa nhà, máy móc, nhà máy, khách sạn, quyền sử dụng đất hoặc tài sản vận hành chính; không dùng giá trị sổ sách.',
+                      'Optional. Enter the estimated market value of land, buildings, machinery, factory, hotel, land-use rights or key operating assets; do not use book value.',
+                    )}
+                  </small>
+                </label>
+
+                <label>
+                  {T(lang, 'Đơn vị', 'Currency')}
+                  <select
+                    value={currency}
+                    onChange={(event: ChangeEvent<HTMLSelectElement>) =>
+                      setCurrency(event.target.value as Currency)
+                    }
+                  >
+                    <option value="VND">{T(lang, 'VNĐ', 'VND')}</option>
+                    <option value="USD">USD</option>
+                  </select>
+                </label>
+              </div>
+
               <div className="d68-val-metrics-row">
                 <label>
                   {T(
@@ -358,19 +402,7 @@ export default function Valuation({
                   />
                   <Row
                     a={T(lang, 'Phương pháp', 'Method')}
-                    b={
-                      result.method === 'blend'
-                        ? T(
-                            lang,
-                            'Hệ số Doanh thu + Lợi nhuận',
-                            'Revenue + profit multiples',
-                          )
-                        : T(
-                            lang,
-                            'Hệ số Doanh thu',
-                            'Revenue multiple',
-                          )
-                    }
+                    b={valuationMethodLabel(lang, result)}
                   />
                   <Row
                     a={T(lang, 'Ngành', 'Industry')}
@@ -384,6 +416,9 @@ export default function Valuation({
                       countryLabel.en,
                     )}
                   />
+                  {assetMessages.map((message) => (
+                    <p key={message} className="d68-val-asset-note">{message}</p>
+                  ))}
                 </div>
               </>
             ) : (
