@@ -1565,8 +1565,8 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
                 <Field
                   label={T(
                     lang,
-                    'Tài sản hữu hình & vô hình doanh nghiệp sở hữu (Không bắt buộc điền)',
-                    'Tangible and intangible assets owned by the business (Optional)',
+                    'Tài sản hữu hình & vô hình doanh nghiệp sở hữu',
+                    'Tangible and intangible assets owned by the business',
                   )}
                   hint={T(
                     lang,
@@ -1586,8 +1586,8 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
                 <Field
                   label={T(
                     lang,
-                    'Mô tả giá trị của các tài sản hữu hình thuộc sở hữu của doanh nghiệp sẽ được đưa vào giao dịch (Không bắt buộc điền)',
-                    'Description and value of tangible assets owned by the business that will be included in the transaction (Optional)',
+                    'Mô tả giá trị của các tài sản hữu hình thuộc sở hữu của doanh nghiệp sẽ được đưa vào giao dịch',
+                    'Description and value of tangible assets owned by the business that will be included in the transaction',
                   )}
                   hint={T(
                     lang,
@@ -1912,6 +1912,7 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
                     lang={lang}
                     values={selectedIndustries}
                     onChange={setSelectedIndustries}
+                    defaultExpanded
                     expandVi="Mở rộng ngành"
                     expandEn="Expand industries"
                   />
