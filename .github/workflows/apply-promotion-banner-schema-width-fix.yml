@@ -1,0 +1,65 @@
+name: Apply and verify Promotion banner schema width fix
+
+on:
+  pull_request:
+    branches:
+      - building
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+
+      - name: Apply scoped banner patch
+        run: python3 scripts/apply-promotion-banner-schema-width-fix.py
+
+      - name: Verify source contracts
+        shell: bash
+        run: |
+          grep -q 'mobile_focal_x?: number | null' src/lib/banners.ts
+          grep -q "...(placement === 'home_hero'" src/components/admin/AdminBannerManager.tsx
+          ! grep -q "mobile_focal_x: placement === 'home_hero'" src/components/admin/AdminBannerManager.tsx
+          python3 - <<'PY'
+          from pathlib import Path
+          css = Path('src/styles/components/promotion-banner.css').read_text()
+          assert "  width: 100%;\n  max-width: 100%;\n  margin-block: 0;" not in css
+          assert '.d68-promo-banner__link img' in css
+          assert 'max-width: 100%;' in css
+          print('Promotion width ownership: PASS')
+          PY
+          grep -q 'add column if not exists mobile_focal_x' supabase/migrations/20260719162000_site_banners_mobile_focal_points_v1.sql
+          grep -q "notify pgrst, 'reload schema'" supabase/migrations/20260719162000_site_banners_mobile_focal_points_v1.sql
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Production build
+        run: npm run build
+
+      - name: Check diff formatting
+        run: git diff --check
+
+      - name: Commit verified source and remove one-time tooling
+        shell: bash
+        run: |
+          rm -f scripts/apply-promotion-banner-schema-width-fix.py
+          rm -f .github/workflows/apply-promotion-banner-schema-width-fix.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No source changes to commit."
+            exit 0
+          fi
+          git commit -m "fix(banners): align schema and homepage width"
+          git push origin HEAD:${{ github.head_ref }}
