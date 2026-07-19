@@ -21,7 +21,9 @@ jobs:
           fetch-depth: 0
 
       - name: Apply scoped source patch
-        run: python3 scripts/apply-promotion-banner-wide-fix.py
+        run: |
+          mkdir -p src/styles/components
+          python3 scripts/apply-promotion-banner-wide-fix.py
 
       - name: Verify source contracts
         run: |
