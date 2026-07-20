@@ -382,7 +382,8 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
     ),
   );
   const countryCode = countryIso[country] || 'VN';
-  const assetInputCurrency: 'VND' | 'USD' = lang === 'en' ? 'USD' : 'VND';
+  const financialInputCurrency: 'VND' | 'USD' = lang === 'en' ? 'USD' : 'VND';
+  const assetInputCurrency = financialInputCurrency;
   const locationChoices = getLocationOptionsForCountry(countryCode);
   const effectiveWeeks = isBusiness
     ? serviceWeeks ?? 1
@@ -467,7 +468,7 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
           industryKey: industryKeyFromLabel(industry),
           industry,
           countryKey: countryCode,
-          currency: countryCode === 'VN' ? 'VND' : 'USD',
+          currency: financialInputCurrency,
           keyAssetValue: parseFormattedNumber(keyAssetValue) || undefined,
           netDebt: netDebt.trim() ? parseFormattedNumber(netDebt) : undefined,
           assetCurrency: assetInputCurrency,
@@ -638,8 +639,8 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
         missing.push(
           T(
             lang,
-            'Doanh thu năm gần nhất (VNĐ) hoặc doanh thu tháng',
-            'Latest annual revenue (VND) or monthly revenue',
+            `Doanh thu năm gần nhất (${financialInputCurrency === 'VND' ? 'VNĐ' : 'USD'}) hoặc doanh thu tháng`,
+            `Latest annual revenue (${financialInputCurrency}) or monthly revenue`,
           ),
         );
       }
@@ -656,8 +657,8 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
         missing.push(
           T(
             lang,
-            'Số tiền gọi vốn / giá trị giao dịch mong muốn (VNĐ)',
-            'Capital sought / desired transaction value (VND)',
+            `Số tiền gọi vốn / giá trị giao dịch mong muốn (${financialInputCurrency === 'VND' ? 'VNĐ' : 'USD'})`,
+            `Capital sought / desired transaction value (${financialInputCurrency})`,
           ),
         );
       }
@@ -834,7 +835,7 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
         const cityKey = locationKeyFromLabel(city, countryCode);
         const canonicalCity = locationDbLabel(cityKey || city, countryCode);
         const titleVi = `${dealType} · ${industry} · ${canonicalCity}`;
-        const revenueCurrency = countryCode === 'VN' ? 'VND' : 'USD';
+        const revenueCurrency = financialInputCurrency;
         const uploadPlan = {
           images: businessImages.map((asset) => ({
             file_name: asset.file.name,
@@ -1124,16 +1125,16 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
     }
   }
 
-  const currentCurrency = countryCode === 'VN' ? 'VND' : 'USD';
+  const currentCurrency = financialInputCurrency;
   const annualRevenueLabel = T(
     lang,
-    'Doanh thu năm gần nhất (VNĐ)',
-    'Latest annual revenue (VND)',
+    `Doanh thu năm gần nhất (${currentCurrency === 'VND' ? 'VNĐ' : 'USD'})`,
+    `Latest annual revenue (${currentCurrency})`,
   );
   const askAmountLabel = T(
     lang,
-    'Số tiền gọi vốn / giá trị giao dịch mong muốn (VNĐ)',
-    'Capital sought / desired transaction value (VND)',
+    `Số tiền gọi vốn / giá trị giao dịch mong muốn (${currentCurrency === 'VND' ? 'VNĐ' : 'USD'})`,
+    `Capital sought / desired transaction value (${currentCurrency})`,
   );
   const paymentSection = (
     <section
