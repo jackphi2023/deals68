@@ -6,6 +6,13 @@ on:
       - building
     paths:
       - .github/workflows/temp-register-business-currency.yml
+  pull_request:
+    branches:
+      - building
+    types:
+      - opened
+      - synchronize
+      - reopened
 
 permissions:
   contents: write
