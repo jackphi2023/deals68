@@ -135,8 +135,8 @@ export default function Valuation({
           <p>
             {T(
               lang,
-              'Nhận khoảng định giá tham khảo theo quốc gia, ngành, doanh thu năm gần nhất, biên lợi nhuận EBITDA và tăng trưởng doanh thu. Hệ số do Deals68 cấu hình và có thể cập nhật theo dữ liệu thị trường.',
-              'Get an indicative benchmark by country, industry, latest annual revenue, EBITDA margin and revenue growth. Multiples are configured by Deals68 and can be updated with market data.',
+              'Nhận khoảng định giá tham khảo theo quốc gia, ngành, doanh thu năm gần nhất, giá trị tài sản (vd đất, khách sạn, nhà máy..), biên lợi nhuận EBITDA và tăng trưởng doanh thu. Hệ số do Deals68 cấu hình và có thể cập nhật theo dữ liệu thị trường.',
+              'Get an indicative valuation range based on country, industry, latest annual revenue, asset value (e.g. land, hotels and factories), EBITDA margin and revenue growth. Multiples are configured by Deals68 and can be updated with market data.',
             )}
           </p>
         </div>
@@ -480,8 +480,8 @@ export default function Valuation({
             <p>
               {T(
                 lang,
-                'Dùng bội số EV/EBITDA và EV/Doanh thu theo 23 nhóm ngành chuẩn hóa.',
-                'Uses EV/EBITDA and EV/Revenue multiples across the standardized 23 industries.',
+                'Dùng hệ số theo giá trị tài sản, bội số EV/EBITDA và EV/Doanh thu theo 23 nhóm ngành chuẩn hóa.',
+                'Uses asset-value factors, EV/EBITDA multiples and EV/Revenue multiples across 23 standardized industry groups.',
               )}
             </p>
           </article>
