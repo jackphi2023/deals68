@@ -52,7 +52,14 @@
 
 @media (max-width: 700px) {
   .d68-home-page .d68-hero-dots {
-    bottom: 16px;
+    left: 0;
+    right: 0;
+    bottom: 10px;
+    transform: none;
+    width: auto;
+    max-width: none;
+    margin: 0;
+    justify-content: center;
   }
 
   .d68-home-page .d68-home-hero-stats {
