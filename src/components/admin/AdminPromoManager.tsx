@@ -3,6 +3,30 @@ import { supabase } from '../../lib/supabase';
 
 type PromoRow = Record<string, any>;
 
+type PromoUsageSummary = {
+  promo_id: string;
+  usage_count: number | string;
+  confirmed_count: number | string;
+  service_amount_total: number | string;
+  discount_amount_total: number | string;
+};
+
+type PromoUsageRow = {
+  promo_id: string;
+  payment_order_id: string;
+  order_code?: string | null;
+  entity_type?: string | null;
+  entity_code?: string | null;
+  entity_name?: string | null;
+  service_plan?: string | null;
+  service_amount?: number | string | null;
+  discount_amount?: number | string | null;
+  currency?: string | null;
+  used_at?: string | null;
+  payment_status?: string | null;
+  payment_confirmed?: boolean | null;
+};
+
 type AdminPromoManagerProps = {
   adminId: string;
   refreshKey?: string;
@@ -10,9 +34,9 @@ type AdminPromoManagerProps = {
   setError: (message: string) => void;
 };
 
-function formatDateTime(value: unknown) {
+function formatDateTime(value: unknown, emptyLabel = 'Không giới hạn') {
   const raw = String(value || '').trim();
-  if (!raw) return 'Không giới hạn';
+  if (!raw) return emptyLabel;
   const date = new Date(raw);
   if (Number.isNaN(date.getTime())) return 'Không xác định';
   return new Intl.DateTimeFormat('vi-VN', {
@@ -24,10 +48,53 @@ function formatDateTime(value: unknown) {
   }).format(date);
 }
 
-function usageText(promo: PromoRow) {
-  const used = Math.max(0, Number(promo.quota_used || 0));
+function roleLabel(value: unknown) {
+  const role = String(value || '').toLowerCase();
+  if (role === 'business') return 'Doanh nghiệp';
+  if (role === 'investor') return 'Nhà đầu tư';
+  if (role === 'advisor') return 'Cố vấn';
+  if (role === 'affiliate') return 'Đối tác thị trường';
+  return 'Tất cả';
+}
+
+function entityTypeLabel(value: unknown) {
+  const role = String(value || '').toLowerCase();
+  if (role === 'business') return 'Doanh nghiệp';
+  if (role === 'investor') return 'Nhà đầu tư';
+  if (role === 'advisor') return 'Cố vấn';
+  if (role === 'affiliate') return 'Đối tác thị trường';
+  return 'Tài khoản';
+}
+
+function formatMoney(value: unknown, currency: unknown) {
+  const amount = Number(value || 0);
+  const unit = String(currency || 'VND').toUpperCase();
+  const formatted = new Intl.NumberFormat(unit === 'USD' ? 'en-US' : 'vi-VN', {
+    maximumFractionDigits: unit === 'USD' ? 2 : 0,
+  }).format(Number.isFinite(amount) ? amount : 0);
+  return unit === 'USD' ? `US$${formatted}` : `${formatted} ₫`;
+}
+
+function usageText(promo: PromoRow, summary?: PromoUsageSummary) {
+  const used = Math.max(0, Number(summary?.usage_count || 0));
   const total = Number(promo.quota_total || 0);
   return `${used}/${total > 0 ? total : '∞'}`;
+}
+
+function usageHeadline(promo: PromoRow, count: number) {
+  const total = Number(promo.quota_total || 0);
+  return `Có ${count}/${total > 0 ? total : '∞'} lượt sử dụng`;
+}
+
+function paymentState(row: PromoUsageRow) {
+  if (row.payment_confirmed) {
+    return { label: 'Đã duyệt', className: 'confirmed' };
+  }
+  const status = String(row.payment_status || '').toLowerCase();
+  if (status === 'rejected' || status === 'cancelled' || status === 'canceled') {
+    return { label: 'Không duyệt', className: 'rejected' };
+  }
+  return { label: 'Chưa duyệt', className: 'pending' };
 }
 
 function promoState(promo: PromoRow) {
@@ -65,6 +132,10 @@ export default function AdminPromoManager({
   setError,
 }: AdminPromoManagerProps) {
   const [promos, setPromos] = useState<PromoRow[]>([]);
+  const [usageSummaries, setUsageSummaries] = useState<Record<string, PromoUsageSummary>>({});
+  const [usageRowsByPromo, setUsageRowsByPromo] = useState<Record<string, PromoUsageRow[]>>({});
+  const [expandedPromoId, setExpandedPromoId] = useState('');
+  const [usageLoadingId, setUsageLoadingId] = useState('');
   const [loading, setLoading] = useState(false);
   const [actionKey, setActionKey] = useState('');
   const isBusy = loading || Boolean(actionKey);
@@ -75,16 +146,33 @@ export default function AdminPromoManager({
     setError('');
 
     try {
-      const { data, error } = await supabase
-        .from('promo_codes')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(500);
+      const [promoResult, summaryResult] = await Promise.all([
+        supabase
+          .from('promo_codes')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(500),
+        supabase.rpc('get_admin_promo_usage_summary'),
+      ]);
 
-      if (error) throw error;
-      setPromos(data || []);
+      if (promoResult.error || summaryResult.error) {
+        throw promoResult.error || summaryResult.error;
+      }
+
+      const summaries = Object.fromEntries(
+        ((summaryResult.data || []) as PromoUsageSummary[]).map((item) => [
+          String(item.promo_id),
+          item,
+        ]),
+      );
+
+      setPromos(promoResult.data || []);
+      setUsageSummaries(summaries);
+      setUsageRowsByPromo({});
+      setExpandedPromoId('');
     } catch (loadError: any) {
       setPromos([]);
+      setUsageSummaries({});
       setError(loadError?.message || 'Không tải được danh sách mã khuyến mãi.');
     } finally {
       setLoading(false);
@@ -103,11 +191,11 @@ export default function AdminPromoManager({
       ).length,
       used: promos.reduce(
         (sum, promo) =>
-          sum + Math.max(0, Number(promo.quota_used || 0)),
+          sum + Math.max(0, Number(usageSummaries[promo.id]?.usage_count || 0)),
         0,
       ),
     }),
-    [promos],
+    [promos, usageSummaries],
   );
 
   async function createPromo(event: FormEvent<HTMLFormElement>) {
@@ -186,6 +274,46 @@ export default function AdminPromoManager({
     }
   }
 
+  async function toggleUsageDetails(promo: PromoRow) {
+    const promoId = String(promo.id || '');
+    if (!promoId) return;
+
+    if (expandedPromoId === promoId) {
+      setExpandedPromoId('');
+      return;
+    }
+
+    setExpandedPromoId(promoId);
+    if (Object.prototype.hasOwnProperty.call(usageRowsByPromo, promoId)) return;
+
+    setUsageLoadingId(promoId);
+    setError('');
+    try {
+      const { data, error } = await supabase.rpc('get_admin_promo_usage', {
+        promo_uuid: promoId,
+      });
+      if (error) throw error;
+
+      const rows = (data || []) as PromoUsageRow[];
+      setUsageRowsByPromo((current) => ({ ...current, [promoId]: rows }));
+      setUsageSummaries((current) => ({
+        ...current,
+        [promoId]: {
+          promo_id: promoId,
+          usage_count: rows.length,
+          confirmed_count: rows.filter((row) => row.payment_confirmed).length,
+          service_amount_total: current[promoId]?.service_amount_total || 0,
+          discount_amount_total: current[promoId]?.discount_amount_total || 0,
+        },
+      }));
+    } catch (usageError: any) {
+      setUsageRowsByPromo((current) => ({ ...current, [promoId]: [] }));
+      setError(usageError?.message || 'Không tải được chi tiết lượt sử dụng.');
+    } finally {
+      setUsageLoadingId('');
+    }
+  }
+
   return (
     <section className="d68-admin-promo-manager" aria-labelledby="admin-promo-title">
       <div className="d68-admin-promo-toolbar">
@@ -255,9 +383,15 @@ export default function AdminPromoManager({
           <div className="d68-admin-promo-list">
             {promos.map((promo) => {
               const state = promoState(promo);
+              const summary = usageSummaries[promo.id];
               const statusBusy = actionKey === `status-${promo.id}`;
+              const isExpanded = expandedPromoId === promo.id;
+              const usageLoading = usageLoadingId === promo.id;
+              const usageRows = usageRowsByPromo[promo.id] || [];
+              const usageCount = Math.max(0, Number(summary?.usage_count || usageRows.length));
+
               return (
-                <article key={promo.id} className="d68-admin-promo-card">
+                <article key={promo.id} className={`d68-admin-promo-card${isExpanded ? ' is-expanded' : ''}`}>
                   <div className="d68-admin-promo-card__head">
                     <div>
                       <b>{promo.code}</b>
@@ -267,6 +401,19 @@ export default function AdminPromoManager({
                       <span className={`d68-admin-promo-state ${state.className}`}>
                         {state.label}
                       </span>
+                      <button
+                        type="button"
+                        className="d68-admin-btn light"
+                        disabled={usageLoading}
+                        aria-expanded={isExpanded}
+                        onClick={() => void toggleUsageDetails(promo)}
+                      >
+                        {usageLoading
+                          ? 'Đang tải...'
+                          : isExpanded
+                            ? 'Ẩn chi tiết'
+                            : 'Chi tiết lượt dùng'}
+                      </button>
                       <button
                         type="button"
                         className={`d68-admin-btn ${promo.active ? 'light' : 'green'}`}
@@ -283,13 +430,89 @@ export default function AdminPromoManager({
                   </div>
                   <div className="d68-admin-promo-card__meta">
                     <div><span>Giảm giá</span><b>{Number(promo.discount_pct || 0)}%</b></div>
-                    <div><span>Vai trò</span><b>{promo.role || 'Tất cả'}</b></div>
-                    <div><span>Số lượt dùng/Tổng</span><b>{usageText(promo)}</b></div>
+                    <div><span>Vai trò</span><b>{roleLabel(promo.role)}</b></div>
+                    <div><span>Số lượt dùng/Tổng</span><b>{usageText(promo, summary)}</b></div>
                     <div className="d68-admin-promo-card__period">
                       <span>Thời gian áp dụng</span>
                       <b>{formatDateTime(promo.starts_at)} <em>→</em> {formatDateTime(promo.ends_at)}</b>
                     </div>
                   </div>
+
+                  {isExpanded ? (
+                    <section className="d68-admin-promo-usage" aria-label={`Chi tiết lượt dùng mã ${promo.code}`}>
+                      <div className="d68-admin-promo-usage__info">
+                        <div>
+                          <span>Tên/Mã khuyến mãi</span>
+                          <b>{promo.description || promo.code}</b>
+                          {promo.description ? <small>{promo.code}</small> : null}
+                        </div>
+                        <div>
+                          <span>Đối tượng áp dụng</span>
+                          <b>{roleLabel(promo.role)}</b>
+                        </div>
+                        <div>
+                          <span>Số lượng áp dụng</span>
+                          <b>{Number(promo.quota_total || 0) > 0 ? `${Number(promo.quota_total)} lượt` : 'Không giới hạn'}</b>
+                        </div>
+                        <div>
+                          <span>Ngày áp dụng</span>
+                          <b>{formatDateTime(promo.starts_at)} <em>→</em> {formatDateTime(promo.ends_at)}</b>
+                        </div>
+                      </div>
+
+                      <div className="d68-admin-promo-usage__head">
+                        <h3>{usageHeadline(promo, usageCount)}</h3>
+                        {summary ? (
+                          <span>{Math.max(0, Number(summary.confirmed_count || 0))} lượt đã duyệt thanh toán</span>
+                        ) : null}
+                      </div>
+
+                      {usageLoading ? (
+                        <div className="d68-admin-promo-usage__empty">Đang tải chi tiết lượt sử dụng...</div>
+                      ) : usageRows.length ? (
+                        <div className="d68-admin-promo-usage__table-wrap">
+                          <table className="d68-admin-promo-usage__table">
+                            <thead>
+                              <tr>
+                                <th>ID Business/Investor</th>
+                                <th>Tên Business/Investor</th>
+                                <th>Gói dịch vụ</th>
+                                <th>Số tiền gói dịch vụ</th>
+                                <th>Số tiền ưu đãi</th>
+                                <th>Ngày sử dụng</th>
+                                <th>Trạng thái thanh toán</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {usageRows.map((row) => {
+                                const payment = paymentState(row);
+                                return (
+                                  <tr key={row.payment_order_id}>
+                                    <td>
+                                      <b>{row.entity_code || '—'}</b>
+                                      <small>{entityTypeLabel(row.entity_type)}</small>
+                                    </td>
+                                    <td>{row.entity_name || '—'}</td>
+                                    <td>{row.service_plan || '—'}</td>
+                                    <td>{formatMoney(row.service_amount, row.currency)}</td>
+                                    <td>{formatMoney(row.discount_amount, row.currency)}</td>
+                                    <td>{formatDateTime(row.used_at, '—')}</td>
+                                    <td>
+                                      <span className={`d68-admin-promo-payment ${payment.className}`}>
+                                        {payment.label}
+                                      </span>
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      ) : (
+                        <div className="d68-admin-promo-usage__empty">Chưa có lượt dùng nào.</div>
+                      )}
+                    </section>
+                  ) : null}
                 </article>
               );
             })}
