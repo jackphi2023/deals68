@@ -1,11 +1,6 @@
 name: Temporary register business currency update
 
 on:
-  push:
-    branches:
-      - building
-    paths:
-      - .github/workflows/temp-register-business-currency.yml
   pull_request:
     branches:
       - building
@@ -29,7 +24,7 @@ jobs:
         with:
           node-version: 20
           cache: npm
-      - name: Update EN business financial currency
+      - name: Verify scoped EN business financial currency
         run: |
           python - <<'PY'
           from pathlib import Path
@@ -37,56 +32,25 @@ jobs:
           path = Path('src/pages/Register.tsx')
           text = path.read_text()
 
-          replacements = [
-              (
-                  "  const assetInputCurrency: 'VND' | 'USD' = lang === 'en' ? 'USD' : 'VND';",
-                  "  const financialInputCurrency: 'VND' | 'USD' = lang === 'en' ? 'USD' : 'VND';\n  const assetInputCurrency = financialInputCurrency;",
-              ),
-              (
-                  "          currency: countryCode === 'VN' ? 'VND' : 'USD',",
-                  "          currency: financialInputCurrency,",
-              ),
-              (
-                  "        const revenueCurrency = countryCode === 'VN' ? 'VND' : 'USD';",
-                  "        const revenueCurrency = financialInputCurrency;",
-              ),
-              (
-                  "  const currentCurrency = countryCode === 'VN' ? 'VND' : 'USD';",
-                  "  const currentCurrency = financialInputCurrency;",
-              ),
-              (
-                  "    'Doanh thu năm gần nhất (VNĐ)',\n    'Latest annual revenue (VND)',",
-                  "    `Doanh thu năm gần nhất (${currentCurrency === 'VND' ? 'VNĐ' : 'USD'})`,\n    `Latest annual revenue (${currentCurrency})`,",
-              ),
-              (
-                  "    'Số tiền gọi vốn / giá trị giao dịch mong muốn (VNĐ)',\n    'Capital sought / desired transaction value (VND)',",
-                  "    `Số tiền gọi vốn / giá trị giao dịch mong muốn (${currentCurrency === 'VND' ? 'VNĐ' : 'USD'})`,\n    `Capital sought / desired transaction value (${currentCurrency})`,",
-              ),
-              (
-                  "            'Doanh thu năm gần nhất (VNĐ) hoặc doanh thu tháng',\n            'Latest annual revenue (VND) or monthly revenue',",
-                  "            `Doanh thu năm gần nhất (${financialInputCurrency === 'VND' ? 'VNĐ' : 'USD'}) hoặc doanh thu tháng`,\n            `Latest annual revenue (${financialInputCurrency}) or monthly revenue`,",
-              ),
-              (
-                  "            'Số tiền gọi vốn / giá trị giao dịch mong muốn (VNĐ)',\n            'Capital sought / desired transaction value (VND)',",
-                  "            `Số tiền gọi vốn / giá trị giao dịch mong muốn (${financialInputCurrency === 'VND' ? 'VNĐ' : 'USD'})`,\n            `Capital sought / desired transaction value (${financialInputCurrency})`,",
-              ),
+          required = [
+              "const financialInputCurrency: 'VND' | 'USD' = lang === 'en' ? 'USD' : 'VND';",
+              "currency: financialInputCurrency,",
+              "const revenueCurrency = financialInputCurrency;",
+              "const currentCurrency = financialInputCurrency;",
+              "`Latest annual revenue (${currentCurrency})`",
+              "`Capital sought / desired transaction value (${currentCurrency})`",
+          ]
+          forbidden = [
+              "Latest annual revenue (VND)",
+              "Monthly revenue (VND)",
+              "const currentCurrency = countryCode === 'VN' ? 'VND' : 'USD';",
           ]
 
-          for old, new in replacements:
-              count = text.count(old)
-              if count != 1:
-                  raise SystemExit(f'Expected exactly one occurrence, found {count}: {old[:80]}')
-              text = text.replace(old, new, 1)
-
-          path.write_text(text)
+          missing = [item for item in required if item not in text]
+          stale = [item for item in forbidden if item in text]
+          if missing or stale:
+              raise SystemExit(f'Missing expected currency logic: {missing}; stale values: {stale}')
           PY
       - run: git diff --check
       - run: npm ci --silent
       - run: npm run build
-      - name: Commit update
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add src/pages/Register.tsx
-          git commit -m "fix(register): use USD financial inputs on EN business signup"
-          git push origin HEAD:building
