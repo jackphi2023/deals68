@@ -69,7 +69,14 @@ jobs:
               lines = path.read_text().splitlines()
               path.write_text('\n'.join(line.rstrip() for line in lines) + '\n')
           PY
-      - run: git diff --check
+      - name: Capture diff check
+        run: git diff --check > business-document-diff-check.txt 2>&1 || true
+      - uses: actions/upload-artifact@v4
+        with:
+          name: business-document-diff-check
+          path: business-document-diff-check.txt
+      - name: Enforce diff check
+        run: test ! -s business-document-diff-check.txt
       - run: npm ci --silent
       - run: npm run build
       - run: npm run qa:css
