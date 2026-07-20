@@ -11,6 +11,7 @@
 .d68-admin-promo-list-head span{color:#64748B;font-weight:700}
 .d68-admin-promo-list{display:grid;gap:14px}
 .d68-admin-promo-card{border:1px solid #E7EDF3;border-radius:16px;background:#fff;padding:20px}
+.d68-admin-promo-card.is-expanded{border-color:#C9EAF8;box-shadow:0 8px 24px rgba(15,42,74,.06)}
 .d68-admin-promo-card__head{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;margin-bottom:18px}
 .d68-admin-promo-card__head>div{min-width:0}
 .d68-admin-promo-card__head b{font-size:19px;color:#0F2A4A;overflow-wrap:anywhere}
@@ -24,6 +25,34 @@
 .d68-admin-promo-card__meta span{display:block;margin-bottom:5px;color:#64748B;font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.35px}
 .d68-admin-promo-card__meta b{display:block;color:#0F2A4A;font-size:14px;line-height:1.45;overflow-wrap:anywhere}
 .d68-admin-promo-card__period em{padding:0 4px;color:#94A3B8;font-style:normal}
+.d68-admin-promo-card__status-actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap}
+.d68-admin-promo-card__status-actions .d68-admin-btn{white-space:nowrap}
+.d68-admin-promo-usage{margin-top:18px;padding-top:18px;border-top:1px solid #E7EDF3}
+.d68-admin-promo-usage__info{display:grid;grid-template-columns:1.2fr 1fr .8fr 1.4fr;gap:12px}
+.d68-admin-promo-usage__info>div{min-width:0;padding:14px;border:1px solid #E7EDF3;border-radius:12px;background:#F8FAFC}
+.d68-admin-promo-usage__info span{display:block;margin-bottom:6px;color:#64748B;font-size:11px;font-weight:900;letter-spacing:.35px;text-transform:uppercase}
+.d68-admin-promo-usage__info b{display:block;color:#0F2A4A;font-size:14px;line-height:1.45;overflow-wrap:anywhere}
+.d68-admin-promo-usage__info small{display:block;margin-top:4px;color:#64748B;font-size:12px;font-weight:700}
+.d68-admin-promo-usage__info em{padding:0 4px;color:#94A3B8;font-style:normal}
+.d68-admin-promo-usage__head{display:flex;align-items:center;justify-content:space-between;gap:16px;margin:22px 0 12px}
+.d68-admin-promo-usage__head h3{margin:0;color:#0F2A4A;font-size:18px}
+.d68-admin-promo-usage__head span{color:#64748B;font-size:13px;font-weight:700}
+.d68-admin-promo-usage__table-wrap{width:100%;overflow-x:auto;border:1px solid #E7EDF3;border-radius:12px;background:#fff}
+.d68-admin-promo-usage__table{width:100%;min-width:1120px;border-collapse:collapse;font-size:13px}
+.d68-admin-promo-usage__table th{padding:12px 13px;background:#F1F5F9;color:#475569;text-align:left;font-size:11px;font-weight:900;letter-spacing:.25px;text-transform:uppercase;white-space:nowrap}
+.d68-admin-promo-usage__table td{padding:13px;border-top:1px solid #EEF2F6;color:#334155;vertical-align:top;line-height:1.45}
+.d68-admin-promo-usage__table td:nth-child(4),.d68-admin-promo-usage__table td:nth-child(5){font-weight:800;color:#0F2A4A;white-space:nowrap}
+.d68-admin-promo-usage__table td:nth-child(6){white-space:nowrap}
+.d68-admin-promo-usage__table td>b{display:block;color:#0F2A4A;font-size:13px;overflow-wrap:anywhere}
+.d68-admin-promo-usage__table td>small{display:block;margin-top:3px;color:#64748B;font-size:11px;font-weight:700}
+.d68-admin-promo-payment{display:inline-flex;align-items:center;border-radius:999px;padding:5px 9px;font-size:11px;font-weight:900;white-space:nowrap}
+.d68-admin-promo-payment.confirmed{background:#E9F9EF;color:#15803D}
+.d68-admin-promo-payment.pending{background:#FEF3D3;color:#92400E}
+.d68-admin-promo-payment.rejected{background:#FEE2E2;color:#B91C1C}
+.d68-admin-promo-usage__empty{padding:28px;border:1px dashed #CBD5E1;border-radius:12px;background:#F8FAFC;color:#64748B;text-align:center;font-weight:700}
+@media(max-width:1100px){
+  .d68-admin-promo-usage__info{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
 @media(max-width:900px){
   .d68-admin-promo-card__meta{grid-template-columns:repeat(2,minmax(0,1fr))}
   .d68-admin-promo-card__period{grid-column:1/-1}
@@ -33,9 +62,9 @@
   .d68-admin-promo-toolbar .d68-admin-btn{width:100%}
   .d68-admin-promo-metrics{grid-template-columns:1fr}
   .d68-admin-promo-card__head{flex-direction:column}
-  .d68-admin-promo-card__status-actions{width:100%;justify-content:space-between}
+  .d68-admin-promo-card__status-actions{width:100%;justify-content:flex-start}
   .d68-admin-promo-card__meta{grid-template-columns:1fr}
   .d68-admin-promo-card__period{grid-column:auto}
+  .d68-admin-promo-usage__info{grid-template-columns:1fr}
+  .d68-admin-promo-usage__head{align-items:flex-start;flex-direction:column;gap:6px}
 }
-.d68-admin-promo-card__status-actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap}
-.d68-admin-promo-card__status-actions .d68-admin-btn{white-space:nowrap}
