@@ -66,8 +66,10 @@ jobs:
               'src/styles/pages/business-dashboard.css',
           ]:
               path = Path(name)
-              lines = path.read_text().splitlines()
-              path.write_text('\n'.join(line.rstrip() for line in lines) + '\n')
+              lines = [line.rstrip() for line in path.read_text().splitlines()]
+              while lines and not lines[-1]:
+                  lines.pop()
+              path.write_text('\n'.join(lines) + '\n')
           PY
       - name: Capture diff check
         run: git diff --check > business-document-diff-check.txt 2>&1 || true
