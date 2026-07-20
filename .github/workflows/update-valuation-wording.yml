@@ -27,9 +27,9 @@ jobs:
           rm -rf .git
           git init -q
           git remote add origin "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
-          git fetch -q --depth=2 origin building main
+          git fetch -q --depth=4 origin building main
           git checkout -q -B building origin/building
-          test "$(git rev-parse origin/building)" = "$(git rev-parse origin/main)"
+          git merge-base --is-ancestor origin/main origin/building
 
       - name: Update only valuation wording
         run: |
@@ -66,8 +66,7 @@ jobs:
       - name: Verify scope
         run: |
           changed=$(git status --short | awk '{print $2}' | sort)
-          expected=$(printf '%s\n' '.github/workflows/update-valuation-wording.yml' 'src/pages/Valuation.tsx' | sort)
-          test "$changed" = "$expected"
+          test "$changed" = "src/pages/Valuation.tsx"
           git diff --check
 
       - name: Install and build
