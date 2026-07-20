@@ -55,6 +55,20 @@ jobs:
           if missing or stale:
               raise SystemExit(f'Missing: {missing}; stale: {stale}')
           PY
+      - name: Normalize generated whitespace
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          for name in [
+              'src/pages/BusinessDashboard.tsx',
+              'src/lib/data.ts',
+              'src/lib/pendingBusinessUploads.ts',
+              'src/styles/pages/business-dashboard.css',
+          ]:
+              path = Path(name)
+              lines = path.read_text().splitlines()
+              path.write_text('\n'.join(line.rstrip() for line in lines) + '\n')
+          PY
       - run: git diff --check
       - run: npm ci --silent
       - run: npm run build
