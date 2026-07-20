@@ -1,0 +1,28 @@
+name: QA admin promo usage
+
+on:
+  pull_request:
+    branches:
+      - building
+    types:
+      - opened
+      - synchronize
+      - reopened
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci --silent
+      - run: npm run build
+      - run: npm run qa:css
+      - run: npm run qa:migrations
+      - run: git diff --check HEAD~4 HEAD
