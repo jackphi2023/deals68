@@ -207,7 +207,7 @@ export async function resumePendingBusinessSignupUploads(
           row.businessId,
           row.userId,
           file,
-          'profile',
+          null,
           'locked',
           row.displayName,
           row.id,

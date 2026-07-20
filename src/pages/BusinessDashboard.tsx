@@ -4,6 +4,7 @@ import { BarChart3, BriefcaseBusiness, CreditCard, FileText, Image as ImageIcon,
 import { useAuth } from '../contexts/AuthContext';
 import {
   deleteBusinessFile,
+  downloadBusinessFile,
   deleteBusinessImage,
   getBusinessFiles,
   getBusinessImages,
@@ -72,7 +73,20 @@ const tabMap: Record<string, Tab> = {
 const INDUSTRY_VI = ['Nông nghiệp','Ô tô & Phụ tùng','Làm đẹp & Chăm sóc cá nhân','Xây dựng & Vật liệu','Hóa chất','Giáo dục & Đào tạo','Năng lượng & Tiện ích','Giải trí & Nghỉ dưỡng','Tài chính','Thực phẩm & Đồ uống (F&B)','Y tế & Chăm sóc sức khỏe','Khách sạn & Resort','CNTT & Phần mềm','Sản xuất','Truyền thông & Quảng cáo','Bất động sản','Bán lẻ','Dịch vụ (B2B/B2C)','Logistics & Vận tải','Du lịch','Thương mại điện tử','Dệt may & Thời trang','Thủy sản & Xuất khẩu'];
 const DEAL_TYPE_VI = ['Gọi vốn','Bán cổ phần','M&A / Chuyển nhượng','Vay vốn','JV / Đối tác','Chuyển nhượng tài sản'];
 const DOC_ACCEPT = '.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+const DOCUMENT_CATEGORIES = [
+  { value: 'corporate', vi: 'Pháp nhân, Tổ chức', en: 'Corporate' },
+  { value: 'legal', vi: 'Pháp lý', en: 'Legal' },
+  { value: 'business', vi: 'Kinh doanh và Vận hành', en: 'Business' },
+  { value: 'financial', vi: 'Tài chính và Thuế', en: 'Financial' },
+] as const;
 const STATIC_VIETQR_URL = '/assets/vietqr-vcb.png';
+
+function documentCategory(value: any) {
+  const normalized = String(value || '').trim().toLowerCase();
+  return DOCUMENT_CATEGORIES.some((item) => item.value === normalized)
+    ? normalized
+    : '';
+}
 
 function resolveTab(pathname: string): Tab {
   const suffix = stripLangPrefix(pathname)
@@ -209,13 +223,13 @@ function buildQualityItems(lang: Lang, b: any, files: any[], images: any[]) {
     (image) => isApprovedStatus(image?.review_status) && image?.is_sanitized,
   );
   const hasProfileDocument = approvedFiles.some((file) =>
-    fileMatches(file, ['profile', 'im', 'teaser'], ['ppt', 'pptx', 'doc', 'docx']),
+    fileMatches(file, ['profile', 'im', 'teaser', 'corporate', 'business'], ['ppt', 'pptx', 'doc', 'docx']),
   );
   const hasFinancialDocument = approvedFiles.some((file) =>
     fileMatches(file, ['financial'], ['xls', 'xlsx']),
   );
   const hasAssetDocument = approvedFiles.some((file) =>
-    fileMatches(file, ['asset', 'legal', 'ownership'], []),
+    fileMatches(file, ['asset', 'legal', 'ownership', 'corporate'], []),
   );
   const hasFinancialData =
     Number(b?.revenue_2025 || 0) > 0 &&
@@ -479,7 +493,7 @@ export default function BusinessDashboard() {
   const [busy, setBusy] = useState(false);
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
   const [newDocName, setNewDocName] = useState('');
-  const [newDocCategory, setNewDocCategory] = useState('financials');
+  const [newDocCategory, setNewDocCategory] = useState('');
   const [valuationConfig, setValuationConfig] = useState(DEFAULT_VALUATION_CONFIG);
 
   useEffect(() => setTab(resolveTab(location.pathname)), [location.pathname]);
@@ -726,8 +740,9 @@ export default function BusinessDashboard() {
     if (!file || !b || !profile) return;
     setBusy(true);
     try {
-      await uploadBusinessFile(b.id, profile.id, file, newDocCategory, 'locked', newDocName || file.name);
+      await uploadBusinessFile(b.id, profile.id, file, newDocCategory || null, 'locked', newDocName || file.name);
       setNewDocName('');
+      setNewDocCategory('');
       setMsg(businessUpdateSuccessMsg(lang));
       await load();
     } catch (e: any) { setErr(e?.message || 'Upload failed.'); }
@@ -746,14 +761,27 @@ export default function BusinessDashboard() {
     finally { setBusy(false); e.target.value = ''; }
   }
 
-  async function renameFile(row: any, displayName: string) {
+  async function renameFile(row: any, displayName: string, category: string) {
     const safeName = String(displayName || row.display_name || row.file_name || '').trim();
     if (!safeName) return;
     try {
-      await updateBusinessFile(row.id, { display_name: safeName, admin_note: 'User renamed file display name; Admin review remains required.' });
+      await updateBusinessFile(row.id, {
+        display_name: safeName,
+        category: documentCategory(category) || null,
+        admin_note: 'User updated file name/category; Admin review remains required.',
+      });
       setMsg(businessUpdateSuccessMsg(lang));
       await load();
     } catch (e: any) { setErr(e?.message || 'Update failed.'); }
+  }
+
+  async function downloadFile(row: any) {
+    setErr('');
+    try {
+      await downloadBusinessFile(row);
+    } catch (e: any) {
+      setErr(e?.message || T(lang, 'Tải tài liệu thất bại.', 'Download failed.'));
+    }
   }
 
   async function deleteFile(row: any) {
@@ -852,7 +880,7 @@ export default function BusinessDashboard() {
           saveProfile={saveProfile}
         />
       ) : null}
-      {tab === 'documents' ? <Documents lang={lang} files={files} deleteFile={deleteFile} renameFile={renameFile} fileChange={fileChange} newDocName={newDocName} setNewDocName={setNewDocName} newDocCategory={newDocCategory} setNewDocCategory={setNewDocCategory} /> : null}
+      {tab === 'documents' ? <Documents lang={lang} files={files} deleteFile={deleteFile} renameFile={renameFile} downloadFile={downloadFile} fileChange={fileChange} newDocName={newDocName} setNewDocName={setNewDocName} newDocCategory={newDocCategory} setNewDocCategory={setNewDocCategory} /> : null}
       {tab === 'images' ? <Images lang={lang} images={images} imageChange={imageChange} deleteImage={deleteImage} renameImage={renameImage} suggestHero={suggestHero} /> : null}
       {tab === 'interests' ? <><ProposalRows lang={lang} rows={proposals} empty={T(lang,'Chưa gửi hồ sơ DN tới nhà đầu tư nào.','No business profile proposals sent yet.')} /><Rows title={T(lang,'Nhà đầu tư quan tâm','Investor interests')} rows={interests} empty={T(lang,'Chưa có nhà đầu tư quan tâm.','No investor interests yet.')} actions={(row: any) => <><button onClick={() => acceptInterest(row)} className="d68-dashboard-btn green">Accept</button><button onClick={() => rejectInterest(row)} className="d68-dashboard-btn red">Reject</button></>} /></> : null}
       {tab === 'requests' ? <Rows title={T(lang,'Yêu cầu dữ liệu','Data requests')} rows={requests} empty={T(lang,'Chưa có yêu cầu dữ liệu.','No data requests yet.')} actions={(row: any) => <button onClick={() => fulfillRequest(row)} className="d68-dashboard-btn green">Fulfilled</button>} /> : null}
@@ -1081,26 +1109,57 @@ function CurrencyField({ lang, name, value, onChange }: {
   </label>;
 }
 
-function DocumentRow({ lang, d, renameFile, deleteFile }: any) {
+function DocumentRow({ lang, d, renameFile, downloadFile, deleteFile }: any) {
   const [name, setName] = useState(d.display_name || d.file_name || '');
+  const [category, setCategory] = useState(documentCategory(d.category));
   const [saving, setSaving] = useState(false);
+  const [downloading, setDownloading] = useState(false);
+
   async function save() {
     setSaving(true);
-    await renameFile(d, name);
-    setSaving(false);
+    try {
+      await renameFile(d, name, category);
+    } finally {
+      setSaving(false);
+    }
   }
+
+  async function download() {
+    setDownloading(true);
+    try {
+      await downloadFile(d);
+    } finally {
+      setDownloading(false);
+    }
+  }
+
   return <div className="d68-dashboard-row d68-document-row">
-    <span className="d68-dashboard-badge blue">{ext(d.file_name, d.file_type)}</span>
-    <div className="d68-document-row__body">
-      <label className="d68-dashboard-field"><span>{T(lang,'Tên file hiển thị','Display file name')}</span><input className="d68-dashboard-input" value={name} onChange={(e) => setName(e.target.value)} /></label>
-      <div className="d68-dashboard-mini">{d.category || 'document'} · {d.privacy_level || 'locked'} · {d.public_visible ? T(lang,'được duyệt public','approved public') : T(lang,'chờ duyệt/khóa','pending/locked')}</div>
-    </div>
-    <div className="d68-document-row__actions"><button onClick={save} disabled={saving} className="d68-dashboard-btn light">{saving ? T(lang,'Đang lưu','Saving') : T(lang,'Lưu tên','Save name')}</button><button onClick={() => deleteFile(d)} className="d68-dashboard-btn red">{T(lang,'Xóa','Delete')}</button></div>
+    <span className="d68-dashboard-badge blue d68-document-row__type">{ext(d.file_name, d.file_type)}</span>
+    <select
+      className="d68-dashboard-input d68-document-row__category"
+      value={category}
+      onChange={(e) => setCategory(e.target.value)}
+      aria-label={T(lang, 'Chọn Loại tài liệu', 'Select document type')}
+    >
+      <option value="">{T(lang, 'Chọn Loại tài liệu', 'Select document type')}</option>
+      {DOCUMENT_CATEGORIES.map((item) => <option key={item.value} value={item.value}>{T(lang, item.vi, item.en)}</option>)}
+    </select>
+    <input
+      className="d68-dashboard-input d68-document-row__name"
+      value={name}
+      onChange={(e) => setName(e.target.value)}
+      aria-label={T(lang, 'Tên file', 'File name')}
+      placeholder={T(lang, 'Tên file', 'File name')}
+    />
+    <button onClick={save} disabled={saving || downloading} className="d68-dashboard-btn light">{saving ? T(lang,'Đang lưu','Saving') : T(lang,'Lưu tên','Save name')}</button>
+    <button onClick={download} disabled={saving || downloading} className="d68-dashboard-btn light">{downloading ? T(lang,'Đang tải','Downloading') : T(lang,'Tải tài liệu','Download')}</button>
+    <button onClick={() => deleteFile(d)} disabled={saving || downloading} className="d68-dashboard-btn red">{T(lang,'Xóa','Delete')}</button>
+    <div className="d68-dashboard-mini d68-document-row__meta">{d.privacy_level || 'locked'} · {d.public_visible ? T(lang,'được duyệt public','approved public') : T(lang,'chờ duyệt/khóa','pending/locked')}</div>
   </div>;
 }
 
-function Documents({ lang, files, deleteFile, renameFile, fileChange, newDocName, setNewDocName, newDocCategory, setNewDocCategory }: any) {
-  return <div className="d68-dashboard-card"><h2>{T(lang,'Tài liệu doanh nghiệp','Business documents')}</h2><p>{T(lang,'File hiển thị luôn ở trạng thái khóa. Chỉ nhà đầu tư mới xem Tên file và tải về sau khi đã kết nối.', 'Files are always shown as locked. Only investors can view file names and download them after an approved connection.')}</p>{files.map((d: any) => <DocumentRow key={d.id} lang={lang} d={d} renameFile={renameFile} deleteFile={deleteFile} />)}{!files.length ? <div className="d68-dashboard-empty">{T(lang,'Chưa có tài liệu.','No documents yet.')}</div> : null}<div className="d68-document-upload"><h3>{T(lang,'Tải hồ sơ mới','Upload a new document')}</h3><div className="d68-dashboard-form2"><label className="d68-dashboard-field"><span>{T(lang,'Nhập tên file','Enter file name')}</span><input className="d68-dashboard-input" value={newDocName} onChange={(e) => setNewDocName(e.target.value)} placeholder={T(lang,'VD: Báo cáo tài chính 2025, Company profile...', 'E.g. 2025 financials, company profile...')} /></label><label className="d68-dashboard-field"><span>{T(lang,'Loại tài liệu','Document type')}</span><select className="d68-dashboard-input" value={newDocCategory} onChange={(e) => setNewDocCategory(e.target.value)}><option value="financials">Financials</option><option value="profile">Profile</option><option value="im">Teaser / IM</option><option value="legal">Legal</option><option value="other">Other</option></select></label></div><label className="d68-dashboard-btn" style={{ display: 'inline-block', marginTop: 14 }}>+ {T(lang,'Chọn file & tải lên','Choose file & upload')}<input type="file" accept={DOC_ACCEPT} onChange={fileChange} style={{ display: 'none' }}/></label></div></div>;
+function Documents({ lang, files, deleteFile, renameFile, downloadFile, fileChange, newDocName, setNewDocName, newDocCategory, setNewDocCategory }: any) {
+  return <div className="d68-dashboard-card"><h2>{T(lang,'Tài liệu doanh nghiệp','Business documents')}</h2><p>{T(lang,'File hiển thị luôn ở trạng thái khóa. Chỉ nhà đầu tư mới xem Tên file và tải về sau khi đã kết nối.', 'Files are always shown as locked. Only investors can view file names and download them after an approved connection.')}</p>{files.map((d: any) => <DocumentRow key={d.id} lang={lang} d={d} renameFile={renameFile} downloadFile={downloadFile} deleteFile={deleteFile} />)}{!files.length ? <div className="d68-dashboard-empty">{T(lang,'Chưa có tài liệu.','No documents yet.')}</div> : null}<div className="d68-document-upload"><h3>{T(lang,'Tải hồ sơ mới','Upload a new document')}</h3><div className="d68-dashboard-form2"><label className="d68-dashboard-field"><span>{T(lang,'Nhập tên file','Enter file name')}</span><input className="d68-dashboard-input" value={newDocName} onChange={(e) => setNewDocName(e.target.value)} placeholder={T(lang,'VD: Báo cáo tài chính 2025, Company profile...', 'E.g. 2025 financials, company profile...')} /></label><label className="d68-dashboard-field"><span>{T(lang,'Loại tài liệu','Document type')}</span><select className="d68-dashboard-input" value={newDocCategory} onChange={(e) => setNewDocCategory(e.target.value)}><option value="">{T(lang,'Chọn Loại tài liệu','Select document type')}</option>{DOCUMENT_CATEGORIES.map((item) => <option key={item.value} value={item.value}>{T(lang, item.vi, item.en)}</option>)}</select></label></div><label className="d68-dashboard-btn" style={{ display: 'inline-block', marginTop: 14 }}>+ {T(lang,'Chọn file & tải lên','Choose file & upload')}<input type="file" accept={DOC_ACCEPT} onChange={fileChange} style={{ display: 'none' }}/></label></div></div>;
 }
 
 function Images({ lang, images, imageChange, deleteImage, renameImage, suggestHero }: any) {

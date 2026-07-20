@@ -587,7 +587,7 @@ export async function uploadBusinessFile(
   businessId: string,
   ownerId: string,
   file: File,
-  category = 'financials',
+  category: string | null = null,
   privacy = 'locked',
   displayName = '',
   clientUploadId = '',
@@ -614,7 +614,9 @@ export async function uploadBusinessFile(
     file_path: path,
     file_type: file.type,
     size_bytes: file.size,
-    category,
+    category: ['corporate', 'legal', 'business', 'financial'].includes(String(category || ''))
+      ? category
+      : null,
     privacy_level: privacy,
     public_visible: false,
     review_status: 'pending_admin_approval',
@@ -638,6 +640,36 @@ export async function updateBusinessFile(fileId: string, patch: any) {
   const { data, error } = await supabase.from('business_files').update(patch).eq('id', fileId).select().single();
   if (error) throw error;
   return data;
+}
+
+export async function downloadBusinessFile(row: any) {
+  const path = String(row?.file_path || '').trim();
+  if (!path) throw new Error('Tài liệu thiếu đường dẫn Storage.');
+
+  const { data, error } = await supabase.storage
+    .from(BUSINESS_FILE_BUCKET)
+    .download(path);
+  if (error || !data) throw error || new Error('Không tải được tài liệu.');
+
+  const originalName = String(row?.file_name || 'document').trim() || 'document';
+  const displayName = String(row?.display_name || originalName).trim() || originalName;
+  const extensionMatch = originalName.match(/(\.[a-z0-9]{1,10})$/i);
+  const downloadName = /\.[a-z0-9]{1,10}$/i.test(displayName) || !extensionMatch
+    ? displayName
+    : `${displayName}${extensionMatch[1]}`;
+  const url = URL.createObjectURL(data);
+
+  try {
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = downloadName;
+    anchor.rel = 'noopener';
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+  } finally {
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
 }
 
 export async function deleteBusinessFile(row: any) {

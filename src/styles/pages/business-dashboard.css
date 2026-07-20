@@ -82,3 +82,58 @@
     padding-bottom: 20px;
   }
 }
+
+/* Business documents: category, name and actions remain on one desktop row. */
+.d68-business-dashboard-page .d68-document-row {
+  display: grid;
+  grid-template-columns: auto 180px minmax(240px, 350px) max-content max-content max-content;
+  align-items: center;
+  gap: 10px;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.d68-business-dashboard-page .d68-document-row__type {
+  justify-self: start;
+}
+
+.d68-business-dashboard-page .d68-document-row__category,
+.d68-business-dashboard-page .d68-document-row__name {
+  width: 100%;
+  min-width: 0;
+}
+
+.d68-business-dashboard-page .d68-document-row__category {
+  max-width: 180px;
+}
+
+.d68-business-dashboard-page .d68-document-row > .d68-dashboard-btn {
+  white-space: nowrap;
+}
+
+.d68-business-dashboard-page .d68-document-row__meta {
+  grid-column: 2 / -1;
+  min-width: 0;
+}
+
+@media (max-width: 760px) {
+  .d68-business-dashboard-page .d68-document-row {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: stretch;
+    overflow: visible;
+  }
+
+  .d68-business-dashboard-page .d68-document-row__category,
+  .d68-business-dashboard-page .d68-document-row__name {
+    width: 100%;
+    max-width: none;
+  }
+
+  .d68-business-dashboard-page .d68-document-row > .d68-dashboard-btn {
+    width: 100%;
+  }
+
+  .d68-business-dashboard-page .d68-document-row__meta {
+    grid-column: 1;
+  }
+}
