@@ -25,4 +25,4 @@ jobs:
       - run: npm run build
       - run: npm run qa:css
       - run: npm run qa:migrations
-      - run: git diff --check HEAD~4 HEAD
+      - run: git diff --check HEAD^
