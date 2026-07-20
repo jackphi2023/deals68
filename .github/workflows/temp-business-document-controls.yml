@@ -1,0 +1,366 @@
+name: Temporary Business document controls update
+
+on:
+  pull_request:
+    branches:
+      - building
+    types:
+      - opened
+      - synchronize
+      - reopened
+
+permissions:
+  contents: write
+
+jobs:
+  update-and-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: building
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Update Business document controls
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          def replace_once(text, old, new, label):
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{label}: expected 1 occurrence, found {count}')
+              return text.replace(old, new, 1)
+
+          dashboard_path = Path('src/pages/BusinessDashboard.tsx')
+          dashboard = dashboard_path.read_text()
+
+          dashboard = replace_once(
+              dashboard,
+              "  deleteBusinessFile,\n  deleteBusinessImage,",
+              "  deleteBusinessFile,\n  downloadBusinessFile,\n  deleteBusinessImage,",
+              'dashboard import',
+          )
+
+          dashboard = replace_once(
+              dashboard,
+              "const STATIC_VIETQR_URL = '/assets/vietqr-vcb.png';",
+              """const DOCUMENT_CATEGORIES = [
+  { value: 'corporate', vi: 'Pháp nhân, Tổ chức', en: 'Corporate' },
+  { value: 'legal', vi: 'Pháp lý', en: 'Legal' },
+  { value: 'business', vi: 'Kinh doanh và Vận hành', en: 'Business' },
+  { value: 'financial', vi: 'Tài chính và Thuế', en: 'Financial' },
+] as const;
+const STATIC_VIETQR_URL = '/assets/vietqr-vcb.png';
+
+function documentCategory(value: any) {
+  const normalized = String(value || '').trim().toLowerCase();
+  return DOCUMENT_CATEGORIES.some((item) => item.value === normalized)
+    ? normalized
+    : '';
+}""",
+              'document category constants',
+          )
+
+          dashboard = replace_once(
+              dashboard,
+              "fileMatches(file, ['profile', 'im', 'teaser'], ['ppt', 'pptx', 'doc', 'docx'])",
+              "fileMatches(file, ['profile', 'im', 'teaser', 'corporate', 'business'], ['ppt', 'pptx', 'doc', 'docx'])",
+              'profile quality categories',
+          )
+          dashboard = replace_once(
+              dashboard,
+              "fileMatches(file, ['asset', 'legal', 'ownership'], [])",
+              "fileMatches(file, ['asset', 'legal', 'ownership', 'corporate'], [])",
+              'asset quality categories',
+          )
+          dashboard = replace_once(
+              dashboard,
+              "  const [newDocCategory, setNewDocCategory] = useState('financials');",
+              "  const [newDocCategory, setNewDocCategory] = useState('');",
+              'new document category default',
+          )
+          dashboard = replace_once(
+              dashboard,
+              "      await uploadBusinessFile(b.id, profile.id, file, newDocCategory, 'locked', newDocName || file.name);\n      setNewDocName('');",
+              "      await uploadBusinessFile(b.id, profile.id, file, newDocCategory || null, 'locked', newDocName || file.name);\n      setNewDocName('');\n      setNewDocCategory('');",
+              'document upload category',
+          )
+
+          old_rename = """  async function renameFile(row: any, displayName: string) {
+    const safeName = String(displayName || row.display_name || row.file_name || '').trim();
+    if (!safeName) return;
+    try {
+      await updateBusinessFile(row.id, { display_name: safeName, admin_note: 'User renamed file display name; Admin review remains required.' });
+      setMsg(businessUpdateSuccessMsg(lang));
+      await load();
+    } catch (e: any) { setErr(e?.message || 'Update failed.'); }
+  }
+"""
+          new_rename = """  async function renameFile(row: any, displayName: string, category: string) {
+    const safeName = String(displayName || row.display_name || row.file_name || '').trim();
+    if (!safeName) return;
+    try {
+      await updateBusinessFile(row.id, {
+        display_name: safeName,
+        category: documentCategory(category) || null,
+        admin_note: 'User updated file name/category; Admin review remains required.',
+      });
+      setMsg(businessUpdateSuccessMsg(lang));
+      await load();
+    } catch (e: any) { setErr(e?.message || 'Update failed.'); }
+  }
+
+  async function downloadFile(row: any) {
+    setErr('');
+    try {
+      await downloadBusinessFile(row);
+    } catch (e: any) {
+      setErr(e?.message || T(lang, 'Tải tài liệu thất bại.', 'Download failed.'));
+    }
+  }
+"""
+          dashboard = replace_once(dashboard, old_rename, new_rename, 'rename/download functions')
+
+          dashboard = replace_once(
+              dashboard,
+              "<Documents lang={lang} files={files} deleteFile={deleteFile} renameFile={renameFile} fileChange={fileChange}",
+              "<Documents lang={lang} files={files} deleteFile={deleteFile} renameFile={renameFile} downloadFile={downloadFile} fileChange={fileChange}",
+              'documents props',
+          )
+
+          pattern = re.compile(
+              r"function DocumentRow\(\{ lang, d, renameFile, deleteFile \}: any\) \{.*?\n\}\n\nfunction Documents\(\{ lang, files, deleteFile, renameFile, fileChange, newDocName, setNewDocName, newDocCategory, setNewDocCategory \}: any\) \{.*?\n\}\n\nfunction Images",
+              re.S,
+          )
+          replacement = """function DocumentRow({ lang, d, renameFile, downloadFile, deleteFile }: any) {
+  const [name, setName] = useState(d.display_name || d.file_name || '');
+  const [category, setCategory] = useState(documentCategory(d.category));
+  const [saving, setSaving] = useState(false);
+  const [downloading, setDownloading] = useState(false);
+
+  async function save() {
+    setSaving(true);
+    await renameFile(d, name, category);
+    setSaving(false);
+  }
+
+  async function download() {
+    setDownloading(true);
+    await downloadFile(d);
+    setDownloading(false);
+  }
+
+  return <div className="d68-dashboard-row d68-document-row">
+    <span className="d68-dashboard-badge blue d68-document-row__type">{ext(d.file_name, d.file_type)}</span>
+    <select
+      className="d68-dashboard-input d68-document-row__category"
+      value={category}
+      onChange={(e) => setCategory(e.target.value)}
+      aria-label={T(lang, 'Chọn Loại tài liệu', 'Select document type')}
+    >
+      <option value="">{T(lang, 'Chọn Loại tài liệu', 'Select document type')}</option>
+      {DOCUMENT_CATEGORIES.map((item) => <option key={item.value} value={item.value}>{T(lang, item.vi, item.en)}</option>)}
+    </select>
+    <input
+      className="d68-dashboard-input d68-document-row__name"
+      value={name}
+      onChange={(e) => setName(e.target.value)}
+      aria-label={T(lang, 'Tên file', 'File name')}
+      placeholder={T(lang, 'Tên file', 'File name')}
+    />
+    <button onClick={save} disabled={saving || downloading} className="d68-dashboard-btn light">{saving ? T(lang,'Đang lưu','Saving') : T(lang,'Lưu tên','Save name')}</button>
+    <button onClick={download} disabled={saving || downloading} className="d68-dashboard-btn light">{downloading ? T(lang,'Đang tải','Downloading') : T(lang,'Tải tài liệu','Download')}</button>
+    <button onClick={() => deleteFile(d)} disabled={saving || downloading} className="d68-dashboard-btn red">{T(lang,'Xóa','Delete')}</button>
+    <div className="d68-dashboard-mini d68-document-row__meta">{d.privacy_level || 'locked'} · {d.public_visible ? T(lang,'được duyệt public','approved public') : T(lang,'chờ duyệt/khóa','pending/locked')}</div>
+  </div>;
+}
+
+function Documents({ lang, files, deleteFile, renameFile, downloadFile, fileChange, newDocName, setNewDocName, newDocCategory, setNewDocCategory }: any) {
+  return <div className="d68-dashboard-card"><h2>{T(lang,'Tài liệu doanh nghiệp','Business documents')}</h2><p>{T(lang,'File hiển thị luôn ở trạng thái khóa. Chỉ nhà đầu tư mới xem Tên file và tải về sau khi đã kết nối.', 'Files are always shown as locked. Only investors can view file names and download them after an approved connection.')}</p>{files.map((d: any) => <DocumentRow key={d.id} lang={lang} d={d} renameFile={renameFile} downloadFile={downloadFile} deleteFile={deleteFile} />)}{!files.length ? <div className="d68-dashboard-empty">{T(lang,'Chưa có tài liệu.','No documents yet.')}</div> : null}<div className="d68-document-upload"><h3>{T(lang,'Tải hồ sơ mới','Upload a new document')}</h3><div className="d68-dashboard-form2"><label className="d68-dashboard-field"><span>{T(lang,'Nhập tên file','Enter file name')}</span><input className="d68-dashboard-input" value={newDocName} onChange={(e) => setNewDocName(e.target.value)} placeholder={T(lang,'VD: Báo cáo tài chính 2025, Company profile...', 'E.g. 2025 financials, company profile...')} /></label><label className="d68-dashboard-field"><span>{T(lang,'Loại tài liệu','Document type')}</span><select className="d68-dashboard-input" value={newDocCategory} onChange={(e) => setNewDocCategory(e.target.value)}><option value="">{T(lang,'Chọn Loại tài liệu','Select document type')}</option>{DOCUMENT_CATEGORIES.map((item) => <option key={item.value} value={item.value}>{T(lang, item.vi, item.en)}</option>)}</select></label></div><label className="d68-dashboard-btn" style={{ display: 'inline-block', marginTop: 14 }}>+ {T(lang,'Chọn file & tải lên','Choose file & upload')}<input type="file" accept={DOC_ACCEPT} onChange={fileChange} style={{ display: 'none' }}/></label></div></div>;
+}
+
+function Images"""
+          dashboard, count = pattern.subn(replacement, dashboard, count=1)
+          if count != 1:
+              raise SystemExit(f'document components: expected 1 replacement, found {count}')
+
+          dashboard_path.write_text(dashboard)
+
+          data_path = Path('src/lib/data.ts')
+          data = data_path.read_text()
+          data = replace_once(
+              data,
+              "  category = 'financials',",
+              "  category: string | null = null,",
+              'upload category signature',
+          )
+          data = replace_once(
+              data,
+              "    category,\n    privacy_level: privacy,",
+              "    category: ['corporate', 'legal', 'business', 'financial'].includes(String(category || ''))\n      ? category\n      : null,\n    privacy_level: privacy,",
+              'upload category normalization',
+          )
+          old_update = """export async function updateBusinessFile(fileId: string, patch: any) {
+  const { data, error } = await supabase.from('business_files').update(patch).eq('id', fileId).select().single();
+  if (error) throw error;
+  return data;
+}
+"""
+          new_update = """export async function updateBusinessFile(fileId: string, patch: any) {
+  const { data, error } = await supabase.from('business_files').update(patch).eq('id', fileId).select().single();
+  if (error) throw error;
+  return data;
+}
+
+export async function downloadBusinessFile(row: any) {
+  const path = String(row?.file_path || '').trim();
+  if (!path) throw new Error('Tài liệu thiếu đường dẫn Storage.');
+
+  const { data, error } = await supabase.storage
+    .from(BUSINESS_FILE_BUCKET)
+    .download(path);
+  if (error || !data) throw error || new Error('Không tải được tài liệu.');
+
+  const originalName = String(row?.file_name || 'document').trim() || 'document';
+  const displayName = String(row?.display_name || originalName).trim() || originalName;
+  const extensionMatch = originalName.match(/(\.[a-z0-9]{1,10})$/i);
+  const downloadName = /\.[a-z0-9]{1,10}$/i.test(displayName) || !extensionMatch
+    ? displayName
+    : `${displayName}${extensionMatch[1]}`;
+  const url = URL.createObjectURL(data);
+
+  try {
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = downloadName;
+    anchor.rel = 'noopener';
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+  } finally {
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+}
+"""
+          data = replace_once(data, old_update, new_update, 'download helper')
+          data_path.write_text(data)
+
+          pending_path = Path('src/lib/pendingBusinessUploads.ts')
+          pending = pending_path.read_text()
+          pending = replace_once(
+              pending,
+              "          'profile',\n          'locked',",
+              "          null,\n          'locked',",
+              'signup file category',
+          )
+          pending_path.write_text(pending)
+
+          css_path = Path('src/styles/pages/business-dashboard.css')
+          css = css_path.read_text()
+          css_addition = """
+
+/* Business documents: category, name and actions remain on one desktop row. */
+.d68-business-dashboard-page .d68-document-row {
+  display: grid;
+  grid-template-columns: auto 180px minmax(240px, 350px) max-content max-content max-content;
+  align-items: center;
+  gap: 10px;
+  overflow: hidden;
+}
+
+.d68-business-dashboard-page .d68-document-row__type {
+  justify-self: start;
+}
+
+.d68-business-dashboard-page .d68-document-row__category,
+.d68-business-dashboard-page .d68-document-row__name {
+  width: 100%;
+  min-width: 0;
+}
+
+.d68-business-dashboard-page .d68-document-row__category {
+  max-width: 180px;
+}
+
+.d68-business-dashboard-page .d68-document-row > .d68-dashboard-btn {
+  white-space: nowrap;
+}
+
+.d68-business-dashboard-page .d68-document-row__meta {
+  grid-column: 2 / -1;
+  min-width: 0;
+}
+
+@media (max-width: 760px) {
+  .d68-business-dashboard-page .d68-document-row {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: stretch;
+    overflow: visible;
+  }
+
+  .d68-business-dashboard-page .d68-document-row__category,
+  .d68-business-dashboard-page .d68-document-row__name {
+    width: 100%;
+    max-width: none;
+  }
+
+  .d68-business-dashboard-page .d68-document-row > .d68-dashboard-btn {
+    width: 100%;
+  }
+
+  .d68-business-dashboard-page .d68-document-row__meta {
+    grid-column: 1;
+  }
+}
+"""
+          if 'Business documents: category, name and actions remain on one desktop row.' in css:
+              raise SystemExit('document CSS already exists')
+          css_path.write_text(css.rstrip() + css_addition + '\n')
+          PY
+      - name: Verify document controls contract
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          dashboard = Path('src/pages/BusinessDashboard.tsx').read_text()
+          data = Path('src/lib/data.ts').read_text()
+          pending = Path('src/lib/pendingBusinessUploads.ts').read_text()
+          required = [
+              "{ value: 'corporate', vi: 'Pháp nhân, Tổ chức', en: 'Corporate' }",
+              "{ value: 'legal', vi: 'Pháp lý', en: 'Legal' }",
+              "{ value: 'business', vi: 'Kinh doanh và Vận hành', en: 'Business' }",
+              "{ value: 'financial', vi: 'Tài chính và Thuế', en: 'Financial' }",
+              "T(lang,'Tải tài liệu','Download')",
+              'downloadBusinessFile(row)',
+              "category: documentCategory(category) || null",
+              "category: string | null = null",
+              ".download(path)",
+              "          null,\n          'locked',",
+          ]
+          missing = [item for item in required if item not in dashboard + data + pending]
+          forbidden = [
+              'Tên file hiển thị',
+              "useState('financials')",
+              '<option value="financials">Financials</option>',
+              '<option value="profile">Profile</option>',
+          ]
+          stale = [item for item in forbidden if item in dashboard]
+          if missing or stale:
+              raise SystemExit(f'Missing: {missing}; stale: {stale}')
+          PY
+      - run: git diff --check
+      - run: npm ci --silent
+      - run: npm run build
+      - run: npm run qa:css
+      - run: npm run qa:migrations
+      - name: Commit update
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/pages/BusinessDashboard.tsx src/lib/data.ts src/lib/pendingBusinessUploads.ts src/styles/pages/business-dashboard.css
+          git commit -m "feat(business): organize and download dashboard documents"
+          git push origin HEAD:building
