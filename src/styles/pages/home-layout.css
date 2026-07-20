@@ -55,11 +55,15 @@
   background-clip: padding-box;
 }
 
-/* How-it-works inherits the common Homepage canvas. Its nested container
-   keeps only internal content padding; step cards remain white surfaces. */
+/* How-it-works inherits the common Homepage canvas. Its nested container keeps
+   only the shared horizontal gutter; the page flex gap owns vertical spacing. */
 .d68-home-page > .d68-home-how,
 .d68-home-page > .d68-home-how > .d68-home-container {
   background: transparent;
+}
+
+.d68-home-page > .d68-home-how > .d68-home-container {
+  padding-block: 0;
 }
 
 .d68-home-page > .d68-home-how {
