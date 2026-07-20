@@ -1,0 +1,86 @@
+name: Update valuation wording
+
+on:
+  pull_request:
+    branches:
+      - building
+    types:
+      - opened
+      - synchronize
+      - reopened
+
+permissions:
+  contents: write
+
+concurrency:
+  group: deals68-valuation-wording
+  cancel-in-progress: false
+
+jobs:
+  update-and-verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout building
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          rm -rf .git
+          git init -q
+          git remote add origin "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git fetch -q --depth=2 origin building main
+          git checkout -q -B building origin/building
+          test "$(git rev-parse origin/building)" = "$(git rev-parse origin/main)"
+
+      - name: Update only valuation wording
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('src/pages/Valuation.tsx')
+          text = path.read_text(encoding='utf-8')
+          replacements = [
+              (
+                  'Nhận khoảng định giá tham khảo theo quốc gia, ngành, doanh thu năm gần nhất, biên lợi nhuận EBITDA và tăng trưởng doanh thu. Hệ số do Deals68 cấu hình và có thể cập nhật theo dữ liệu thị trường.',
+                  'Nhận khoảng định giá tham khảo theo quốc gia, ngành, doanh thu năm gần nhất, giá trị tài sản (vd đất, khách sạn, nhà máy..), biên lợi nhuận EBITDA và tăng trưởng doanh thu. Hệ số do Deals68 cấu hình và có thể cập nhật theo dữ liệu thị trường.',
+              ),
+              (
+                  'Get an indicative benchmark by country, industry, latest annual revenue, EBITDA margin and revenue growth. Multiples are configured by Deals68 and can be updated with market data.',
+                  'Get an indicative valuation range based on country, industry, latest annual revenue, asset value (e.g. land, hotels and factories), EBITDA margin and revenue growth. Multiples are configured by Deals68 and can be updated with market data.',
+              ),
+              (
+                  'Dùng bội số EV/EBITDA và EV/Doanh thu theo 23 nhóm ngành chuẩn hóa.',
+                  'Dùng hệ số theo giá trị tài sản, bội số EV/EBITDA và EV/Doanh thu theo 23 nhóm ngành chuẩn hóa.',
+              ),
+              (
+                  'Uses EV/EBITDA and EV/Revenue multiples across the standardized 23 industries.',
+                  'Uses asset-value factors, EV/EBITDA multiples and EV/Revenue multiples across 23 standardized industry groups.',
+              ),
+          ]
+          for old, new in replacements:
+              if text.count(old) != 1:
+                  raise SystemExit(f'Expected exactly one wording marker: {old}')
+              text = text.replace(old, new, 1)
+          path.write_text(text, encoding='utf-8')
+          PY
+
+      - name: Verify scope
+        run: |
+          changed=$(git status --short | awk '{print $2}' | sort)
+          expected=$(printf '%s\n' '.github/workflows/update-valuation-wording.yml' 'src/pages/Valuation.tsx' | sort)
+          test "$changed" = "$expected"
+          git diff --check
+
+      - name: Install and build
+        run: |
+          npm ci --silent
+          npm run build
+
+      - name: Remove temporary workflow and commit
+        run: |
+          git rm .github/workflows/update-valuation-wording.yml
+          git config user.name "Deals68 Release Bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add src/pages/Valuation.tsx
+          git commit -m "copy(valuation): mention asset value in methodology"
+          git push origin HEAD:building
+          git push origin HEAD:main
