@@ -4,6 +4,9 @@ on:
   push:
     branches: [automation/business-report-phase5-20260721]
     paths: ['.github/workflows/phase5-release-diagnostic.yml']
+  pull_request:
+    branches: [building]
+    paths: ['.github/workflows/phase5-release-diagnostic.yml']
   workflow_dispatch:
 
 permissions:
