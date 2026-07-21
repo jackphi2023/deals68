@@ -9,6 +9,7 @@ import { seedBusinesses } from '../data/seedBusinesses';
 import { computeBusinessQuality } from './scoring';
 import { industryKeyFromLabel } from './industryTaxonomy';
 import { locationKeyFromLabel, locationOptionFromValue } from './locationTaxonomy';
+import { cachedPublicQuery, invalidatePublicQueryCache } from './publicQueryCache';
 
 type BusinessAssetRow = Record<string, any>;
 type BusinessDetailAssets = { files: BusinessAssetRow[]; images: BusinessAssetRow[] };
@@ -273,9 +274,28 @@ function applyBusinessPublicFilters(q: any, filters: any) {
   return q;
 }
 
-export async function listBusinessFacets(filters: any = {}): Promise<{ city: string; city_key: string; country_iso2: string; industry: string; industry_key: string; deal_type: string; plan: string; quality_score: number | null }[]> {
-  let q: any = supabase.from('public_businesses_safe').select('city, city_key, country_iso2, industry, industry_key, deal_type, plan, quality_score');
-  q = applyBusinessPublicFilters(q, { search: filters.search, country: filters.country });
+type BusinessFacetRow = {
+  city: string;
+  city_key: string;
+  country_iso2: string;
+  industry: string;
+  industry_key: string;
+  deal_type: string;
+  plan: string;
+  quality_score: number | null;
+};
+
+const BUSINESS_FACET_CACHE_KEY = 'public:businesses:facets';
+const BUSINESS_FACET_CACHE_TTL_MS = 30_000;
+
+async function fetchBusinessFacets(filters: any = {}): Promise<BusinessFacetRow[]> {
+  let q: any = supabase
+    .from('public_businesses_safe')
+    .select('city, city_key, country_iso2, industry, industry_key, deal_type, plan, quality_score');
+  q = applyBusinessPublicFilters(q, {
+    search: filters.search,
+    country: filters.country,
+  });
   const { data, error } = await q.limit(1000);
   if (error) throw error;
   return ((data || []) as any[]).map((row) => {
@@ -286,6 +306,24 @@ export async function listBusinessFacets(filters: any = {}): Promise<{ city: str
       clean(row.city_key);
     return { ...row, country_iso2: countryIso2, city_key: cityKey };
   });
+}
+
+export function listBusinessFacets(filters: any = {}): Promise<BusinessFacetRow[]> {
+  const search = clean(filters.search || filters.q).toLowerCase();
+  const country = clean(filters.country).toUpperCase();
+  const key = `${BUSINESS_FACET_CACHE_KEY}:${country}:${search}`;
+  return cachedPublicQuery(
+    key,
+    () => fetchBusinessFacets({
+      search: search || undefined,
+      country: country || undefined,
+    }),
+    BUSINESS_FACET_CACHE_TTL_MS,
+  );
+}
+
+export function invalidateBusinessFacetCache() {
+  invalidatePublicQueryCache(BUSINESS_FACET_CACHE_KEY);
 }
 
 export async function listBusinesses(filters: any = {}): Promise<any[]> {
@@ -302,6 +340,28 @@ export async function listBusinesses(filters: any = {}): Promise<any[]> {
   const { data, error } = await q;
   if (error) throw error;
   return ((data || []) as any[]).map(getPublicBusinessView);
+}
+
+export async function listBusinessesPage(filters: any = {}): Promise<{ rows: any[]; total: number }> {
+  const select = filters.includeHidden
+    ? '*, business_files(count), business_images(count)'
+    : businessPublicSelect;
+  const source = filters.includeHidden ? 'businesses' : 'public_businesses_safe';
+  let q: any = supabase.from(source).select(select as string, { count: 'exact' });
+  q = applyBusinessPublicFilters(q, filters);
+  const sort = filters.sort || 'featured';
+  if (sort === 'revenue') q = q.order('revenue_2025', { ascending: false, nullsFirst: false });
+  else if (sort === 'ask') q = q.order('ask_amount', { ascending: false, nullsFirst: false });
+  else if (sort === 'quality' || sort === 'featured') {
+    q = q
+      .order('quality_score', { ascending: false, nullsFirst: false })
+      .order('created_at', { ascending: false });
+  } else q = q.order('created_at', { ascending: false });
+  q = applyPagination(q, filters);
+  const { data, count, error } = await q;
+  if (error) throw error;
+  const rows = ((data || []) as any[]).map(getPublicBusinessView);
+  return { rows, total: count ?? rows.length };
 }
 
 

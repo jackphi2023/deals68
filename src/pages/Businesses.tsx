@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { countBusinesses, listBusinesses, listBusinessFacets } from '../lib/data';
+import { listBusinessesPage, listBusinessFacets } from '../lib/data';
 import { percent } from '../lib/format';
 import { toLocalizedPath } from '../lib/i18nRoutes';
 import {
@@ -17,6 +17,7 @@ import { PromotionBanner } from '../components/SiteBanners';
 import { industryKeyFromLabel } from '../lib/industryTaxonomy';
 
 const PAGE_SIZE = 20;
+const BUSINESS_LIST_LOAD_ERROR = '__d68_business_list_load_error__';
 type Tx = 'all' | 'sale' | 'invest' | 'loan' | 'jv';
 type ViewMode = 'grid' | 'list';
 type RevenueBand = '' | 'small' | 'mid' | 'large';
@@ -177,19 +178,19 @@ export default function Businesses({ lang }: { lang: Lang }) {
       try {
         const filters: any = { limit: PAGE_SIZE, offset: (page - 1) * PAGE_SIZE, sort, search: query || undefined, cityKey: cities[0] || undefined, industry: industries[0] || undefined, revenueBand: revenueBand || undefined, minQuality: quality70 ? 70 : undefined, featuredOnly: featuredOnly || undefined };
         if (tx !== 'all') filters.dealType = TX_DB[tx];
-        const [data, count] = await Promise.all([listBusinesses(filters), countBusinesses(filters).catch(() => null)]);
+        const result = await listBusinessesPage(filters);
         if (!live) return;
-        setRows((data || []).map(normalizeBusiness).filter((d) => d.slug));
-        setTotal(count);
+        setRows((result.rows || []).map(normalizeBusiness).filter((d) => d.slug));
+        setTotal(result.total);
       } catch (e: any) {
         if (!live) return;
         setRows([]); setTotal(0);
-        setError(e?.message || T(lang, 'Không tải được dữ liệu doanh nghiệp.', 'Could not load businesses.'));
+        setError(e?.message || BUSINESS_LIST_LOAD_ERROR);
       } finally { if (live) setLoading(false); }
     }
     load();
     return () => { live = false; };
-  }, [page, tx, sort, query, cities, industries, revenueBand, quality70, featuredOnly, lang]);
+  }, [page, tx, sort, query, cities, industries, revenueBand, quality70, featuredOnly]);
 
   const txCounts = useMemo(() => {
     const c: Record<Tx, number> = { all: facets.length, sale: 0, invest: 0, loan: 0, jv: 0 };
@@ -292,7 +293,7 @@ export default function Businesses({ lang }: { lang: Lang }) {
             </div>
           </div>
 
-          {error ? <div className="d68-list-error" role="alert">{error}</div> : null}
+          {error ? <div className="d68-list-error" role="alert">{error === BUSINESS_LIST_LOAD_ERROR ? T(lang, 'Không tải được dữ liệu doanh nghiệp.', 'Could not load businesses.') : error}</div> : null}
           <div className={view === 'grid' ? 'd68-grid-view' : 'd68-business-list-view'}>{loading ? Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />) : rows.map((d, i) => <DealCard key={d.id} d={d} lang={lang} view={view} tintIndex={i} />)}</div>
           {!loading && !error && !rows.length ? <div className="d68-list-empty"><b>{T(lang, 'Chưa có hồ sơ phù hợp bộ lọc hiện tại.', 'No profiles match the current filters.')}</b><p>{T(lang, 'Thử xóa bớt bộ lọc hoặc quay lại sau — hồ sơ mới hiển thị ngay khi được Admin duyệt.', 'Try clearing filters or check back soon — new profiles appear as soon as Admin approves them.')}</p><button onClick={clearAll}>{T(lang, 'Xóa toàn bộ bộ lọc', 'Clear all filters')}</button></div> : null}
 

@@ -37,6 +37,7 @@ import {
 } from '../lib/investorCriteria';
 
 const PAGE_SIZE = 20;
+const INVESTOR_LIST_LOAD_ERROR = '__d68_investor_list_load_error__';
 
 function scrollListingToTop(selector: string) {
   if (typeof window === 'undefined') return;
@@ -278,14 +279,7 @@ export default function Investors({ lang }: { lang: Lang }) {
         if (!live) return;
         setItems([]);
         setTotal(0);
-        setError(
-          loadError?.message ||
-            T(
-              lang,
-              'Không tải được dữ liệu nhà đầu tư.',
-              'Could not load investors.',
-            ),
-        );
+        setError(loadError?.message || INVESTOR_LIST_LOAD_ERROR);
       } finally {
         if (live) setLoading(false);
       }
@@ -293,7 +287,7 @@ export default function Investors({ lang }: { lang: Lang }) {
 
     load();
     return () => { live = false; };
-  }, [page, type, country, industry, stage, dealType, minTicket, search, lang]);
+  }, [page, type, country, industry, stage, dealType, minTicket, search]);
 
   useEffect(() => {
     let live = true;
@@ -610,7 +604,7 @@ export default function Investors({ lang }: { lang: Lang }) {
           {feedback ? (
             <div className="d68-investors-feedback">{feedback}</div>
           ) : null}
-          {error ? <div className="d68-investors-error">{error}</div> : null}
+          {error ? <div className="d68-investors-error">{error === INVESTOR_LIST_LOAD_ERROR ? T(lang, 'Không tải được dữ liệu nhà đầu tư.', 'Could not load investors.') : error}</div> : null}
 
           <div className="d68-investor-list">
             {loading
