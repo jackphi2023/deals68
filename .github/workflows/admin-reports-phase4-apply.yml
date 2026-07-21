@@ -1,0 +1,67 @@
+name: Apply and verify Admin Reports Phase 4
+
+on:
+  push:
+    branches:
+      - automation/admin-reports-phase4-20260721
+
+permissions:
+  contents: write
+
+jobs:
+  apply-and-verify:
+    if: github.event.head_commit.message == 'ci: apply admin reports phase 4'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: automation/admin-reports-phase4-20260721
+          fetch-depth: 30
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Enable the Admin Reports wrapper
+        shell: bash
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+
+          path = Path('src/App.tsx')
+          text = path.read_text()
+          old = "const loadAdmin = () => import('./pages/Admin');"
+          new = "const loadAdmin = () => import('./pages/AdminWithReports');"
+          if text.count(old) != 1:
+              raise SystemExit(f'Expected one Admin loader, found {text.count(old)}')
+          path.write_text(text.replace(old, new, 1))
+          PY
+      - name: Install dependencies
+        run: npm ci
+      - name: Production build
+        run: npm run build
+      - name: Admin Reports Phase 4 contract
+        run: npm run qa:admin-reports
+      - name: Core regression contracts
+        run: |
+          npm run qa:business-report-ui
+          npm run qa:css
+          npm run qa:migrations
+          npm run check:routes
+          git diff --check
+      - name: Verify isolated scope
+        shell: bash
+        run: |
+          changed="$(git diff --name-only HEAD)"
+          echo "$changed"
+          test "$changed" = "src/App.tsx"
+      - name: Commit verified loader change
+        shell: bash
+        run: |
+          rm -f .github/workflows/admin-reports-phase4-apply.yml
+          rm -f admin-reports-phase4-trigger.txt
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add src/App.tsx .github/workflows/admin-reports-phase4-apply.yml admin-reports-phase4-trigger.txt
+          git commit -m "feat(admin): enable AI reports phase 4"
+          git push origin HEAD:automation/admin-reports-phase4-20260721
