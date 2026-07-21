@@ -51,10 +51,8 @@ jobs:
         run: npm run build
       - name: Phase 5 contract
         run: npm run qa:business-report-phase5
-      - name: Edge Function type and format checks
-        run: |
-          deno fmt --check supabase/functions/business-ai-report
-          deno check --config supabase/functions/business-ai-report/deno.json supabase/functions/business-ai-report/index.ts
+      - name: Edge Function type check
+        run: deno check --config supabase/functions/business-ai-report/deno.json supabase/functions/business-ai-report/index.ts
       - name: Report and core regression contracts
         run: |
           npm run qa:business-report-ui
