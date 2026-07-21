@@ -9,12 +9,17 @@ import { seedBusinesses } from '../data/seedBusinesses';
 import { computeBusinessQuality } from './scoring';
 import { industryKeyFromLabel } from './industryTaxonomy';
 import { locationKeyFromLabel, locationOptionFromValue } from './locationTaxonomy';
+import { cachedPublicRequest } from './publicRequestCache';
 
 type BusinessAssetRow = Record<string, any>;
 type BusinessDetailAssets = { files: BusinessAssetRow[]; images: BusinessAssetRow[] };
 
 const businessPublicSelect = [
   'id','public_code','slug','title_vi','title_en','description_vi','description_en','country_iso2','city','city_key','industry','industry_key','deal_type','plan','revenue_2025','revenue_currency','ebitda_margin','ask_amount','ask_currency','stake_pct','highlights_vi','highlights_en','investment_reason_vi','investment_reason_en','data_confidence','quality_score','valuation_reasonableness','visible','status','image_url','created_at','updated_at','public_snapshot_json','public_version','last_approved_at','moderation_status','hero_image_url','business_files_count','business_images_count','business_files','business_images'
+].join(',');
+
+const businessPublicListSelect = [
+  'id','public_code','slug','title_vi','title_en','description_vi','description_en','country_iso2','city','city_key','industry','industry_key','deal_type','plan','revenue_2025','revenue_currency','ebitda_margin','ask_amount','ask_currency','stake_pct','highlights_vi','highlights_en','investment_reason_vi','investment_reason_en','data_confidence','quality_score','valuation_reasonableness','visible','status','image_url','hero_image_url','created_at','updated_at','public_version','last_approved_at','moderation_status'
 ].join(',');
 
 const investorPublicSelect = [
@@ -274,36 +279,62 @@ function applyBusinessPublicFilters(q: any, filters: any) {
 }
 
 export async function listBusinessFacets(filters: any = {}): Promise<{ city: string; city_key: string; country_iso2: string; industry: string; industry_key: string; deal_type: string; plan: string; quality_score: number | null }[]> {
-  let q: any = supabase.from('public_businesses_safe').select('city, city_key, country_iso2, industry, industry_key, deal_type, plan, quality_score');
-  q = applyBusinessPublicFilters(q, { search: filters.search, country: filters.country });
-  const { data, error } = await q.limit(1000);
-  if (error) throw error;
-  return ((data || []) as any[]).map((row) => {
-    const countryIso2 = clean(row.country_iso2) || 'VN';
-    const cityKey =
-      locationKeyFromLabel(row.city_key, countryIso2) ||
-      locationKeyFromLabel(row.city, countryIso2) ||
-      clean(row.city_key);
-    return { ...row, country_iso2: countryIso2, city_key: cityKey };
+  const cacheKey = JSON.stringify({
+    search: clean(filters.search),
+    country: clean(filters.country).toUpperCase(),
+  });
+  return cachedPublicRequest(`business-facets:${cacheKey}`, 30_000, async () => {
+    let q: any = supabase.from('public_businesses_safe').select('city, city_key, country_iso2, industry, industry_key, deal_type, plan, quality_score');
+    q = applyBusinessPublicFilters(q, { search: filters.search, country: filters.country });
+    const { data, error } = await q.limit(1000);
+    if (error) throw error;
+    return ((data || []) as any[]).map((row) => {
+      const countryIso2 = clean(row.country_iso2) || 'VN';
+      const cityKey =
+        locationKeyFromLabel(row.city_key, countryIso2) ||
+        locationKeyFromLabel(row.city, countryIso2) ||
+        clean(row.city_key);
+      return { ...row, country_iso2: countryIso2, city_key: cityKey };
+    });
   });
 }
 
+function applyBusinessSort(q: any, filters: any) {
+  const sort = filters.sort || 'featured';
+  if (sort === 'revenue') return q.order('revenue_2025', { ascending: false, nullsFirst: false });
+  if (sort === 'ask') return q.order('ask_amount', { ascending: false, nullsFirst: false });
+  if (sort === 'quality' || sort === 'featured') {
+    return q.order('quality_score', { ascending: false, nullsFirst: false }).order('created_at', { ascending: false });
+  }
+  return q.order('created_at', { ascending: false });
+}
+
 export async function listBusinesses(filters: any = {}): Promise<any[]> {
-  const select = filters.includeHidden ? '*, business_files(count), business_images(count)' : businessPublicSelect;
+  const select = filters.includeHidden ? '*, business_files(count), business_images(count)' : businessPublicListSelect;
   const source = filters.includeHidden ? 'businesses' : 'public_businesses_safe';
   let q: any = supabase.from(source).select(select as string);
   q = applyBusinessPublicFilters(q, filters);
-  const sort = filters.sort || 'featured';
-  if (sort === 'revenue') q = q.order('revenue_2025', { ascending: false, nullsFirst: false });
-  else if (sort === 'ask') q = q.order('ask_amount', { ascending: false, nullsFirst: false });
-  else if (sort === 'quality' || sort === 'featured') q = q.order('quality_score', { ascending: false, nullsFirst: false }).order('created_at', { ascending: false });
-  else q = q.order('created_at', { ascending: false });
+  q = applyBusinessSort(q, filters);
   q = applyPagination(q, filters);
   const { data, error } = await q;
   if (error) throw error;
   return ((data || []) as any[]).map(getPublicBusinessView);
 }
 
+export async function listBusinessesPage(filters: any = {}): Promise<{ rows: any[]; total: number }> {
+  const select = filters.includeHidden ? '*, business_files(count), business_images(count)' : businessPublicListSelect;
+  const source = filters.includeHidden ? 'businesses' : 'public_businesses_safe';
+  let q: any = supabase.from(source).select(select as string, { count: 'exact' });
+  q = applyBusinessPublicFilters(q, filters);
+  q = applyBusinessSort(q, filters);
+  q = applyPagination(q, filters);
+  const { data, error, count } = await q;
+  if (error) throw error;
+  return {
+    rows: ((data || []) as any[]).map(getPublicBusinessView),
+    total: count || 0,
+  };
+}
 
 export async function listHomepageBusinesses(limit = 6): Promise<any[]> {
   const safeLimit = Math.max(
@@ -330,7 +361,7 @@ export async function listHomepageBusinesses(limit = 6): Promise<any[]> {
   const ids = orderedRanked.map((row: any) => row.business_id);
   let query: any = supabase
     .from('public_businesses_safe')
-    .select(businessPublicSelect as string)
+    .select(businessPublicListSelect as string)
     .in('id', ids);
 
   query = applyBusinessPublicFilters(query, {});
