@@ -6,23 +6,23 @@ const check = (condition, message) => {
   if (!condition) failures.push(message);
 };
 
-const app = fs.readFileSync('src/App.tsx', 'utf8');
+const main = fs.readFileSync('src/main.tsx', 'utf8');
 const navigation = fs.readFileSync('src/config/adminNavigation.ts', 'utf8');
-const wrapper = fs.readFileSync('src/pages/AdminWithReports.tsx', 'utf8');
 const panel = fs.readFileSync('src/features/adminReports/AdminReportsPortal.tsx', 'utf8');
 const api = fs.readFileSync('src/features/adminReports/adminReportApi.ts', 'utf8');
 const css = fs.readFileSync('src/features/adminReports/admin-reports.css', 'utf8');
 const admin = fs.readFileSync('src/pages/Admin.tsx', 'utf8');
+const app = fs.readFileSync('src/App.tsx', 'utf8');
 
 check(
-  app.includes("const loadAdmin = () => import('./pages/AdminWithReports');"),
-  'Admin routes must lazy-load the Phase 4 wrapper.',
+  main.includes("import AdminReportsPortal from './features/adminReports/AdminReportsPortal';") &&
+    main.includes('<App />') &&
+    main.includes('<AdminReportsPortal />'),
+  'App root must register the route-scoped Admin Reports portal inside Router/Auth.',
 );
 check(
-  wrapper.includes("import Admin from './Admin';") &&
-    wrapper.includes('<Admin />') &&
-    wrapper.includes('<AdminReportsPortal />'),
-  'Wrapper must preserve the existing Admin shell and add only the report portal.',
+  app.includes("const loadAdmin = () => import('./pages/Admin');"),
+  'Existing Admin route loader must remain unchanged.',
 );
 check(
   navigation.includes("| 'reports'") &&
@@ -37,7 +37,7 @@ check(
 );
 check(
   panel.includes("request.status === 'completed'") &&
-    panel.includes("reportArtifactOf(request)") &&
+    panel.includes('reportArtifactOf(request)') &&
     panel.includes('disabled={!artifact'),
   'Completed-report listing or safe PDF availability gate is missing.',
 );
@@ -84,6 +84,12 @@ check(
   admin.includes('export default function Admin()') &&
     !admin.includes('AdminReportsPortal'),
   'Existing Admin implementation must remain isolated from the Phase 4 module.',
+);
+check(
+  !fs.existsSync('src/pages/AdminWithReports.tsx') &&
+    !fs.existsSync('.github/workflows/admin-reports-phase4-apply.yml') &&
+    !fs.existsSync('admin-reports-phase4-trigger.txt'),
+  'Temporary Phase 4 integration artifacts must not remain.',
 );
 
 if (failures.length) {
