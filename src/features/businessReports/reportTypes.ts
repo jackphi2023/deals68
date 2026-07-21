@@ -8,6 +8,7 @@ export type ReportGateStatus =
   | 'review_required';
 
 export type ReportGrade = 'blocked' | 'limited' | 'full';
+export type ReportGeneratorMode = 'deterministic' | 'openai_assisted';
 
 export type ReportRateAction = {
   allowed?: boolean;
@@ -84,6 +85,56 @@ export type BusinessReportStatus = {
   last_completed_at?: string | null;
   next_allowed_at?: string | null;
   latest_preflight?: ReportPreflight | null;
+};
+
+export type BusinessReportArtifact = {
+  id: string;
+  request_id?: string;
+  business_id: string;
+  language?: ReportLang;
+  report_grade?: Exclude<ReportGrade, 'blocked'>;
+  generator_mode?: ReportGeneratorMode;
+  source_label?: 'Deals68 AI Report' | string;
+  source_hash?: string | null;
+  file_name?: string;
+  mime_type?: 'application/pdf' | string;
+  size_bytes?: number;
+  sha256?: string;
+  generated_at?: string;
+  download_available?: boolean;
+};
+
+export type ReportGenerateResponse = {
+  ok?: boolean;
+  existing?: boolean;
+  error?: string;
+  message?: string;
+  request_id?: string;
+  report_id?: string;
+  file_name?: string;
+  generated_at?: string;
+  report_grade?: Exclude<ReportGrade, 'blocked'>;
+  generator_mode?: ReportGeneratorMode;
+  source_label?: string;
+  size_bytes?: number;
+  sha256?: string;
+  retry_after_seconds?: number;
+  next_allowed_at?: string | null;
+  preflight?: ReportPreflight | null;
+  report?: BusinessReportArtifact | null;
+};
+
+export type ReportDownloadResponse = {
+  ok?: boolean;
+  error?: string;
+  message?: string;
+  report_id?: string;
+  source_label?: string;
+  file_name?: string;
+  signed_url?: string;
+  expires_in_seconds?: number;
+  retry_after_seconds?: number;
+  next_allowed_at?: string | null;
 };
 
 export type BusinessReportAlert = {
