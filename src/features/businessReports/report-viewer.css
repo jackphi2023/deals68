@@ -260,9 +260,9 @@
   font-size: 13px;
 }
 
-.d68-report-viewer__fact-meta {
+.d68-report-viewer .d68-report-viewer__fact-meta {
   margin: 6px 0 0;
-  color: #64748b !important;
+  color: #64748b;
   font-size: 12px;
 }
 
