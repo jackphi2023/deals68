@@ -4,31 +4,69 @@ import Header from './components/Header';
 import SeoManager from './components/SeoManager';
 import Footer from './components/Footer';
 import Home from './pages/Home';
-import Businesses from './pages/Businesses';
-import BusinessDetail from './pages/BusinessDetail';
-import Investors from './pages/Investors';
-import InvestorDetail from './pages/InvestorDetail';
-import Pricing from './pages/Pricing';
-import Login from './pages/Login';
-import ForgotPassword from './pages/ForgotPassword';
-import ResetPassword from './pages/ResetPassword';
-import Register from './pages/Register';
-import Valuation from './pages/Valuation';
-import ModuleScreen from './pages/ModuleScreen';
-import NotFound from './pages/NotFound';
 import { useAuth } from './contexts/AuthContext';
 import { langFromPath, stripLangPrefix, toLocalizedPath } from './lib/i18nRoutes';
 
-const BusinessDashboard = lazy(() => import('./pages/BusinessDashboard'));
-const InvestorDashboard = lazy(() => import('./pages/InvestorDashboard'));
-const Admin = lazy(() => import('./pages/Admin'));
-const AdminProposals = lazy(() => import('./pages/AdminProposals'));
-const AdminValuation = lazy(() => import('./pages/AdminValuation'));
-const About = lazy(() => import('./pages/StaticPages').then((m) => ({ default: m.About })));
-const Terms = lazy(() => import('./pages/StaticPages').then((m) => ({ default: m.Terms })));
-const Privacy = lazy(() => import('./pages/StaticPages').then((m) => ({ default: m.Privacy })));
-const Contact = lazy(() => import('./pages/StaticPages').then((m) => ({ default: m.Contact })));
-const MarketPartner = lazy(() => import('./pages/StaticPages').then((m) => ({ default: m.MarketPartner })));
+type RouteLoader = () => Promise<unknown>;
+type IdleCapableWindow = Window & {
+  requestIdleCallback?: (
+    callback: () => void,
+    options?: { timeout: number },
+  ) => number;
+  cancelIdleCallback?: (handle: number) => void;
+};
+
+const loadBusinesses = () => import('./pages/Businesses');
+const loadBusinessDetail = () => import('./pages/BusinessDetail');
+const loadInvestors = () => import('./pages/Investors');
+const loadInvestorDetail = () => import('./pages/InvestorDetail');
+const loadPricing = () => import('./pages/Pricing');
+const loadLogin = () => import('./pages/Login');
+const loadForgotPassword = () => import('./pages/ForgotPassword');
+const loadResetPassword = () => import('./pages/ResetPassword');
+const loadRegister = () => import('./pages/Register');
+const loadValuation = () => import('./pages/Valuation');
+const loadModuleScreen = () => import('./pages/ModuleScreen');
+const loadNotFound = () => import('./pages/NotFound');
+const loadBusinessDashboard = () => import('./pages/BusinessDashboard');
+const loadInvestorDashboard = () => import('./pages/InvestorDashboard');
+const loadAdmin = () => import('./pages/Admin');
+const loadAdminValuation = () => import('./pages/AdminValuation');
+const loadStaticPages = () => import('./pages/StaticPages');
+
+const Businesses = lazy(loadBusinesses);
+const BusinessDetail = lazy(loadBusinessDetail);
+const Investors = lazy(loadInvestors);
+const InvestorDetail = lazy(loadInvestorDetail);
+const Pricing = lazy(loadPricing);
+const Login = lazy(loadLogin);
+const ForgotPassword = lazy(loadForgotPassword);
+const ResetPassword = lazy(loadResetPassword);
+const Register = lazy(loadRegister);
+const Valuation = lazy(loadValuation);
+const ModuleScreen = lazy(loadModuleScreen);
+const NotFound = lazy(loadNotFound);
+const BusinessDashboard = lazy(loadBusinessDashboard);
+const InvestorDashboard = lazy(loadInvestorDashboard);
+const Admin = lazy(loadAdmin);
+const AdminValuation = lazy(loadAdminValuation);
+const About = lazy(() => loadStaticPages().then((m) => ({ default: m.About })));
+const Terms = lazy(() => loadStaticPages().then((m) => ({ default: m.Terms })));
+const Privacy = lazy(() => loadStaticPages().then((m) => ({ default: m.Privacy })));
+const Contact = lazy(() => loadStaticPages().then((m) => ({ default: m.Contact })));
+const MarketPartner = lazy(() => loadStaticPages().then((m) => ({ default: m.MarketPartner })));
+
+function likelyNextRouteLoaders(pathname: string): RouteLoader[] {
+  const path = stripLangPrefix(pathname);
+  if (path === '/') return [loadBusinesses, loadInvestors, loadPricing];
+  if (path === '/businesses') return [loadBusinessDetail];
+  if (path.startsWith('/businesses/')) return [loadInvestors];
+  if (path === '/investors') return [loadInvestorDetail];
+  if (path.startsWith('/investors/')) return [loadBusinesses];
+  if (path === '/pricing') return [loadRegister];
+  if (path === '/login') return [loadForgotPassword];
+  return [];
+}
 
 function RouteFallback() {
   return <section style={{ maxWidth: 960, margin: '0 auto', padding: '48px 24px', color: '#64748B' }}>Loading...</section>;
@@ -39,6 +77,53 @@ function ScrollToTop() {
   useEffect(() => {
     if (typeof window !== 'undefined') window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
   }, [location.pathname, location.search]);
+  return null;
+}
+
+function RoutePrefetch() {
+  const location = useLocation();
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+    const connection = (navigator as Navigator & {
+      connection?: { saveData?: boolean; effectiveType?: string };
+    }).connection;
+    if (
+      connection?.saveData ||
+      connection?.effectiveType === 'slow-2g' ||
+      connection?.effectiveType === '2g'
+    ) {
+      return undefined;
+    }
+
+    const loaders = likelyNextRouteLoaders(location.pathname);
+    if (!loaders.length) return undefined;
+
+    let cancelled = false;
+    const timers: number[] = [];
+    const run = () => {
+      loaders.forEach((loader, index) => {
+        timers.push(window.setTimeout(() => {
+          if (!cancelled) void loader().catch(() => undefined);
+        }, index * 700));
+      });
+    };
+
+    const idleWindow = window as IdleCapableWindow;
+    const idleHandle = idleWindow.requestIdleCallback
+      ? idleWindow.requestIdleCallback(run, { timeout: 5000 })
+      : undefined;
+    if (idleHandle === undefined) {
+      timers.push(window.setTimeout(run, 3500));
+    }
+
+    return () => {
+      cancelled = true;
+      timers.forEach((timer) => window.clearTimeout(timer));
+      if (idleHandle !== undefined) idleWindow.cancelIdleCallback?.(idleHandle);
+    };
+  }, [location.pathname]);
+
   return null;
 }
 
@@ -102,6 +187,7 @@ export default function App(){
 
   return <div data-lang={lang}>
     <ScrollToTop />
+    <RoutePrefetch />
     <LanguageMemory />
     <SeoManager />
     <Header lang={lang}/>
