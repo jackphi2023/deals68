@@ -40,7 +40,6 @@ jobs:
           const fs = require('fs');
           const path = require('path');
           const zlib = require('zlib');
-
           function files(dir, extension) {
             const out = [];
             for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -50,12 +49,10 @@ jobs:
             }
             return out;
           }
-
           function bytes(file) {
             const content = fs.readFileSync(file);
             return { raw: content.length, gzip: zlib.gzipSync(content, { level: 9 }).length };
           }
-
           function summarize(dist) {
             const js = files(dist, '.js');
             const css = files(dist, '.css');
@@ -85,7 +82,6 @@ jobs:
               largestJs,
             };
           }
-
           const baseline = summarize('/tmp/phase2-baseline/dist');
           const optimized = summarize('/tmp/phase2-optimized-dist');
           const pct = (before, after) => before ? Number((((before - after) / before) * 100).toFixed(2)) : 0;
@@ -103,12 +99,8 @@ jobs:
           };
           fs.writeFileSync('/tmp/performance-phase2-metrics.json', JSON.stringify(report, null, 2));
           console.log(JSON.stringify(report, null, 2));
-          if (optimized.initial.gzip >= baseline.initial.gzip) {
-            throw new Error('Initial gzip payload did not improve.');
-          }
-          if (optimized.largestJs.gzip >= baseline.largestJs.gzip) {
-            throw new Error('Largest JS chunk did not improve.');
-          }
+          if (optimized.initial.gzip >= baseline.initial.gzip) throw new Error('Initial gzip payload did not improve.');
+          if (optimized.largestJs.gzip >= baseline.largestJs.gzip) throw new Error('Largest JS chunk did not improve.');
           NODE
       - name: Verify route split contracts
         shell: bash
@@ -123,21 +115,21 @@ jobs:
           for (const page of required) {
             if (!app.includes(`import('./pages/${page}')`)) throw new Error(`Missing lazy route: ${page}`);
           }
-          if (!app.includes('requestIdleCallback') || !app.includes("effectiveType === '2g'")) {
-            throw new Error('Safe idle prefetch guard missing.');
-          }
+          if (!app.includes('requestIdleCallback') || !app.includes("effectiveType === '2g'")) throw new Error('Safe idle prefetch guard missing.');
           for (const chunk of ['react-vendor','supabase-vendor','icons-vendor']) {
             if (!vite.includes(`'${chunk}'`)) throw new Error(`Missing vendor chunk: ${chunk}`);
           }
           console.log('Route split and prefetch contracts passed.');
           NODE
           git diff --check
-      - name: Run release QA
-        run: |
-          npm run qa:css
-          npm run qa:migrations
-          npm run check:routes
-          npm run qa:release
+      - name: CSS architecture QA
+        run: npm run qa:css
+      - name: Migration state QA
+        run: npm run qa:migrations
+      - name: Route contract QA
+        run: npm run check:routes
+      - name: Release QA
+        run: npm run qa:release
       - uses: actions/upload-artifact@v4
         if: always()
         with:
