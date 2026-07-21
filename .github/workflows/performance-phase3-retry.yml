@@ -1,0 +1,117 @@
+name: Retry performance phase 3 data optimization
+
+on:
+  pull_request:
+    branches: [building]
+    types: [synchronize]
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.event.pull_request.head.ref == 'automation/performance-phase3-data-20260721'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: automation/performance-phase3-data-20260721
+          fetch-depth: 20
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Normalize patch anchors and apply Phase 3
+        shell: bash
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+          import re
+
+          listing = Path('src/lib/investorListing.ts')
+          text = listing.read_text()
+          pattern = r"  const rows = await listInvestors\(\{\n\s*limit: MAX_CANONICAL_INVESTOR_ROWS,\n\s*offset: 0,\n\s*minTicket: filters\.minTicket,\n\s*maxTicket: filters\.maxTicket,\n\s*sort: filters\.sort,\n\s*\}\);"
+          expected = '''  const rows = await listInvestors({
+            limit: MAX_CANONICAL_INVESTOR_ROWS,
+            offset: 0,
+            minTicket: filters.minTicket,
+            maxTicket: filters.maxTicket,
+            sort: filters.sort,
+          });'''
+          text, count = re.subn(pattern, expected, text, count=1)
+          if count != 1:
+            raise SystemExit(f'investor anchor normalization failed: {count}')
+          listing.write_text(text)
+
+          detail = Path('src/pages/BusinessDetail.tsx')
+          text = detail.read_text()
+          pattern = r"        const assets = await getBusinessDetailAssets\(b\.id, \{ publicOnly: !\(canDownload \|\| ownerViewing\) \}\)\.catch\(\(\) => \(\{ files: \[\], images: \[\] \}\)\);\n\s*if \(!live\) return;\n\s*setDocs\(\(assets\.files \|\| \[\]\) as Doc\[\]\);\n\s*setImages\(\(assets\.images \|\| \[\]\) as Img\[\]\);\n\n\s*const industry = primaryIndustry\(b\.industry\);\n\s*const related = await listBusinesses\(\{ limit: 4, industry: industry \|\| undefined, sort: 'featured' \}\)\.catch\(\(\) => \[\]\);\n\s*if \(!live\) return;\n\s*setSimilar\(\(related \|\| \[\]\)\.map\(\(row: any\) => normalizeSimilar\(row, lang\)\)\.filter\(\(row: SimilarDeal \| null\): row is SimilarDeal => !!row && row\.slug !== b\.slug\)\.slice\(0, 3\)\);"
+          expected = '''        const assets = await getBusinessDetailAssets(b.id, { publicOnly: !(canDownload || ownerViewing) }).catch(() => ({ files: [], images: [] }));
+                  if (!live) return;
+                  setDocs((assets.files || []) as Doc[]);
+                  setImages((assets.images || []) as Img[]);
+
+                  const industry = primaryIndustry(b.industry);
+                  const related = await listBusinesses({ limit: 4, industry: industry || undefined, sort: 'featured' }).catch(() => []);
+                  if (!live) return;
+                  setSimilar((related || []).map((row: any) => normalizeSimilar(row, lang)).filter((row: SimilarDeal | null): row is SimilarDeal => !!row && row.slug !== b.slug).slice(0, 3));'''
+          text, count = re.subn(pattern, expected, text, count=1)
+          if count != 1:
+            raise SystemExit(f'business detail anchor normalization failed: {count}')
+          detail.write_text(text)
+
+          source = Path('.github/workflows/performance-phase3-apply.yml').read_text().splitlines()
+          start = next(i for i, line in enumerate(source) if "python3 <<'PY'" in line) + 1
+          end = next(i for i in range(start, len(source)) if source[i].strip() == 'PY')
+          script = '\n'.join(line[10:] if line.startswith('          ') else line for line in source[start:end]) + '\n'
+          Path('/tmp/phase3.py').write_text(script)
+          PY
+          python3 /tmp/phase3.py
+      - name: Install dependencies
+        run: npm ci
+      - name: Production build
+        run: npm run build
+      - name: Core QA
+        run: |
+          npm run qa:css
+          npm run qa:migrations
+          npm run check:routes
+      - name: Verify Phase 3 contracts
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const data = fs.readFileSync('src/lib/data.ts', 'utf8');
+          const home = fs.readFileSync('src/pages/Home.tsx', 'utf8');
+          const businesses = fs.readFileSync('src/pages/Businesses.tsx', 'utf8');
+          const listing = fs.readFileSync('src/lib/investorListing.ts', 'utf8');
+          const detail = fs.readFileSync('src/pages/BusinessDetail.tsx', 'utf8');
+          const migration = fs.readFileSync('supabase/migrations/20260721042000_public_data_performance_v1.sql', 'utf8');
+          const checks = [
+            [data.includes('businessPublicListSelect'), 'lightweight Business projection'],
+            [data.includes("{ count: 'exact' }"), 'combined Business rows/count'],
+            [data.includes('business-facets:'), 'facet cache'],
+            [home.includes('getPublicHomepageBootstrap(6, 80)'), 'single Homepage bootstrap RPC'],
+            [businesses.includes('listBusinessesPage(filters)'), 'Business listing one request'],
+            [listing.includes('canonical-investors:'), 'Investor dataset cache'],
+            [detail.includes('const [assets, related] = await Promise.all'), 'parallel Business detail data'],
+            [migration.includes('get_public_homepage_bootstrap'), 'Homepage RPC migration'],
+            [migration.includes('investors_public_ranking_idx'), 'Investor ranking index'],
+          ];
+          for (const [ok, label] of checks) {
+            if (!ok) throw new Error(label);
+            console.log(`PASS: ${label}`);
+          }
+          NODE
+          git diff --check
+      - name: Commit verified implementation
+        shell: bash
+        run: |
+          rm -f .github/workflows/performance-phase3-apply.yml
+          rm -f .github/workflows/performance-phase3-diagnostic.yml
+          rm -f .github/workflows/performance-phase3-retry.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src supabase/migrations/20260721042000_public_data_performance_v1.sql .github/workflows/performance-phase3-apply.yml .github/workflows/performance-phase3-diagnostic.yml .github/workflows/performance-phase3-retry.yml
+          git commit -m "perf(data): reduce public requests and query payloads"
+          git push origin HEAD:automation/performance-phase3-data-20260721
