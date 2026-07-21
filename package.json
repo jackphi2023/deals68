@@ -29,7 +29,8 @@
     "qa:css": "node scripts/deals68-css-architecture-check.mjs",
     "qa:migrations": "node scripts/deals68-migration-state-check.mjs",
     "qa:fix-series": "node scripts/deals68-ui-business-fixes-v1-contract-check.mjs",
-    "qa:asset-valuation": "node scripts/deals68-asset-valuation-v1-check.mjs"
+    "qa:asset-valuation": "node scripts/deals68-asset-valuation-v1-check.mjs",
+    "qa:business-report-ui": "node scripts/deals68-business-report-ui-check.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.45.4",
