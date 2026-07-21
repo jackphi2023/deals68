@@ -7,7 +7,13 @@ import {
 } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, useLocation } from 'react-router-dom';
-import { AlertTriangle, Download, FileSearch, LoaderCircle } from 'lucide-react';
+import {
+  AlertTriangle,
+  Download,
+  FilePlus2,
+  FileSearch,
+  LoaderCircle,
+} from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { getMyBusiness } from '../../lib/data';
 import {
@@ -16,13 +22,17 @@ import {
   toLocalizedPath,
 } from '../../lib/i18nRoutes';
 import {
+  downloadBusinessReport,
+  generateBusinessReport,
   getBusinessReportRateStatus,
   getBusinessReportStatus,
+  getLatestBusinessReport,
   listBusinessReportAlerts,
   runBusinessReportPreflight,
 } from './reportApi';
 import type {
   BusinessReportAlert,
+  BusinessReportArtifact,
   BusinessReportStatus,
   ReportLang,
   ReportMessageItem,
@@ -36,8 +46,9 @@ type PanelMode =
   | 'idle'
   | 'checking'
   | 'processing'
+  | 'downloading'
+  | 'completed'
   | 'blocked'
-  | 'ready'
   | 'error';
 
 const T = (lang: ReportLang, vi: string, en: string) =>
@@ -63,6 +74,12 @@ function formatRetry(seconds: number, lang: ReportLang) {
     `Bạn có thể thực hiện lại sau khoảng ${minutes} phút.`,
     `You can try again in about ${minutes} minute(s).`,
   );
+}
+
+function formatDate(value: string | null | undefined, lang: ReportLang) {
+  const date = new Date(value || 0);
+  if (!Number.isFinite(date.getTime())) return '';
+  return date.toLocaleString(lang === 'en' ? 'en-US' : 'vi-VN');
 }
 
 function useReportMount(pathname: string) {
@@ -131,12 +148,16 @@ function PanelAction({
   inactive,
   onClick,
   lang,
+  variant = 'primary',
+  ariaLabel,
 }: {
   children: ReactNode;
   disabled: boolean;
   inactive: boolean;
   onClick: () => void;
   lang: ReportLang;
+  variant?: 'primary' | 'secondary';
+  ariaLabel: string;
 }) {
   const tooltip = inactive
     ? T(
@@ -154,10 +175,10 @@ function PanelAction({
     >
       <button
         type="button"
-        className="d68-business-report-panel__button"
+        className={`d68-business-report-panel__button ${variant === 'secondary' ? 'secondary' : ''}`}
         disabled={disabled}
         onClick={onClick}
-        aria-label={T(lang, 'Tải báo cáo', 'Download report')}
+        aria-label={ariaLabel}
       >
         {children}
       </button>
@@ -170,6 +191,7 @@ function BusinessReportPanel({ business, lang }: { business: any; lang: ReportLa
   const [status, setStatus] = useState<BusinessReportStatus>({});
   const [rateStatus, setRateStatus] = useState<ReportRateStatus>({});
   const [preflight, setPreflight] = useState<ReportPreflight | null>(null);
+  const [latestReport, setLatestReport] = useState<BusinessReportArtifact | null>(null);
   const [alerts, setAlerts] = useState<BusinessReportAlert[]>([]);
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -185,21 +207,25 @@ function BusinessReportPanel({ business, lang }: { business: any; lang: ReportLa
     setErrorMessage('');
 
     try {
-      const [nextStatus, nextRate, nextAlerts] = await Promise.all([
+      const [nextStatus, nextRate, nextAlerts, nextReport] = await Promise.all([
         getBusinessReportStatus(business.id),
         getBusinessReportRateStatus(business.id),
         listBusinessReportAlerts(business.id),
+        getLatestBusinessReport(business.id),
       ]);
 
       setStatus(nextStatus);
       setRateStatus(nextRate);
       setAlerts(nextAlerts);
+      setLatestReport(nextReport);
       setPreflight(nextStatus.latest_preflight || null);
 
       if (nextStatus.active_request_id || nextStatus.reason === 'REPORT_IN_PROGRESS') {
         setMode('processing');
       } else if (nextStatus.latest_preflight?.allow_report === false) {
         setMode('blocked');
+      } else if (nextReport?.id) {
+        setMode('completed');
       } else {
         setMode('idle');
       }
@@ -223,10 +249,12 @@ function BusinessReportPanel({ business, lang }: { business: any; lang: ReportLa
   }, [mode, refresh]);
 
   const generateRate = rateStatus.generate;
-  const rateLimited = active && generateRate?.allowed === false;
+  const downloadRate = rateStatus.download;
+  const generateLimited = active && generateRate?.allowed === false;
+  const downloadLimited = active && downloadRate?.allowed === false;
   const inactive = !active;
-  const busy = mode === 'loading' || mode === 'checking' || mode === 'processing';
-  const disabled = inactive || busy || rateLimited;
+  const generating = mode === 'loading' || mode === 'checking' || mode === 'processing';
+  const downloading = mode === 'downloading';
 
   const primaryBlocking = useMemo(() => {
     const candidates = [
@@ -258,7 +286,10 @@ function BusinessReportPanel({ business, lang }: { business: any; lang: ReportLa
       return T(lang, 'Đang kiểm tra dữ liệu hồ sơ...', 'Checking profile data...');
     }
     if (mode === 'processing') {
-      return T(lang, 'Đang tạo báo cáo...', 'Creating report...');
+      return T(lang, 'Đang tạo báo cáo và file PDF...', 'Creating the report and PDF...');
+    }
+    if (mode === 'downloading') {
+      return T(lang, 'Đang chuẩn bị file tải xuống...', 'Preparing the report download...');
     }
     if (mode === 'error') return errorMessage;
     if (mode === 'blocked') {
@@ -271,15 +302,19 @@ function BusinessReportPanel({ business, lang }: { business: any; lang: ReportLa
         )
       );
     }
-    if (rateLimited) {
-      return formatRetry(Number(generateRate?.retry_after_seconds || 3600), lang);
-    }
-    if (mode === 'ready') {
+    if (latestReport?.id) {
+      const created = formatDate(latestReport.generated_at, lang);
+      const modeLabel = latestReport.generator_mode === 'openai_assisted'
+        ? T(lang, 'AI hỗ trợ', 'AI-assisted')
+        : T(lang, 'phân tích theo dữ liệu nguồn', 'source-grounded analysis');
       return T(
         lang,
-        'Hồ sơ đã đủ điều kiện tiền kiểm tra. Dịch vụ sinh báo cáo/PDF sẽ được kết nối ở phiên xử lý tiếp theo.',
-        'The profile passed preflight. Report/PDF generation will be connected in the next processing phase.',
+        `Báo cáo đã sẵn sàng${created ? ` · ${created}` : ''} · ${modeLabel}. Nguồn file: Deals68 AI Report.`,
+        `The report is ready${created ? ` · ${created}` : ''} · ${modeLabel}. File source: Deals68 AI Report.`,
       );
+    }
+    if (generateLimited) {
+      return formatRetry(Number(generateRate?.retry_after_seconds || 3600), lang);
     }
     return T(
       lang,
@@ -288,8 +323,8 @@ function BusinessReportPanel({ business, lang }: { business: any; lang: ReportLa
     );
   })();
 
-  async function handleReportAction() {
-    if (!business?.id || disabled) return;
+  async function handleGenerate() {
+    if (!business?.id || inactive || generating || generateLimited) return;
     setMode('checking');
     setErrorMessage('');
 
@@ -309,14 +344,37 @@ function BusinessReportPanel({ business, lang }: { business: any; lang: ReportLa
         return;
       }
 
-      // Phase 3 intentionally stops after deterministic preflight. It does not
-      // reserve a report job until the report worker/PDF service is available.
-      setMode('ready');
+      if (nextRate.generate?.allowed === false) {
+        setMode(latestReport?.id ? 'completed' : 'idle');
+        return;
+      }
+
+      setMode('processing');
+      const generated = await generateBusinessReport(business.id, lang);
+      if (!generated.ok) throw Object.assign(new Error(generated.message || generated.error), generated);
+      await refresh();
     } catch (error: any) {
       setMode('error');
       setErrorMessage(
         error?.message ||
-          T(lang, 'Không thể kiểm tra điều kiện tạo báo cáo.', 'Could not check report eligibility.'),
+          T(lang, 'Không thể tạo báo cáo.', 'Could not generate the report.'),
+      );
+    }
+  }
+
+  async function handleDownload() {
+    if (!business?.id || !latestReport?.id || inactive || downloading || downloadLimited) return;
+    setMode('downloading');
+    setErrorMessage('');
+
+    try {
+      await downloadBusinessReport(business.id, latestReport);
+      await refresh();
+    } catch (error: any) {
+      setMode('error');
+      setErrorMessage(
+        error?.message ||
+          T(lang, 'Không thể tải báo cáo.', 'Could not download the report.'),
       );
     }
   }
@@ -324,7 +382,7 @@ function BusinessReportPanel({ business, lang }: { business: any; lang: ReportLa
   const metadataClass =
     mode === 'error' || mode === 'blocked'
       ? 'error'
-      : mode === 'ready'
+      : mode === 'completed'
         ? 'success'
         : '';
 
@@ -353,11 +411,17 @@ function BusinessReportPanel({ business, lang }: { business: any; lang: ReportLa
           className={`d68-business-report-panel__meta ${metadataClass}`}
           aria-live="polite"
         >
-          {mode === 'processing' || mode === 'checking' || mode === 'loading' ? (
+          {generating || downloading ? (
             <LoaderCircle size={14} className="d68-business-report-panel__spinner" />
           ) : null}
           <span>{metadata}</span>
         </div>
+
+        {latestReport?.source_label ? (
+          <div className="d68-business-report-panel__source">
+            {T(lang, 'Nguồn file báo cáo', 'Report file source')}: <b>{latestReport.source_label}</b>
+          </div>
+        ) : null}
 
         {notice ? (
           <div className="d68-business-report-panel__authority-notice">
@@ -383,25 +447,58 @@ function BusinessReportPanel({ business, lang }: { business: any; lang: ReportLa
         ) : null}
       </div>
 
-      <PanelAction
-        disabled={disabled}
-        inactive={inactive}
-        onClick={handleReportAction}
-        lang={lang}
-      >
-        {busy ? (
-          <LoaderCircle size={18} className="d68-business-report-panel__spinner" />
-        ) : (
-          <Download size={18} aria-hidden="true" />
-        )}
-        <span>
-          {mode === 'processing'
-            ? T(lang, 'Đang tạo báo cáo...', 'Creating report...')
-            : mode === 'checking'
-              ? T(lang, 'Đang kiểm tra...', 'Checking...')
-              : T(lang, 'Tải báo cáo', 'Download report')}
-        </span>
-      </PanelAction>
+      <div className="d68-business-report-panel__actions">
+        {latestReport?.id ? (
+          <PanelAction
+            disabled={inactive || downloading || generating || downloadLimited}
+            inactive={inactive}
+            onClick={handleDownload}
+            lang={lang}
+            ariaLabel={T(lang, 'Tải báo cáo', 'Download report')}
+          >
+            {downloading ? (
+              <LoaderCircle size={18} className="d68-business-report-panel__spinner" />
+            ) : (
+              <Download size={18} aria-hidden="true" />
+            )}
+            <span>
+              {downloading
+                ? T(lang, 'Đang tải...', 'Downloading...')
+                : T(lang, 'Tải báo cáo', 'Download report')}
+            </span>
+          </PanelAction>
+        ) : null}
+
+        <PanelAction
+          disabled={inactive || generating || downloading || generateLimited}
+          inactive={inactive}
+          onClick={handleGenerate}
+          lang={lang}
+          variant={latestReport?.id ? 'secondary' : 'primary'}
+          ariaLabel={T(lang, latestReport?.id ? 'Tạo báo cáo mới' : 'Tạo báo cáo', latestReport?.id ? 'Generate new report' : 'Generate report')}
+        >
+          {generating ? (
+            <LoaderCircle size={18} className="d68-business-report-panel__spinner" />
+          ) : (
+            <FilePlus2 size={18} aria-hidden="true" />
+          )}
+          <span>
+            {mode === 'processing'
+              ? T(lang, 'Đang tạo báo cáo...', 'Creating report...')
+              : mode === 'checking'
+                ? T(lang, 'Đang kiểm tra...', 'Checking...')
+                : T(
+                    lang,
+                    latestReport?.id ? 'Tạo báo cáo mới' : 'Tạo báo cáo',
+                    latestReport?.id ? 'Generate new report' : 'Generate report',
+                  )}
+          </span>
+        </PanelAction>
+
+        {downloadLimited && latestReport?.id ? (
+          <small>{formatRetry(Number(downloadRate?.retry_after_seconds || 3600), lang)}</small>
+        ) : null}
+      </div>
     </section>
   );
 }
