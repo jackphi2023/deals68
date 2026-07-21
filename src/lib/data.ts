@@ -18,6 +18,15 @@ const businessPublicSelect = [
   'id','public_code','slug','title_vi','title_en','description_vi','description_en','country_iso2','city','city_key','industry','industry_key','deal_type','plan','revenue_2025','revenue_currency','ebitda_margin','ask_amount','ask_currency','stake_pct','highlights_vi','highlights_en','investment_reason_vi','investment_reason_en','data_confidence','quality_score','valuation_reasonableness','visible','status','image_url','created_at','updated_at','public_snapshot_json','public_version','last_approved_at','moderation_status','hero_image_url','business_files_count','business_images_count','business_files','business_images'
 ].join(',');
 
+
+const businessCollectionSelect = [
+  'id','public_code','slug','title_vi','title_en','description_vi','description_en','country_iso2','city','city_key','industry','industry_key','deal_type','plan','revenue_2025','revenue_currency','ebitda_margin','ask_amount','ask_currency','stake_pct','highlights_vi','highlights_en','investment_reason_vi','investment_reason_en','data_confidence','quality_score','valuation_reasonableness','visible','status','image_url','created_at','updated_at','public_version','last_approved_at','moderation_status','hero_image_url','business_files_count','business_images_count'
+].join(',');
+
+const businessHomepageSelect = [
+  'id','public_code','slug','title_vi','title_en','country_iso2','city','city_key','industry','plan','revenue_2025','revenue_currency','ask_amount','ask_currency','stake_pct','visible','status','image_url','hero_image_url'
+].join(',');
+
 const investorPublicSelect = [
   'id','code','type','title_vi','title_en','desc_vi','desc_en','country_iso2','country','region','industries','deal_types','stage','ticket_min','ticket_max','criteria','visible','verified','admin_priority','activity_level','status','created_at','updated_at'
 ].join(',');
@@ -327,7 +336,7 @@ export function invalidateBusinessFacetCache() {
 }
 
 export async function listBusinesses(filters: any = {}): Promise<any[]> {
-  const select = filters.includeHidden ? '*, business_files(count), business_images(count)' : businessPublicSelect;
+  const select = filters.includeHidden ? '*, business_files(count), business_images(count)' : businessCollectionSelect;
   const source = filters.includeHidden ? 'businesses' : 'public_businesses_safe';
   let q: any = supabase.from(source).select(select as string);
   q = applyBusinessPublicFilters(q, filters);
@@ -345,7 +354,7 @@ export async function listBusinesses(filters: any = {}): Promise<any[]> {
 export async function listBusinessesPage(filters: any = {}): Promise<{ rows: any[]; total: number }> {
   const select = filters.includeHidden
     ? '*, business_files(count), business_images(count)'
-    : businessPublicSelect;
+    : businessCollectionSelect;
   const source = filters.includeHidden ? 'businesses' : 'public_businesses_safe';
   let q: any = supabase.from(source).select(select as string, { count: 'exact' });
   q = applyBusinessPublicFilters(q, filters);
@@ -390,7 +399,7 @@ export async function listHomepageBusinesses(limit = 6): Promise<any[]> {
   const ids = orderedRanked.map((row: any) => row.business_id);
   let query: any = supabase
     .from('public_businesses_safe')
-    .select(businessPublicSelect as string)
+    .select(businessHomepageSelect as string)
     .in('id', ids);
 
   query = applyBusinessPublicFilters(query, {});
