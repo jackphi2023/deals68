@@ -94,5 +94,26 @@
   .d68-asset-valuation-inputs{grid-template-columns:1fr}
 }
 
-/* Registration success message: compact borderless confirmation. */
-.d68-register-page .d68-auth-msg.ok{border:0;padding:10px}
+/* Registration CTA and inline status message polish. */
+#root .d68-register-page .d68-auth-submit{
+  color:#fff!important;
+  font-weight:900!important;
+}
+#root .d68-register-page .d68-auth-submit:hover:not(:disabled),
+#root .d68-register-page .d68-auth-submit:focus-visible:not(:disabled){
+  background:#0F2A4A!important;
+  border-color:#0F2A4A!important;
+  color:#fff!important;
+}
+#root .d68-register-page .d68-auth-msg.ok{
+  background:#E9F9EF!important;
+  border:0!important;
+  color:#15803D!important;
+  padding:10px!important;
+}
+#root .d68-register-page .d68-auth-msg.err{
+  background:#FDECEC!important;
+  border:0!important;
+  color:#B91C1C!important;
+  padding:10px!important;
+}
