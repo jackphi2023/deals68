@@ -4,6 +4,7 @@ export type AdminTab =
   | 'overview'
   | 'payments'
   | 'proposals'
+  | 'reports'
   | 'banners'
   | 'businesses'
   | 'business_review'
@@ -37,6 +38,7 @@ export const ADMIN_NAV_SECTIONS: AdminNavSection[] = [
       { id: 'overview', label: 'Tổng quan', icon: '📊', href: '/admin', aliases: ['', 'overview'] },
       { id: 'payments', label: 'Thanh toán', icon: '💳', href: '/admin/payments', aliases: ['payments', 'approvals'] },
       { id: 'proposals', label: 'Proposal', icon: '📨', href: '/admin/proposals', aliases: ['proposals'] },
+      { id: 'reports', label: 'Báo cáo AI', icon: '📄', href: '/admin/reports', aliases: ['reports', 'ai-reports'] },
       { id: 'requests', label: 'Yêu cầu data', icon: '📂', href: '/admin/data-requests', aliases: ['data-requests', 'requests'] },
       { id: 'leads', label: 'Liên hệ/Đối tác', icon: '📨', href: '/admin/leads', aliases: ['leads', 'market-partners', 'contacts'] },
     ],
