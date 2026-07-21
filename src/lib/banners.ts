@@ -1,6 +1,7 @@
 import { supabase } from './supabase';
 import type { Lang } from './i18n';
 import { optimizeImageForUpload } from './imageUploadOptimization';
+import { cachedPublicQuery, invalidatePublicQueryCache } from './publicQueryCache';
 
 export type BannerPlacement =
   | 'home_hero'
@@ -14,6 +15,9 @@ export type InvestorCoverSource = 'investor' | 'site_banner' | 'fallback';
 
 export const INVESTOR_COVER_FALLBACK =
   '/assets/investor-cover-default.svg';
+
+const PUBLIC_BANNER_CACHE_PREFIX = 'public:banners:';
+const PUBLIC_BANNER_CACHE_TTL_MS = 30_000;
 
 export type SiteBanner = {
   id: string;
@@ -78,10 +82,10 @@ export function bannerIsActive(row: SiteBanner) {
   );
 }
 
-export async function listSiteBanners(
+async function fetchSiteBanners(
   placement: BannerPlacement,
   lang: Lang,
-  admin = false,
+  admin: boolean,
 ): Promise<SiteBanner[]> {
   let q: any = supabase
     .from('site_banners')
@@ -111,13 +115,34 @@ export async function listSiteBanners(
   if (admin) return filtered;
 
   const seen = new Set<string>();
-
   return filtered.filter((row) => {
     const key = bannerSlotKey(row);
     if (seen.has(key)) return false;
     seen.add(key);
     return true;
   });
+}
+
+export function invalidateSiteBannerCache(placement?: BannerPlacement) {
+  invalidatePublicQueryCache(
+    placement
+      ? `${PUBLIC_BANNER_CACHE_PREFIX}${placement}:`
+      : PUBLIC_BANNER_CACHE_PREFIX,
+  );
+}
+
+export async function listSiteBanners(
+  placement: BannerPlacement,
+  lang: Lang,
+  admin = false,
+): Promise<SiteBanner[]> {
+  if (admin) return fetchSiteBanners(placement, lang, true);
+
+  return cachedPublicQuery(
+    `${PUBLIC_BANNER_CACHE_PREFIX}${placement}:${lang}:${todayIso()}`,
+    () => fetchSiteBanners(placement, lang, false),
+    PUBLIC_BANNER_CACHE_TTL_MS,
+  );
 }
 
 export function investorApprovedCoverUrl(investor: unknown) {
@@ -217,52 +242,4 @@ export async function uploadSiteBannerImage(
     path,
     publicUrl: data.publicUrl,
   };
-}
-
-export async function uploadInvestorCoverImage(
-  file: File,
-  investorId: string,
-) {
-  const allowedTypes = new Set([
-    'image/jpeg',
-    'image/png',
-    'image/webp',
-  ]);
-  if (!allowedTypes.has(file.type)) {
-    throw new Error('Cover chỉ hỗ trợ JPG, PNG hoặc WebP.');
-  }
-  if (file.size > 10 * 1024 * 1024) {
-    throw new Error('Ảnh cover phải nhỏ hơn hoặc bằng 10 MB.');
-  }
-
-  const optimizedFile = await optimizeImageForUpload(file, {
-    maxWidth: 1600,
-    maxHeight: 900,
-    quality: 0.88,
-    minBytes: 180_000,
-  });
-  const safeInvestorId = String(investorId).replace(
-    /[^a-zA-Z0-9_-]/g,
-    '',
-  );
-  const safeName = optimizedFile.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-  const path =
-    `investor-covers/${safeInvestorId}/` +
-    `${Date.now()}-${safeName}`;
-
-  const { error: uploadError } = await supabase.storage
-    .from('site-banners')
-    .upload(path, optimizedFile, {
-      upsert: false,
-      contentType: optimizedFile.type,
-      cacheControl: '31536000',
-    });
-
-  if (uploadError) throw uploadError;
-
-  const { data } = supabase.storage
-    .from('site-banners')
-    .getPublicUrl(path);
-
-  return { path, publicUrl: data.publicUrl };
 }
