@@ -31,8 +31,7 @@ check(
   'Phase 5 must persist and constrain the report source label.',
 );
 check(
-  migration.includes("'business-reports-private'") &&
-    migration.includes('public,') === false &&
+  migration.includes("'business-reports-private',\n  'business-reports-private',\n  false") &&
     migration.includes('create policy business_reports_private_admin_select'),
   'Private report bucket or Admin-only Storage read policy is missing.',
 );
