@@ -17,6 +17,7 @@ const required = [
   '20260717101552_investor_appetite_moderation_v1.sql',
   '20260717143000_business_city_key_public_flow_v1.sql',
   '20260717215300_business_public_financial_snapshot_v1.sql',
+  '20260721093859_ai_report_phase1_foundation_v1.sql',
 ];
 const forbidden = [
   '20260711103000_normalize_investor_taxonomy_on_write_v1.sql',
