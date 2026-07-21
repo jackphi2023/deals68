@@ -23,7 +23,7 @@ const required = [
   '20260721102249_ai_report_phase2_function_acl_hardening_v1.sql',
   '20260721103201_ai_report_phase2_preflight_and_hourly_limits_v1.sql',
   '20260721103504_ai_report_phase2_hourly_download_reconciliation_v1.sql',
-  '20260721114500_ai_report_phase5_worker_artifact_v1.sql',
+  '20260721121832_ai_report_phase5_worker_artifact_v1.sql',
 ];
 const forbidden = [
   '20260711103000_normalize_investor_taxonomy_on_write_v1.sql',
@@ -97,7 +97,7 @@ const migrationContracts = [
     ],
   },
   {
-    name: '20260721114500_ai_report_phase5_worker_artifact_v1.sql',
+    name: '20260721121832_ai_report_phase5_worker_artifact_v1.sql',
     snippets: [
       'create table if not exists public.ai_reports',
       "source_label text not null default 'Deals68 AI Report'",
