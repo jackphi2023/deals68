@@ -20,6 +20,7 @@ const required = [
   '20260721093859_ai_report_phase1_foundation_v1.sql',
   '20260721101214_ai_report_phase2_evidence_foundation_v1.sql',
   '20260721101436_ai_report_phase2_preflight_rate_limit_v1.sql',
+  '20260721102249_ai_report_phase2_function_acl_hardening_v1.sql',
 ];
 const forbidden = [
   '20260711103000_normalize_investor_taxonomy_on_write_v1.sql',
@@ -59,6 +60,17 @@ const migrationContracts = [
       "'BROKER_AUTHORITY_MISSING'",
       "'AUTHORITY_SCOPE_INSUFFICIENT'",
       'Missing or insufficient broker authority remains non-blocking',
+    ],
+  },
+  {
+    name: '20260721102249_ai_report_phase2_function_acl_hardening_v1.sql',
+    snippets: [
+      'from public, anon, authenticated',
+      'from public, anon;',
+      'to authenticated, service_role',
+      'to service_role',
+      'd68_complete_business_report_request',
+      'd68_set_ai_report_alert',
     ],
   },
 ];
