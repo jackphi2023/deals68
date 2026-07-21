@@ -1,4 +1,5 @@
 import { listInvestors } from './data';
+import { cachedPublicQuery, invalidatePublicQueryCache } from './publicQueryCache';
 import {
   approvedInvestorCountries,
   approvedInvestorDealTypes,
@@ -12,6 +13,8 @@ import {
 import { industryKeyFromLabel } from './industryTaxonomy';
 
 const MAX_CANONICAL_INVESTOR_ROWS = 2000;
+const CANONICAL_INVESTOR_CACHE_KEY = 'public:investors:canonical';
+const CANONICAL_INVESTOR_CACHE_TTL_MS = 30_000;
 
 type InvestorListingFilters = {
   limit?: number;
@@ -86,17 +89,33 @@ function matchesCanonicalInvestorFilters(
   return true;
 }
 
+function canonicalInvestorSource(filters: InvestorListingFilters) {
+  const minTicket = String(filters.minTicket ?? '');
+  const maxTicket = String(filters.maxTicket ?? '');
+  const sort = String(filters.sort || 'ranking');
+  const key = `${CANONICAL_INVESTOR_CACHE_KEY}:${minTicket}:${maxTicket}:${sort}`;
+
+  return cachedPublicQuery(
+    key,
+    () => listInvestors({
+      limit: MAX_CANONICAL_INVESTOR_ROWS,
+      offset: 0,
+      minTicket: filters.minTicket,
+      maxTicket: filters.maxTicket,
+      sort: filters.sort,
+    }),
+    CANONICAL_INVESTOR_CACHE_TTL_MS,
+  );
+}
+
+export function invalidateCanonicalInvestorCache() {
+  invalidatePublicQueryCache(CANONICAL_INVESTOR_CACHE_KEY);
+}
+
 export async function listCanonicalInvestors(
   filters: InvestorListingFilters = {},
 ) {
-  const rows = await listInvestors({
-    limit: MAX_CANONICAL_INVESTOR_ROWS,
-    offset: 0,
-    minTicket: filters.minTicket,
-    maxTicket: filters.maxTicket,
-    sort: filters.sort,
-  });
-
+  const rows = await canonicalInvestorSource(filters);
   const filtered = rows.filter((row) =>
     matchesCanonicalInvestorFilters(row, filters),
   );
