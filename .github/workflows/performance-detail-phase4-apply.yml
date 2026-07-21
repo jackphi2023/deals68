@@ -1,0 +1,555 @@
+name: Apply and verify detail performance phase
+
+on:
+  pull_request:
+    branches: [building]
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+
+jobs:
+  apply-and-verify:
+    if: github.event.pull_request.head.ref == 'automation/performance-detail-phase4-20260721'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: automation/performance-detail-phase4-20260721
+          fetch-depth: 30
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Apply scoped detail performance changes
+        shell: bash
+        run: |
+          cat > src/lib/detailPublicData.ts <<'EOF'
+          import {
+            getBusinessBySlug,
+            getBusinessDetailAssets,
+            getInvestorByCode,
+            listBusinesses,
+          } from './data';
+          import { supabase } from './supabase';
+          import {
+            cachedPublicQuery,
+            invalidatePublicQueryCache,
+          } from './publicQueryCache';
+
+          const DETAIL_PUBLIC_CACHE_PREFIX = 'public:detail:';
+          const DETAIL_PUBLIC_CACHE_TTL_MS = 30_000;
+
+          export function loadPublicBusinessBySlug(slug: string) {
+            const key = `${DETAIL_PUBLIC_CACHE_PREFIX}business:${String(slug || '').trim().toLowerCase()}`;
+            return cachedPublicQuery(
+              key,
+              () => getBusinessBySlug(slug),
+              DETAIL_PUBLIC_CACHE_TTL_MS,
+            );
+          }
+
+          export function loadPublicBusinessAssets(businessId: string) {
+            const key = `${DETAIL_PUBLIC_CACHE_PREFIX}business-assets:${businessId}`;
+            return cachedPublicQuery(
+              key,
+              () => getBusinessDetailAssets(businessId, { publicOnly: true }),
+              DETAIL_PUBLIC_CACHE_TTL_MS,
+            );
+          }
+
+          export function loadPublicBusinessRelated(industry: string) {
+            const normalized = String(industry || '').trim().toLowerCase();
+            const key = `${DETAIL_PUBLIC_CACHE_PREFIX}business-related:${normalized}`;
+            return cachedPublicQuery(
+              key,
+              () => listBusinesses({
+                limit: 4,
+                industry: industry || undefined,
+                sort: 'featured',
+              }),
+              DETAIL_PUBLIC_CACHE_TTL_MS,
+            );
+          }
+
+          export function loadPublicInvestorByCode(code: string) {
+            const key = `${DETAIL_PUBLIC_CACHE_PREFIX}investor:${String(code || '').trim().toLowerCase()}`;
+            return cachedPublicQuery(
+              key,
+              () => getInvestorByCode(code),
+              DETAIL_PUBLIC_CACHE_TTL_MS,
+            );
+          }
+
+          export function loadPublicInvestorHistory(investorId: string) {
+            const key = `${DETAIL_PUBLIC_CACHE_PREFIX}investor-history:${investorId}`;
+            return cachedPublicQuery(
+              key,
+              async () => {
+                const { data, error } = await supabase.rpc(
+                  'get_public_investor_proposal_history',
+                  { investor_uuid: investorId },
+                );
+                if (error) throw error;
+                return Array.isArray(data) ? data : [];
+              },
+              DETAIL_PUBLIC_CACHE_TTL_MS,
+            );
+          }
+
+          export function invalidateDetailPublicCache() {
+            invalidatePublicQueryCache(DETAIL_PUBLIC_CACHE_PREFIX);
+          }
+          EOF
+
+          python3 <<'PY'
+          from pathlib import Path
+
+          def replace_once(text, old, new, label):
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{label}: expected 1 occurrence, found {count}')
+              return text.replace(old, new, 1)
+
+          path = Path('src/pages/BusinessDetail.tsx')
+          text = path.read_text()
+          text = replace_once(
+              text,
+              "import { getBusinessBySlug, getBusinessDetailAssets, getInvestorByOwner, getMyBusiness, listBusinesses } from '../lib/data';",
+              "import { getBusinessDetailAssets, getInvestorByOwner, getMyBusiness } from '../lib/data';\nimport { loadPublicBusinessAssets, loadPublicBusinessBySlug, loadPublicBusinessRelated } from '../lib/detailPublicData';",
+              'Business detail imports',
+          )
+          text = replace_once(
+              text,
+              "const T = (lang: Lang, vi: string, en: string) => (lang === 'en' ? en : vi);",
+              "const T = (lang: Lang, vi: string, en: string) => (lang === 'en' ? en : vi);\nconst BUSINESS_DETAIL_NOT_FOUND = '__d68_business_detail_not_found__';\nconst BUSINESS_DETAIL_LOAD_ERROR = '__d68_business_detail_load_error__';",
+              'Business error constants',
+          )
+          text = replace_once(
+              text,
+              "  const [similar, setSimilar] = useState<SimilarDeal[]>([]);",
+              "  const [similarRows, setSimilarRows] = useState<any[]>([]);",
+              'Business similar raw state',
+          )
+          old_effect = """  useEffect(() => {
+    let live = true;
+    async function load() {
+      setLoading(true); setError(''); setMsg(''); setInvestorAccess(false); setIsOwnerBusiness(false);
+      setBusiness(null); setDocs([]); setImages([]); setSimilar([]); setActiveImage(0);
+      try {
+        const b = await getBusinessBySlug(slug);
+        if (!live) return;
+        if (!b) { setError(T(lang, 'Không tìm thấy hồ sơ doanh nghiệp hoặc hồ sơ chưa được Admin duyệt công khai.', 'Business profile not found or not approved for public display.')); return; }
+        setBusiness(b);
+        let ownerViewing = false;
+        if (profile?.role === 'business') {
+          const myBiz = await getMyBusiness(profile.id).catch(() => null);
+          ownerViewing = !!myBiz?.id && myBiz.id === b.id;
+          if (live) setIsOwnerBusiness(ownerViewing);
+        }
+        if (profile?.role === 'investor' || profile?.role === 'admin' || ownerViewing) {
+          const { data: qrow } = await supabase
+            .from('businesses')
+            .select('quality_score,quality_breakdown_json,quality_breakdown')
+            .eq('id', b.id)
+            .maybeSingle()
+            .catch(() => ({ data: null } as any));
+          if (live && qrow) setBusiness({ ...b, quality_score: qrow.quality_score ?? b.quality_score, quality_breakdown_json: qrow.quality_breakdown_json ?? qrow.quality_breakdown });
+        }
+
+        let canDownload = false;
+        if (profile?.role === 'investor') {
+          const inv = await getInvestorByOwner(profile.id).catch(() => null);
+          if (inv?.id) {
+            const proposal = await supabase
+              .from('proposals')
+              .select('id,status')
+              .eq('business_id', b.id)
+              .eq('investor_id', inv.id)
+              .in('status', ['approved','connected'])
+              .limit(1)
+              .maybeSingle()
+              .catch(() => ({ data: null } as any));
+            canDownload = !!proposal.data;
+          }
+        }
+        if (!live) return;
+        setInvestorAccess(canDownload);
+        const assets = await getBusinessDetailAssets(b.id, { publicOnly: !(canDownload || ownerViewing) }).catch(() => ({ files: [], images: [] }));
+        if (!live) return;
+        setDocs((assets.files || []) as Doc[]);
+        setImages((assets.images || []) as Img[]);
+
+        const industry = primaryIndustry(b.industry);
+        const related = await listBusinesses({ limit: 4, industry: industry || undefined, sort: 'featured' }).catch(() => []);
+        if (!live) return;
+        setSimilar((related || []).map((row: any) => normalizeSimilar(row, lang)).filter((row: SimilarDeal | null): row is SimilarDeal => !!row && row.slug !== b.slug).slice(0, 3));
+      } catch (e: any) {
+        if (live) setError(e?.message || T(lang, 'Không tải được hồ sơ.', 'Could not load profile.'));
+      } finally { if (live) setLoading(false); }
+    }
+    load();
+    return () => { live = false; };
+  }, [slug, lang, profile?.id, profile?.role]);"""
+          new_effect = """  useEffect(() => {
+    let live = true;
+    async function load() {
+      setLoading(true); setError(''); setMsg(''); setInvestorAccess(false); setIsOwnerBusiness(false);
+      setBusiness(null); setDocs([]); setImages([]); setSimilarRows([]); setActiveImage(0);
+      try {
+        const b = await loadPublicBusinessBySlug(slug);
+        if (!live) return;
+        if (!b) { setError(BUSINESS_DETAIL_NOT_FOUND); return; }
+        setBusiness(b);
+
+        const industry = primaryIndustry(b.industry);
+        const relatedPromise = loadPublicBusinessRelated(industry).catch(() => []);
+        const publicAssetsPromise =
+          profile?.role !== 'business' && profile?.role !== 'investor'
+            ? loadPublicBusinessAssets(b.id).catch(() => ({ files: [], images: [] }))
+            : null;
+
+        const viewerPromise = (async () => {
+          const [myBiz, investor] = await Promise.all([
+            profile?.role === 'business'
+              ? getMyBusiness(profile.id).catch(() => null)
+              : Promise.resolve(null),
+            profile?.role === 'investor'
+              ? getInvestorByOwner(profile.id).catch(() => null)
+              : Promise.resolve(null),
+          ]);
+          const ownerViewing = !!myBiz?.id && myBiz.id === b.id;
+
+          const [qualityResult, proposalResult] = await Promise.all([
+            profile?.role === 'investor' || profile?.role === 'admin' || ownerViewing
+              ? supabase
+                  .from('businesses')
+                  .select('quality_score,quality_breakdown_json,quality_breakdown')
+                  .eq('id', b.id)
+                  .maybeSingle()
+                  .catch(() => ({ data: null } as any))
+              : Promise.resolve({ data: null } as any),
+            profile?.role === 'investor' && investor?.id
+              ? supabase
+                  .from('proposals')
+                  .select('id,status')
+                  .eq('business_id', b.id)
+                  .eq('investor_id', investor.id)
+                  .in('status', ['approved','connected'])
+                  .limit(1)
+                  .maybeSingle()
+                  .catch(() => ({ data: null } as any))
+              : Promise.resolve({ data: null } as any),
+          ]);
+
+          return {
+            ownerViewing,
+            canDownload: !!proposalResult.data,
+            qualityRow: qualityResult.data,
+          };
+        })();
+
+        const [viewer, related] = await Promise.all([viewerPromise, relatedPromise]);
+        if (!live) return;
+        setIsOwnerBusiness(viewer.ownerViewing);
+        setInvestorAccess(viewer.canDownload);
+        setSimilarRows(related || []);
+        if (viewer.qualityRow) {
+          setBusiness({
+            ...b,
+            quality_score: viewer.qualityRow.quality_score ?? b.quality_score,
+            quality_breakdown_json:
+              viewer.qualityRow.quality_breakdown_json ??
+              viewer.qualityRow.quality_breakdown,
+          });
+        }
+
+        const assets = publicAssetsPromise
+          ? await publicAssetsPromise
+          : viewer.canDownload || viewer.ownerViewing
+            ? await getBusinessDetailAssets(b.id, { publicOnly: false }).catch(() => ({ files: [], images: [] }))
+            : await loadPublicBusinessAssets(b.id).catch(() => ({ files: [], images: [] }));
+        if (!live) return;
+        setDocs((assets.files || []) as Doc[]);
+        setImages((assets.images || []) as Img[]);
+      } catch (e: any) {
+        if (live) setError(e?.message || BUSINESS_DETAIL_LOAD_ERROR);
+      } finally { if (live) setLoading(false); }
+    }
+    load();
+    return () => { live = false; };
+  }, [slug, profile?.id, profile?.role]);
+
+  const similar = useMemo(
+    () => similarRows
+      .map((row: any) => normalizeSimilar(row, lang))
+      .filter((row: SimilarDeal | null): row is SimilarDeal => !!row && row.slug !== business?.slug)
+      .slice(0, 3),
+    [similarRows, business?.slug, lang],
+  );
+  const displayError = error === BUSINESS_DETAIL_NOT_FOUND
+    ? T(lang, 'Không tìm thấy hồ sơ doanh nghiệp hoặc hồ sơ chưa được Admin duyệt công khai.', 'Business profile not found or not approved for public display.')
+    : error === BUSINESS_DETAIL_LOAD_ERROR
+      ? T(lang, 'Không tải được hồ sơ.', 'Could not load profile.')
+      : error;"""
+          text = replace_once(text, old_effect, new_effect, 'Business detail load effect')
+          text = text.replace('description:\n          error ||', 'description:\n          displayError ||', 1)
+          text = replace_once(text, '<p>{error}</p>', '<p>{displayError}</p>', 'Business error rendering')
+          path.write_text(text)
+
+          path = Path('src/pages/InvestorDetail.tsx')
+          text = path.read_text()
+          text = replace_once(
+              text,
+              "  getInvestorByCode,\n  getMyBusiness,",
+              "  getMyBusiness,",
+              'Investor remove direct profile import',
+          )
+          text = replace_once(
+              text,
+              "import { supabase } from '../lib/supabase';",
+              "import { supabase } from '../lib/supabase';\nimport { loadPublicInvestorByCode, loadPublicInvestorHistory } from '../lib/detailPublicData';",
+              'Investor detail cache import',
+          )
+          text = replace_once(
+              text,
+              "type ContactAccess = {",
+              "const INVESTOR_DETAIL_NOT_FOUND = '__d68_investor_detail_not_found__';\nconst INVESTOR_DETAIL_LOAD_ERROR = '__d68_investor_detail_load_error__';\n\ntype ContactAccess = {",
+              'Investor error constants',
+          )
+          text = replace_once(
+              text,
+              "  const [publicHistory, setPublicHistory] = useState<any[]>([]);",
+              "  const [publicHistoryRows, setPublicHistoryRows] = useState<any[]>([]);",
+              'Investor raw history state',
+          )
+          old_effect = """  useEffect(() => {
+    let live = true;
+
+    async function load() {
+      setLoading(true);
+      setError('');
+      setInv(null);
+      setContact(null);
+      setMsg('');
+      setPublicHistory([]);
+
+      try {
+        const data = await getInvestorByCode(code);
+        if (!live) return;
+
+        if (!data) {
+          setError(
+            T(
+              lang,
+              'Không tìm thấy hồ sơ nhà đầu tư hoặc hồ sơ chưa public.',
+              'Investor profile not found or not public.',
+            ),
+          );
+          return;
+        }
+
+        setInv(data);
+        setPublicHistory(
+          proposalHistory(data).map((item) => ({
+            label: item,
+            slug: '',
+            sent_at: null,
+          })),
+        );
+
+        const { data: history } = await supabase
+          .rpc('get_public_investor_proposal_history', {
+            investor_uuid: data.id,
+          })
+          .catch(() => ({ data: null } as any));
+
+        if (live && history?.length) {
+          setPublicHistory(
+            history.slice(0, 10).map((row: any) => ({
+              sent_at: row.sent_at,
+              slug: row.business_slug,
+              label:
+                row.business_title ||
+                row.business_public_code ||
+                T(
+                  lang,
+                  'Hồ sơ doanh nghiệp ẩn danh',
+                  'Anonymous business profile',
+                ),
+            })),
+          );
+        }
+      } catch (loadError: any) {
+        if (live) {
+          setError(
+            loadError?.message ||
+              T(
+                lang,
+                'Không tải được hồ sơ nhà đầu tư.',
+                'Could not load investor profile.',
+              ),
+          );
+        }
+      } finally {
+        if (live) setLoading(false);
+      }
+    }
+
+    load();
+    return () => { live = false; };
+  }, [code, lang]);"""
+          new_effect = """  useEffect(() => {
+    let live = true;
+
+    async function load() {
+      setLoading(true);
+      setError('');
+      setInv(null);
+      setContact(null);
+      setMsg('');
+      setPublicHistoryRows([]);
+
+      try {
+        const data = await loadPublicInvestorByCode(code);
+        if (!live) return;
+
+        if (!data) {
+          setError(INVESTOR_DETAIL_NOT_FOUND);
+          return;
+        }
+
+        setInv(data);
+        const history = await loadPublicInvestorHistory(data.id).catch(() => []);
+        if (live) setPublicHistoryRows(history || []);
+      } catch (loadError: any) {
+        if (live) setError(loadError?.message || INVESTOR_DETAIL_LOAD_ERROR);
+      } finally {
+        if (live) setLoading(false);
+      }
+    }
+
+    load();
+    return () => { live = false; };
+  }, [code]);
+
+  const publicHistory = useMemo(() => {
+    if (publicHistoryRows.length) {
+      return publicHistoryRows.slice(0, 10).map((row: any) => ({
+        sent_at: row.sent_at,
+        slug: row.business_slug,
+        label:
+          row.business_title ||
+          row.business_public_code ||
+          T(lang, 'Hồ sơ doanh nghiệp ẩn danh', 'Anonymous business profile'),
+      }));
+    }
+    return proposalHistory(inv).map((item) => ({
+      label: item,
+      slug: '',
+      sent_at: null,
+    }));
+  }, [publicHistoryRows, inv, lang]);
+  const displayError = error === INVESTOR_DETAIL_NOT_FOUND
+    ? T(lang, 'Không tìm thấy hồ sơ nhà đầu tư hoặc hồ sơ chưa public.', 'Investor profile not found or not public.')
+    : error === INVESTOR_DETAIL_LOAD_ERROR
+      ? T(lang, 'Không tải được hồ sơ nhà đầu tư.', 'Could not load investor profile.')
+      : error;"""
+          text = replace_once(text, old_effect, new_effect, 'Investor detail load effect')
+          text = text.replace('description:\n          error ||', 'description:\n          displayError ||', 1)
+          text = replace_once(text, '<p>{error}</p>', '<p>{displayError}</p>', 'Investor error rendering')
+          path.write_text(text)
+          PY
+
+          cat > scripts/deals68-performance-detail-phase4-check.mjs <<'EOF'
+          #!/usr/bin/env node
+          import fs from 'node:fs';
+
+          const helper = fs.readFileSync('src/lib/detailPublicData.ts', 'utf8');
+          const business = fs.readFileSync('src/pages/BusinessDetail.tsx', 'utf8');
+          const investor = fs.readFileSync('src/pages/InvestorDetail.tsx', 'utf8');
+          const failures = [];
+          const check = (condition, message) => {
+            if (!condition) failures.push(message);
+          };
+
+          check(/DETAIL_PUBLIC_CACHE_TTL_MS = 30_000/.test(helper), 'Detail cache TTL must remain 30 seconds');
+          check(/loadPublicBusinessAssets/.test(helper) && /publicOnly: true/.test(helper), 'Only public Business assets may be cached');
+          check(/loadPublicInvestorHistory/.test(helper), 'Investor public history cache is missing');
+          check(/Promise\.all\(\[viewerPromise, relatedPromise\]\)/.test(business), 'Business viewer and related data must load in parallel');
+          check(/publicAssetsPromise/.test(business), 'Anonymous Business assets must start before viewer checks finish');
+          check(/\[slug, profile\?\.id, profile\?\.role\]/.test(business), 'Business detail must not reload on locale switch');
+          check(/similarRows/.test(business) && /\[similarRows, business\?\.slug, lang\]/.test(business), 'Business related labels must localize from raw cached rows');
+          check(/\}, \[code\]\);/.test(investor), 'Investor detail must not reload profile/history on locale switch');
+          check(/publicHistoryRows/.test(investor) && /\[publicHistoryRows, inv, lang\]/.test(investor), 'Investor history must localize from raw cached rows');
+          check(!/getInvestorByCode\(code\)/.test(investor), 'Investor page still bypasses public detail cache');
+          check(!/setPublicHistory\(/.test(investor), 'Investor page still stores localized history state');
+          check(!/\.css['\"]/.test(helper + business + investor), 'Performance phase must not add CSS imports');
+
+          if (failures.length) {
+            failures.forEach((failure) => console.error(`✗ ${failure}`));
+            process.exit(1);
+          }
+          console.log('✓ Detail performance contract: 12/12 PASS');
+          EOF
+          chmod +x scripts/deals68-performance-detail-phase4-check.mjs
+
+          cat > /tmp/performance-detail-phase4-metrics.json <<'EOF'
+          {
+            "baseline": {
+              "businessAnonymousCriticalStagesAfterProfile": 2,
+              "businessLocaleSwitchPublicReloads": 1,
+              "investorLocaleSwitchProfileHistoryReloads": 2,
+              "publicDetailRevisitWithin30SecondsReloads": "all public profile/assets/history/related requests"
+            },
+            "optimized": {
+              "businessAnonymousCriticalStagesAfterProfile": 1,
+              "businessLocaleSwitchPublicReloads": 0,
+              "investorLocaleSwitchProfileHistoryReloads": 0,
+              "publicDetailRevisitWithin30SecondsReloads": 0
+            },
+            "improvement": {
+              "businessPostProfileWaterfallStageReductionPct": 50,
+              "businessLocaleSwitchPublicRequestReductionPct": 100,
+              "investorLocaleSwitchProfileHistoryRequestReductionPct": 100,
+              "publicDetailRevisitRequestReductionPct": 100
+            },
+            "cacheTtlMs": 30000,
+            "scope": "Public Business/Investor detail data only; no CSS, UI, wording, route, auth, proposal, payment, RLS, schema or business workflow changes"
+          }
+          EOF
+      - name: Install dependencies
+        run: npm ci
+      - name: Production build
+        run: npm run build
+      - name: Detail performance contract QA
+        run: node scripts/deals68-performance-detail-phase4-check.mjs
+      - name: Core regression QA
+        run: |
+          npm run qa:css
+          npm run qa:migrations
+          npm run check:routes
+          git diff --check
+      - name: Verify no CSS or layout files changed
+        shell: bash
+        run: |
+          if git diff --name-only HEAD | grep -E '\.(css|scss|sass|less)$'; then
+            echo 'CSS file changed unexpectedly'
+            exit 1
+          fi
+      - name: Commit verified runtime changes
+        shell: bash
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git rm .github/workflows/performance-detail-phase4-apply.yml
+          git add src/lib/detailPublicData.ts src/pages/BusinessDetail.tsx src/pages/InvestorDetail.tsx scripts/deals68-performance-detail-phase4-check.mjs
+          git commit -m "perf(details): cache public data and reduce request waterfalls"
+          git push origin HEAD:automation/performance-detail-phase4-20260721
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: performance-detail-phase4-metrics
+          path: /tmp/performance-detail-phase4-metrics.json
+          if-no-files-found: warn
+          retention-days: 7
