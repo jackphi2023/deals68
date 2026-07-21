@@ -14,6 +14,8 @@ This file reconciles the migration filenames in Git with the migration versions 
 | 20260721101214 | `20260721101214_ai_report_phase2_evidence_foundation_v1.sql` |
 | 20260721101436 | `20260721101436_ai_report_phase2_preflight_rate_limit_v1.sql` |
 | 20260721102249 | `20260721102249_ai_report_phase2_function_acl_hardening_v1.sql` |
+| 20260721103201 | `20260721103201_ai_report_phase2_preflight_and_hourly_limits_v1.sql` |
+| 20260721103504 | `20260721103504_ai_report_phase2_hourly_download_reconciliation_v1.sql` |
 
 The new Release Candidate migration is:
 
@@ -24,8 +26,10 @@ The new Release Candidate migration is:
 - `20260717215300_business_public_financial_snapshot_v1.sql` — additive Session 8 migration; stores only Admin-approved asset fields in the public Business snapshot and preserves the safe view contract.
 - `20260721093859_ai_report_phase1_foundation_v1.sql` — additive AI Report Phase 1 foundation; adds file-processing, listing-authority, preflight and alert schemas with Business/Admin RLS. Missing or insufficient broker authority remains non-blocking and requires a mandatory report notice.
 - `20260721101214_ai_report_phase2_evidence_foundation_v1.sql` — additive AI Report Phase 2 evidence foundation; separates self-declared values with `q_source = 0`, stores document-backed facts with citations/confidence, queues Business files for processing, and adds request reservation storage with Business/Admin RLS.
-- `20260721101436_ai_report_phase2_preflight_rate_limit_v1.sql` — additive AI Report Phase 2 deterministic preflight and request gate; enforces active/visible Business ownership, data/entity/authority checks, mandatory broker authorization notices, idempotency, and no more than one completed Business report create-download workflow per rolling 60 minutes. Failed workflows do not consume the limit.
+- `20260721101436_ai_report_phase2_preflight_rate_limit_v1.sql` — additive AI Report Phase 2 deterministic preflight and request gate; enforces active/visible Business ownership, data/entity/authority checks, mandatory broker authorization notices, idempotency, and one completed Business report generation per rolling 60 minutes. Failed workflows do not consume the limit.
 - `20260721102249_ai_report_phase2_function_acl_hardening_v1.sql` — explicit function ACL hardening after Supabase provisioned role grants: anonymous cannot execute report RPCs, authenticated Business users can only call preflight/status/reserve, and helper plus complete/fail functions remain backend service-role only.
+- `20260721103201_ai_report_phase2_preflight_and_hourly_limits_v1.sql` — additive report source snapshot, preflight metadata and rate-event ledger foundation applied during the concurrent Phase 2 rollout.
+- `20260721103504_ai_report_phase2_hourly_download_reconciliation_v1.sql` — reconciles the concurrent rollout: generation continues to use `ai_report_business_requests`, Business PDF downloads use `ai_report_rate_events`, and each action is limited independently to one successful action per rolling 60 minutes.
 
 Rules:
 
