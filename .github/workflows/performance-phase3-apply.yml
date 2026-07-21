@@ -1,0 +1,539 @@
+name: Apply performance phase 3 data optimization
+
+on:
+  pull_request:
+    branches: [building]
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.event.pull_request.head.ref == 'automation/performance-phase3-data-20260721'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: automation/performance-phase3-data-20260721
+          fetch-depth: 20
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Apply scoped Phase 3 changes
+        shell: bash
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+          import re
+
+          def read(path):
+              return Path(path).read_text()
+
+          def write(path, text):
+              Path(path).parent.mkdir(parents=True, exist_ok=True)
+              Path(path).write_text(text)
+
+          def replace_once(text, old, new, label):
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{label}: expected 1 occurrence, found {count}')
+              return text.replace(old, new, 1)
+
+          def regex_once(text, pattern, replacement, label):
+              updated, count = re.subn(pattern, replacement, text, count=1, flags=re.S)
+              if count != 1:
+                  raise SystemExit(f'{label}: expected 1 replacement, found {count}')
+              return updated
+
+          write('src/lib/publicRequestCache.ts', '''type CacheEntry<T> = {
+            expiresAt: number;
+            value?: T;
+            promise?: Promise<T>;
+          };
+
+          const cache = new Map<string, CacheEntry<unknown>>();
+
+          export async function cachedPublicRequest<T>(
+            key: string,
+            ttlMs: number,
+            loader: () => Promise<T>,
+          ): Promise<T> {
+            const now = Date.now();
+            const existing = cache.get(key) as CacheEntry<T> | undefined;
+            if (existing?.value !== undefined && existing.expiresAt > now) {
+              return existing.value;
+            }
+            if (existing?.promise) return existing.promise;
+
+            const promise = loader()
+              .then((value) => {
+                cache.set(key, {
+                  value,
+                  expiresAt: Date.now() + Math.max(0, ttlMs),
+                });
+                return value;
+              })
+              .catch((error) => {
+                cache.delete(key);
+                throw error;
+              });
+
+            cache.set(key, { promise, expiresAt: now + Math.max(0, ttlMs) });
+            return promise;
+          }
+          ''')
+
+          data_path = 'src/lib/data.ts'
+          data = read(data_path)
+          data = replace_once(
+              data,
+              "import { locationKeyFromLabel, locationOptionFromValue } from './locationTaxonomy';",
+              "import { locationKeyFromLabel, locationOptionFromValue } from './locationTaxonomy';\nimport { cachedPublicRequest } from './publicRequestCache';",
+              'data cache import',
+          )
+          marker = "const investorPublicSelect = ["
+          list_select = '''const businessPublicListSelect = [
+            'id','public_code','slug','title_vi','title_en','description_vi','description_en','country_iso2','city','city_key','industry','industry_key','deal_type','plan','revenue_2025','revenue_currency','ebitda_margin','ask_amount','ask_currency','stake_pct','highlights_vi','highlights_en','investment_reason_vi','investment_reason_en','data_confidence','quality_score','valuation_reasonableness','visible','status','image_url','hero_image_url','created_at','updated_at','public_version','last_approved_at','moderation_status'
+          ].join(',');
+
+          '''
+          data = replace_once(data, marker, list_select + marker, 'business list projection')
+
+          data = regex_once(
+              data,
+              r"export async function listBusinessFacets\(filters: any = \{\}\): Promise<\{ city: string; city_key: string; country_iso2: string; industry: string; industry_key: string; deal_type: string; plan: string; quality_score: number \| null \}\[]> \{.*?\n\}\n\nexport async function listBusinesses",
+              '''export async function listBusinessFacets(filters: any = {}): Promise<{ city: string; city_key: string; country_iso2: string; industry: string; industry_key: string; deal_type: string; plan: string; quality_score: number | null }[]> {
+            const cacheKey = JSON.stringify({
+              search: clean(filters.search),
+              country: clean(filters.country).toUpperCase(),
+            });
+            return cachedPublicRequest(`business-facets:${cacheKey}`, 30_000, async () => {
+              let q: any = supabase.from('public_businesses_safe').select('city, city_key, country_iso2, industry, industry_key, deal_type, plan, quality_score');
+              q = applyBusinessPublicFilters(q, { search: filters.search, country: filters.country });
+              const { data, error } = await q.limit(1000);
+              if (error) throw error;
+              return ((data || []) as any[]).map((row) => {
+                const countryIso2 = clean(row.country_iso2) || 'VN';
+                const cityKey =
+                  locationKeyFromLabel(row.city_key, countryIso2) ||
+                  locationKeyFromLabel(row.city, countryIso2) ||
+                  clean(row.city_key);
+                return { ...row, country_iso2: countryIso2, city_key: cityKey };
+              });
+            });
+          }
+
+          function applyBusinessSort(q: any, filters: any) {
+            const sort = filters.sort || 'featured';
+            if (sort === 'revenue') return q.order('revenue_2025', { ascending: false, nullsFirst: false });
+            if (sort === 'ask') return q.order('ask_amount', { ascending: false, nullsFirst: false });
+            if (sort === 'quality' || sort === 'featured') {
+              return q.order('quality_score', { ascending: false, nullsFirst: false }).order('created_at', { ascending: false });
+            }
+            return q.order('created_at', { ascending: false });
+          }
+
+          export async function listBusinesses''',
+              'cached business facets',
+          )
+
+          data = regex_once(
+              data,
+              r"export async function listBusinesses\(filters: any = \{\}\): Promise<any\[]> \{.*?\n\}\n\n\nexport async function listHomepageBusinesses",
+              '''export async function listBusinesses(filters: any = {}): Promise<any[]> {
+            const select = filters.includeHidden ? '*, business_files(count), business_images(count)' : businessPublicListSelect;
+            const source = filters.includeHidden ? 'businesses' : 'public_businesses_safe';
+            let q: any = supabase.from(source).select(select as string);
+            q = applyBusinessPublicFilters(q, filters);
+            q = applyBusinessSort(q, filters);
+            q = applyPagination(q, filters);
+            const { data, error } = await q;
+            if (error) throw error;
+            return ((data || []) as any[]).map(getPublicBusinessView);
+          }
+
+          export async function listBusinessesPage(filters: any = {}): Promise<{ rows: any[]; total: number }> {
+            const select = filters.includeHidden ? '*, business_files(count), business_images(count)' : businessPublicListSelect;
+            const source = filters.includeHidden ? 'businesses' : 'public_businesses_safe';
+            let q: any = supabase.from(source).select(select as string, { count: 'exact' });
+            q = applyBusinessPublicFilters(q, filters);
+            q = applyBusinessSort(q, filters);
+            q = applyPagination(q, filters);
+            const { data, error, count } = await q;
+            if (error) throw error;
+            return {
+              rows: ((data || []) as any[]).map(getPublicBusinessView),
+              total: count || 0,
+            };
+          }
+
+          export async function listHomepageBusinesses''',
+              'business page combined count',
+          )
+          data = replace_once(
+              data,
+              ".select(businessPublicSelect as string)\n    .in('id', ids);",
+              ".select(businessPublicListSelect as string)\n    .in('id', ids);",
+              'homepage lightweight business projection',
+          )
+          write(data_path, data)
+
+          public_metrics = '''import { supabase } from './supabase';
+
+          const FX_VND_PER_USD = 26000;
+
+          type DealValueRow = { ask_amount?: number | string | null; ask_currency?: string | null; revenue_currency?: string | null };
+
+          export type PublicDealValueSummary = {
+            totalVnd: number;
+            totalUsd: number;
+            count: number;
+            fxRate: number;
+          };
+
+          export type PublicHomepageBootstrap = {
+            businessCount: number;
+            investorCount: number;
+            dealValue: PublicDealValueSummary;
+            businesses: any[];
+            investors: any[];
+          };
+
+          function normalizeCurrency(row: DealValueRow) {
+            return String(row.ask_currency || row.revenue_currency || 'VND').toUpperCase();
+          }
+
+          export async function getPublicHomepageBootstrap(
+            businessLimit = 6,
+            investorLimit = 80,
+          ): Promise<PublicHomepageBootstrap> {
+            const { data, error } = await supabase.rpc('get_public_homepage_bootstrap', {
+              max_businesses: Math.max(1, Math.min(24, Math.floor(businessLimit || 6))),
+              max_investors: Math.max(1, Math.min(200, Math.floor(investorLimit || 80))),
+            });
+            if (error) throw error;
+            const row = (Array.isArray(data) ? data[0] : data) || {};
+            const dealValue = row.deal_value || row.dealValue || {};
+            return {
+              businessCount: Number(row.business_count ?? row.businessCount ?? 0),
+              investorCount: Number(row.investor_count ?? row.investorCount ?? 0),
+              dealValue: {
+                totalVnd: Number(dealValue.total_vnd ?? dealValue.totalVnd ?? 0),
+                totalUsd: Number(dealValue.total_usd ?? dealValue.totalUsd ?? 0),
+                count: Number(dealValue.count ?? 0),
+                fxRate: Number(dealValue.fx_rate ?? dealValue.fxRate ?? FX_VND_PER_USD),
+              },
+              businesses: Array.isArray(row.businesses) ? row.businesses : [],
+              investors: Array.isArray(row.investors) ? row.investors : [],
+            };
+          }
+
+          export async function getPublicDealValueSummary(): Promise<PublicDealValueSummary> {
+            const { data, error } = await supabase
+              .from('public_businesses_safe')
+              .select('ask_amount,ask_currency,revenue_currency')
+              .eq('visible', true)
+              .eq('status', 'active')
+              .not('public_snapshot_json', 'is', null)
+              .limit(1000);
+
+            if (error) throw error;
+
+            let totalVnd = 0;
+            let totalUsd = 0;
+            for (const row of (data || []) as DealValueRow[]) {
+              const amount = Number(row.ask_amount || 0);
+              if (!Number.isFinite(amount) || amount <= 0) continue;
+              const currency = normalizeCurrency(row);
+              if (currency === 'USD') {
+                totalUsd += amount;
+                totalVnd += amount * FX_VND_PER_USD;
+              } else {
+                totalVnd += amount;
+                totalUsd += amount / FX_VND_PER_USD;
+              }
+            }
+
+            return { totalVnd, totalUsd, count: (data || []).length, fxRate: FX_VND_PER_USD };
+          }
+          '''
+          write('src/lib/publicMetrics.ts', public_metrics)
+
+          home_path = 'src/pages/Home.tsx'
+          home = read(home_path)
+          home = replace_once(
+              home,
+              "import { getPublicDealValueSummary, type PublicDealValueSummary } from '../lib/publicMetrics';",
+              "import {\n  getPublicDealValueSummary,\n  getPublicHomepageBootstrap,\n  type PublicDealValueSummary,\n} from '../lib/publicMetrics';",
+              'homepage bootstrap import',
+          )
+          home = regex_once(
+              home,
+              r"  useEffect\(\(\) => \{\n    let live = true;\n    \(async \(\) => \{\n      setLoading\(true\);.*?\n    \}\)\(\);\n    return \(\) => \{\n      live = false;\n    \};\n  \}, \[lang\]\);",
+              '''  useEffect(() => {
+            let live = true;
+            (async () => {
+              setLoading(true);
+              const bootstrap = await getPublicHomepageBootstrap(6, 80).catch(() => null);
+              const [bc, ic, dv, bs, invs] = bootstrap
+                ? [
+                    bootstrap.businessCount,
+                    bootstrap.investorCount,
+                    bootstrap.dealValue,
+                    bootstrap.businesses,
+                    bootstrap.investors,
+                  ]
+                : await Promise.all([
+                    countBusinesses().catch(() => null),
+                    countInvestors().catch(() => null),
+                    getPublicDealValueSummary().catch(() => null),
+                    listHomepageBusinesses(6).catch(() => []),
+                    listInvestors({ limit: 80 }).catch(() => []),
+                  ]);
+              if (!live) return;
+              setBizCount(bc);
+              setInvCount(ic);
+              setDealValue(dv);
+              setDeals((bs || []).map((business: any) => normalizeDeal(business, lang)).filter((deal) => deal.slug));
+              const adminFeatured = (invs || []).filter((investor: any) => investor.admin_priority === true);
+              const investorPool = adminFeatured.length ? adminFeatured : invs || [];
+              setInvestors(shuffleHome(investorPool).slice(0, 4));
+              setLoading(false);
+            })();
+            return () => {
+              live = false;
+            };
+          }, [lang]);''',
+              'homepage single RPC load',
+          )
+          write(home_path, home)
+
+          businesses_path = 'src/pages/Businesses.tsx'
+          businesses = read(businesses_path)
+          businesses = replace_once(
+              businesses,
+              "import { countBusinesses, listBusinesses, listBusinessFacets } from '../lib/data';",
+              "import { listBusinessesPage, listBusinessFacets } from '../lib/data';",
+              'business page data imports',
+          )
+          businesses = replace_once(
+              businesses,
+              "        const [data, count] = await Promise.all([listBusinesses(filters), countBusinesses(filters).catch(() => null)]);\n        if (!live) return;\n        setRows((data || []).map(normalizeBusiness).filter((d) => d.slug));\n        setTotal(count);",
+              "        const result = await listBusinessesPage(filters);\n        if (!live) return;\n        setRows((result.rows || []).map(normalizeBusiness).filter((d) => d.slug));\n        setTotal(result.total);",
+              'business page one request',
+          )
+          write(businesses_path, businesses)
+
+          listing_path = 'src/lib/investorListing.ts'
+          listing = read(listing_path)
+          listing = replace_once(
+              listing,
+              "import { industryKeyFromLabel } from './industryTaxonomy';",
+              "import { industryKeyFromLabel } from './industryTaxonomy';\nimport { cachedPublicRequest } from './publicRequestCache';",
+              'investor listing cache import',
+          )
+          listing = replace_once(
+              listing,
+              '''  const rows = await listInvestors({
+            limit: MAX_CANONICAL_INVESTOR_ROWS,
+            offset: 0,
+            minTicket: filters.minTicket,
+            maxTicket: filters.maxTicket,
+            sort: filters.sort,
+          });''',
+              '''  const baseKey = JSON.stringify({
+            minTicket: filters.minTicket || '',
+            maxTicket: filters.maxTicket || '',
+            sort: filters.sort || 'ranking',
+          });
+            const rows = await cachedPublicRequest(
+              `canonical-investors:${baseKey}`,
+              30_000,
+              () => listInvestors({
+                limit: MAX_CANONICAL_INVESTOR_ROWS,
+                offset: 0,
+                minTicket: filters.minTicket,
+                maxTicket: filters.maxTicket,
+                sort: filters.sort,
+              }),
+            );''',
+              'canonical investor cache',
+          )
+          write(listing_path, listing)
+
+          detail_path = 'src/pages/BusinessDetail.tsx'
+          detail = read(detail_path)
+          detail = replace_once(
+              detail,
+              '''        const assets = await getBusinessDetailAssets(b.id, { publicOnly: !(canDownload || ownerViewing) }).catch(() => ({ files: [], images: [] }));
+                  if (!live) return;
+                  setDocs((assets.files || []) as Doc[]);
+                  setImages((assets.images || []) as Img[]);
+
+                  const industry = primaryIndustry(b.industry);
+                  const related = await listBusinesses({ limit: 4, industry: industry || undefined, sort: 'featured' }).catch(() => []);
+                  if (!live) return;
+                  setSimilar((related || []).map((row: any) => normalizeSimilar(row, lang)).filter((row: SimilarDeal | null): row is SimilarDeal => !!row && row.slug !== b.slug).slice(0, 3));''',
+              '''        const industry = primaryIndustry(b.industry);
+                  const [assets, related] = await Promise.all([
+                    getBusinessDetailAssets(b.id, { publicOnly: !(canDownload || ownerViewing) }).catch(() => ({ files: [], images: [] })),
+                    listBusinesses({ limit: 4, industry: industry || undefined, sort: 'featured' }).catch(() => []),
+                  ]);
+                  if (!live) return;
+                  setDocs((assets.files || []) as Doc[]);
+                  setImages((assets.images || []) as Img[]);
+                  setSimilar((related || []).map((row: any) => normalizeSimilar(row, lang)).filter((row: SimilarDeal | null): row is SimilarDeal => !!row && row.slug !== b.slug).slice(0, 3));''',
+              'parallel business detail secondary data',
+          )
+          write(detail_path, detail)
+
+          write('supabase/migrations/20260721042000_public_data_performance_v1.sql', '''create index if not exists investors_public_ranking_idx
+          on public.investors (admin_priority desc, verified desc, created_at desc)
+          where visible = true and status = 'active'::public.account_status;
+
+          create or replace function public.get_public_homepage_bootstrap(
+            max_businesses integer default 6,
+            max_investors integer default 80
+          )
+          returns jsonb
+          language sql
+          security invoker
+          set search_path = public
+          as $function$
+            with params as (
+              select
+                greatest(1, least(coalesce(max_businesses, 6), 24))::integer as business_limit,
+                greatest(1, least(coalesce(max_investors, 80), 200))::integer as investor_limit
+            ),
+            selected_businesses as (
+              select
+                h.display_order,
+                b.id, b.public_code, b.slug, b.title_vi, b.title_en,
+                b.description_vi, b.description_en, b.country_iso2, b.city,
+                b.city_key, b.industry, b.industry_key, b.deal_type, b.plan,
+                b.revenue_2025, b.revenue_currency, b.ebitda_margin,
+                b.ask_amount, b.ask_currency, b.stake_pct, b.highlights_vi,
+                b.highlights_en, b.investment_reason_vi, b.investment_reason_en,
+                b.data_confidence, b.quality_score, b.valuation_reasonableness,
+                b.visible, b.status, b.image_url, b.hero_image_url,
+                b.created_at, b.updated_at, b.public_version,
+                b.last_approved_at, b.moderation_status
+              from public.get_homepage_business_ids((select business_limit from params)) h
+              join public.public_businesses_safe b on b.id = h.business_id
+              order by h.display_order
+            ),
+            business_payload as (
+              select coalesce(
+                jsonb_agg(to_jsonb(sb) - 'display_order' order by sb.display_order),
+                '[]'::jsonb
+              ) as rows
+              from selected_businesses sb
+            ),
+            investor_rows as (
+              select
+                i.id, i.code, i.type, i.title_vi, i.title_en, i.desc_vi,
+                i.desc_en, i.country_iso2, i.country, i.region, i.industries,
+                i.deal_types, i.stage, i.ticket_min, i.ticket_max, i.criteria,
+                i.visible, i.verified, i.admin_priority, i.activity_level,
+                i.status, i.created_at, i.updated_at
+              from public.public_investors_safe i
+              order by i.admin_priority desc, i.verified desc, i.created_at desc
+              limit (select investor_limit from params)
+            ),
+            investor_payload as (
+              select coalesce(jsonb_agg(to_jsonb(ir)), '[]'::jsonb) as rows
+              from investor_rows ir
+            ),
+            business_metrics as (
+              select
+                count(*)::integer as business_count,
+                coalesce(sum(
+                  case
+                    when upper(coalesce(ask_currency, revenue_currency, 'VND')) = 'USD'
+                      then coalesce(ask_amount, 0) * 26000
+                    else coalesce(ask_amount, 0)
+                  end
+                ), 0) as total_vnd,
+                coalesce(sum(
+                  case
+                    when upper(coalesce(ask_currency, revenue_currency, 'VND')) = 'USD'
+                      then coalesce(ask_amount, 0)
+                    else coalesce(ask_amount, 0) / 26000
+                  end
+                ), 0) as total_usd
+              from public.public_businesses_safe
+            ),
+            investor_metrics as (
+              select count(*)::integer as investor_count
+              from public.public_investors_safe
+            )
+            select jsonb_build_object(
+              'business_count', bm.business_count,
+              'investor_count', im.investor_count,
+              'deal_value', jsonb_build_object(
+                'total_vnd', bm.total_vnd,
+                'total_usd', bm.total_usd,
+                'count', bm.business_count,
+                'fx_rate', 26000
+              ),
+              'businesses', bp.rows,
+              'investors', ip.rows
+            )
+            from business_metrics bm
+            cross join investor_metrics im
+            cross join business_payload bp
+            cross join investor_payload ip;
+          $function$;
+
+          grant execute on function public.get_public_homepage_bootstrap(integer, integer)
+          to anon, authenticated;
+          ''')
+          PY
+      - name: Install dependencies
+        run: npm ci
+      - name: Production build
+        run: npm run build
+      - name: Core QA
+        run: |
+          npm run qa:css
+          npm run qa:migrations
+          npm run check:routes
+      - name: Verify Phase 3 contracts
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const data = fs.readFileSync('src/lib/data.ts', 'utf8');
+          const home = fs.readFileSync('src/pages/Home.tsx', 'utf8');
+          const businesses = fs.readFileSync('src/pages/Businesses.tsx', 'utf8');
+          const listing = fs.readFileSync('src/lib/investorListing.ts', 'utf8');
+          const detail = fs.readFileSync('src/pages/BusinessDetail.tsx', 'utf8');
+          const migration = fs.readFileSync('supabase/migrations/20260721042000_public_data_performance_v1.sql', 'utf8');
+          const checks = [
+            [data.includes('businessPublicListSelect'), 'lightweight Business projection'],
+            [data.includes("{ count: 'exact' }"), 'combined Business rows/count'],
+            [data.includes('business-facets:'), 'facet cache'],
+            [home.includes('getPublicHomepageBootstrap(6, 80)'), 'single Homepage bootstrap RPC'],
+            [businesses.includes('listBusinessesPage(filters)'), 'Business listing uses one request'],
+            [listing.includes('canonical-investors:'), 'canonical Investor cache'],
+            [detail.includes('const [assets, related] = await Promise.all'), 'Business detail secondary queries parallel'],
+            [migration.includes('get_public_homepage_bootstrap'), 'Homepage RPC migration'],
+            [migration.includes('investors_public_ranking_idx'), 'Investor ranking index'],
+          ];
+          for (const [ok, label] of checks) {
+            if (!ok) throw new Error(label);
+            console.log(`PASS: ${label}`);
+          }
+          NODE
+          git diff --check
+      - name: Commit verified implementation
+        shell: bash
+        run: |
+          rm -f .github/workflows/performance-phase3-apply.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src supabase/migrations/20260721042000_public_data_performance_v1.sql .github/workflows/performance-phase3-apply.yml
+          git commit -m "perf(data): reduce public requests and query payloads"
+          git push origin HEAD:automation/performance-phase3-data-20260721
