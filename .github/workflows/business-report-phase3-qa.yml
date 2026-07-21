@@ -1,0 +1,50 @@
+name: Business Report Phase 3 QA
+
+on:
+  push:
+    branches: [main, building]
+    paths:
+      - 'src/features/businessReports/**'
+      - 'src/pages/BusinessDashboardWithReports.tsx'
+      - 'src/App.tsx'
+      - 'scripts/deals68-business-report-ui-check.mjs'
+      - 'package.json'
+      - '.github/workflows/business-report-phase3-qa.yml'
+  pull_request:
+    branches: [main, building]
+    paths:
+      - 'src/features/businessReports/**'
+      - 'src/pages/BusinessDashboardWithReports.tsx'
+      - 'src/App.tsx'
+      - 'scripts/deals68-business-report-ui-check.mjs'
+      - 'package.json'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: business-report-phase3-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Production build
+        run: npm run build
+      - name: Business Report Phase 3 contract
+        run: npm run qa:business-report-ui
+      - name: Core regression contracts
+        run: |
+          npm run qa:css
+          npm run qa:migrations
+          npm run check:routes
+          git diff --check
