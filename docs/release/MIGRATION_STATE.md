@@ -10,6 +10,7 @@ This file reconciles the migration filenames in Git with the migration versions 
 | 20260712124143 | `20260712124143_payment_invoice_atomic_lifecycle.sql` |
 | 20260712124601 | `20260712124601_payment_order_code_collision_guard.sql` |
 | 20260712153808 | `20260712153808_restore_public_business_view_helper_execute.sql` |
+| 20260721093859 | `20260721093859_ai_report_phase1_foundation_v1.sql` |
 
 The new Release Candidate migration is:
 
@@ -18,6 +19,7 @@ The new Release Candidate migration is:
 - `20260717101552_investor_appetite_moderation_v1.sql` — additive Session 7 migration; apply after the Investor Profile V2 migrations so bilingual Investment appetite waits for Admin approval.
 - `20260717143000_business_city_key_public_flow_v1.sql` — additive Session 4 migration; apply before testing the canonical Business location filter.
 - `20260717215300_business_public_financial_snapshot_v1.sql` — additive Session 8 migration; stores only Admin-approved asset fields in the public Business snapshot and preserves the safe view contract.
+- `20260721093859_ai_report_phase1_foundation_v1.sql` — additive AI Report Phase 1 foundation; adds file-processing, listing-authority, preflight and alert schemas with Business/Admin RLS. Missing or insufficient broker authority remains non-blocking and requires a mandatory report notice.
 
 Rules:
 
