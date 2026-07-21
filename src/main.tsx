@@ -4,6 +4,7 @@ import { BrowserRouter } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import App from './App';
 import AdminReportsPortal from './features/adminReports/AdminReportsPortal';
+import DashboardProfileReviewNoticePortal from './features/dashboardReview/DashboardProfileReviewNoticePortal';
 import './styles/index.css';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
@@ -12,6 +13,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
       <AuthProvider>
         <App />
         <AdminReportsPortal />
+        <DashboardProfileReviewNoticePortal />
       </AuthProvider>
     </BrowserRouter>
   </React.StrictMode>

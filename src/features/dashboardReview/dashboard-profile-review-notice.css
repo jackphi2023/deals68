@@ -1,0 +1,11 @@
+.d68-dashboard-profile-review-mount {
+  width: 100%;
+}
+
+.d68-dashboard-profile-review-alert {
+  margin-bottom: 16px;
+  padding: 10px;
+  border: 1px solid #bde7f7;
+  background: #e7f6fd;
+  color: #0f5d8b;
+}
