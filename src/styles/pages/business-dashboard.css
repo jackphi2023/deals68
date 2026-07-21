@@ -162,3 +162,24 @@
 .d68-business-dashboard-page .d68-document-row__meta {
   display: none !important;
 }
+
+/* Business dashboard documents navigation label. */
+.d68-business-dashboard-page
+  .d68-dashboard-side
+  a[href$="/dashboard/business/files"]
+  > span:last-child {
+  display: none;
+}
+
+.d68-business-dashboard-page
+  .d68-dashboard-side
+  a[href$="/dashboard/business/files"]::after {
+  content: "Tài liệu Dataroom";
+}
+
+[data-lang="en"]
+  .d68-business-dashboard-page
+  .d68-dashboard-side
+  a[href$="/dashboard/business/files"]::after {
+  content: "Dataroom Documents";
+}
