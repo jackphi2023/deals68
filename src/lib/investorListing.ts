@@ -10,6 +10,7 @@ import {
   normalizeInvestorType,
 } from './investorCriteria';
 import { industryKeyFromLabel } from './industryTaxonomy';
+import { cachedPublicRequest } from './publicRequestCache';
 
 const MAX_CANONICAL_INVESTOR_ROWS = 2000;
 
@@ -89,13 +90,22 @@ function matchesCanonicalInvestorFilters(
 export async function listCanonicalInvestors(
   filters: InvestorListingFilters = {},
 ) {
-  const rows = await listInvestors({
-    limit: MAX_CANONICAL_INVESTOR_ROWS,
-    offset: 0,
-    minTicket: filters.minTicket,
-    maxTicket: filters.maxTicket,
-    sort: filters.sort,
-  });
+  const baseKey = JSON.stringify({
+  minTicket: filters.minTicket || '',
+  maxTicket: filters.maxTicket || '',
+  sort: filters.sort || 'ranking',
+});
+  const rows = await cachedPublicRequest(
+    `canonical-investors:${baseKey}`,
+    30_000,
+    () => listInvestors({
+      limit: MAX_CANONICAL_INVESTOR_ROWS,
+      offset: 0,
+      minTicket: filters.minTicket,
+      maxTicket: filters.maxTicket,
+      sort: filters.sort,
+    }),
+  );
 
   const filtered = rows.filter((row) =>
     matchesCanonicalInvestorFilters(row, filters),

@@ -161,14 +161,14 @@ export default function BusinessDetail({ lang }: { lang: Lang }) {
         }
         if (!live) return;
         setInvestorAccess(canDownload);
-        const assets = await getBusinessDetailAssets(b.id, { publicOnly: !(canDownload || ownerViewing) }).catch(() => ({ files: [], images: [] }));
+        const industry = primaryIndustry(b.industry);
+        const [assets, related] = await Promise.all([
+          getBusinessDetailAssets(b.id, { publicOnly: !(canDownload || ownerViewing) }).catch(() => ({ files: [], images: [] })),
+          listBusinesses({ limit: 4, industry: industry || undefined, sort: 'featured' }).catch(() => []),
+        ]);
         if (!live) return;
         setDocs((assets.files || []) as Doc[]);
         setImages((assets.images || []) as Img[]);
-
-        const industry = primaryIndustry(b.industry);
-        const related = await listBusinesses({ limit: 4, industry: industry || undefined, sort: 'featured' }).catch(() => []);
-        if (!live) return;
         setSimilar((related || []).map((row: any) => normalizeSimilar(row, lang)).filter((row: SimilarDeal | null): row is SimilarDeal => !!row && row.slug !== b.slug).slice(0, 3));
       } catch (e: any) {
         if (live) setError(e?.message || T(lang, 'Không tải được hồ sơ.', 'Could not load profile.'));

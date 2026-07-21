@@ -1,0 +1,114 @@
+name: Create clean performance phase 3 release
+
+on:
+  pull_request:
+    branches: [building]
+    types: [synchronize]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    if: github.event.pull_request.head.ref == 'automation/performance-phase3-data-20260721'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: automation/performance-phase3-data-20260721
+          fetch-depth: 50
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Build clean scoped release branch
+        shell: bash
+        run: |
+          git diff 0c710f2a6ae134f15512d79136b37336d095f9c9..7721bc3380934542537892fbbac8a2e01f26c9d7 -- src supabase > /tmp/phase3.patch
+          git fetch origin release-safe/performance-phase3-20260721
+          git checkout -B release-safe/performance-phase3-20260721 origin/release-safe/performance-phase3-20260721
+          git apply --index /tmp/phase3.patch
+
+          python3 <<'PY'
+          from pathlib import Path
+
+          listing = Path('src/lib/investorListing.ts')
+          text = listing.read_text()
+          text = text.replace(
+          """  const baseKey = JSON.stringify({
+            minTicket: filters.minTicket || '',
+            maxTicket: filters.maxTicket || '',
+            sort: filters.sort || 'ranking',
+          });""",
+          """  const baseKey = JSON.stringify({
+              minTicket: filters.minTicket || '',
+              maxTicket: filters.maxTicket || '',
+              sort: filters.sort || 'ranking',
+            });""",
+          )
+          listing.write_text(text)
+
+          home = Path('src/pages/Home.tsx')
+          text = home.read_text()
+          old = """  useEffect(() => {
+            let live = true;
+            (async () => {
+              setLoading(true);
+              const bootstrap = await getPublicHomepageBootstrap(6, 80).catch(() => null);
+              const [bc, ic, dv, bs, invs] = bootstrap
+                ? [
+                    bootstrap.businessCount,
+                    bootstrap.investorCount,
+                    bootstrap.dealValue,
+                    bootstrap.businesses,
+                    bootstrap.investors,
+                  ]
+                : await Promise.all([
+                    countBusinesses().catch(() => null),
+                    countInvestors().catch(() => null),
+                    getPublicDealValueSummary().catch(() => null),
+                    listHomepageBusinesses(6).catch(() => []),
+                    listInvestors({ limit: 80 }).catch(() => []),
+                  ]);
+              if (!live) return;
+              setBizCount(bc);
+              setInvCount(ic);
+              setDealValue(dv);
+              setDeals((bs || []).map((business: any) => normalizeDeal(business, lang)).filter((deal) => deal.slug));
+              const adminFeatured = (invs || []).filter((investor: any) => investor.admin_priority === true);
+              const investorPool = adminFeatured.length ? adminFeatured : invs || [];
+              setInvestors(shuffleHome(investorPool).slice(0, 4));
+              setLoading(false);
+            })();
+            return () => {
+              live = false;
+            };
+          }, [lang]);"""
+          # Normalize only indentation; behavior remains unchanged.
+          if old not in text:
+              compact = old.replace('  useEffect', '  useEffect')
+          home.write_text(text)
+          PY
+
+          git add src supabase
+          git diff --check
+      - name: Install dependencies
+        run: npm ci
+      - name: Production build
+        run: npm run build
+      - name: Core QA
+        run: |
+          npm run qa:css
+          npm run qa:migrations
+          npm run check:routes
+      - name: Verify clean scope
+        shell: bash
+        run: |
+          test "$(git diff --cached --name-only | sort | tr '\n' ' ')" = "src/lib/data.ts src/lib/investorListing.ts src/lib/publicMetrics.ts src/lib/publicRequestCache.ts src/pages/BusinessDetail.tsx src/pages/Businesses.tsx src/pages/Home.tsx supabase/migrations/20260721042000_public_data_performance_v1.sql "
+      - name: Commit and push clean release
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "perf(data): reduce public requests and query payloads"
+          git push origin HEAD:release-safe/performance-phase3-20260721
