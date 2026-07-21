@@ -24,6 +24,7 @@ import type {
   ReportFreshness,
   ReportLang,
 } from './reportTypes';
+import './report-viewer.css';
 
 const ReportViewer = lazy(() => import('./ReportViewer'));
 
