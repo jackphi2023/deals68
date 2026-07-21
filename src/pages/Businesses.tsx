@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { countBusinesses, listBusinesses, listBusinessFacets } from '../lib/data';
+import { listBusinessesPage, listBusinessFacets } from '../lib/data';
 import { percent } from '../lib/format';
 import { toLocalizedPath } from '../lib/i18nRoutes';
 import {
@@ -177,10 +177,10 @@ export default function Businesses({ lang }: { lang: Lang }) {
       try {
         const filters: any = { limit: PAGE_SIZE, offset: (page - 1) * PAGE_SIZE, sort, search: query || undefined, cityKey: cities[0] || undefined, industry: industries[0] || undefined, revenueBand: revenueBand || undefined, minQuality: quality70 ? 70 : undefined, featuredOnly: featuredOnly || undefined };
         if (tx !== 'all') filters.dealType = TX_DB[tx];
-        const [data, count] = await Promise.all([listBusinesses(filters), countBusinesses(filters).catch(() => null)]);
+        const result = await listBusinessesPage(filters);
         if (!live) return;
-        setRows((data || []).map(normalizeBusiness).filter((d) => d.slug));
-        setTotal(count);
+        setRows((result.rows || []).map(normalizeBusiness).filter((d) => d.slug));
+        setTotal(result.total);
       } catch (e: any) {
         if (!live) return;
         setRows([]); setTotal(0);

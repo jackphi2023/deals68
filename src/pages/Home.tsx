@@ -22,7 +22,11 @@ import {
   labelStage,
   T,
 } from '../lib/labels';
-import { getPublicDealValueSummary, type PublicDealValueSummary } from '../lib/publicMetrics';
+import {
+  getPublicDealValueSummary,
+  getPublicHomepageBootstrap,
+  type PublicDealValueSummary,
+} from '../lib/publicMetrics';
 import { toLocalizedPath } from '../lib/i18nRoutes';
 import type { Lang } from '../lib/i18n';
 import { HeroBannerSlider, PromotionBanner } from '../components/SiteBanners';
@@ -177,30 +181,39 @@ export default function Home({ lang }: { lang: Lang }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    let live = true;
-    (async () => {
-      setLoading(true);
-      const [bc, ic, dv, bs, invs] = await Promise.all([
-        countBusinesses().catch(() => null),
-        countInvestors().catch(() => null),
-        getPublicDealValueSummary().catch(() => null),
-        listHomepageBusinesses(6).catch(() => []),
-        listInvestors({ limit: 80 }).catch(() => []),
-      ]);
-      if (!live) return;
-      setBizCount(bc);
-      setInvCount(ic);
-      setDealValue(dv);
-      setDeals((bs || []).map((business: any) => normalizeDeal(business, lang)).filter((deal) => deal.slug));
-      const adminFeatured = (invs || []).filter((investor: any) => investor.admin_priority === true);
-      const investorPool = adminFeatured.length ? adminFeatured : invs || [];
-      setInvestors(shuffleHome(investorPool).slice(0, 4));
-      setLoading(false);
-    })();
-    return () => {
-      live = false;
-    };
-  }, [lang]);
+  let live = true;
+  (async () => {
+    setLoading(true);
+    const bootstrap = await getPublicHomepageBootstrap(6, 80).catch(() => null);
+    const [bc, ic, dv, bs, invs] = bootstrap
+      ? [
+          bootstrap.businessCount,
+          bootstrap.investorCount,
+          bootstrap.dealValue,
+          bootstrap.businesses,
+          bootstrap.investors,
+        ]
+      : await Promise.all([
+          countBusinesses().catch(() => null),
+          countInvestors().catch(() => null),
+          getPublicDealValueSummary().catch(() => null),
+          listHomepageBusinesses(6).catch(() => []),
+          listInvestors({ limit: 80 }).catch(() => []),
+        ]);
+    if (!live) return;
+    setBizCount(bc);
+    setInvCount(ic);
+    setDealValue(dv);
+    setDeals((bs || []).map((business: any) => normalizeDeal(business, lang)).filter((deal) => deal.slug));
+    const adminFeatured = (invs || []).filter((investor: any) => investor.admin_priority === true);
+    const investorPool = adminFeatured.length ? adminFeatured : invs || [];
+    setInvestors(shuffleHome(investorPool).slice(0, 4));
+    setLoading(false);
+  })();
+  return () => {
+    live = false;
+  };
+}, [lang]);
 
   const nav = (path: string) => toLocalizedPath(path, lang);
   const roleCards = [
