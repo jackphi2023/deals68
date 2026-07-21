@@ -28,7 +28,7 @@ const loadRegister = () => import('./pages/Register');
 const loadValuation = () => import('./pages/Valuation');
 const loadModuleScreen = () => import('./pages/ModuleScreen');
 const loadNotFound = () => import('./pages/NotFound');
-const loadBusinessDashboard = () => import('./pages/BusinessDashboard');
+const loadBusinessDashboard = () => import('./pages/BusinessDashboardWithReports');
 const loadInvestorDashboard = () => import('./pages/InvestorDashboard');
 const loadAdmin = () => import('./pages/Admin');
 const loadAdminValuation = () => import('./pages/AdminValuation');
