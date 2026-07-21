@@ -31,13 +31,13 @@ jobs:
           start = next(i for i, line in enumerate(source) if "python3 <<'PY'" in line) + 1
           end = next(i for i in range(start, len(source)) if source[i].strip() == 'PY')
           script = '\n'.join(line[10:] if line.startswith('          ') else line for line in source[start:end]) + '\n'
-          replacement = '''          start_marker = "        const assets = await getBusinessDetailAssets(b.id, { publicOnly: !(canDownload || ownerViewing) }).catch(() => ({ files: [], images: [] }));"
-          end_marker = "          setSimilar((related || []).map((row: any) => normalizeSimilar(row, lang)).filter((row: SimilarDeal | null): row is SimilarDeal => !!row && row.slug !== b.slug).slice(0, 3));"
-          start_index = detail.find(start_marker)
-          end_index = detail.find(end_marker, start_index)
-          if start_index < 0 or end_index < 0:
-              raise SystemExit(f'parallel business detail markers not found: {start_index}, {end_index}')
-          detail = detail[:start_index] + new + detail[end_index + len(end_marker):]'''
+          replacement = '''start_marker = "        const assets = await getBusinessDetailAssets(b.id, { publicOnly: !(canDownload || ownerViewing) }).catch(() => ({ files: [], images: [] }));"
+end_marker = "          setSimilar((related || []).map((row: any) => normalizeSimilar(row, lang)).filter((row: SimilarDeal | null): row is SimilarDeal => !!row && row.slug !== b.slug).slice(0, 3));"
+start_index = detail.find(start_marker)
+end_index = detail.find(end_marker, start_index)
+if start_index < 0 or end_index < 0:
+    raise SystemExit(f'parallel business detail markers not found: {start_index}, {end_index}')
+detail = detail[:start_index] + new + detail[end_index + len(end_marker):]'''
           script, count = re.subn(
               r"^\s*detail = replace_once\(detail, old, new, 'parallel business detail'\)\s*$",
               replacement,
@@ -111,8 +111,9 @@ jobs:
           rm -f .github/workflows/performance-phase3-rebase.yml
           rm -f .github/workflows/performance-phase3-rebase-diagnostic.yml
           rm -f .github/workflows/performance-phase3-rebase-retry.yml
+          rm -f .github/workflows/performance-phase3-retry-diagnostic.yml
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add src supabase/migrations/20260721042000_public_data_performance_v1.sql .github/workflows/performance-phase3-rebase.yml .github/workflows/performance-phase3-rebase-diagnostic.yml .github/workflows/performance-phase3-rebase-retry.yml
+          git add src supabase/migrations/20260721042000_public_data_performance_v1.sql .github/workflows/performance-phase3-rebase.yml .github/workflows/performance-phase3-rebase-diagnostic.yml .github/workflows/performance-phase3-rebase-retry.yml .github/workflows/performance-phase3-retry-diagnostic.yml
           git commit -m "perf(data): consolidate public queries and payloads"
           git push origin HEAD:automation/performance-phase3-rebase-20260721
