@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { optimizeImageBlob } from './imageUploadOptimization';
 
 export type BusinessAssetKind = 'file' | 'image';
 
@@ -87,7 +88,7 @@ async function uploadBlob(
   const { error } = await supabase.storage.from(bucket).upload(path, blob, {
     upsert: false,
     contentType: blob.type || 'application/octet-stream',
-    cacheControl: '3600',
+    cacheControl: '31536000',
   });
   if (error && !(allowExisting && isDuplicateStorageError(error))) {
     throw error;
@@ -133,7 +134,17 @@ async function moveBusinessImage(
     throw downloadError || new Error('Không tải được ảnh nguồn từ Storage.');
   }
 
-  await uploadBlob(targetBucket, targetPath, sourceBlob, true);
+  const uploadSource =
+    targetBucket === BUSINESS_IMAGE_PUBLIC_BUCKET
+      ? await optimizeImageBlob(sourceBlob, {
+          maxWidth: 1600,
+          maxHeight: 1200,
+          quality: 0.86,
+          minBytes: 220_000,
+        })
+      : sourceBlob;
+
+  await uploadBlob(targetBucket, targetPath, uploadSource, true);
 
   try {
     await removeObject(sourceBucket, sourcePath);

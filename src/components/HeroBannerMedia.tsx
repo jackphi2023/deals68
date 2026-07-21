@@ -133,6 +133,9 @@ export default function HeroBannerMedia({
         alt={alt}
         loading={eager ? 'eager' : 'lazy'}
         fetchPriority={eager ? 'high' : 'auto'}
+        decoding="async"
+        width={1600}
+        height={600}
         style={style}
         onLoad={(event) => preloadNextSlide(event.currentTarget)}
         onError={handleError}

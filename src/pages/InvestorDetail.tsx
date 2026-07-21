@@ -602,9 +602,14 @@ export default function InvestorDetail({ lang }: { lang: Lang }) {
                 className="d68-id-cover-media"
                 data-cover-source={resolvedCover.source}
               >
-                <img
-                  src={coverUrl}
-                  alt={T(
+                  <img
+                    src={coverUrl}
+                    loading="eager"
+                    fetchPriority="high"
+                    decoding="async"
+                    width={1600}
+                    height={560}
+                    alt={T(
                     lang,
                     `Ảnh cover ${title}`,
                     `${title} cover image`,

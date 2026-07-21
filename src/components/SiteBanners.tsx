@@ -188,6 +188,37 @@ export function HeroBannerSlider({
     return () => window.clearInterval(timer);
   }, [rows.length]);
 
+  useEffect(() => {
+  if (rows.length <= 1 || typeof window === 'undefined') return undefined;
+  const connection = (navigator as Navigator & {
+    connection?: { saveData?: boolean; effectiveType?: string };
+  }).connection;
+  if (
+    connection?.saveData ||
+    connection?.effectiveType === 'slow-2g' ||
+    connection?.effectiveType === '2g'
+  ) {
+    return undefined;
+  }
+
+  const next = rows[(active + 1) % rows.length];
+  const mobile = window.matchMedia('(max-width: 700px)').matches;
+  const nextUrl = cleanUrl(
+    mobile ? next?.mobile_image_url || next?.image_url : next?.image_url,
+  );
+  if (!nextUrl) return undefined;
+
+  const timer = window.setTimeout(() => {
+    if (document.visibilityState !== 'visible') return;
+    const image = new Image();
+    image.decoding = 'async';
+    image.fetchPriority = 'low';
+    image.src = nextUrl;
+  }, 3500);
+
+  return () => window.clearTimeout(timer);
+}, [active, rows]);
+
   const activeBanner = rows[active] || null;
   const sliderClassName =
     `d68-hero-slider${
@@ -219,26 +250,22 @@ export function HeroBannerSlider({
       className={sliderClassName}
       data-hero-layout="single-active"
     >
-      {rows.map((slide, index) => (
-        <MaybeLink
-          key={slide.id}
-          href={slide.link_url}
-          ariaHidden={index !== active}
-          tabIndex={index === active ? undefined : -1}
-          className={
-            `d68-hero-slide${index === active ? ' is-active' : ''}`
-          }
-        >
-          <HeroBannerMedia
-            banner={slide}
-            fallback={HERO_FALLBACK}
-            alt={slide.title || 'Deals68 banner'}
-            eager={index === 0}
-          />
-        </MaybeLink>
-      ))}
+      {activeBanner ? (
+      <MaybeLink
+        key={activeBanner.id}
+        href={activeBanner.link_url}
+        className="d68-hero-slide is-active"
+      >
+        <HeroBannerMedia
+          banner={activeBanner}
+          fallback={HERO_FALLBACK}
+          alt={activeBanner.title || 'Deals68 banner'}
+          eager={active === 0}
+        />
+      </MaybeLink>
+    ) : null}
 
-      {rows.length > 1 ? (
+    {rows.length > 1 ? (
         <div className="d68-hero-dots">
           {rows.map((slide, index) => (
             <button

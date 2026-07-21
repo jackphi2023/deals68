@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import type { Lang } from './i18n';
+import { optimizeImageForUpload } from './imageUploadOptimization';
 
 export type BannerPlacement =
   | 'home_hero'
@@ -186,7 +187,13 @@ export async function uploadSiteBannerImage(
   placement: BannerPlacement,
   variant: BannerImageVariant = 'desktop',
 ) {
-  const safeName = file.name.replace(
+  const optimizedFile = await optimizeImageForUpload(file, {
+    maxWidth: variant === 'mobile' ? 900 : 1920,
+    maxHeight: variant === 'mobile' ? 1800 : 1200,
+    quality: 0.9,
+    minBytes: 180_000,
+  });
+  const safeName = optimizedFile.name.replace(
     /[^a-zA-Z0-9._-]/g,
     '_',
   );
@@ -194,10 +201,10 @@ export async function uploadSiteBannerImage(
 
   const { error: uploadError } = await supabase.storage
     .from('site-banners')
-    .upload(path, file, {
+    .upload(path, optimizedFile, {
       upsert: false,
-      contentType: file.type || 'application/octet-stream',
-      cacheControl: '3600',
+      contentType: optimizedFile.type || 'application/octet-stream',
+      cacheControl: '31536000',
     });
 
   if (uploadError) throw uploadError;
@@ -228,20 +235,26 @@ export async function uploadInvestorCoverImage(
     throw new Error('Ảnh cover phải nhỏ hơn hoặc bằng 10 MB.');
   }
 
+  const optimizedFile = await optimizeImageForUpload(file, {
+    maxWidth: 1600,
+    maxHeight: 900,
+    quality: 0.88,
+    minBytes: 180_000,
+  });
   const safeInvestorId = String(investorId).replace(
     /[^a-zA-Z0-9_-]/g,
     '',
   );
-  const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+  const safeName = optimizedFile.name.replace(/[^a-zA-Z0-9._-]/g, '_');
   const path =
     `investor-covers/${safeInvestorId}/` +
     `${Date.now()}-${safeName}`;
 
   const { error: uploadError } = await supabase.storage
     .from('site-banners')
-    .upload(path, file, {
+    .upload(path, optimizedFile, {
       upsert: false,
-      contentType: file.type,
+      contentType: optimizedFile.type,
       cacheControl: '31536000',
     });
 

@@ -98,7 +98,7 @@ function DealCard({ d, lang, view, tintIndex }: { d: Deal; lang: Lang; view: Vie
     <Link to={nav(`/businesses/${d.slug}`)} className={`d68-business-card${view === 'list' ? ' d68-business-card--list' : ''}`}>
       <div className={`d68-business-card__media d68-business-card__media--${(tintIndex % 6) + 1}`}>
         {d.image
-          ? <img src={d.image} alt={title} loading="lazy" />
+          ? <img src={d.image} alt={title} loading="lazy" decoding="async" fetchPriority="low" width={640} height={360} />
           : <span className="d68-anon-badge">{T(lang, 'Deals68 · Hồ sơ ẩn danh', 'Deals68 · Anonymous listing')}</span>}
         {d.featured ? <span className="d68-featured-badge">★ {T(lang, 'Nổi bật', 'Featured')}</span> : null}
         {d.quality !== null ? <span className="d68-rating-badge"><span>◆</span>{d.quality}/100</span> : null}
