@@ -1,1 +1,1 @@
-hero restrained preload: expected 1 occurrence, found 0
+investor cover hints: expected 1 occurrence, found 0
