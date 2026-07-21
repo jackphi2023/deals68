@@ -1,0 +1,43 @@
+name: Capture performance phase 3 diagnostics
+
+on:
+  pull_request:
+    branches: [building]
+    types: [synchronize]
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    if: github.event.pull_request.head.ref == 'automation/performance-phase3-data-20260721'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: automation/performance-phase3-data-20260721
+      - name: Extract and run Phase 3 patch
+        shell: bash
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+          source = Path('.github/workflows/performance-phase3-apply.yml').read_text().splitlines()
+          start = next(i for i, line in enumerate(source) if "python3 <<'PY'" in line) + 1
+          end = next(i for i in range(start, len(source)) if source[i].strip() == 'PY')
+          script = '\n'.join(line[10:] if line.startswith('          ') else line for line in source[start:end]) + '\n'
+          Path('/tmp/phase3.py').write_text(script)
+          PY
+          set +e
+          python3 /tmp/phase3.py > /tmp/phase3-error.txt 2>&1
+          status=$?
+          set -e
+          cat /tmp/phase3-error.txt
+          echo "$status" > /tmp/phase3-status.txt
+          exit 0
+      - uses: actions/upload-artifact@v4
+        with:
+          name: performance-phase3-diagnostics
+          path: |
+            /tmp/phase3-error.txt
+            /tmp/phase3-status.txt
+          retention-days: 7
