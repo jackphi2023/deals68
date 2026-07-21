@@ -1,0 +1,54 @@
+name: Capture Phase 3 retry error
+
+on:
+  pull_request:
+    branches: [building]
+    types: [synchronize]
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    if: github.event.pull_request.head.ref == 'automation/performance-phase3-rebase-20260721'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: automation/performance-phase3-rebase-20260721
+      - name: Run patched script and capture error
+        shell: bash
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+          import re
+          source = Path('.github/workflows/performance-phase3-rebase.yml').read_text().splitlines()
+          start = next(i for i, line in enumerate(source) if "python3 <<'PY'" in line) + 1
+          end = next(i for i in range(start, len(source)) if source[i].strip() == 'PY')
+          script = '\n'.join(line[10:] if line.startswith('          ') else line for line in source[start:end]) + '\n'
+          replacement = '''          start_marker = "        const assets = await getBusinessDetailAssets(b.id, { publicOnly: !(canDownload || ownerViewing) }).catch(() => ({ files: [], images: [] }));"
+          end_marker = "          setSimilar((related || []).map((row: any) => normalizeSimilar(row, lang)).filter((row: SimilarDeal | null): row is SimilarDeal => !!row && row.slug !== b.slug).slice(0, 3));"
+          start_index = detail.find(start_marker)
+          end_index = detail.find(end_marker, start_index)
+          if start_index < 0 or end_index < 0:
+              raise SystemExit(f'parallel business detail markers not found: {start_index}, {end_index}')
+          detail = detail[:start_index] + new + detail[end_index + len(end_marker):]'''
+          script, count = re.subn(r"^\s*detail = replace_once\(detail, old, new, 'parallel business detail'\)\s*$", replacement, script, count=1, flags=re.M)
+          Path('/tmp/phase3-rebase.py').write_text(script)
+          Path('/tmp/phase3-patch-count.txt').write_text(str(count))
+          PY
+          set +e
+          python3 /tmp/phase3-rebase.py > /tmp/phase3-retry-error.txt 2>&1
+          status=$?
+          set -e
+          echo "$status" > /tmp/phase3-retry-status.txt
+          cat /tmp/phase3-retry-error.txt
+          exit 0
+      - uses: actions/upload-artifact@v4
+        with:
+          name: performance-phase3-retry-error
+          path: |
+            /tmp/phase3-retry-error.txt
+            /tmp/phase3-retry-status.txt
+            /tmp/phase3-patch-count.txt
+          retention-days: 7
