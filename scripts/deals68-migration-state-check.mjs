@@ -21,6 +21,8 @@ const required = [
   '20260721101214_ai_report_phase2_evidence_foundation_v1.sql',
   '20260721101436_ai_report_phase2_preflight_rate_limit_v1.sql',
   '20260721102249_ai_report_phase2_function_acl_hardening_v1.sql',
+  '20260721103201_ai_report_phase2_preflight_and_hourly_limits_v1.sql',
+  '20260721103504_ai_report_phase2_hourly_download_reconciliation_v1.sql',
 ];
 const forbidden = [
   '20260711103000_normalize_investor_taxonomy_on_write_v1.sql',
@@ -71,6 +73,26 @@ const migrationContracts = [
       'to service_role',
       'd68_complete_business_report_request',
       'd68_set_ai_report_alert',
+    ],
+  },
+  {
+    name: '20260721103201_ai_report_phase2_preflight_and_hourly_limits_v1.sql',
+    snippets: [
+      'create table if not exists public.ai_report_rate_events',
+      "create type public.d68_ai_report_action as enum ('generate','download')",
+      'create or replace function public.d68_get_business_report_rate_status',
+      'create or replace function public.d68_get_business_report_source_snapshot',
+      'rolling one-hour limit',
+    ],
+  },
+  {
+    name: '20260721103504_ai_report_phase2_hourly_download_reconciliation_v1.sql',
+    snippets: [
+      'drop function if exists public.d68_run_business_report_preflight(uuid, boolean)',
+      'create or replace function public.d68_claim_business_report_download',
+      "'source', 'ai_report_business_requests'",
+      "'source', 'ai_report_rate_events'",
+      'at most one download per rolling 60-minute window',
     ],
   },
 ];
