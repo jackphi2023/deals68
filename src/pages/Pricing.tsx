@@ -82,6 +82,7 @@ export default function Pricing({ lang }: { lang: Lang }) {
         T(lang, 'Hồ sơ ẩn danh công khai', 'Public anonymous profile'),
         T(lang, `Gói Thường: ${BUSINESS_STANDARD_PROPOSAL_QUOTA} lượt gửi Hồ sơ DN`, `Regular: ${BUSINESS_STANDARD_PROPOSAL_QUOTA} business profile sends`),
         T(lang, `Gói Ưu tiên: ${BUSINESS_FEATURED_PROPOSAL_QUOTA} lượt gửi Hồ sơ DN`, `Priority: ${BUSINESS_FEATURED_PROPOSAL_QUOTA} business profile sends`),
+        T(lang, 'Xem Báo cáo Tối ưu Hồ sơ DN', 'View Business Profile Optimization Report'),
         T(lang, 'Tương tác với Nhà đầu tư kết nối', 'Interact with connected investors'),
       ],
     },
@@ -101,6 +102,7 @@ export default function Pricing({ lang }: { lang: Lang }) {
         T(lang, 'Xem Business Quality Score', 'View Business Quality Score'),
         T(lang, 'Lưu doanh nghiệp quan tâm', 'Save businesses of interest'),
         T(lang, 'Xem chi tiết hồ sơ và Yêu cầu cung cấp tài liệu', 'View detailed profiles and request supporting documents'),
+        T(lang, 'Xem Báo cáo Phân tích đầu tư', 'View Investment Analysis Report'),
       ],
     },
     {
