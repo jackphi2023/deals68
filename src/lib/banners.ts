@@ -243,3 +243,51 @@ export async function uploadSiteBannerImage(
     publicUrl: data.publicUrl,
   };
 }
+
+export async function uploadInvestorCoverImage(
+  file: File,
+  investorId: string,
+) {
+  const allowedTypes = new Set([
+    'image/jpeg',
+    'image/png',
+    'image/webp',
+  ]);
+  if (!allowedTypes.has(file.type)) {
+    throw new Error('Cover chỉ hỗ trợ JPG, PNG hoặc WebP.');
+  }
+  if (file.size > 10 * 1024 * 1024) {
+    throw new Error('Ảnh cover phải nhỏ hơn hoặc bằng 10 MB.');
+  }
+
+  const optimizedFile = await optimizeImageForUpload(file, {
+    maxWidth: 1600,
+    maxHeight: 900,
+    quality: 0.88,
+    minBytes: 180_000,
+  });
+  const safeInvestorId = String(investorId).replace(
+    /[^a-zA-Z0-9_-]/g,
+    '',
+  );
+  const safeName = optimizedFile.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+  const path =
+    `investor-covers/${safeInvestorId}/` +
+    `${Date.now()}-${safeName}`;
+
+  const { error: uploadError } = await supabase.storage
+    .from('site-banners')
+    .upload(path, optimizedFile, {
+      upsert: false,
+      contentType: optimizedFile.type,
+      cacheControl: '31536000',
+    });
+
+  if (uploadError) throw uploadError;
+
+  const { data } = supabase.storage
+    .from('site-banners')
+    .getPublicUrl(path);
+
+  return { path, publicUrl: data.publicUrl };
+}
