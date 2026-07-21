@@ -7,7 +7,7 @@ const check = (condition, message) => {
 };
 
 const migration = fs.readFileSync(
-  'supabase/migrations/20260721114500_ai_report_phase5_worker_artifact_v1.sql',
+  'supabase/migrations/20260721121832_ai_report_phase5_worker_artifact_v1.sql',
   'utf8',
 );
 const index = fs.readFileSync('supabase/functions/business-ai-report/index.ts', 'utf8');
