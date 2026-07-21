@@ -1,0 +1,76 @@
+name: Verify detail performance phase on push
+
+on:
+  push:
+    branches:
+      - automation/performance-detail-phase4-20260721
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    if: github.event.head_commit.message == 'ci: run detail performance verification on push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: automation/performance-detail-phase4-20260721
+          fetch-depth: 30
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Apply scoped implementation from reviewed workflow
+        shell: bash
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+          lines = Path('.github/workflows/performance-detail-phase4-apply.yml').read_text().splitlines()
+          marker = next(i for i, line in enumerate(lines) if line.strip() == '- name: Apply scoped detail performance changes')
+          run_line = next(i for i in range(marker, len(lines)) if lines[i].strip() == 'run: |')
+          end = next(i for i in range(run_line + 1, len(lines)) if lines[i].strip() == '- name: Install dependencies')
+          script_lines = []
+          for line in lines[run_line + 1:end]:
+              script_lines.append(line[10:] if line.startswith('          ') else line)
+          Path('/tmp/apply-detail-phase.sh').write_text('\n'.join(script_lines) + '\n')
+          PY
+          bash /tmp/apply-detail-phase.sh
+      - name: Install dependencies
+        run: npm ci
+      - name: Production build
+        run: npm run build
+      - name: Detail performance contract QA
+        run: node scripts/deals68-performance-detail-phase4-check.mjs
+      - name: Core regression QA
+        run: |
+          npm run qa:css
+          npm run qa:migrations
+          npm run check:routes
+          git diff --check
+      - name: Verify CSS/layout scope
+        shell: bash
+        run: |
+          if git diff --name-only HEAD | grep -E '\.(css|scss|sass|less)$'; then
+            echo 'CSS file changed unexpectedly'
+            exit 1
+          fi
+      - name: Commit verified implementation
+        shell: bash
+        run: |
+          rm -f .github/workflows/performance-detail-phase4-apply.yml
+          rm -f .github/workflows/performance-detail-phase4-push.yml
+          rm -f performance-detail-phase4-trigger.txt
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add src scripts .github/workflows/performance-detail-phase4-apply.yml .github/workflows/performance-detail-phase4-push.yml performance-detail-phase4-trigger.txt
+          git commit -m "perf(details): cache public data and reduce request waterfalls"
+          git push origin HEAD:automation/performance-detail-phase4-20260721
+      - name: Save metrics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: performance-detail-phase4-metrics
+          path: /tmp/performance-detail-phase4-metrics.json
+          if-no-files-found: warn
+          retention-days: 7
