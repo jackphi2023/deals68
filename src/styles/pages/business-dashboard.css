@@ -137,3 +137,28 @@
     grid-column: 1;
   }
 }
+
+/* Business document row: concise save label and no internal approval metadata. */
+.d68-business-dashboard-page
+  .d68-document-row
+  > .d68-dashboard-btn.light:first-of-type {
+  font-size: 0 !important;
+}
+
+.d68-business-dashboard-page
+  .d68-document-row
+  > .d68-dashboard-btn.light:first-of-type::after {
+  content: "Lưu";
+  font-size: 14px;
+}
+
+[data-lang="en"]
+  .d68-business-dashboard-page
+  .d68-document-row
+  > .d68-dashboard-btn.light:first-of-type::after {
+  content: "Save";
+}
+
+.d68-business-dashboard-page .d68-document-row__meta {
+  display: none !important;
+}
