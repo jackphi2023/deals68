@@ -1,0 +1,87 @@
+name: Finalize performance images phase 1
+
+on:
+  pull_request:
+    branches: [building]
+    types: [synchronize]
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    if: github.event.pull_request.head.ref == 'automation/performance-images-phase1-20260721'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: automation/performance-images-phase1-20260721
+          fetch-depth: 20
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Apply scoped image performance implementation
+        shell: bash
+        run: |
+          git show 4a68994a9c51d9a08e0cf92f1f46f7c8461cbbaf:.github/workflows/performance-images-phase1-final.yml > /tmp/source.yml
+          python3 <<'PY'
+          from pathlib import Path
+          investor = Path('src/pages/InvestorDetail.tsx')
+          text = investor.read_text()
+          old = '                <img\n                  src={coverUrl}\n                  alt={T('
+          compatible = '                  <img\n                    src={coverUrl}\n                    alt={T('
+          if text.count(old) != 1:
+              raise SystemExit(f'investor compatibility: expected 1 occurrence, found {text.count(old)}')
+          investor.write_text(text.replace(old, compatible, 1))
+
+          source = Path('/tmp/source.yml').read_text().splitlines()
+          start = next(i for i, line in enumerate(source) if "python3 <<'PY'" in line) + 1
+          end = next(i for i in range(start, len(source)) if source[i].strip() == 'PY')
+          script = '\n'.join(line[10:] if line.startswith('          ') else line for line in source[start:end]) + '\n'
+          Path('/tmp/phase1.py').write_text(script)
+          PY
+          python3 /tmp/phase1.py
+      - name: Install dependencies
+        run: npm ci
+      - name: Production build
+        run: npm run build
+      - name: CSS architecture QA
+        run: npm run qa:css
+      - name: Migration state QA
+        run: npm run qa:migrations
+      - name: Verify performance contracts
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const site = fs.readFileSync('src/components/SiteBanners.tsx', 'utf8');
+          const hero = fs.readFileSync('src/components/HeroBannerMedia.tsx', 'utf8');
+          const banners = fs.readFileSync('src/lib/banners.ts', 'utf8');
+          const assets = fs.readFileSync('src/lib/businessAssetStorage.ts', 'utf8');
+          const optimizer = fs.readFileSync('src/lib/imageUploadOptimization.ts', 'utf8');
+          const checks = [
+            [!site.includes('{rows.map((slide, index) => ('), 'Only active hero media is mounted'],
+            [site.includes('3500'), 'Next hero preload is delayed'],
+            [site.includes("effectiveType === '2g'"), 'Slow-network guard exists'],
+            [hero.includes('decoding="async"'), 'Hero async decoding exists'],
+            [(banners.match(/cacheControl: '31536000'/g) || []).length >= 2, 'Long cache exists'],
+            [assets.includes('optimizeImageBlob(sourceBlob'), 'Business public image optimization exists'],
+            [optimizer.includes("canvas.toBlob(resolve, 'image/webp'"), 'WebP optimizer exists'],
+          ];
+          for (const [ok, label] of checks) {
+            if (!ok) throw new Error(label);
+            console.log(`PASS: ${label}`);
+          }
+          NODE
+          git diff --check
+      - name: Commit tested implementation
+        shell: bash
+        run: |
+          rm -f performance-phase1-error.txt
+          rm -f .github/workflows/performance-images-phase1-release.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src performance-phase1-error.txt .github/workflows/performance-images-phase1-release.yml
+          git commit -m "perf(images): reduce initial media load and optimize uploads"
+          git push origin HEAD:automation/performance-images-phase1-20260721
