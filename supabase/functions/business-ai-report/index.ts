@@ -1,5 +1,8 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
-import { createClient } from 'npm:@supabase/supabase-js@2.45.4';
+import {
+  createClient,
+  type SupabaseClient,
+} from 'npm:@supabase/supabase-js@2.45.4';
 import { createOpenAiNarrative } from './openai.ts';
 import { createReportPdf } from './pdf.ts';
 import {
@@ -24,6 +27,7 @@ const SIGNED_URL_SECONDS = 120;
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 type Json = Record<string, unknown>;
+type AnySupabaseClient = SupabaseClient<any, 'public', any>;
 
 type GenerateBody = {
   action: 'generate';
@@ -96,7 +100,9 @@ function safeRequestKey(value: unknown) {
 }
 
 async function sha256Hex(bytes: Uint8Array) {
-  const digest = await crypto.subtle.digest('SHA-256', bytes);
+  const normalized = new Uint8Array(bytes.byteLength);
+  normalized.set(bytes);
+  const digest = await crypto.subtle.digest('SHA-256', normalized.buffer);
   return Array.from(new Uint8Array(digest))
     .map((byte) => byte.toString(16).padStart(2, '0'))
     .join('');
@@ -124,33 +130,37 @@ function clients(req: Request) {
   return { userClient, serviceClient };
 }
 
-async function authenticatedUser(userClient: ReturnType<typeof createClient>) {
+async function authenticatedUser(userClient: AnySupabaseClient) {
   const { data, error } = await userClient.auth.getUser();
   if (error || !data.user) throw error || new Error('AUTHENTICATION_REQUIRED');
   return data.user;
 }
 
 async function failRequest(
-  serviceClient: ReturnType<typeof createClient>,
+  serviceClient: AnySupabaseClient,
   requestId: string | null,
   code: string,
   message: string,
 ) {
   if (!requestId) return;
-  await serviceClient.rpc('d68_fail_business_report_request', {
-    p_request_id: requestId,
-    p_error_code: code.slice(0, 120),
-    p_metadata: {
-      worker: 'business-ai-report-v1',
-      source_label: SOURCE_LABEL,
-      failure_message: message.slice(0, 900),
-      failed_at: new Date().toISOString(),
-    },
-  }).catch(() => undefined);
+  try {
+    await serviceClient.rpc('d68_fail_business_report_request', {
+      p_request_id: requestId,
+      p_error_code: code.slice(0, 120),
+      p_metadata: {
+        worker: 'business-ai-report-v1',
+        source_label: SOURCE_LABEL,
+        failure_message: message.slice(0, 900),
+        failed_at: new Date().toISOString(),
+      },
+    });
+  } catch {
+    // Failure bookkeeping must never hide the original worker error.
+  }
 }
 
 async function latestReport(
-  userClient: ReturnType<typeof createClient>,
+  userClient: AnySupabaseClient,
   businessId: string,
 ) {
   const { data, error } = await userClient.rpc('d68_get_latest_business_report', {
@@ -325,7 +335,11 @@ async function handleGenerate(req: Request, body: GenerateBody) {
     const code = errorCode(error);
     const message = errorMessage(error);
     if (uploadedPath) {
-      await serviceClient.storage.from(REPORT_BUCKET).remove([uploadedPath]).catch(() => undefined);
+      try {
+        await serviceClient.storage.from(REPORT_BUCKET).remove([uploadedPath]);
+      } catch {
+        // Best-effort orphan cleanup; the request is still marked failed below.
+      }
     }
     await failRequest(serviceClient, requestId, code, message);
     console.error('business-ai-report generate failed', code, message);
