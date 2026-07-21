@@ -1,0 +1,69 @@
+name: Trigger performance images phase 1 on PR
+
+on:
+  pull_request:
+    branches:
+      - building
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.event.pull_request.head.ref == 'automation/performance-images-phase1-20260721'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: automation/performance-images-phase1-20260721
+          fetch-depth: 2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Extract and apply scoped patch
+        shell: bash
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+          source = Path('.github/workflows/performance-images-phase1-apply.yml').read_text().splitlines()
+          start = next(i for i, line in enumerate(source) if "python3 <<'PY'" in line) + 1
+          end = next(i for i in range(start, len(source)) if source[i].strip() == 'PY')
+          script = '\n'.join(line[10:] if line.startswith('          ') else line for line in source[start:end]) + '\n'
+          Path('/tmp/apply_performance_phase1.py').write_text(script)
+          PY
+          python3 /tmp/apply_performance_phase1.py
+      - name: Install dependencies
+        run: npm ci
+      - name: Production build
+        run: npm run build
+      - name: CSS architecture QA
+        run: npm run qa:css
+      - name: Verify scope and contracts
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const site = fs.readFileSync('src/components/SiteBanners.tsx', 'utf8');
+          const hero = fs.readFileSync('src/components/HeroBannerMedia.tsx', 'utf8');
+          const banners = fs.readFileSync('src/lib/banners.ts', 'utf8');
+          const assets = fs.readFileSync('src/lib/businessAssetStorage.ts', 'utf8');
+          if (site.includes('{rows.map((slide, index) => (')) throw new Error('All hero slides are still mounted');
+          if (!site.includes('3500')) throw new Error('Restrained next-slide preload missing');
+          if (!hero.includes('decoding="async"')) throw new Error('Hero async decoding missing');
+          if ((banners.match(/cacheControl: '31536000'/g) || []).length < 2) throw new Error('Long banner cache missing');
+          if (!assets.includes('optimizeImageBlob(sourceBlob')) throw new Error('Business image approval optimization missing');
+          if (!fs.existsSync('src/lib/imageUploadOptimization.ts')) throw new Error('Image optimizer missing');
+          NODE
+          git diff --check
+      - name: Commit verified implementation
+        shell: bash
+        run: |
+          rm -f .github/workflows/performance-images-phase1-apply.yml
+          rm -f .github/workflows/performance-images-phase1-pr.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src .github/workflows/performance-images-phase1-apply.yml .github/workflows/performance-images-phase1-pr.yml
+          git commit -m "perf(images): reduce initial media load and optimize uploads"
+          git push origin HEAD:automation/performance-images-phase1-20260721
