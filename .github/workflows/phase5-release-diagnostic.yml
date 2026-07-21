@@ -21,11 +21,27 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
-      - name: Print concise release static failures
+      - name: Capture release static failures
+        id: release_static
+        continue-on-error: true
         shell: bash
         run: |
-          set +e
+          set -o pipefail
           node scripts/deals68-release-qa-check.mjs > /tmp/release-static.log 2>&1
-          status=$?
-          grep -E '^(✗|Release QA static check failed:)' /tmp/release-static.log || true
-          exit "$status"
+      - name: Extract concise failures
+        if: always()
+        shell: bash
+        run: |
+          grep -E '^(✗|Release QA static check failed:)' /tmp/release-static.log > release-failures.txt || true
+          cat release-failures.txt
+      - name: Upload release failures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase5-release-failures
+          path: release-failures.txt
+          if-no-files-found: error
+          retention-days: 3
+      - name: Enforce release static contract
+        if: steps.release_static.outcome != 'success'
+        run: exit 1
