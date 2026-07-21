@@ -1,9 +1,17 @@
 import { supabase } from '../../lib/supabase';
+import {
+  clearSessionReportContent,
+  getSessionCachedReportContent,
+  reportSessionKey,
+  resolveReportFreshness,
+} from './reportCore';
 import type {
   BusinessReportAlert,
   BusinessReportArtifact,
   BusinessReportStatus,
+  ReportContent,
   ReportDownloadResponse,
+  ReportFreshness,
   ReportGenerateResponse,
   ReportLang,
   ReportPreflight,
@@ -73,7 +81,69 @@ export async function getLatestBusinessReport(
   });
   if (error) throw error;
   const row = unwrapRpc<BusinessReportArtifact | null>(data);
-  return row?.id ? row : null;
+  return row?.id ? { ...row, audience: 'business_owner' } : null;
+}
+
+export async function getBusinessReportContent(
+  businessId: string,
+  reportId: string,
+): Promise<ReportContent | null> {
+  const { data, error } = await supabase
+    .from('ai_reports')
+    .select('content_json')
+    .eq('id', reportId)
+    .eq('business_id', businessId)
+    .eq('status', 'completed')
+    .maybeSingle();
+  if (error) throw error;
+  if (!data?.content_json || typeof data.content_json !== 'object') return null;
+  return data.content_json as ReportContent;
+}
+
+export function getCachedBusinessReportContent(
+  businessId: string,
+  reportId: string,
+) {
+  const subject = { audience: 'business_owner' as const, businessId };
+  return getSessionCachedReportContent(
+    reportSessionKey(subject, reportId),
+    () => getBusinessReportContent(businessId, reportId),
+  );
+}
+
+export function clearBusinessReportContentCache(
+  businessId: string,
+  reportId?: string | null,
+) {
+  if (!reportId) {
+    clearSessionReportContent();
+    return;
+  }
+  clearSessionReportContent(
+    reportSessionKey({ audience: 'business_owner', businessId }, reportId),
+  );
+}
+
+export async function getBusinessReportFreshness(params: {
+  businessId: string;
+  artifact: BusinessReportArtifact;
+  preflight?: ReportPreflight | null;
+  businessUpdatedAt?: string | null;
+}): Promise<ReportFreshness> {
+  const { data, error } = await supabase
+    .from('business_files')
+    .select('created_at,updated_at')
+    .eq('business_id', params.businessId)
+    .order('updated_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw error;
+  return resolveReportFreshness({
+    artifact: params.artifact,
+    preflight: params.preflight,
+    businessUpdatedAt: params.businessUpdatedAt,
+    fileUpdatedAt: data?.updated_at || data?.created_at || null,
+  });
 }
 
 export async function runBusinessReportPreflight(
@@ -93,12 +163,19 @@ export async function generateBusinessReport(
   const randomPart = typeof crypto !== 'undefined' && crypto.randomUUID
     ? crypto.randomUUID()
     : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-  return invokeReportWorker<ReportGenerateResponse>({
+  const response = await invokeReportWorker<ReportGenerateResponse>({
     action: 'generate',
     business_id: businessId,
     language,
     request_key: `business-dashboard:${businessId}:${randomPart}`,
   });
+  if (response.ok && typeof window !== 'undefined') {
+    clearBusinessReportContentCache(businessId);
+    window.dispatchEvent(new CustomEvent('d68:business-report-updated', {
+      detail: { businessId, reportId: response.report_id || response.report?.id || null },
+    }));
+  }
+  return response;
 }
 
 export async function requestBusinessReportDownload(
