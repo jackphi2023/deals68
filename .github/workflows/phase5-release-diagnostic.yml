@@ -1,9 +1,6 @@
 name: Phase 5 Release Diagnostic
 
 on:
-  push:
-    branches: [automation/business-report-phase5-20260721]
-    paths: ['.github/workflows/phase5-release-diagnostic.yml']
   pull_request:
     branches: [building]
     paths: ['.github/workflows/phase5-release-diagnostic.yml']
@@ -15,7 +12,7 @@ permissions:
 jobs:
   diagnose:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -24,55 +21,11 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
-      - name: Release static contract
-        run: node scripts/deals68-release-qa-check.mjs
-      - name: Security phase A
-        run: node scripts/deals68-security-phase-a-check.mjs
-      - name: Business assets security
-        run: node scripts/deals68-business-assets-security-check.mjs
-      - name: Business dashboard UX
-        run: node scripts/deals68-business-dashboard-ux-check.mjs
-      - name: Investor dashboard UX
-        run: node scripts/deals68-investor-dashboard-ux-check.mjs
-      - name: Home investors hero UX
-        run: node scripts/deals68-home-investors-hero-ux-check.mjs
-      - name: Entity title hover
-        run: node scripts/deals68-entity-title-hover-check.mjs
-      - name: Business location flow
-        run: node scripts/deals68-business-location-flow-check.mjs
-      - name: Business register copy
-        run: node scripts/deals68-business-register-copy-term-check.mjs
-      - name: Business auth profile
-        run: node scripts/deals68-business-dashboard-auth-profile-check.mjs
-      - name: Register valuation UX
-        run: node scripts/deals68-register-valuation-ux-check.mjs
-      - name: Payment invoice hardening
-        run: node scripts/deals68-payment-invoice-hardening-check.mjs
-      - name: Admin operations
-        run: node scripts/deals68-admin-operations-check.mjs
-      - name: Phase A hardening
-        run: node scripts/deals68-phase-a-hardening-check.mjs
-      - name: Public discovery UX
-        run: node scripts/deals68-public-discovery-ux-check.mjs
-      - name: Register About CTA
-        run: node scripts/deals68-register-about-cta-ux-check.mjs
-      - name: Business overview spacing
-        run: node scripts/deals68-business-dashboard-overview-spacing-check.mjs
-      - name: Admin financial review
-        run: node scripts/deals68-admin-business-financial-review-check.mjs
-      - name: Business assets transaction
-        run: node scripts/deals68-business-detail-assets-transaction-check.mjs
-      - name: Investor detail localization
-        run: node scripts/deals68-investor-detail-localization-check.mjs
-      - name: Investor profile contract V2
-        run: node scripts/deals68-investor-profile-contract-v2-check.mjs
-      - name: Investor profile Postgres V2
-        run: node scripts/deals68-investor-profile-postgres-v2-test.mjs
-      - name: CSS architecture
-        run: node scripts/deals68-css-architecture-check.mjs
-      - name: Migration state
-        run: node scripts/deals68-migration-state-check.mjs
-      - name: UI Business fixes
-        run: node scripts/deals68-ui-business-fixes-v1-contract-check.mjs
-      - name: Session 8 regression
-        run: node scripts/deals68-session8-final-regression-check.mjs
+      - name: Print concise release static failures
+        shell: bash
+        run: |
+          set +e
+          node scripts/deals68-release-qa-check.mjs > /tmp/release-static.log 2>&1
+          status=$?
+          grep -E '^(✗|Release QA static check failed:)' /tmp/release-static.log || true
+          exit "$status"
