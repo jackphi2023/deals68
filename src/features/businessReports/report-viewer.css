@@ -1,0 +1,332 @@
+.d68-report-viewer-shell {
+  margin: 0 0 28px;
+}
+
+.d68-report-viewer-shell__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 12px;
+  padding: 10px 14px;
+  border: 1px solid #cbdde8;
+  border-radius: 10px;
+  background: #fff;
+  color: #087bad;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.d68-report-viewer-shell__toggle:hover {
+  background: #f4fbff;
+}
+
+.d68-report-viewer-shell__toggle:focus-visible {
+  outline: 3px solid rgba(27, 173, 234, 0.28);
+  outline-offset: 2px;
+}
+
+.d68-report-viewer-shell__status {
+  margin: 0 0 12px;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.d68-report-viewer-shell__status.error {
+  color: #b91c1c;
+}
+
+.d68-report-viewer {
+  overflow: hidden;
+  border: 1px solid #dce8ef;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 12px 32px rgba(15, 41, 64, 0.08);
+}
+
+.d68-report-viewer__header {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 24px;
+  background: linear-gradient(135deg, #f4fbff, #fff);
+  border-bottom: 1px solid #dce8ef;
+}
+
+.d68-report-viewer__eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #087bad;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.d68-report-viewer__header h3 {
+  margin: 8px 0 5px;
+  color: #0f2940;
+  font-size: clamp(21px, 3vw, 30px);
+  line-height: 1.25;
+}
+
+.d68-report-viewer__header p {
+  margin: 0;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.d68-report-viewer__badges {
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.d68-report-viewer__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 9px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 750;
+  white-space: nowrap;
+}
+
+.d68-report-viewer__badge.full {
+  background: #eaf8ef;
+  color: #166534;
+}
+
+.d68-report-viewer__badge.limited {
+  background: #fff6d8;
+  color: #7a5500;
+}
+
+.d68-report-viewer__badge.source {
+  background: #e7f6fd;
+  color: #0f5d8b;
+}
+
+.d68-report-viewer__stale {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  margin: 18px 24px 0;
+  padding: 12px 14px;
+  border: 1px solid rgba(184, 134, 11, 0.28);
+  border-radius: 10px;
+  background: rgba(242, 181, 29, 0.13);
+  color: #7a5500;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.d68-report-viewer__stale svg {
+  flex: 0 0 auto;
+  margin-top: 1px;
+}
+
+.d68-report-viewer__summary,
+.d68-report-viewer__facts,
+.d68-report-viewer__quality,
+.d68-report-viewer__sources,
+.d68-report-viewer__footer {
+  padding: 24px;
+  border-top: 1px solid #edf2f6;
+}
+
+.d68-report-viewer__summary {
+  border-top: 0;
+}
+
+.d68-report-viewer h4,
+.d68-report-viewer h5 {
+  margin: 0 0 10px;
+  color: #0f2940;
+}
+
+.d68-report-viewer h4 {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 16px;
+}
+
+.d68-report-viewer h5 {
+  font-size: 13.5px;
+}
+
+.d68-report-viewer p,
+.d68-report-viewer li,
+.d68-report-viewer blockquote {
+  color: #425b6c;
+  line-height: 1.62;
+}
+
+.d68-report-viewer__summary p,
+.d68-report-viewer__footer p {
+  margin: 0;
+}
+
+.d68-report-viewer__grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  padding: 0 24px 24px;
+}
+
+.d68-report-viewer__grid.two {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  padding: 0;
+}
+
+.d68-report-viewer__list {
+  padding: 16px;
+  border: 1px solid #e4edf2;
+  border-radius: 12px;
+  background: #fbfdfe;
+}
+
+.d68-report-viewer__list.positive {
+  background: #f7fcf8;
+}
+
+.d68-report-viewer__list.risk {
+  background: #fffafa;
+}
+
+.d68-report-viewer__list h4 {
+  font-size: 14px;
+}
+
+.d68-report-viewer__list ul,
+.d68-report-viewer__sources ul {
+  margin: 0;
+  padding-left: 19px;
+}
+
+.d68-report-viewer__list p,
+.d68-report-viewer__sources p {
+  margin: 0;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.d68-report-viewer__fact-list {
+  display: grid;
+  gap: 8px;
+}
+
+.d68-report-viewer__fact-list details {
+  border: 1px solid #e1eaf0;
+  border-radius: 10px;
+  background: #fbfdfe;
+}
+
+.d68-report-viewer__fact-list summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  color: #24475e;
+  cursor: pointer;
+  list-style: none;
+}
+
+.d68-report-viewer__fact-list summary::-webkit-details-marker {
+  display: none;
+}
+
+.d68-report-viewer__fact-list details[open] summary svg {
+  transform: rotate(180deg);
+}
+
+.d68-report-viewer__fact-list details > div {
+  padding: 0 14px 14px;
+  border-top: 1px solid #e8eef2;
+}
+
+.d68-report-viewer__fact-list blockquote {
+  margin: 8px 0;
+  padding: 9px 12px;
+  border-left: 3px solid #1badea;
+  background: #fff;
+  font-size: 13px;
+}
+
+.d68-report-viewer .d68-report-viewer__fact-meta {
+  margin: 6px 0 0;
+  color: #64748b;
+  font-size: 12px;
+}
+
+.d68-report-viewer__empty {
+  margin: 0;
+  padding: 14px;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.d68-report-viewer__footer {
+  background: #f8fafc;
+}
+
+@media (max-width: 900px) {
+  .d68-report-viewer__header {
+    flex-direction: column;
+  }
+
+  .d68-report-viewer__badges {
+    justify-content: flex-start;
+  }
+
+  .d68-report-viewer__grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .d68-report-viewer__header,
+  .d68-report-viewer__summary,
+  .d68-report-viewer__facts,
+  .d68-report-viewer__quality,
+  .d68-report-viewer__sources,
+  .d68-report-viewer__footer {
+    padding: 18px;
+  }
+
+  .d68-report-viewer__stale {
+    margin: 14px 18px 0;
+  }
+
+  .d68-report-viewer__grid {
+    padding: 0 18px 18px;
+  }
+
+  .d68-report-viewer__grid.two {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 0;
+  }
+
+  .d68-report-viewer__fact-list summary {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .d68-report-viewer__fact-list summary > span:nth-child(2) {
+    grid-column: 1 / -1;
+    color: #0f2940;
+    font-weight: 700;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .d68-report-viewer__fact-list summary svg {
+    transition: none;
+  }
+}

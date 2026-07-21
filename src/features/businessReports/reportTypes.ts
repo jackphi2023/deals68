@@ -1,4 +1,5 @@
 export type ReportLang = 'vi' | 'en';
+export type ReportAudience = 'business_owner' | 'investor';
 
 export type ReportGateStatus =
   | 'not_checked'
@@ -35,12 +36,16 @@ export type ReportMessageItem = {
 
 export type ReportPreflight = {
   preflight_id?: string | null;
+  id?: string | null;
   business_id?: string;
   allow_report?: boolean;
   allow_valuation?: boolean;
   grade?: ReportGrade;
   report_grade?: ReportGrade;
   eligibility_status?: string;
+  data_gate?: string;
+  entity_gate?: string;
+  authority_gate?: string;
   authority_notice_required?: boolean;
   authority_notice_vi?: string | null;
   authority_notice_en?: string | null;
@@ -91,6 +96,7 @@ export type BusinessReportArtifact = {
   id: string;
   request_id?: string;
   business_id: string;
+  audience?: ReportAudience;
   language?: ReportLang;
   report_grade?: Exclude<ReportGrade, 'blocked'>;
   generator_mode?: ReportGeneratorMode;
@@ -102,6 +108,72 @@ export type BusinessReportArtifact = {
   sha256?: string;
   generated_at?: string;
   download_available?: boolean;
+};
+
+export type ReportNarrative = {
+  executive_summary?: string;
+  strengths?: string[];
+  risks?: string[];
+  recommendations?: string[];
+};
+
+export type ReportFact = {
+  id?: string;
+  business_file_id?: string | null;
+  fact_kind?: 'document_backed' | 'derived' | string;
+  field_key?: string;
+  period_key?: string | null;
+  value_json?: unknown;
+  normalized_value?: number | null;
+  unit?: string | null;
+  currency?: string | null;
+  confidence?: number;
+  validation_status?: string;
+  page_number?: number | null;
+  sheet_name?: string | null;
+  cell_range?: string | null;
+  source_excerpt?: string | null;
+  citation?: string;
+  file_name?: string;
+};
+
+export type ReportSourceFile = {
+  id?: string;
+  name?: string;
+  category?: string;
+  status?: string;
+  reason?: string;
+};
+
+export type ReportContent = {
+  source_label?: 'Deals68 AI Report' | string;
+  audience?: ReportAudience;
+  language?: ReportLang;
+  report_grade?: Exclude<ReportGrade, 'blocked'>;
+  generator_mode?: ReportGeneratorMode;
+  generated_at?: string;
+  business?: Record<string, unknown>;
+  preflight?: ReportPreflight;
+  authority?: Record<string, unknown> | null;
+  ai_narrative?: ReportNarrative;
+  facts?: ReportFact[];
+  usable_files?: ReportSourceFile[];
+  excluded_files?: ReportSourceFile[];
+  warnings?: string[];
+  missing?: string[];
+  disclaimer?: string;
+};
+
+export type ReportArtifactPayload = {
+  artifact: BusinessReportArtifact;
+  content: ReportContent;
+  source_manifest: unknown[];
+};
+
+export type ReportFreshness = {
+  stale: boolean;
+  source_updated_at?: string | null;
+  reason?: 'source_hash_changed' | 'business_updated' | 'file_updated' | null;
 };
 
 export type ReportGenerateResponse = {
