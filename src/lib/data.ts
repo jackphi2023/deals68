@@ -744,7 +744,17 @@ export async function downloadBusinessFile(row: any) {
 export async function deleteBusinessFile(row: any) {
   const assetId = String(row?.id || '').trim();
   if (!assetId) throw new Error('Tài liệu thiếu ID để xóa.');
-  return deleteBusinessAsset('file', assetId);
+
+  const deleted = await deleteBusinessAsset('file', assetId);
+  const { data: remaining, error } = await supabase
+    .from('business_files')
+    .select('id')
+    .eq('id', assetId)
+    .maybeSingle();
+
+  if (error) throw error;
+  if (remaining) throw new Error('Tài liệu vẫn còn trong hệ thống sau khi xóa.');
+  return deleted;
 }
 
 export async function uploadBusinessImage(

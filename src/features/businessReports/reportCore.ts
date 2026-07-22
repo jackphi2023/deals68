@@ -63,6 +63,14 @@ const ERROR_COPY: Record<string, [string, string]> = {
     'Bạn cần đăng nhập để sử dụng báo cáo.',
     'You must be signed in to use reports.',
   ],
+  DOCUMENT_PROCESSING_PENDING: [
+    'Tài liệu đang chờ xử lý. Báo cáo có thể tạo sau khi hệ thống đọc xong tài liệu.',
+    'Documents are awaiting processing. The report can be created after processing finishes.',
+  ],
+  DOCUMENT_BACKED_REVENUE_MISSING: [
+    'Doanh thu hiện là dữ liệu tự kê khai hoặc chưa đủ độ tin cậy; báo cáo không dùng số này để định giá.',
+    'Revenue is self-declared or insufficiently supported; it will not be used for valuation.',
+  ],
   RATE_LIMITED: [
     'Bạn đã đạt giới hạn 01 lần trong 60 phút. Vui lòng thử lại sau.',
     'You reached the 1-action-per-60-minute limit. Please try again later.',
