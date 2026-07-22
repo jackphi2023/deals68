@@ -1,0 +1,61 @@
+name: Patch Pricing FAQ 20260722
+
+on:
+  push:
+    branches:
+      - fix/pricing-faq-report-dataroom-20260722
+
+permissions:
+  contents: write
+
+jobs:
+  patch-and-verify:
+    if: ${{ github.actor != 'github-actions[bot]' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/pricing-faq-report-dataroom-20260722
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Apply FAQ copy
+        run: node scripts/patch-pricing-faq-20260722.mjs
+      - name: Verify exact FAQ placement and copy
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const source = fs.readFileSync('src/pages/Pricing.tsx', 'utf8');
+          const first = source.indexOf('Báo cáo Tối ưu hồ sơ Doanh nghiệp là gì?');
+          const second = source.indexOf('Dataroom và eNDA là gì?');
+          const existing = source.indexOf('Giá tính như thế nào?');
+          if (first < 0 || second < 0 || existing < 0 || !(first < second && second < existing)) {
+            throw new Error('The two new FAQ entries are not at the top of the FAQ list.');
+          }
+          const required = [
+            'What is the Business Profile Optimization Report?',
+            'What are the Dataroom and eNDA?',
+            'Báo cáo Tóm lượt cơ hội đầu tư',
+            'hundreds of pages of documents',
+            'cam kết bảo mật thông tin doanh nghiệp cung cấp tại Dataroom',
+          ];
+          for (const value of required) {
+            if (!source.includes(value)) throw new Error(`Missing FAQ copy: ${value}`);
+          }
+          console.log('Pricing FAQ contract: PASS');
+          NODE
+      - run: npm run build
+      - run: npm run qa:css
+      - run: npm run check:routes
+      - run: git diff --check
+      - name: Commit focused change and remove helpers
+        run: |
+          rm -f scripts/patch-pricing-faq-20260722.mjs .github/workflows/patch-pricing-faq-20260722.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/pages/Pricing.tsx scripts/patch-pricing-faq-20260722.mjs .github/workflows/patch-pricing-faq-20260722.yml
+          git commit -m "copy: explain Business reports, Dataroom and eNDA in Pricing FAQ"
+          git push origin HEAD:fix/pricing-faq-report-dataroom-20260722
