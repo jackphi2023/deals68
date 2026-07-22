@@ -133,6 +133,18 @@ export default function Pricing({ lang }: { lang: Lang }) {
   ];
 
   const faqs = [
+    {
+      qVi: 'Báo cáo Tối ưu hồ sơ Doanh nghiệp là gì?',
+      qEn: 'What is the Business Profile Optimization Report?',
+      aVi: 'Là chức năng tổng hợp toàn bộ thông tin doanh nghiệp đăng lên tại Dataroom để tổng hợp và đưa ra các đề xuất tối ưu. Chỉ doanh nghiệp dùng gói Ưu tiên mới được sử dụng. Nhà đầu tư cũng có thể xem Báo cáo Tóm lượt cơ hội đầu tư, thay vì cần nhiều ngày để đọc hàng trăm trang tài liệu trong Dataroom của doanh nghiệp.',
+      aEn: 'It consolidates all information uploaded by the Business to the Dataroom and provides optimization recommendations. The feature is available only to Businesses using the Priority plan. Investors can also view an Investment Opportunity Summary Report instead of spending days reading hundreds of pages of documents in the Business Dataroom.',
+    },
+    {
+      qVi: 'Dataroom và eNDA là gì?',
+      qEn: 'What are the Dataroom and eNDA?',
+      aVi: 'Dataroom là phòng chứa toàn bộ các tài liệu doanh nghiệp cung cấp, và chỉ mở cho nhà đầu tư xem sau khi đã ký eNDA. eNDA là văn bản số chứng thực nhà đầu tư cam kết bảo mật thông tin doanh nghiệp cung cấp tại Dataroom để được cấp quyền xem.',
+      aEn: "The Dataroom contains all documents provided by the Business and is opened to an investor only after the investor has signed the eNDA. The eNDA is a digitally executed agreement confirming the investor's commitment to keep the information provided in the Dataroom confidential before access is granted.",
+    },
     { qVi: 'Giá tính như thế nào?', qEn: 'How is pricing calculated?', aVi: 'Theo vai trò, quốc gia và kỳ hạn. Việt Nam dùng VNĐ, quốc gia khác dùng USD. Kỳ hạn dài được giảm 15–20%.', aEn: 'By role, country and term. Vietnam uses VND, other countries use USD. Longer terms get 15–20% discount.' },
     { qVi: 'Mã khuyến mãi có thể áp dụng thêm với Giảm giá theo gói không?', qEn: 'Can promo codes be applied on top of package discounts?', aVi: 'Có, nếu bạn có mã khuyến mãi hoặc đối tác cung cấp mã, hãy nhập để được giảm giá kèm thêm.', aEn: 'Yes. If you have a promo code or a partner provides one, enter it to receive an additional discount.' },
     { qVi: 'Thanh toán bằng cách nào?', qEn: 'How can I pay?', aVi: 'QR chuyển khoản, Thẻ nội địa, Thẻ tín dụng.', aEn: 'Bank QR, domestic card or credit card.' },
