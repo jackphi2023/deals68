@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { getMyBusiness } from '../../lib/data';
+import { normalizeBusinessPlan } from '../../lib/businessPlans';
 import {
   langFromPath,
   stripLangPrefix,
@@ -83,6 +84,18 @@ function alertText(alert: BusinessReportAlert, lang: ReportLang) {
   return lang === 'en'
     ? alert.title_en || alert.title_vi || alert.alert_code || ''
     : alert.title_vi || alert.title_en || alert.alert_code || '';
+}
+
+function reportMessageCode(item: ReportMessageItem | string) {
+  return typeof item === 'string' ? item : item.code || '';
+}
+
+function hasActivePriorityPlan(business: any) {
+  if (normalizeBusinessPlan(business?.plan) !== 'featured') return false;
+  const expiresAt = String(business?.plan_expires_at || '').trim();
+  if (!expiresAt) return true;
+  const expiresAtMs = Date.parse(expiresAt);
+  return Number.isFinite(expiresAtMs) && expiresAtMs > Date.now();
 }
 
 function formatRetry(seconds: number, lang: ReportLang) {
@@ -168,6 +181,8 @@ function PanelAction({
   lang,
   variant = 'primary',
   ariaLabel,
+  tooltip = '',
+  priorityLocked = false,
 }: {
   children: ReactNode;
   disabled: boolean;
@@ -176,24 +191,26 @@ function PanelAction({
   lang: ReportLang;
   variant?: 'primary' | 'secondary';
   ariaLabel: string;
+  tooltip?: string;
+  priorityLocked?: boolean;
 }) {
-  const tooltip = inactive
+  const resolvedTooltip = tooltip || (inactive
     ? T(
         lang,
         'Bạn chưa sử dụng được do chưa được kích hoạt hồ sơ.',
         'This feature is unavailable because your profile has not been activated.',
       )
-    : '';
+    : '');
 
   return (
     <span
       className="d68-business-report-panel__action-wrap"
-      data-tooltip={tooltip || undefined}
-      tabIndex={inactive ? 0 : -1}
+      data-tooltip={resolvedTooltip || undefined}
+      tabIndex={resolvedTooltip ? 0 : -1}
     >
       <button
         type="button"
-        className={`d68-business-report-panel__button ${variant === 'secondary' ? 'secondary' : ''}`}
+        className={`d68-business-report-panel__button ${variant === 'secondary' ? 'secondary' : ''} ${priorityLocked ? 'priority-locked' : ''}`.trim()}
         disabled={disabled}
         onClick={onClick}
         aria-label={ariaLabel}
@@ -218,9 +235,26 @@ function BusinessReportPanel({ business, lang }: { business: any; lang: ReportLa
       String(business?.status || '').toLowerCase() === 'active' &&
       business?.public_snapshot_json,
   );
+  const priorityEligible = hasActivePriorityPlan(business);
+  const priorityLocked = !priorityEligible;
+  const priorityTooltip = T(
+    lang,
+    'Tính năng chỉ dành cho Doanh nghiệp Ưu tiên, hãy nâng cấp để được sử dụng',
+    'This feature is only available to Priority Businesses. Please upgrade to use it.',
+  );
 
   const refresh = useCallback(async () => {
     if (!business?.id) return;
+    if (!priorityEligible) {
+      setMode('idle');
+      setStatus({});
+      setRateStatus({});
+      setPreflight(null);
+      setLatestReport(null);
+      setAlerts([]);
+      setErrorMessage('');
+      return;
+    }
     setMode('loading');
     setErrorMessage('');
 
@@ -256,7 +290,7 @@ function BusinessReportPanel({ business, lang }: { business: any; lang: ReportLa
         'Could not load report status.',
       ));
     }
-  }, [business?.id, lang]);
+  }, [business?.id, lang, priorityEligible]);
 
   useEffect(() => {
     void refresh();
@@ -276,13 +310,17 @@ function BusinessReportPanel({ business, lang }: { business: any; lang: ReportLa
   const generating = mode === 'loading' || mode === 'checking' || mode === 'processing';
   const downloading = mode === 'downloading';
 
-  const primaryBlocking = useMemo(() => {
-    const candidates = [
-      ...(preflight?.blocking || []),
-      ...(preflight?.missing || []),
-    ];
-    return candidates.map((item) => messageText(item, lang)).find(Boolean) || '';
-  }, [preflight, lang]);
+  const blockingCandidates = useMemo(() => [
+    ...(preflight?.blocking || []),
+    ...(preflight?.missing || []),
+  ], [preflight]);
+  const hasDocumentProcessingPending = blockingCandidates.some(
+    (item) => reportMessageCode(item) === 'DOCUMENT_PROCESSING_PENDING',
+  );
+  const primaryBlocking = blockingCandidates
+    .filter((item) => reportMessageCode(item) !== 'DOCUMENT_PROCESSING_PENDING')
+    .map((item) => messageText(item, lang))
+    .find(Boolean) || '';
 
   const notice = useMemo(() => {
     if (!preflight?.authority_notice_required) return '';
@@ -292,6 +330,7 @@ function BusinessReportPanel({ business, lang }: { business: any; lang: ReportLa
   }, [preflight, lang]);
 
   const metadata = (() => {
+    if (priorityLocked) return '';
     if (inactive) {
       return T(
         lang,
@@ -313,6 +352,7 @@ function BusinessReportPanel({ business, lang }: { business: any; lang: ReportLa
     }
     if (mode === 'error') return errorMessage;
     if (mode === 'blocked') {
+      if (hasDocumentProcessingPending && !primaryBlocking) return '';
       return (
         primaryBlocking ||
         T(
@@ -344,7 +384,7 @@ function BusinessReportPanel({ business, lang }: { business: any; lang: ReportLa
   })();
 
   async function handleGenerate() {
-    if (!business?.id || inactive || generating || generateLimited) return;
+    if (!business?.id || priorityLocked || inactive || generating || generateLimited) return;
     setMode('checking');
     setErrorMessage('');
 
@@ -422,24 +462,35 @@ function BusinessReportPanel({ business, lang }: { business: any; lang: ReportLa
               {T(lang, 'Xem Báo cáo Tối ưu Hồ sơ DN', 'View Business Profile Optimization Report')}
             </h2>
             <p>
-              {T(
-                lang,
-                'Phân tích thông tin hồ sơ, số liệu tài chính và các tài liệu doanh nghiệp đã cung cấp.',
-                'Analyze profile information, financial data and documents provided by the Business.',
-              )}
+              <span>
+                {T(
+                  lang,
+                  'Chỉ dành cho Doanh nghiệp gói Ưu tiên:',
+                  'For Priority-plan Businesses only:',
+                )}
+              </span>
+              <span>
+                {T(
+                  lang,
+                  'Phân tích thông tin Dataroom: hồ sơ, số liệu tài chính và các tài liệu doanh nghiệp đã cung cấp để tổng hợp và đề xuất tối ưu',
+                  'Analyze Dataroom information: profile, financial data and provided business documents to consolidate findings and recommend optimizations.',
+                )}
+              </span>
             </p>
           </div>
         </div>
 
-        <div
-          className={`d68-business-report-panel__meta ${metadataClass}`}
-          aria-live="polite"
-        >
-          {generating || downloading ? (
-            <LoaderCircle size={14} className="d68-business-report-panel__spinner" />
-          ) : null}
-          <span>{metadata}</span>
-        </div>
+        {metadata || generating || downloading ? (
+          <div
+            className={`d68-business-report-panel__meta ${metadataClass}`}
+            aria-live="polite"
+          >
+            {generating || downloading ? (
+              <LoaderCircle size={14} className="d68-business-report-panel__spinner" />
+            ) : null}
+            <span>{metadata}</span>
+          </div>
+        ) : null}
 
         {latestReport?.source_label ? (
           <div className="d68-business-report-panel__source">
@@ -494,11 +545,13 @@ function BusinessReportPanel({ business, lang }: { business: any; lang: ReportLa
         ) : null}
 
         <PanelAction
-          disabled={inactive || generating || downloading || generateLimited}
+          disabled={priorityLocked || inactive || generating || downloading || generateLimited}
           inactive={inactive}
           onClick={handleGenerate}
           lang={lang}
           variant={latestReport?.id ? 'secondary' : 'primary'}
+          tooltip={priorityLocked ? priorityTooltip : ''}
+          priorityLocked={priorityLocked}
           ariaLabel={T(lang, latestReport?.id ? 'Tạo báo cáo mới' : 'Tạo báo cáo', latestReport?.id ? 'Generate new report' : 'Generate report')}
         >
           {generating ? (
