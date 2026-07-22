@@ -1,0 +1,45 @@
+name: Apply focused Business Dashboard fix
+
+on:
+  push:
+    branches: [fix/business-dashboard-report-dataroom-20260722]
+    paths:
+      - 'scripts/apply-business-dashboard-report-dataroom-fix.mjs'
+      - '.github/workflows/apply-business-dashboard-report-dataroom-fix.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply-and-verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Apply exact source changes
+        run: node scripts/apply-business-dashboard-report-dataroom-fix.mjs
+      - name: Remove one-time helper files
+        run: rm scripts/apply-business-dashboard-report-dataroom-fix.mjs .github/workflows/apply-business-dashboard-report-dataroom-fix.yml
+      - run: npm ci
+      - name: Production frontend build
+        run: npm run build
+      - name: Focused contract
+        run: node scripts/deals68-business-dashboard-report-dataroom-check.mjs
+      - name: CSS and route regression
+        run: |
+          npm run qa:css
+          npm run check:routes
+          git diff --check
+      - name: Commit verified changes
+        run: |
+          git config user.name 'Deals68 QA Bot'
+          git config user.email 'actions@users.noreply.github.com'
+          git add -A
+          git commit -m 'fix: localize reports and harden dataroom deletion'
+          git push origin HEAD:fix/business-dashboard-report-dataroom-20260722
