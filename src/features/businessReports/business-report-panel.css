@@ -45,6 +45,19 @@
   line-height: 1.55;
 }
 
+.d68-business-report-panel__heading p span {
+  display: block;
+}
+
+.d68-business-report-panel__heading p span:first-child {
+  color: #0f4f73;
+  font-weight: 750;
+}
+
+.d68-business-report-panel__heading p span + span {
+  margin-top: 2px;
+}
+
 .d68-business-report-panel__meta {
   display: flex;
   align-items: center;
@@ -199,6 +212,13 @@
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
+}
+
+.d68-business-report-panel__button.priority-locked:disabled {
+  background: #f2b51d;
+  color: #fff;
+  opacity: 1;
+  box-shadow: 0 8px 20px rgba(184, 134, 11, 0.18);
 }
 
 .d68-business-report-panel__action-wrap[data-tooltip]::after {
