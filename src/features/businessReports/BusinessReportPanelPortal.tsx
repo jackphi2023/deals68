@@ -30,6 +30,7 @@ import {
   listBusinessReportAlerts,
   runBusinessReportPreflight,
 } from './reportApi';
+import { reportErrorText } from './reportCore';
 import type {
   BusinessReportAlert,
   BusinessReportArtifact,
@@ -54,11 +55,28 @@ type PanelMode =
 const T = (lang: ReportLang, vi: string, en: string) =>
   lang === 'en' ? en : vi;
 
+const REPORT_MESSAGE_COPY: Record<string, [string, string]> = {
+  DOCUMENT_PROCESSING_PENDING: [
+    'Tài liệu đang chờ xử lý. Báo cáo có thể tạo sau khi hệ thống đọc xong tài liệu.',
+    'Documents are awaiting processing. The report can be created after processing finishes.',
+  ],
+  DOCUMENT_BACKED_REVENUE_MISSING: [
+    'Doanh thu hiện là dữ liệu tự kê khai hoặc chưa đủ độ tin cậy; báo cáo không dùng số này để định giá.',
+    'Revenue is self-declared or insufficiently supported; it will not be used for valuation.',
+  ],
+};
+
 function messageText(item: ReportMessageItem | string, lang: ReportLang) {
-  if (typeof item === 'string') return item.replaceAll('_', ' ');
+  if (typeof item === 'string') {
+    const mapped = REPORT_MESSAGE_COPY[item];
+    if (mapped) return T(lang, mapped[0], mapped[1]);
+    return lang === 'vi' && /^[A-Z0-9_]+$/.test(item)
+      ? 'Dữ liệu hoặc tài liệu chưa đủ điều kiện tạo báo cáo.'
+      : item.replaceAll('_', ' ');
+  }
   return lang === 'en'
-    ? item.message_en || item.message_vi || item.code || ''
-    : item.message_vi || item.message_en || item.code || '';
+    ? item.message_en || item.message_vi || messageText(item.code || '', lang)
+    : item.message_vi || item.message_en || messageText(item.code || '', lang);
 }
 
 function alertText(alert: BusinessReportAlert, lang: ReportLang) {
@@ -231,10 +249,12 @@ function BusinessReportPanel({ business, lang }: { business: any; lang: ReportLa
       }
     } catch (error: any) {
       setMode('error');
-      setErrorMessage(
-        error?.message ||
-          T(lang, 'Không tải được trạng thái báo cáo.', 'Could not load report status.'),
-      );
+      setErrorMessage(reportErrorText(
+        error,
+        lang,
+        'Không tải được trạng thái báo cáo.',
+        'Could not load report status.',
+      ));
     }
   }, [business?.id, lang]);
 
@@ -355,10 +375,12 @@ function BusinessReportPanel({ business, lang }: { business: any; lang: ReportLa
       await refresh();
     } catch (error: any) {
       setMode('error');
-      setErrorMessage(
-        error?.message ||
-          T(lang, 'Không thể tạo báo cáo.', 'Could not generate the report.'),
-      );
+      setErrorMessage(reportErrorText(
+        error,
+        lang,
+        'Không thể tạo báo cáo.',
+        'Could not generate the report.',
+      ));
     }
   }
 
@@ -372,10 +394,12 @@ function BusinessReportPanel({ business, lang }: { business: any; lang: ReportLa
       await refresh();
     } catch (error: any) {
       setMode('error');
-      setErrorMessage(
-        error?.message ||
-          T(lang, 'Không thể tải báo cáo.', 'Could not download the report.'),
-      );
+      setErrorMessage(reportErrorText(
+        error,
+        lang,
+        'Không thể tải báo cáo.',
+        'Could not download the report.',
+      ));
     }
   }
 
@@ -441,7 +465,7 @@ function BusinessReportPanel({ business, lang }: { business: any; lang: ReportLa
               ))}
             </ul>
             <Link to={toLocalizedPath('/dashboard/business/files', lang)}>
-              {T(lang, 'Mở Tài liệu Dataroom để bổ sung', 'Open Dataroom Documents to add files')} →
+              {T(lang, 'Hãy cập nhật tài liệu tại Tài liệu dataroom', 'Please update documents in Dataroom Documents')}
             </Link>
           </div>
         ) : null}
