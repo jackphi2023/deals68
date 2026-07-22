@@ -1,0 +1,178 @@
+name: Apply Business priority report UI
+
+on:
+  push:
+    branches:
+      - fix/business-priority-report-ui-20260722
+    paths:
+      - .github/workflows/apply-business-priority-report-ui.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch-and-qa:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/business-priority-report-ui-20260722
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Apply focused UI patch
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          tsx_path = Path('src/features/businessReports/BusinessReportPanelPortal.tsx')
+          css_path = Path('src/features/businessReports/business-report-panel.css')
+          tsx = tsx_path.read_text()
+          css = css_path.read_text()
+
+          def replace_once(text: str, old: str, new: str, label: str) -> str:
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{label}: expected 1 match, found {count}')
+              return text.replace(old, new, 1)
+
+          tsx = replace_once(
+              tsx,
+              "import { getMyBusiness } from '../../lib/data';\n",
+              "import { getMyBusiness } from '../../lib/data';\nimport { normalizeBusinessPlan } from '../../lib/businessPlans';\n",
+              'business plan import',
+          )
+
+          tsx = replace_once(
+              tsx,
+              "function alertText(alert: BusinessReportAlert, lang: ReportLang) {\n  return lang === 'en'\n    ? alert.title_en || alert.title_vi || alert.alert_code || ''\n    : alert.title_vi || alert.title_en || alert.alert_code || '';\n}\n\nfunction formatRetry",
+              "function alertText(alert: BusinessReportAlert, lang: ReportLang) {\n  return lang === 'en'\n    ? alert.title_en || alert.title_vi || alert.alert_code || ''\n    : alert.title_vi || alert.title_en || alert.alert_code || '';\n}\n\nfunction reportMessageCode(item: ReportMessageItem | string) {\n  return typeof item === 'string' ? item : item.code || '';\n}\n\nfunction hasActivePriorityPlan(business: any) {\n  if (normalizeBusinessPlan(business?.plan) !== 'featured') return false;\n  const expiresAt = String(business?.plan_expires_at || '').trim();\n  if (!expiresAt) return true;\n  const expiresAtMs = Date.parse(expiresAt);\n  return Number.isFinite(expiresAtMs) && expiresAtMs > Date.now();\n}\n\nfunction formatRetry",
+              'report helpers',
+          )
+
+          tsx = replace_once(
+              tsx,
+              "  variant = 'primary',\n  ariaLabel,\n}: {\n  children: ReactNode;\n  disabled: boolean;\n  inactive: boolean;\n  onClick: () => void;\n  lang: ReportLang;\n  variant?: 'primary' | 'secondary';\n  ariaLabel: string;\n}) {\n  const tooltip = inactive\n    ? T(\n        lang,\n        'Bạn chưa sử dụng được do chưa được kích hoạt hồ sơ.',\n        'This feature is unavailable because your profile has not been activated.',\n      )\n    : '';\n",
+              "  variant = 'primary',\n  ariaLabel,\n  tooltip = '',\n  priorityLocked = false,\n}: {\n  children: ReactNode;\n  disabled: boolean;\n  inactive: boolean;\n  onClick: () => void;\n  lang: ReportLang;\n  variant?: 'primary' | 'secondary';\n  ariaLabel: string;\n  tooltip?: string;\n  priorityLocked?: boolean;\n}) {\n  const resolvedTooltip = tooltip || (inactive\n    ? T(\n        lang,\n        'Bạn chưa sử dụng được do chưa được kích hoạt hồ sơ.',\n        'This feature is unavailable because your profile has not been activated.',\n      )\n    : '');\n",
+              'panel action props',
+          )
+
+          tsx = replace_once(
+              tsx,
+              "      data-tooltip={tooltip || undefined}\n      tabIndex={inactive ? 0 : -1}\n    >\n      <button\n        type=\"button\"\n        className={`d68-business-report-panel__button ${variant === 'secondary' ? 'secondary' : ''}`}\n",
+              "      data-tooltip={resolvedTooltip || undefined}\n      tabIndex={resolvedTooltip ? 0 : -1}\n    >\n      <button\n        type=\"button\"\n        className={`d68-business-report-panel__button ${variant === 'secondary' ? 'secondary' : ''} ${priorityLocked ? 'priority-locked' : ''}`.trim()}\n",
+              'panel action markup',
+          )
+
+          tsx = replace_once(
+              tsx,
+              "  const active = Boolean(\n    business?.visible &&\n      String(business?.status || '').toLowerCase() === 'active' &&\n      business?.public_snapshot_json,\n  );\n\n  const refresh = useCallback(async () => {\n    if (!business?.id) return;\n    setMode('loading');\n    setErrorMessage('');\n",
+              "  const active = Boolean(\n    business?.visible &&\n      String(business?.status || '').toLowerCase() === 'active' &&\n      business?.public_snapshot_json,\n  );\n  const priorityEligible = hasActivePriorityPlan(business);\n  const priorityLocked = !priorityEligible;\n  const priorityTooltip = T(\n    lang,\n    'Tính năng chỉ dành cho Doanh nghiệp Ưu tiên, hãy nâng cấp để được sử dụng',\n    'This feature is only available to Priority Businesses. Please upgrade to use it.',\n  );\n\n  const refresh = useCallback(async () => {\n    if (!business?.id) return;\n    if (!priorityEligible) {\n      setMode('idle');\n      setStatus({});\n      setRateStatus({});\n      setPreflight(null);\n      setLatestReport(null);\n      setAlerts([]);\n      setErrorMessage('');\n      return;\n    }\n    setMode('loading');\n    setErrorMessage('');\n",
+              'priority eligibility',
+          )
+
+          tsx = replace_once(
+              tsx,
+              "  }, [business?.id, lang]);\n",
+              "  }, [business?.id, lang, priorityEligible]);\n",
+              'refresh dependencies',
+          )
+
+          tsx = replace_once(
+              tsx,
+              "  const primaryBlocking = useMemo(() => {\n    const candidates = [\n      ...(preflight?.blocking || []),\n      ...(preflight?.missing || []),\n    ];\n    return candidates.map((item) => messageText(item, lang)).find(Boolean) || '';\n  }, [preflight, lang]);\n",
+              "  const blockingCandidates = useMemo(() => [\n    ...(preflight?.blocking || []),\n    ...(preflight?.missing || []),\n  ], [preflight]);\n  const hasDocumentProcessingPending = blockingCandidates.some(\n    (item) => reportMessageCode(item) === 'DOCUMENT_PROCESSING_PENDING',\n  );\n  const primaryBlocking = blockingCandidates\n    .filter((item) => reportMessageCode(item) !== 'DOCUMENT_PROCESSING_PENDING')\n    .map((item) => messageText(item, lang))\n    .find(Boolean) || '';\n",
+              'pending alert suppression',
+          )
+
+          tsx = replace_once(
+              tsx,
+              "  const metadata = (() => {\n    if (inactive) {\n",
+              "  const metadata = (() => {\n    if (priorityLocked) return '';\n    if (inactive) {\n",
+              'locked metadata',
+          )
+
+          tsx = replace_once(
+              tsx,
+              "    if (mode === 'blocked') {\n      return (\n        primaryBlocking ||\n",
+              "    if (mode === 'blocked') {\n      if (hasDocumentProcessingPending && !primaryBlocking) return '';\n      return (\n        primaryBlocking ||\n",
+              'blocked pending metadata',
+          )
+
+          tsx = replace_once(
+              tsx,
+              "  async function handleGenerate() {\n    if (!business?.id || inactive || generating || generateLimited) return;\n",
+              "  async function handleGenerate() {\n    if (!business?.id || priorityLocked || inactive || generating || generateLimited) return;\n",
+              'generate guard',
+          )
+
+          tsx = replace_once(
+              tsx,
+              "            <p>\n              {T(\n                lang,\n                'Phân tích thông tin hồ sơ, số liệu tài chính và các tài liệu doanh nghiệp đã cung cấp.',\n                'Analyze profile information, financial data and documents provided by the Business.',\n              )}\n            </p>\n",
+              "            <p>\n              <span>\n                {T(\n                  lang,\n                  'Chỉ dành cho Doanh nghiệp gói Ưu tiên:',\n                  'For Priority-plan Businesses only:',\n                )}\n              </span>\n              <span>\n                {T(\n                  lang,\n                  'Phân tích thông tin Dataroom: hồ sơ, số liệu tài chính và các tài liệu doanh nghiệp đã cung cấp để tổng hợp và đề xuất tối ưu',\n                  'Analyze Dataroom information: profile, financial data and provided business documents to consolidate findings and recommend optimizations.',\n                )}\n              </span>\n            </p>\n",
+              'description wording',
+          )
+
+          tsx = replace_once(
+              tsx,
+              "        <div\n          className={`d68-business-report-panel__meta ${metadataClass}`}\n          aria-live=\"polite\"\n        >\n          {generating || downloading ? (\n            <LoaderCircle size={14} className=\"d68-business-report-panel__spinner\" />\n          ) : null}\n          <span>{metadata}</span>\n        </div>\n",
+              "        {metadata || generating || downloading ? (\n          <div\n            className={`d68-business-report-panel__meta ${metadataClass}`}\n            aria-live=\"polite\"\n          >\n            {generating || downloading ? (\n              <LoaderCircle size={14} className=\"d68-business-report-panel__spinner\" />\n            ) : null}\n            <span>{metadata}</span>\n          </div>\n        ) : null}\n",
+              'conditional metadata',
+          )
+
+          tsx = replace_once(
+              tsx,
+              "          disabled={inactive || generating || downloading || generateLimited}\n          inactive={inactive}\n          onClick={handleGenerate}\n          lang={lang}\n          variant={latestReport?.id ? 'secondary' : 'primary'}\n",
+              "          disabled={priorityLocked || inactive || generating || downloading || generateLimited}\n          inactive={inactive}\n          onClick={handleGenerate}\n          lang={lang}\n          variant={latestReport?.id ? 'secondary' : 'primary'}\n          tooltip={priorityLocked ? priorityTooltip : ''}\n          priorityLocked={priorityLocked}\n",
+              'generate button lock',
+          )
+
+          css = replace_once(
+              css,
+              ".d68-business-report-panel__heading p {\n  max-width: 720px;\n  margin: 7px 0 0;\n  color: #466579;\n  line-height: 1.55;\n}\n",
+              ".d68-business-report-panel__heading p {\n  max-width: 720px;\n  margin: 7px 0 0;\n  color: #466579;\n  line-height: 1.55;\n}\n\n.d68-business-report-panel__heading p span {\n  display: block;\n}\n\n.d68-business-report-panel__heading p span:first-child {\n  color: #0f4f73;\n  font-weight: 750;\n}\n\n.d68-business-report-panel__heading p span + span {\n  margin-top: 2px;\n}\n",
+              'two-line description style',
+          )
+
+          css = replace_once(
+              css,
+              ".d68-business-report-panel__button:disabled {\n  opacity: 0.56;\n  cursor: not-allowed;\n  transform: none;\n  box-shadow: none;\n}\n",
+              ".d68-business-report-panel__button:disabled {\n  opacity: 0.56;\n  cursor: not-allowed;\n  transform: none;\n  box-shadow: none;\n}\n\n.d68-business-report-panel__button.priority-locked:disabled {\n  background: #f2b51d;\n  color: #fff;\n  opacity: 1;\n  box-shadow: 0 8px 20px rgba(184, 134, 11, 0.18);\n}\n",
+              'yellow locked button',
+          )
+
+          tsx_path.write_text(tsx)
+          css_path.write_text(css)
+          PY
+
+          rm .github/workflows/apply-business-priority-report-ui.yml
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Focused report UI contract
+        run: node scripts/deals68-business-dashboard-report-dataroom-check.mjs
+
+      - name: CSS QA
+        run: npm run qa:css
+
+      - name: Route QA
+        run: npm run check:routes
+
+      - name: Diff check
+        run: git diff --check
+
+      - name: Commit focused UI changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/features/businessReports/BusinessReportPanelPortal.tsx src/features/businessReports/business-report-panel.css .github/workflows/apply-business-priority-report-ui.yml
+          git commit -m "fix: restrict Business report UI to Priority plan"
+          git push origin HEAD:fix/business-priority-report-ui-20260722
