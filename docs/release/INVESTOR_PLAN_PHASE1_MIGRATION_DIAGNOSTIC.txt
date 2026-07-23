@@ -1,0 +1,2 @@
+✗ Deals68 migration state check failed:
+  - Missing ${migrationName}
