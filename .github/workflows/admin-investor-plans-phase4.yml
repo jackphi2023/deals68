@@ -1,0 +1,595 @@
+name: Admin Investor Plans Phase 4
+
+on:
+  push:
+    branches:
+      - feature/admin-investor-plans-phase4-20260723
+
+permissions:
+  contents: write
+
+jobs:
+  implement-and-verify:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          show-progress: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Apply Admin Investor plan UX
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          def replace_once(path, old, new):
+              source = Path(path).read_text()
+              if old not in source:
+                  raise SystemExit(f'Missing patch target in {path}: {old[:120]!r}')
+              Path(path).write_text(source.replace(old, new, 1))
+
+          component = 'src/components/admin/InvestorAdminReviewPanel.tsx'
+
+          replace_once(
+              component,
+              """import {
+            INVESTOR_COVER_FALLBACK,
+            uploadInvestorCoverImage,
+          } from '../../lib/banners';
+          """,
+              """import {
+            INVESTOR_COVER_FALLBACK,
+            uploadInvestorCoverImage,
+          } from '../../lib/banners';
+          import {
+            effectiveInvestorPlan,
+            type InvestorPlan,
+          } from '../../lib/investorPlans';
+          """,
+          )
+
+          replace_once(
+              component,
+              """function paymentFor(investor: Row, payments: Row[]) {
+            return payments
+              .filter((payment) =>
+                String(payment.investor_id || '') === String(investor.id || '') ||
+                String(payment.profile_id || '') === String(investor.owner_id || ''),
+              )
+              .sort((left, right) =>
+                String(right.created_at || '').localeCompare(String(left.created_at || '')),
+              )[0] || null;
+          }
+          """,
+              """function paymentFor(investor: Row, payments: Row[]) {
+            return payments
+              .filter((payment) =>
+                String(payment.investor_id || '') === String(investor.id || '') ||
+                String(payment.profile_id || '') === String(investor.owner_id || ''),
+              )
+              .sort((left, right) =>
+                String(right.created_at || '').localeCompare(String(left.created_at || '')),
+              )[0] || null;
+          }
+
+          type InvestorPlanFilter = '' | 'standard' | 'premium' | 'expiring' | 'expired';
+
+          const INVESTOR_PLAN_EXPIRING_WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
+
+          function investorPlanState(investor: Row, at = Date.now()) {
+            const storedPlan: InvestorPlan = String(investor.plan || 'standard').toLowerCase() === 'premium'
+              ? 'premium'
+              : 'standard';
+            const expiresAtMs = investor.membership_expires_at
+              ? new Date(investor.membership_expires_at).getTime()
+              : Number.NaN;
+            const hasExpiry = Number.isFinite(expiresAtMs);
+            const expired = storedPlan === 'premium' && hasExpiry && expiresAtMs <= at;
+            const effectivePlan = effectiveInvestorPlan(investor, at);
+            const expiringSoon = effectivePlan === 'premium' && hasExpiry &&
+              expiresAtMs > at && expiresAtMs <= at + INVESTOR_PLAN_EXPIRING_WINDOW_MS;
+            return { storedPlan, effectivePlan, expired, expiringSoon, hasExpiry, expiresAtMs };
+          }
+
+          function investorPlanLabel(investor: Row) {
+            const state = investorPlanState(investor);
+            if (state.expired) return 'Premium hết hạn';
+            return state.effectivePlan === 'premium' ? 'Premium' : 'Standard';
+          }
+
+          function investorPlanBadgeClass(investor: Row) {
+            const state = investorPlanState(investor);
+            if (state.expired) return 'err';
+            return state.effectivePlan === 'premium' ? 'ok' : 'warn';
+          }
+
+          function dateInputValue(value: unknown) {
+            if (!value) return '';
+            const parsed = new Date(String(value));
+            return Number.isFinite(parsed.getTime()) ? parsed.toISOString().slice(0, 10) : '';
+          }
+
+          function dateBoundaryIso(value: string, endOfDay = false) {
+            if (!value) return null;
+            const parsed = new Date(`${value}${endOfDay ? 'T23:59:59' : 'T00:00:00'}`);
+            return Number.isFinite(parsed.getTime()) ? parsed.toISOString() : null;
+          }
+
+          function investorPlanSource(investor: Row, payments: Row[]) {
+            const state = investorPlanState(investor);
+            if (state.storedPlan !== 'premium') return 'Tiêu chuẩn miễn phí';
+            const confirmedPayment = payments
+              .filter((payment) =>
+                (String(payment.investor_id || '') === String(investor.id || '') ||
+                  String(payment.profile_id || '') === String(investor.owner_id || '')) &&
+                String(payment.status || '').toLowerCase() === 'confirmed',
+              )
+              .sort((left, right) =>
+                String(right.updated_at || right.created_at || '').localeCompare(
+                  String(left.updated_at || left.created_at || ''),
+                ),
+              )[0];
+            if (!confirmedPayment) return 'Admin cấp';
+            const payload = objectOf(confirmedPayment.payload);
+            const source = String(payload.source || payload.channel || '').toLowerCase();
+            const promoCode = String(
+              payload.promoCode || payload.promo_code || objectOf(payload.price).promoCode || '',
+            ).trim();
+            if (source.includes('partner') || source.includes('đối tác')) return 'Đối tác';
+            if (promoCode) return `Mã ưu đãi ${promoCode}`;
+            return 'Thanh toán';
+          }
+          """,
+          )
+
+          replace_once(
+              component,
+              """  const payment = paymentFor(investor, payments);
+
+            const approvedTypes = approvedInvestorTypes(investor);
+          """,
+              """  const payment = paymentFor(investor, payments);
+            const currentPlanState = investorPlanState(investor);
+            const planSource = investorPlanSource(investor, payments);
+
+            const approvedTypes = approvedInvestorTypes(investor);
+          """,
+          )
+
+          replace_once(
+              component,
+              """  const [removeCover, setRemoveCover] = useState(false);
+            const [approving, setApproving] = useState(false);
+          """,
+              """  const [removeCover, setRemoveCover] = useState(false);
+            const [approving, setApproving] = useState(false);
+            const [selectedPlan, setSelectedPlan] = useState<InvestorPlan>(currentPlanState.storedPlan);
+            const [planStartedAt, setPlanStartedAt] = useState(
+              dateInputValue(investor.membership_started_at),
+            );
+            const [planExpiresAt, setPlanExpiresAt] = useState(
+              dateInputValue(investor.membership_expires_at),
+            );
+            const [planReason, setPlanReason] = useState('');
+            const [planSaving, setPlanSaving] = useState(false);
+          """,
+          )
+
+          replace_once(
+              component,
+              """  useEffect(() => {
+            setCoverFile(null);
+            setCoverPreviewUrl(approvedCoverUrl);
+            setRemoveCover(false);
+          }, [approvedCoverUrl, investor.id]);
+
+            useEffect(() => {
+          """,
+              """  useEffect(() => {
+            setCoverFile(null);
+            setCoverPreviewUrl(approvedCoverUrl);
+            setRemoveCover(false);
+          }, [approvedCoverUrl, investor.id]);
+
+            useEffect(() => {
+              const nextState = investorPlanState(investor);
+              setSelectedPlan(nextState.storedPlan);
+              setPlanStartedAt(dateInputValue(investor.membership_started_at));
+              setPlanExpiresAt(dateInputValue(investor.membership_expires_at));
+              setPlanReason('');
+            }, [investor.id, investor.plan, investor.membership_started_at, investor.membership_expires_at]);
+
+            useEffect(() => {
+          """,
+          )
+
+          replace_once(
+              component,
+              """  async function saveInvestor(event: FormEvent<HTMLFormElement>) {
+          """,
+              """  async function saveInvestorPlan(event: FormEvent<HTMLFormElement>) {
+            event.preventDefault();
+            if (
+              selectedPlan === 'standard' &&
+              currentPlanState.storedPlan === 'premium' &&
+              !window.confirm('Thu hồi Premium và chuyển Nhà đầu tư về gói Standard?')
+            ) return;
+
+            const startedAt = selectedPlan === 'premium'
+              ? dateBoundaryIso(planStartedAt)
+              : null;
+            const expiresAt = selectedPlan === 'premium'
+              ? dateBoundaryIso(planExpiresAt, true)
+              : null;
+            if (
+              startedAt && expiresAt &&
+              new Date(expiresAt).getTime() <= new Date(startedAt).getTime()
+            ) {
+              setError('Ngày hết hạn Premium phải sau ngày bắt đầu.');
+              return;
+            }
+
+            setPlanSaving(true);
+            setError('');
+            setMessage('');
+            const { error } = await supabase.rpc('admin_set_investor_plan', {
+              p_investor_id: investor.id,
+              p_plan: selectedPlan,
+              p_started_at: startedAt,
+              p_expires_at: expiresAt,
+              p_reason: planReason.trim() || null,
+            });
+            if (error) {
+              setPlanSaving(false);
+              setError(error.message);
+              return;
+            }
+            setPlanSaving(false);
+            setError('');
+            setMessage(
+              selectedPlan === 'premium'
+                ? `Đã cấp/gia hạn Premium cho ${investor.code || 'Investor'}.`
+                : `Đã thu hồi Premium và chuyển ${investor.code || 'Investor'} về Standard.`,
+            );
+            await onReload();
+          }
+
+            async function saveInvestor(event: FormEvent<HTMLFormElement>) {
+          """,
+          )
+
+          replace_once(
+              component,
+              """        <span className={`d68-admin-badge ${investor.visible ? 'ok' : 'warn'}`}>{investor.visible ? 'Hiển thị' : 'Ẩn'}</span>
+                {reasons.any ? <span className="d68-admin-badge warn">Cần duyệt</span> : null}
+          """,
+              """        <span className={`d68-admin-badge ${investor.visible ? 'ok' : 'warn'}`}>{investor.visible ? 'Hiển thị' : 'Ẩn'}</span>
+                <span className={`d68-admin-badge ${investorPlanBadgeClass(investor)}`}>{investorPlanLabel(investor)}</span>
+                {reasons.any ? <span className="d68-admin-badge warn">Cần duyệt</span> : null}
+          """,
+          )
+
+          replace_once(
+              component,
+              """      <div className="d68-admin-investor-summary-grid">
+                <div><b>Tài khoản đăng nhập</b><span>{profile.username || investor.username || '—'}</span><span>{profile.email || investor.private_email || '—'}</span><span>Mật khẩu: Quản lý bằng Supabase Auth · không lưu trong database</span></div>
+                <div><b>Gói dịch vụ gần nhất</b><span>{payment?.title || payment?.price?.planLabel || 'Chưa có đơn'}</span><span>{payment?.status || '—'} {payment?.created_at ? `· ${new Date(payment.created_at).toLocaleDateString('vi-VN')}` : ''}</span></div>
+                <div><b>Ticket size</b><span>{Number(investor.ticket_min || 0).toLocaleString('en-US')} – {Number(investor.ticket_max || 0).toLocaleString('en-US')} USD</span><span>{investor.membership_expires_at ? `Hết hạn ${new Date(investor.membership_expires_at).toLocaleDateString('vi-VN')}` : 'Chưa có ngày hết hạn'}</span></div>
+              </div>
+          """,
+              """      <div className="d68-admin-investor-summary-grid">
+                <div><b>Tài khoản đăng nhập</b><span>{profile.username || investor.username || '—'}</span><span>{profile.email || investor.private_email || '—'}</span><span>Mật khẩu: Quản lý bằng Supabase Auth · không lưu trong database</span></div>
+                <div><b>Gói dịch vụ</b><span>{investorPlanLabel(investor)} · Nguồn: {planSource}</span><span>{payment?.title || payment?.price?.planLabel || 'Không có payment liên quan'}</span><span>{payment?.status || '—'} {payment?.created_at ? `· ${new Date(payment.created_at).toLocaleDateString('vi-VN')}` : ''}</span></div>
+                <div><b>Ticket size</b><span>{Number(investor.ticket_min || 0).toLocaleString('en-US')} – {Number(investor.ticket_max || 0).toLocaleString('en-US')} USD</span><span>{currentPlanState.effectivePlan === 'premium' ? 'Có quyền Báo cáo Phân tích cơ hội đầu tư' : 'Không có quyền Báo cáo Phân tích cơ hội đầu tư'}</span><span>{investor.membership_expires_at ? `${currentPlanState.expired ? 'Đã hết hạn' : 'Hết hạn'} ${new Date(investor.membership_expires_at).toLocaleDateString('vi-VN')}` : currentPlanState.storedPlan === 'premium' ? 'Premium không thời hạn' : 'Standard không có thời hạn Premium'}</span></div>
+              </div>
+
+              <form onSubmit={saveInvestorPlan} className="d68-admin-investor-plan-box">
+                <div className="d68-admin-investor-plan-head">
+                  <div>
+                    <b>Gói dịch vụ Investor</b>
+                    <span>Quản lý Standard/Premium độc lập với “Ưu tiên Homepage” (admin_priority).</span>
+                  </div>
+                  <span className={`d68-admin-badge ${investorPlanBadgeClass(investor)}`}>{investorPlanLabel(investor)}</span>
+                </div>
+                <div className="d68-admin-investor-plan-grid">
+                  <label className="d68-admin-check d68-admin-investor-plan-toggle">
+                    <input
+                      type="checkbox"
+                      checked={selectedPlan === 'premium'}
+                      onChange={(event) => {
+                        const nextPlan: InvestorPlan = event.target.checked ? 'premium' : 'standard';
+                        setSelectedPlan(nextPlan);
+                        if (nextPlan === 'premium' && !planStartedAt) {
+                          setPlanStartedAt(new Date().toISOString().slice(0, 10));
+                        }
+                      }}
+                    />
+                    Nhà đầu tư Nâng cao / Premium
+                  </label>
+                  <label className="d68-admin-field">
+                    <span>Ngày bắt đầu</span>
+                    <input type="date" className="d68-admin-input" value={planStartedAt} disabled={selectedPlan !== 'premium'} onChange={(event) => setPlanStartedAt(event.target.value)} />
+                  </label>
+                  <label className="d68-admin-field">
+                    <span>Ngày hết hạn</span>
+                    <input type="date" className="d68-admin-input" value={planExpiresAt} disabled={selectedPlan !== 'premium'} onChange={(event) => setPlanExpiresAt(event.target.value)} />
+                    <small>Để trống nếu Admin cấp Premium không thời hạn.</small>
+                  </label>
+                  <label className="d68-admin-field d68-admin-span2">
+                    <span>Ghi chú / lý do Admin</span>
+                    <input className="d68-admin-input" value={planReason} onChange={(event) => setPlanReason(event.target.value)} placeholder="Thanh toán, đối tác, mã ưu đãi hoặc lý do cấp/thu hồi" />
+                  </label>
+                </div>
+                <div className="d68-admin-actions d68-admin-investor-plan-actions">
+                  <button type="submit" className={`d68-admin-btn ${selectedPlan === 'premium' ? 'gold' : 'light'}`} disabled={planSaving}>
+                    {planSaving ? 'Đang lưu gói…' : selectedPlan === 'premium' ? 'Cấp / gia hạn Premium' : 'Lưu gói Standard'}
+                  </button>
+                  <span className="d68-admin-subtle">Mọi thay đổi được ghi audit bởi RPC Admin.</span>
+                </div>
+              </form>
+          """,
+          )
+
+          replace_once(
+              component,
+              """  const [stageFilter, setStageFilter] = useState('');
+            const [dealFilter, setDealFilter] = useState('');
+          """,
+              """  const [stageFilter, setStageFilter] = useState('');
+            const [dealFilter, setDealFilter] = useState('');
+            const [planFilter, setPlanFilter] = useState<InvestorPlanFilter>('');
+          """,
+          )
+
+          replace_once(
+              component,
+              """  }, [investors]);
+
+            const filtered = useMemo(() => {
+          """,
+              """  }, [investors]);
+
+            const planStats = useMemo(() => {
+              const result = { standard: 0, premium: 0, expiring: 0, expired: 0 };
+              investors.forEach((investor) => {
+                const state = investorPlanState(investor);
+                if (state.storedPlan === 'standard') result.standard += 1;
+                if (state.effectivePlan === 'premium') result.premium += 1;
+                if (state.expiringSoon) result.expiring += 1;
+                if (state.expired) result.expired += 1;
+              });
+              return result;
+            }, [investors]);
+
+            const filtered = useMemo(() => {
+          """,
+          )
+
+          replace_once(
+              component,
+              """        const reasons = reviewReasons(investor);
+                if (reviewFilter === 'pending' && !reasons.any) return false;
+          """,
+              """        const reasons = reviewReasons(investor);
+                const planState = investorPlanState(investor);
+                if (planFilter === 'standard' && planState.storedPlan !== 'standard') return false;
+                if (planFilter === 'premium' && planState.effectivePlan !== 'premium') return false;
+                if (planFilter === 'expiring' && !planState.expiringSoon) return false;
+                if (planFilter === 'expired' && !planState.expired) return false;
+                if (reviewFilter === 'pending' && !reasons.any) return false;
+          """,
+          )
+
+          replace_once(
+              component,
+              """  }, [investors, search, reviewFilter, visibilityFilter, officeCountryFilter, targetCountryFilter, industryFilter, typeFilter, stageFilter, dealFilter]);
+          """,
+              """  }, [investors, search, reviewFilter, visibilityFilter, officeCountryFilter, targetCountryFilter, industryFilter, typeFilter, stageFilter, dealFilter, planFilter]);
+          """,
+          )
+
+          replace_once(
+              component,
+              """          {queueStats.total ? <span className="d68-admin-badge warn">⚠️ {queueStats.total} cần duyệt</span> : <span className="d68-admin-badge ok">Không có hồ sơ cần duyệt</span>}
+          """,
+              """          <div className="d68-admin-investor-plan-stats">
+                    {queueStats.total ? <span className="d68-admin-badge warn">⚠️ {queueStats.total} cần duyệt</span> : <span className="d68-admin-badge ok">Không có hồ sơ cần duyệt</span>}
+                    <span className="d68-admin-badge warn">{planStats.standard} Standard</span>
+                    <span className="d68-admin-badge ok">{planStats.premium} Premium</span>
+                    {planStats.expiring ? <span className="d68-admin-badge warn">{planStats.expiring} sắp hết hạn</span> : null}
+                    {planStats.expired ? <span className="d68-admin-badge err">{planStats.expired} đã hết hạn</span> : null}
+                  </div>
+          """,
+          )
+
+          replace_once(
+              component,
+              """        <div className="d68-admin-investor-filter-grid">
+                  <label>Hàng chờ<select value={reviewFilter} onChange={(event) => onReviewFilterChange(event.target.value)} className="d68-admin-input"><option value="">Tất cả hồ sơ</option><option value="pending">Tất cả cần duyệt</option><option value="new">Tài khoản mới</option><option value="intro">Giới thiệu / Khẩu vị vừa sửa</option></select></label>
+          """,
+              """        <div className="d68-admin-investor-filter-grid">
+                  <label>Gói dịch vụ<select value={planFilter} onChange={(event) => { setPlanFilter(event.target.value as InvestorPlanFilter); resetPage(); }} className="d68-admin-input"><option value="">Tất cả gói</option><option value="standard">Standard</option><option value="premium">Premium còn hiệu lực</option><option value="expiring">Premium sắp hết hạn (30 ngày)</option><option value="expired">Premium đã hết hạn</option></select></label>
+                  <label>Hàng chờ<select value={reviewFilter} onChange={(event) => onReviewFilterChange(event.target.value)} className="d68-admin-input"><option value="">Tất cả hồ sơ</option><option value="pending">Tất cả cần duyệt</option><option value="new">Tài khoản mới</option><option value="intro">Giới thiệu / Khẩu vị vừa sửa</option></select></label>
+          """,
+          )
+
+          css_path = Path('src/styles/pages/admin.css')
+          css = css_path.read_text()
+          marker = '/* Admin Investor Plans Phase 4 */'
+          if marker not in css:
+              css += """
+
+          /* Admin Investor Plans Phase 4 */
+          .d68-admin-investor-plan-stats{
+            display:flex;
+            align-items:center;
+            justify-content:flex-end;
+            gap:8px;
+            flex-wrap:wrap;
+          }
+          .d68-admin-investor-plan-box{
+            margin:0 0 18px;
+            padding:16px;
+            border:1px solid #F2D36B;
+            border-radius:14px;
+            background:#FFFBEB;
+          }
+          .d68-admin-investor-plan-head{
+            display:flex;
+            align-items:flex-start;
+            justify-content:space-between;
+            gap:12px;
+            margin-bottom:14px;
+          }
+          .d68-admin-investor-plan-head>div{
+            display:flex;
+            min-width:0;
+            flex-direction:column;
+            gap:5px;
+          }
+          .d68-admin-investor-plan-head b{color:#0F2A4A}
+          .d68-admin-investor-plan-head>div>span{
+            color:#64748B;
+            font-size:12.5px;
+            line-height:1.45;
+          }
+          .d68-admin-investor-plan-grid{
+            display:grid;
+            grid-template-columns:minmax(210px,1fr) minmax(160px,.8fr) minmax(180px,.8fr) minmax(240px,1.4fr);
+            gap:12px;
+            align-items:start;
+          }
+          .d68-admin-investor-plan-toggle{
+            min-height:42px;
+            padding:10px 12px;
+            border:1px solid #E8C94F;
+            border-radius:10px;
+            background:#fff;
+            color:#0F2A4A;
+            font-weight:900;
+          }
+          .d68-admin-investor-plan-actions{
+            align-items:center;
+          }
+          .d68-admin-investor-plan-actions .d68-admin-subtle{
+            flex:1;
+          }
+          @media(max-width:1100px){
+            .d68-admin-investor-plan-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+          }
+          @media(max-width:700px){
+            .d68-admin-investor-plan-grid{grid-template-columns:1fr}
+            .d68-admin-investor-plan-head{flex-direction:column}
+            .d68-admin-investor-plan-stats{justify-content:flex-start}
+          }
+          """
+              css_path.write_text(css)
+
+          qa = r'''#!/usr/bin/env node
+          import fs from 'node:fs';
+
+          const component = fs.readFileSync('src/components/admin/InvestorAdminReviewPanel.tsx', 'utf8');
+          const css = fs.readFileSync('src/styles/pages/admin.css', 'utf8');
+          const migration = fs.readFileSync('supabase/migrations/20260723115526_investor_plan_entitlements_v1.sql', 'utf8');
+          const failures = [];
+
+          function requireSnippet(label, source, snippet) {
+            if (!source.includes(snippet)) failures.push(`${label}: missing ${snippet}`);
+          }
+
+          [
+            "effectiveInvestorPlan",
+            "type InvestorPlanFilter = '' | 'standard' | 'premium' | 'expiring' | 'expired'",
+            "Nhà đầu tư Nâng cao / Premium",
+            "Quản lý Standard/Premium độc lập với “Ưu tiên Homepage” (admin_priority).",
+            "supabase.rpc('admin_set_investor_plan'",
+            "p_investor_id: investor.id",
+            "Cấp / gia hạn Premium",
+            "Thu hồi Premium và chuyển Nhà đầu tư về gói Standard?",
+            "Premium sắp hết hạn (30 ngày)",
+            "Premium đã hết hạn",
+            "Có quyền Báo cáo Phân tích cơ hội đầu tư",
+            "Mọi thay đổi được ghi audit bởi RPC Admin.",
+            "Mã ưu đãi",
+            "Đối tác",
+          ].forEach((snippet) => requireSnippet('component', component, snippet));
+
+          [
+            '.d68-admin-investor-plan-box',
+            '.d68-admin-investor-plan-grid',
+            '.d68-admin-investor-plan-stats',
+            '.d68-admin-investor-plan-toggle',
+          ].forEach((snippet) => requireSnippet('css', css, snippet));
+
+          [
+            'create or replace function public.admin_set_investor_plan',
+            "'admin_set_investor_plan'",
+            "'source', 'admin'",
+            'to authenticated',
+          ].forEach((snippet) => requireSnippet('migration', migration, snippet));
+
+          if (component.includes("admin_priority: form.get('admin_priority') === 'on',\n      plan:")) {
+            failures.push('Plan management was coupled into the profile patch instead of the audited RPC.');
+          }
+
+          if (failures.length) {
+            console.error('✗ Admin Investor Plans Phase 4 check failed:');
+            failures.forEach((failure) => console.error(`  - ${failure}`));
+            process.exit(1);
+          }
+          console.log('✓ Admin Investor Plans Phase 4 check: PASS');
+          '''
+          Path('scripts/deals68-admin-investor-plans-phase4-check.mjs').write_text(qa.lstrip())
+
+          replace_once(
+              'package.json',
+              '    "qa:investor-pricing": "node scripts/deals68-investor-pricing-phase3-check.mjs"\n',
+              '    "qa:investor-pricing": "node scripts/deals68-investor-pricing-phase3-check.mjs",\n    "qa:admin-investor-plans": "node scripts/deals68-admin-investor-plans-phase4-check.mjs"\n',
+          )
+
+          replace_once(
+              'scripts/deals68-package-checks.mjs',
+              "  'scripts/deals68-investor-pricing-phase3-check.mjs',\n",
+              "  'scripts/deals68-investor-pricing-phase3-check.mjs',\n  'scripts/deals68-admin-investor-plans-phase4-check.mjs',\n",
+          )
+          PY
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Admin Investor plan contract
+        run: npm run qa:admin-investor-plans
+
+      - name: Investor entitlement regression
+        run: npm run qa:investor-plans
+
+      - name: Investor pricing regression
+        run: npm run qa:investor-pricing
+
+      - name: Production build
+        run: npm run build
+
+      - name: CSS architecture regression
+        run: npm run qa:css
+
+      - name: Route regression
+        run: npm run check:routes
+
+      - name: Diff formatting
+        run: git diff --check
+
+      - name: Commit verified source
+        run: |
+          rm -f .github/workflows/admin-investor-plans-phase4.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --check
+          git commit -m "feat: add Admin Investor plan management Phase 4"
+          git push origin HEAD:${GITHUB_REF_NAME}
