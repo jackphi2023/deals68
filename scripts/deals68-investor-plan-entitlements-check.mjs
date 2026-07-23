@@ -2,7 +2,7 @@
 import fs from 'node:fs';
 
 const failures = [];
-const migrationPath = 'supabase/migrations/20260723183000_investor_plan_entitlements_v1.sql';
+const migrationPath = 'supabase/migrations/20260723115526_investor_plan_entitlements_v1.sql';
 const migration = fs.readFileSync(migrationPath, 'utf8');
 const planSource = fs.readFileSync('src/lib/investorPlans.ts', 'utf8');
 const pricingSource = fs.readFileSync('src/lib/pricing.ts', 'utf8');
