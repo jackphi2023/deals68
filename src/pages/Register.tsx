@@ -51,6 +51,7 @@ import {
   businessProposalQuotaForPlan,
 } from '../lib/businessPlans';
 import { makePaymentOrderCode } from '../lib/paymentOrders';
+import type { InvestorPlan } from '../lib/investorPlans';
 import {
   IndustryTagPicker,
   InvestorDealTypeTagPicker,
@@ -311,10 +312,18 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
     );
     return checkoutIntentMatchesRole &&
       normalized === 'investor' &&
+      intent.investorPlan === 'premium' &&
       [4, 8, 12, 16, 24].includes(requestedMonths)
       ? requestedMonths
       : null;
   });
+  const [investorPlan, setInvestorPlan] = useState<InvestorPlan>(() =>
+    checkoutIntentMatchesRole &&
+    normalized === 'investor' &&
+    intent.investorPlan === 'premium'
+      ? 'premium'
+      : 'standard',
+  );
   const [promoCode, setPromoCode] = useState('');
   const [promoPct, setPromoPct] = useState<number>(0);
   const [promoMsg, setPromoMsg] = useState('');
@@ -376,6 +385,7 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
 
   const isBusiness = normalized === 'business';
   const isInvestor = normalized === 'investor';
+  const investorPremiumSelected = isInvestor && investorPlan === 'premium';
   const [registrationOrderCode] = useState(() =>
     makePaymentOrderCode(
       isInvestor ? 'INVREG' : isBusiness ? 'BIZREG' : 'PARTNER',
@@ -395,7 +405,7 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
   const hasSelectedPackage = isBusiness
     ? Boolean(plan && serviceWeeks)
     : isInvestor
-      ? Boolean(investorMonths)
+      ? investorPremiumSelected && Boolean(investorMonths)
       : true;
 
   useEffect(() => {
@@ -422,19 +432,21 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
     },
     promoPct,
   );
-  const pricingSummary = hasSelectedPackage
-    ? isInvestor
-      ? `${money(price.total, price.currency)} · ${investorMonths} ${T(
-          lang,
-          'tháng',
-          'months',
-        )}`
-      : `${money(price.total, price.currency)} · ${price.termWeeks} ${T(
-          lang,
-          'tuần',
-          'weeks',
-        )}`
-    : '-';
+  const pricingSummary = isInvestor && investorPlan === 'standard'
+    ? T(lang, 'Miễn phí · Nhà đầu tư Tiêu chuẩn', 'Free · Standard Investor')
+    : hasSelectedPackage
+      ? isInvestor
+        ? `${money(price.total, price.currency)} · ${investorMonths} ${T(
+            lang,
+            'tháng',
+            'months',
+          )}`
+        : `${money(price.total, price.currency)} · ${price.termWeeks} ${T(
+            lang,
+            'tuần',
+            'weeks',
+          )}`
+      : '-';
   const termOptions = [4, 8, 12, 16, 24];
   const currentTermValue = isInvestor ? investorMonths : serviceWeeks;
   const currentTermDisplay = currentTermValue ?? '—';
@@ -713,16 +725,18 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
       if (!ticketMin.trim() || !ticketMax.trim()) {
         missing.push(T(lang, 'Khoản đầu tư/ticket size', 'Ticket size'));
       }
-      if (!investorMonths) {
-        missing.push(T(lang, 'Kỳ hạn', 'Term'));
-      } else if (!paymentAck) {
-        missing.push(
-          T(
-            lang,
-            'Xác nhận đã chuyển khoản đúng nội dung',
-            'Payment transfer confirmation',
-          ),
-        );
+      if (investorPremiumSelected) {
+        if (!investorMonths) {
+          missing.push(T(lang, 'Kỳ hạn', 'Term'));
+        } else if (!paymentAck) {
+          missing.push(
+            T(
+              lang,
+              'Xác nhận đã chuyển khoản đúng nội dung',
+              'Payment transfer confirmation',
+            ),
+          );
+        }
       }
     }
 
@@ -1011,9 +1025,36 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
           title: `${roleLabel(normalized as any, lang)} · ${pricingSummary}`,
           role: normalized,
           country: countryCode,
-          plan: isBusiness ? selectedBusinessPlan : 'membership',
+          plan: isBusiness
+            ? selectedBusinessPlan
+            : isInvestor
+              ? investorPlan
+              : 'membership',
+          investorPlan: isInvestor ? investorPlan : undefined,
+          termMonths: investorPremiumSelected ? investorMonths : undefined,
+          skipPayment: isInvestor && investorPlan === 'standard',
+          orderType: isInvestor
+            ? investorPlan === 'standard'
+              ? 'investor_standard_registration'
+              : 'investor_registration'
+            : undefined,
           checkout_intent: intent,
-          price,
+          price: isInvestor && investorPlan === 'standard'
+            ? {
+                ...price,
+                baseWeekly: 0,
+                featuredWeekly: 0,
+                planWeekly: 0,
+                termWeeks: 0,
+                subtotal: 0,
+                termDiscountPct: 0,
+                termDiscount: 0,
+                promoDiscountPct: 0,
+                promoDiscount: 0,
+                total: 0,
+                planLabel: 'Standard',
+              }
+            : price,
           orderCode: registrationOrderCode,
           bankContent: registrationOrderCode,
           source: 'register_main_release_safe',
@@ -1138,36 +1179,91 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
   );
   const paymentSection = (
     <section
-      className={`d68-register-section d68-register-section--pricing${
-        isBusiness
+      className={
+        'd68-register-section d68-register-section--pricing' +
+        (isBusiness
           ? ' d68-register-section--business-pricing'
           : isInvestor
             ? ' d68-register-section--investor-pricing'
-            : ''
-      }`}
+            : '')
+      }
     >
       <h2>{T(lang, 'Gói dịch vụ và Thanh toán', 'Service package and Payment')}</h2>
+
       {isInvestor ? (
+        <div className="d68-bizreg-options d68-investor-plan-options">
+          <button
+            type="button"
+            className={investorPlan === 'standard' ? 'active' : ''}
+            aria-pressed={investorPlan === 'standard'}
+            onClick={() => {
+              setInvestorPlan('standard');
+              setInvestorMonths(null);
+              setPromoCode('');
+              setPromoPct(0);
+              setPromoMsg('');
+              setPaymentAck(false);
+            }}
+          >
+            <h3>{T(lang, 'Nhà đầu tư Tiêu chuẩn', 'Standard Investor')}</h3>
+            <p>
+              {T(
+                lang,
+                'Miễn phí. Sử dụng các tính năng kết nối cơ bản dành cho Nhà đầu tư.',
+                'Free. Use the core connection features available to Investors.',
+              )}
+            </p>
+            <span>{T(lang, 'Mặc định · Miễn phí', 'Default · Free')}</span>
+          </button>
+          <button
+            type="button"
+            className={investorPlan === 'premium' ? 'active' : ''}
+            aria-pressed={investorPlan === 'premium'}
+            onClick={() => {
+              setInvestorPlan('premium');
+              setPaymentAck(false);
+            }}
+          >
+            <h3>{T(lang, 'Nhà đầu tư Nâng cao', 'Premium Investor')}</h3>
+            <p>
+              {T(
+                lang,
+                'Được sử dụng tính năng Báo cáo Phân tích cơ hội đầu tư',
+                'Access the Investment Opportunity Analysis Report feature',
+              )}
+            </p>
+            <span>
+              {money(price.baseWeekly, price.currency)} / {T(lang, 'tháng', 'month')}
+            </span>
+          </button>
+        </div>
+      ) : null}
+
+      {isInvestor && investorPremiumSelected ? (
         <p className="d68-bizreg-section-help">
           {T(lang, 'Vui lòng chọn thời gian sử dụng.', 'Please select the service duration.')}
         </p>
       ) : null}
+
       {isBusiness ? (
         <div className="d68-bizreg-options">
-          {
-          ([
+          {([
             {
               key: 'standard' as BusinessPlan,
               title: T(lang, 'Gói Thường', 'Regular package'),
               desc: T(
                 lang,
-                `Hiển thị tại danh sách và gửi Hồ sơ doanh nghiệp tới tối đa ${BUSINESS_STANDARD_PROPOSAL_QUOTA} nhà đầu tư`,
-                `Display in the listing and send your business profile to up to ${BUSINESS_STANDARD_PROPOSAL_QUOTA} investors`,
+                'Hiển thị tại danh sách và gửi Hồ sơ doanh nghiệp tới tối đa ' +
+                  BUSINESS_STANDARD_PROPOSAL_QUOTA +
+                  ' nhà đầu tư',
+                'Display in the listing and send your business profile to up to ' +
+                  BUSINESS_STANDARD_PROPOSAL_QUOTA +
+                  ' investors',
               ),
               badge: T(
                 lang,
-                `${BUSINESS_STANDARD_PROPOSAL_QUOTA} lượt gửi Hồ sơ doanh nghiệp`,
-                `${BUSINESS_STANDARD_PROPOSAL_QUOTA} business profile sends`,
+                BUSINESS_STANDARD_PROPOSAL_QUOTA + ' lượt gửi Hồ sơ doanh nghiệp',
+                BUSINESS_STANDARD_PROPOSAL_QUOTA + ' business profile sends',
               ),
             },
             {
@@ -1175,13 +1271,17 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
               title: T(lang, 'Gói Ưu tiên ★', 'Priority package ★'),
               desc: T(
                 lang,
-                `Hiển thị tại danh sách/trang chủ và gửi Hồ sơ doanh nghiệp tới tối đa ${BUSINESS_FEATURED_PROPOSAL_QUOTA} nhà đầu tư`,
-                `Display in the listing/homepage and send your business profile to up to ${BUSINESS_FEATURED_PROPOSAL_QUOTA} investors`,
+                'Hiển thị tại danh sách/trang chủ và gửi Hồ sơ doanh nghiệp tới tối đa ' +
+                  BUSINESS_FEATURED_PROPOSAL_QUOTA +
+                  ' nhà đầu tư',
+                'Display in the listing/homepage and send your business profile to up to ' +
+                  BUSINESS_FEATURED_PROPOSAL_QUOTA +
+                  ' investors',
               ),
               badge: T(
                 lang,
-                `${BUSINESS_FEATURED_PROPOSAL_QUOTA} lượt gửi Hồ sơ doanh nghiệp`,
-                `${BUSINESS_FEATURED_PROPOSAL_QUOTA} business profile sends`,
+                BUSINESS_FEATURED_PROPOSAL_QUOTA + ' lượt gửi Hồ sơ doanh nghiệp',
+                BUSINESS_FEATURED_PROPOSAL_QUOTA + ' business profile sends',
               ),
             },
           ] as const).map((item) => (
@@ -1201,209 +1301,235 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
                 <em>+30% {T(lang, 'so với gói Thường', 'vs Standard')}</em>
               ) : null}
             </button>
-          ))
-          }
+          ))}
         </div>
       ) : null}
 
-      <div className="d68-bizreg-paygrid">
-        <div className="d68-bizreg-payleft">
-          <label className="d68-bizreg-label">
-            {T(lang, 'Kỳ hạn', 'Term')} <small>({termUnitLabel})</small>
-          </label>
-          <div className="d68-bizreg-terms">
-            {termOptions.map((term) => {
-              const termWeeks = isInvestor ? term * 4 : term;
-              const temporary = calculatePricing(
-                {
-                  role: pricingRole,
-                  country: countryCode,
-                  termWeeks,
-                  businessPlan: selectedBusinessPlan,
-                  promoCode,
-                },
-                promoPct,
-              );
-              return (
+      {!isInvestor || investorPremiumSelected ? (
+        <>
+          <div className="d68-bizreg-paygrid">
+            <div className="d68-bizreg-payleft">
+              <label className="d68-bizreg-label">
+                {T(lang, 'Kỳ hạn', 'Term')} <small>({termUnitLabel})</small>
+              </label>
+              <div className="d68-bizreg-terms">
+                {termOptions.map((term) => {
+                  const termWeeks = isInvestor ? term * 4 : term;
+                  const temporary = calculatePricing(
+                    {
+                      role: pricingRole,
+                      country: countryCode,
+                      termWeeks,
+                      businessPlan: selectedBusinessPlan,
+                      promoCode,
+                    },
+                    promoPct,
+                  );
+                  return (
+                    <button
+                      type="button"
+                      key={term}
+                      className={currentTermValue === term ? 'active' : ''}
+                      onClick={() => {
+                        if (isInvestor) setInvestorMonths(term);
+                        else setServiceWeeks(term);
+                        setPaymentAck(false);
+                      }}
+                    >
+                      <b>{term}</b>
+                      {temporary.termDiscountPct ? (
+                        <span>-{temporary.termDiscountPct}%</span>
+                      ) : null}
+                    </button>
+                  );
+                })}
+              </div>
+              <label className="d68-bizreg-label">
+                {T(lang, 'Mã khuyến mãi/giới thiệu', 'Promo/referral code')}
+              </label>
+              <div className="d68-bizreg-promo">
+                <input
+                  value={promoCode}
+                  onChange={(event) =>
+                    setPromoCode(event.target.value.toUpperCase())
+                  }
+                  placeholder={T(lang, 'Nhập mã (nếu có)', 'Enter code (optional)')}
+                />
                 <button
                   type="button"
-                  key={term}
-                  className={currentTermValue === term ? 'active' : ''}
-                  onClick={() => {
-                    if (isInvestor) setInvestorMonths(term);
-                    else setServiceWeeks(term);
-                    setPaymentAck(false);
+                  disabled={promoLoading}
+                  onClick={async () => {
+                    setPromoLoading(true);
+                    const result = await lookupPromo(promoCode, pricingRole).catch(
+                      (promoError: any) => ({
+                        discountPct: 0,
+                        message: promoError?.message || 'Could not check promo.',
+                      }),
+                    );
+                    setPromoLoading(false);
+                    setPromoPct(Number(result.discountPct || 0));
+                    setPromoMsg(
+                      result.discountPct
+                        ? T(
+                            lang,
+                            'Mã hợp lệ, đã cập nhật số tiền giảm giá',
+                            'Valid code, discount amount updated',
+                          )
+                        : result.message || T(lang, 'Mã không hợp lệ.', 'Invalid code.'),
+                    );
                   }}
                 >
-                  <b>{term}</b>
-                  {temporary.termDiscountPct ? (
-                    <span>-{temporary.termDiscountPct}%</span>
-                  ) : null}
+                  {promoLoading ? '...' : T(lang, 'Áp dụng', 'Apply')}
                 </button>
-              );
-            })}
+              </div>
+              {promoMsg ? (
+                <p
+                  className={
+                    promoPct
+                      ? 'd68-bizreg-promo-ok'
+                      : 'd68-bizreg-promo-warn'
+                  }
+                >
+                  {promoMsg}
+                </p>
+              ) : null}
+            </div>
+
+            <aside className="d68-bizreg-summary">
+              <span>{T(lang, 'Tạm tính', 'Estimate')}</span>
+              <RowMini
+                a={T(
+                  lang,
+                  'Phí dịch vụ (' +
+                    currentTermDisplay +
+                    ' ' +
+                    (isInvestor ? 'tháng' : 'tuần') +
+                    ')',
+                  'Service fee (' +
+                    currentTermDisplay +
+                    ' ' +
+                    (isInvestor ? 'months' : 'weeks') +
+                    ')',
+                )}
+                b={hasSelectedPackage ? money(price.subtotal, price.currency) : '-'}
+              />
+              <RowMini
+                a={T(lang, 'Chiết khấu kỳ hạn', 'Term discount')}
+                b={
+                  hasSelectedPackage
+                    ? price.termDiscountPct
+                      ? '-' +
+                        money(price.termDiscount, price.currency) +
+                        ' (' +
+                        price.termDiscountPct +
+                        '%)'
+                      : T(lang, 'Không', 'None')
+                    : '-'
+                }
+                good={hasSelectedPackage && !!price.termDiscountPct}
+              />
+              <RowMini
+                a={T(lang, 'Giảm giá', 'Promo discount')}
+                b={
+                  hasSelectedPackage
+                    ? price.promoDiscountPct
+                      ? '-' +
+                        money(price.promoDiscount, price.currency) +
+                        ' (' +
+                        price.promoDiscountPct +
+                        '%)'
+                      : T(lang, 'Không', 'None')
+                    : '-'
+                }
+                good={hasSelectedPackage && !!price.promoDiscountPct}
+              />
+              <strong>
+                {T(lang, 'Tổng thanh toán', 'Total due')}
+                <b>{hasSelectedPackage ? money(price.total, price.currency) : '-'}</b>
+              </strong>
+            </aside>
           </div>
-          <label className="d68-bizreg-label">
-            {T(lang, 'Mã khuyến mãi/giới thiệu', 'Promo/referral code')}
-          </label>
-          <div className="d68-bizreg-promo">
-            <input
-              value={promoCode}
-              onChange={(event) =>
-                setPromoCode(event.target.value.toUpperCase())
-              }
-              placeholder={T(lang, 'Nhập mã (nếu có)', 'Enter code (optional)')}
-            />
-            <button
-              type="button"
-              disabled={promoLoading}
-              onClick={async () => {
-                setPromoLoading(true);
-                const result = await lookupPromo(promoCode, pricingRole).catch(
-                  (promoError: any) => ({
-                    discountPct: 0,
-                    message:
-                      promoError?.message || 'Could not check promo.',
-                  }),
-                );
-                setPromoLoading(false);
-                setPromoPct(Number(result.discountPct || 0));
-                setPromoMsg(
-                  result.discountPct
-                    ? T(
-                        lang,
-                        'Mã hợp lệ, đã cập nhật số tiền giảm giá',
-                        'Valid code, discount amount updated',
-                      )
-                    : result.message ||
-                        T(lang, 'Mã không hợp lệ.', 'Invalid code.'),
-                );
-              }}
-            >
-              {promoLoading ? '...' : T(lang, 'Áp dụng', 'Apply')}
+
+          <div className="d68-bizreg-payment-methods d68-bizreg-payment-methods--primary">
+            <button type="button" className="active">
+              <span>💵</span>
+              {T(lang, 'Chuyển khoản QR', 'QR bank transfer')}
             </button>
           </div>
-          {promoMsg ? (
-            <p
-              className={
-                promoPct
-                  ? 'd68-bizreg-promo-ok'
-                  : 'd68-bizreg-promo-warn'
-              }
-            >
-              {promoMsg}
-            </p>
-          ) : null}
-        </div>
 
-        <aside className="d68-bizreg-summary">
-          <span>{T(lang, 'Tạm tính', 'Estimate')}</span>
-          <RowMini
-            a={T(
-              lang,
-              `Phí dịch vụ (${currentTermDisplay} ${
-                isInvestor ? 'tháng' : 'tuần'
-              })`,
-              `Service fee (${currentTermDisplay} ${
-                isInvestor ? 'months' : 'weeks'
-              })`,
-            )}
-            b={hasSelectedPackage ? money(price.subtotal, price.currency) : '-'}
-          />
-          <RowMini
-            a={T(lang, 'Chiết khấu kỳ hạn', 'Term discount')}
-            b={
-              hasSelectedPackage
-                ? price.termDiscountPct
-                  ? `-${money(price.termDiscount, price.currency)} (${price.termDiscountPct}%)`
-                  : T(lang, 'Không', 'None')
-                : '-'
-            }
-            good={hasSelectedPackage && !!price.termDiscountPct}
-          />
-          <RowMini
-            a={T(lang, 'Giảm giá', 'Promo discount')}
-            b={
-              hasSelectedPackage
-                ? price.promoDiscountPct
-                  ? `-${money(price.promoDiscount, price.currency)} (${price.promoDiscountPct}%)`
-                  : T(lang, 'Không', 'None')
-                : '-'
-            }
-            good={hasSelectedPackage && !!price.promoDiscountPct}
-          />
-          <strong>
-            {T(lang, 'Tổng thanh toán', 'Total due')}
-            <b>{hasSelectedPackage ? money(price.total, price.currency) : '-'}</b>
-          </strong>
-        </aside>
-      </div>
-
-      <div className="d68-bizreg-payment-methods d68-bizreg-payment-methods--primary">
-        <button type="button" className="active">
-          <span>💵</span>
-          {T(lang, 'Chuyển khoản QR', 'QR bank transfer')}
-        </button>
-      </div>
-
-      {isInvestor || hasSelectedPackage ? (
-        <div className="d68-bizreg-qrbox">
-          <a href={qrImageSrc} target="_blank" rel="noreferrer">
-            <img
-              src={qrImageSrc}
-              alt="QR Vietcombank"
-              onError={() => setQrImageSrc(STATIC_VIETQR_URL)}
-            />
-          </a>
-          <div>
-            <p>{T(lang, 'Người nhận:', 'Recipient:')} <b>Tieu Vo Dinh Phi</b></p>
-            <p>{T(lang, 'Số TK:', 'Account no.:')} <b>0011004000713</b></p>
-            {hasSelectedPackage ? (
-              <>
+          {hasSelectedPackage ? (
+            <div className="d68-bizreg-qrbox">
+              <a href={qrImageSrc} target="_blank" rel="noreferrer">
+                <img
+                  src={qrImageSrc}
+                  alt="QR Vietcombank"
+                  onError={() => setQrImageSrc(STATIC_VIETQR_URL)}
+                />
+              </a>
+              <div>
+                <p>{T(lang, 'Người nhận:', 'Recipient:')} <b>Tieu Vo Dinh Phi</b></p>
+                <p>{T(lang, 'Số TK:', 'Account no.:')} <b>0011004000713</b></p>
                 <p>{T(lang, 'Nội dung:', 'Transfer note:')} <b>{bankContent}</b></p>
                 <p>{T(lang, 'Số tiền:', 'Amount:')} <b>{money(price.total, price.currency)}</b></p>
-              </>
-            ) : null}
+              </div>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={paymentAck}
+                  onChange={(event) => setPaymentAck(event.target.checked)}
+                />{' '}
+                {T(
+                  lang,
+                  'Tôi đã chuyển khoản đúng số tiền và nội dung ở trên',
+                  'I have transferred the exact amount with the transfer note above',
+                )}
+              </label>
+            </div>
+          ) : (
+            <div className="d68-bizreg-package-pending" role="status">
+              <b>
+                {isInvestor
+                  ? T(lang, 'Vui lòng chọn kỳ hạn', 'Please select a term')
+                  : T(
+                      lang,
+                      'Vui lòng chọn gói dịch vụ và kỳ hạn',
+                      'Please select a service package and term',
+                    )}
+              </b>
+              <span>
+                {T(
+                  lang,
+                  'Số tiền và thông tin thanh toán sẽ hiển thị sau khi chọn gói.',
+                  'The amount and payment information will appear after a package is selected.',
+                )}
+              </span>
+            </div>
+          )}
+
+          <div className="d68-bizreg-payment-methods d68-bizreg-payment-methods--secondary">
+            <button type="button" disabled>
+              <span>💳</span>
+              Sepay ({T(lang, 'Thẻ nội địa / tín dụng', 'Debit / credit card')}) ·{' '}
+              {T(lang, 'Sắp ra mắt', 'Coming soon')}
+            </button>
+            <button type="button" disabled>
+              <span>💳</span>
+              Stripe / Paypal · {T(lang, 'Sắp ra mắt', 'Coming soon')}
+            </button>
           </div>
-          {hasSelectedPackage ? (
-          <label>
-              <input
-                type="checkbox"
-                checked={paymentAck}
-                onChange={(event) => setPaymentAck(event.target.checked)}
-              />{' '}
-              {T(
-                lang,
-                'Tôi đã chuyển khoản đúng số tiền và nội dung ở trên',
-                'I have transferred the exact amount with the transfer note above',
-              )}
-            </label>
-          ) : null}
-        </div>
+        </>
       ) : (
-        <div className="d68-bizreg-package-pending" role="status">
-          <b>{T(lang, 'Vui lòng chọn gói dịch vụ và kỳ hạn', 'Please select a service package and term')}</b>
+        <div className="d68-bizreg-package-pending d68-bizreg-package-pending--free" role="status">
+          <b>{T(lang, 'Miễn phí', 'Free')}</b>
           <span>
             {T(
               lang,
-              'Số tiền và thông tin thanh toán sẽ hiển thị sau khi chọn gói.',
-              'The amount and payment information will appear after a package is selected.',
+              'Nhà đầu tư Tiêu chuẩn không cần thanh toán khi đăng ký.',
+              'Standard Investors do not need to make a payment during registration.',
             )}
           </span>
         </div>
       )}
-
-      <div className="d68-bizreg-payment-methods d68-bizreg-payment-methods--secondary">
-        <button type="button" disabled>
-          <span>💳</span>
-          Sepay ({T(lang, 'Thẻ nội địa / tín dụng', 'Debit / credit card')}) ·{' '}
-          {T(lang, 'Sắp ra mắt', 'Coming soon')}
-        </button>
-        <button type="button" disabled>
-          <span>💳</span>
-          Stripe / Paypal · {T(lang, 'Sắp ra mắt', 'Coming soon')}
-        </button>
-      </div>
     </section>
   );
 
