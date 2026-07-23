@@ -13,7 +13,7 @@ permissions:
   contents: write
 
 jobs:
-  migration-diagnostic:
+  apply-and-verify:
     if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     steps:
@@ -23,26 +23,46 @@ jobs:
           ref: ${{ github.event.pull_request.head.ref || github.ref_name }}
           show-progress: false
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Repair migration registry interpolation
+        run: node scripts/fix-investor-plan-phase1-applicator.mjs
+
       - name: Apply scoped Phase 1 source
         run: node scripts/apply-investor-plan-entitlements-phase1.mjs
 
-      - name: Investor plan contract QA
-        run: node scripts/deals68-investor-plan-entitlements-check.mjs
+      - name: Install dependencies
+        run: npm ci
 
-      - name: Migration state QA with persisted diagnostic
+      - name: Investor plan entitlement contract
+        run: npm run qa:investor-plans
+
+      - name: Migration state contract
+        run: npm run qa:migrations
+
+      - name: Production build
+        run: npm run build
+
+      - name: CSS architecture regression
+        run: npm run qa:css
+
+      - name: Diff formatting
+        run: git diff --check
+
+      - name: Commit verified product source
         env:
           TARGET_BRANCH: ${{ github.event.pull_request.head.ref || github.ref_name }}
         run: |
-          set +e
-          node scripts/deals68-migration-state-check.mjs > /tmp/migration-diagnostic.txt 2>&1
-          STATUS=$?
-          cat /tmp/migration-diagnostic.txt
-          if [ "$STATUS" -ne 0 ]; then
-            cp /tmp/migration-diagnostic.txt docs/release/INVESTOR_PLAN_PHASE1_MIGRATION_DIAGNOSTIC.txt
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add docs/release/INVESTOR_PLAN_PHASE1_MIGRATION_DIAGNOSTIC.txt
-            git commit -m "chore: capture Investor plan migration diagnostic"
-            git push origin HEAD:${TARGET_BRANCH}
-            exit "$STATUS"
-          fi
+          rm -f scripts/apply-investor-plan-entitlements-phase1.mjs
+          rm -f scripts/fix-investor-plan-phase1-applicator.mjs
+          rm -f .github/workflows/investor-plan-entitlements-phase1.yml
+          rm -f docs/release/INVESTOR_PLAN_PHASE1_MIGRATION_DIAGNOSTIC.txt
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --check
+          git commit -m "feat: add Investor Standard and Premium entitlement contract"
+          git push origin HEAD:${TARGET_BRANCH}
