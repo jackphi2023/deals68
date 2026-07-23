@@ -36,13 +36,21 @@ requireSnippet('pricing core', pricingSource, 'INVESTOR_PREMIUM_MONTHLY_VND');
 requireSnippet('pricing core', pricingSource, "role === 'investor'");
 requireSnippet('pricing page', pricingPage, 'INVESTOR_PREMIUM_MONTHLY_VND');
 requireSnippet('pricing page', pricingPage, "'Nhà đầu tư Nâng cao'");
-requireSnippet('pricing page', pricingPage, "investorPlan: role === 'investor' ? 'premium' : undefined");
+requireSnippet(
+  'pricing page',
+  pricingPage,
+  "investorPlan: role === 'investor' ? investorPlan : undefined",
+);
+requireSnippet('pricing page', pricingPage, "useState<InvestorPlan>('standard')");
 
 if (pricingSource.includes("role === 'business' ? (currency === 'VND' ? 500_000 : 20) : (currency === 'VND' ? 1_000_000 : 50)")) {
   failures.push('pricing core still uses the legacy generic Investor rate');
 }
 if (pricingPage.includes("investor: { unitVi: 'tháng', unitEn: 'month', vn: 1_000_000, other: 50")) {
   failures.push('Pricing page still uses the legacy Investor rate');
+}
+if (pricingPage.includes("investorPlan: role === 'investor' ? 'premium' : undefined")) {
+  failures.push('Pricing page still forces every Investor checkout to Premium');
 }
 
 if (failures.length) {

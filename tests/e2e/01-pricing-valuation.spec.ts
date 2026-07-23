@@ -1,5 +1,12 @@
 import { test, expect } from '@playwright/test';
-import { collectConsoleErrors, expectNoBadPlaceholders, expectNoCriticalConsoleErrors, expectNoHorizontalOverflow, gotoAndWait, annotate } from '../helpers/deals68';
+import {
+  collectConsoleErrors,
+  expectNoBadPlaceholders,
+  expectNoCriticalConsoleErrors,
+  expectNoHorizontalOverflow,
+  gotoAndWait,
+  annotate,
+} from '../helpers/deals68';
 
 test.describe('TC-PRICING — Pricing and registration payment summary', () => {
   test('TC-PRICING-001 Pricing page shows Business/Investor country pricing concepts', async ({ page }, testInfo) => {
@@ -12,6 +19,7 @@ test.describe('TC-PRICING — Pricing and registration payment summary', () => {
     await expectNoBadPlaceholders(page);
     await expectNoCriticalConsoleErrors(errors);
   });
+
   test('TC-PRICING-002 Business register payment UI has term, promo, QR and total', async ({ page }, testInfo) => {
     annotate(testInfo, 'spec', 'Business register must show package, term weeks, promo/referral, QR transfer and total due.');
     await gotoAndWait(page, '/register/business');
@@ -24,14 +32,41 @@ test.describe('TC-PRICING — Pricing and registration payment summary', () => {
     await expect(body).toContainText(/0011004000713/);
     await expectNoHorizontalOverflow(page);
   });
-  test('TC-PRICING-003 Investor register payment UI uses month terms', async ({ page }, testInfo) => {
-    annotate(testInfo, 'spec', 'Investor register must show 4/8/12/16/24 month terms and QR transfer.');
-    await gotoAndWait(page, '/register/investor');
-    const text = await page.locator('body').innerText();
-    expect(text).toMatch(/tháng|months/i);
-    for (const term of ['4','8','12','16','24']) expect(text).toContain(term);
-    expect(text).toMatch(/Tổng thanh toán|Total due/i);
-    expect(text).toMatch(/Chuyển khoản QR|QR bank transfer/i);
+
+  test('TC-PRICING-003 Standard Investor is free and Premium uses the updated monthly price', async ({ page }, testInfo) => {
+    annotate(
+      testInfo,
+      'spec',
+      'Investor pricing must default to free Standard, disclose the paid analysis report, and pass Premium selection to registration.',
+    );
+    await gotoAndWait(page, '/pricing');
+
+    const panel = page.locator('.d68-pricing-panel');
+    const result = page.locator('.d68-pricing-result');
+    await panel.getByRole('button', { name: /^Nhà đầu tư$|^Investor$/i }).click();
+
+    const standard = panel.getByRole('button', { name: /Tiêu chuẩn.*Miễn phí|Standard.*Free/i });
+    const premium = panel.getByRole('button', { name: /^Nâng cao$|^Premium$/i });
+    await expect(standard).toHaveClass(/active/);
+    await expect(result).toContainText(/Miễn phí|Free/i);
+    await expect(panel).not.toContainText(/Kỳ hạn|Term/i);
+    await expect(page.locator('.d68-pricing-plans')).toContainText(
+      /Xem Báo cáo Phân tích đầu tư: 50 triệu đ\/tháng\.|View Investment Analysis Reports: USD 2,500\/month\./i,
+    );
+
+    await premium.click();
+    await expect(premium).toHaveClass(/active/);
+    await expect(panel).toContainText(/Kỳ hạn|Term/i);
+    for (const term of ['4', '8', '12', '16', '24']) {
+      await expect(panel).toContainText(term);
+    }
+    await expect(result).toContainText(/50\.000\.000 ₫|\$50,000,000|\$2,500/i);
+
+    await result.getByRole('button', { name: /Đăng ký tài khoản|Register account/i }).click();
+    await expect(page).toHaveURL(/register\/investor/);
+    await expect(
+      page.getByRole('button', { name: /Nhà đầu tư Nâng cao|Premium Investor/i }),
+    ).toHaveClass(/active/);
     await expectNoHorizontalOverflow(page);
   });
 });
@@ -42,7 +77,9 @@ test.describe('TC-VALUATION — Valuation scope and benchmark output', () => {
     const errors = await collectConsoleErrors(page);
     await gotoAndWait(page, '/valuation');
     const text = await page.locator('body').innerText();
-    for (const required of ['Quốc gia', 'Ngành', 'Doanh thu năm', 'Đơn vị', 'EBITDA', 'Tăng trưởng']) expect(text, `Missing valuation input/label: ${required}`).toContain(required);
+    for (const required of ['Quốc gia', 'Ngành', 'Doanh thu năm', 'Đơn vị', 'EBITDA', 'Tăng trưởng']) {
+      expect(text, `Missing valuation input/label: ${required}`).toContain(required);
+    }
     await expect(page.getByLabel(/Đơn vị|Currency/i)).toHaveValue('VND');
     expect(text).not.toMatch(/Nợ ròng|net debt/i);
     expect(text).not.toMatch(/Tỷ lệ cổ phần chào|offer stake/i);
@@ -52,6 +89,7 @@ test.describe('TC-VALUATION — Valuation scope and benchmark output', () => {
     await expectNoHorizontalOverflow(page);
     await expectNoCriticalConsoleErrors(errors);
   });
+
   test('TC-VALUATION-002 Valuation updates after changing revenue/margin/growth', async ({ page }) => {
     await gotoAndWait(page, '/valuation');
     await page.getByLabel(/^Quốc gia$|^Country$/i).selectOption({ index: 1 });
@@ -69,6 +107,7 @@ test.describe('TC-VALUATION — Valuation scope and benchmark output', () => {
     await expect(page.locator('body')).toContainText(/Trung bình|Midpoint/i);
     await expect(page.locator('body')).toContainText(/Cao|High/i);
   });
+
   test('TC-VALUATION-003 Business register valuation preview shows self valuation and benchmark', async ({ page }) => {
     await gotoAndWait(page, '/register/business');
     const text = await page.locator('body').innerText();
