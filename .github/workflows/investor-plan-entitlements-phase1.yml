@@ -21,6 +21,7 @@ jobs:
         with:
           fetch-depth: 1
           ref: ${{ github.event.pull_request.head.ref || github.ref_name }}
+          show-progress: false
 
       - name: Apply scoped Phase 1 source
         run: node scripts/apply-investor-plan-entitlements-phase1.mjs
@@ -28,5 +29,20 @@ jobs:
       - name: Investor plan contract QA
         run: node scripts/deals68-investor-plan-entitlements-check.mjs
 
-      - name: Migration state QA
-        run: node scripts/deals68-migration-state-check.mjs
+      - name: Migration state QA with persisted diagnostic
+        env:
+          TARGET_BRANCH: ${{ github.event.pull_request.head.ref || github.ref_name }}
+        run: |
+          set +e
+          node scripts/deals68-migration-state-check.mjs > /tmp/migration-diagnostic.txt 2>&1
+          STATUS=$?
+          cat /tmp/migration-diagnostic.txt
+          if [ "$STATUS" -ne 0 ]; then
+            cp /tmp/migration-diagnostic.txt docs/release/INVESTOR_PLAN_PHASE1_MIGRATION_DIAGNOSTIC.txt
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add docs/release/INVESTOR_PLAN_PHASE1_MIGRATION_DIAGNOSTIC.txt
+            git commit -m "chore: capture Investor plan migration diagnostic"
+            git push origin HEAD:${TARGET_BRANCH}
+            exit "$STATUS"
+          fi
