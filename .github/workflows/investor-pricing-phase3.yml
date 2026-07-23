@@ -1,0 +1,58 @@
+name: Investor Pricing Phase 3
+
+on:
+  push:
+    branches:
+      - feature/investor-pricing-phase3-20260723
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          show-progress: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Investor pricing contract
+        run: npm run qa:investor-pricing
+
+      - name: Investor registration regression
+        run: npm run qa:investor-register-plans
+
+      - name: Investor entitlement regression
+        run: npm run qa:investor-plans
+
+      - name: Production build
+        run: npm run build
+
+      - name: CSS architecture regression
+        run: npm run qa:css
+
+      - name: Route regression
+        run: npm run check:routes
+
+      - name: Diff formatting
+        run: git diff --check
+
+      - name: Commit verified source
+        run: |
+          rm -f .github/workflows/investor-pricing-phase3.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --check
+          git commit -m "feat: finalize Investor pricing Phase 3"
+          git push origin HEAD:${GITHUB_REF_NAME}
