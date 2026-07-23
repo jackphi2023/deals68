@@ -25,6 +25,7 @@ const required = [
   '20260721103504_ai_report_phase2_hourly_download_reconciliation_v1.sql',
   '20260721121832_ai_report_phase5_worker_artifact_v1.sql',
   '20260723115526_investor_plan_entitlements_v1.sql',
+  '20260723134524_investor_standard_premium_registration_v1.sql',
 ];
 const forbidden = [
   '20260711103000_normalize_investor_taxonomy_on_write_v1.sql',
@@ -33,6 +34,7 @@ const forbidden = [
   '20260712131500_payment_invoice_atomic_lifecycle.sql',
   '20260712132500_payment_order_code_collision_guard.sql',
   '20260723183000_investor_plan_entitlements_v1.sql',
+  '20260723193000_investor_standard_premium_registration_v1.sql',
 ];
 
 for (const name of required) {
@@ -59,7 +61,7 @@ const migrationContracts = [
     snippets: [
       'create or replace function public.d68_run_business_report_preflight',
       'create or replace function public.d68_reserve_business_report_request',
-      "v_preflight := public.d68_run_business_report_preflight(p_business_id);",
+      'v_preflight := public.d68_run_business_report_preflight(p_business_id);',
       "v_next_allowed_at := v_last_completed_at + interval '60 minutes';",
       "'rate_limit_minutes', 60",
       "'BROKER_AUTHORITY_MISSING'",
@@ -122,6 +124,17 @@ const migrationContracts = [
       'create or replace function public.d68_investor_has_entitlement',
       'create or replace function public.admin_set_investor_plan',
       'then 50000000 else 2500 end',
+    ],
+  },
+  {
+    name: '20260723134524_investor_standard_premium_registration_v1.sql',
+    snippets: [
+      'create or replace function public.create_signup_bundle_v2',
+      "payment_payload->>'skipPayment'",
+      "requested_investor_plan = 'standard'",
+      'delete from public.payment_orders',
+      "'payment_skipped', true",
+      'to anon, authenticated, service_role',
     ],
   },
 ];

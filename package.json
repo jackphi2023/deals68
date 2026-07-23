@@ -34,7 +34,8 @@
     "qa:admin-reports": "node scripts/deals68-admin-reports-phase4-check.mjs",
     "qa:business-report-phase5": "node scripts/deals68-business-report-phase5-check.mjs",
     "qa:business-report-phase6": "node scripts/deals68-business-report-phase6-check.mjs",
-    "qa:investor-plans": "node scripts/deals68-investor-plan-entitlements-check.mjs"
+    "qa:investor-plans": "node scripts/deals68-investor-plan-entitlements-check.mjs",
+    "qa:investor-register-plans": "node scripts/deals68-investor-register-plans-phase2-check.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.45.4",
