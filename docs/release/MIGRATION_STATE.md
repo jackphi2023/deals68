@@ -17,6 +17,7 @@ This file reconciles the migration filenames in Git with the migration versions 
 | 20260721103201 | `20260721103201_ai_report_phase2_preflight_and_hourly_limits_v1.sql` |
 | 20260721103504 | `20260721103504_ai_report_phase2_hourly_download_reconciliation_v1.sql` |
 | 20260721121832 | `20260721121832_ai_report_phase5_worker_artifact_v1.sql` |
+| 20260723115526 | `20260723115526_investor_plan_entitlements_v1.sql` |
 
 The new Release Candidate migration is:
 
@@ -32,6 +33,7 @@ The new Release Candidate migration is:
 - `20260721103201_ai_report_phase2_preflight_and_hourly_limits_v1.sql` — additive report source snapshot, preflight metadata and rate-event ledger foundation applied during the concurrent Phase 2 rollout.
 - `20260721103504_ai_report_phase2_hourly_download_reconciliation_v1.sql` — reconciles the concurrent rollout: generation continues to use `ai_report_business_requests`, Business PDF downloads use `ai_report_rate_events`, and each action is limited independently to one successful action per rolling 60 minutes.
 - `20260721121832_ai_report_phase5_worker_artifact_v1.sql` — additive Phase 5 artifact foundation applied to production; creates the private `business-reports-private` bucket, atomic `ai_reports` storage, service-role finalize/fail RPCs and safe latest-report metadata for Business. Every PDF and artifact is constrained to `source_label = "Deals68 AI Report"`; private storage paths are not exposed to Business clients.
+- `20260723115526_investor_plan_entitlements_v1.sql` — Investor Plan Phase 1; backfills every existing Investor to Standard, protects plan fields from client-side mutation, promotes confirmed paid membership to Premium, provides audited Admin assignment and server-side entitlement/price contracts. Premium pricing is 50,000,000 VND/month in Vietnam and 2,500 USD/month elsewhere.
 
 Rules:
 
