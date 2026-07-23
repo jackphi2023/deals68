@@ -45,6 +45,10 @@ import {
   INVESTOR_COVER_FALLBACK,
   uploadInvestorCoverImage,
 } from '../../lib/banners';
+import {
+  effectiveInvestorPlan,
+  type InvestorPlan,
+} from '../../lib/investorPlans';
 
 type Row = Record<string, any>;
 
@@ -139,6 +143,74 @@ function paymentFor(investor: Row, payments: Row[]) {
     )[0] || null;
 }
 
+type InvestorPlanFilter = '' | 'standard' | 'premium' | 'expiring' | 'expired';
+
+const INVESTOR_PLAN_EXPIRING_WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
+
+function investorPlanState(investor: Row, at = Date.now()) {
+  const storedPlan: InvestorPlan = String(investor.plan || 'standard').toLowerCase() === 'premium'
+    ? 'premium'
+    : 'standard';
+  const expiresAtMs = investor.membership_expires_at
+    ? new Date(investor.membership_expires_at).getTime()
+    : Number.NaN;
+  const hasExpiry = Number.isFinite(expiresAtMs);
+  const expired = storedPlan === 'premium' && hasExpiry && expiresAtMs <= at;
+  const effectivePlan = effectiveInvestorPlan(investor, at);
+  const expiringSoon = effectivePlan === 'premium' && hasExpiry &&
+    expiresAtMs > at && expiresAtMs <= at + INVESTOR_PLAN_EXPIRING_WINDOW_MS;
+  return { storedPlan, effectivePlan, expired, expiringSoon, hasExpiry, expiresAtMs };
+}
+
+function investorPlanLabel(investor: Row) {
+  const state = investorPlanState(investor);
+  if (state.expired) return 'Premium hết hạn';
+  return state.effectivePlan === 'premium' ? 'Premium' : 'Standard';
+}
+
+function investorPlanBadgeClass(investor: Row) {
+  const state = investorPlanState(investor);
+  if (state.expired) return 'err';
+  return state.effectivePlan === 'premium' ? 'ok' : 'warn';
+}
+
+function dateInputValue(value: unknown) {
+  if (!value) return '';
+  const parsed = new Date(String(value));
+  return Number.isFinite(parsed.getTime()) ? parsed.toISOString().slice(0, 10) : '';
+}
+
+function dateBoundaryIso(value: string, endOfDay = false) {
+  if (!value) return null;
+  const parsed = new Date(`${value}${endOfDay ? 'T23:59:59' : 'T00:00:00'}`);
+  return Number.isFinite(parsed.getTime()) ? parsed.toISOString() : null;
+}
+
+function investorPlanSource(investor: Row, payments: Row[]) {
+  const state = investorPlanState(investor);
+  if (state.storedPlan !== 'premium') return 'Tiêu chuẩn miễn phí';
+  const confirmedPayment = payments
+    .filter((payment) =>
+      (String(payment.investor_id || '') === String(investor.id || '') ||
+        String(payment.profile_id || '') === String(investor.owner_id || '')) &&
+      String(payment.status || '').toLowerCase() === 'confirmed',
+    )
+    .sort((left, right) =>
+      String(right.updated_at || right.created_at || '').localeCompare(
+        String(left.updated_at || left.created_at || ''),
+      ),
+    )[0];
+  if (!confirmedPayment) return 'Admin cấp';
+  const payload = objectOf(confirmedPayment.payload);
+  const source = String(payload.source || payload.channel || '').toLowerCase();
+  const promoCode = String(
+    payload.promoCode || payload.promo_code || objectOf(payload.price).promoCode || '',
+  ).trim();
+  if (source.includes('partner') || source.includes('đối tác')) return 'Đối tác';
+  if (promoCode) return `Mã ưu đãi ${promoCode}`;
+  return 'Thanh toán';
+}
+
 function loginProfileFor(investor: Row, profiles: Row[]) {
   return profiles.find((profile) =>
     String(profile.id || '') === String(investor.owner_id || '') ||
@@ -195,6 +267,8 @@ function InvestorReviewEditor({
   const reasons = reviewReasons(investor);
   const profile = loginProfileFor(investor, profiles);
   const payment = paymentFor(investor, payments);
+  const currentPlanState = investorPlanState(investor);
+  const planSource = investorPlanSource(investor, payments);
 
   const approvedTypes = approvedInvestorTypes(investor);
   const approvedStages = approvedInvestorStages(investor);
@@ -252,12 +326,29 @@ function InvestorReviewEditor({
   const [coverPreviewUrl, setCoverPreviewUrl] = useState(approvedCoverUrl);
   const [removeCover, setRemoveCover] = useState(false);
   const [approving, setApproving] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<InvestorPlan>(currentPlanState.storedPlan);
+  const [planStartedAt, setPlanStartedAt] = useState(
+    dateInputValue(investor.membership_started_at),
+  );
+  const [planExpiresAt, setPlanExpiresAt] = useState(
+    dateInputValue(investor.membership_expires_at),
+  );
+  const [planReason, setPlanReason] = useState('');
+  const [planSaving, setPlanSaving] = useState(false);
 
   useEffect(() => {
     setCoverFile(null);
     setCoverPreviewUrl(approvedCoverUrl);
     setRemoveCover(false);
   }, [approvedCoverUrl, investor.id]);
+
+  useEffect(() => {
+    const nextState = investorPlanState(investor);
+    setSelectedPlan(nextState.storedPlan);
+    setPlanStartedAt(dateInputValue(investor.membership_started_at));
+    setPlanExpiresAt(dateInputValue(investor.membership_expires_at));
+    setPlanReason('');
+  }, [investor.id, investor.plan, investor.membership_started_at, investor.membership_expires_at]);
 
   useEffect(() => {
     return () => {
@@ -282,6 +373,53 @@ function InvestorReviewEditor({
     setCoverFile(file);
     setCoverPreviewUrl(URL.createObjectURL(file));
     setRemoveCover(false);
+  }
+
+  async function saveInvestorPlan(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (
+      selectedPlan === 'standard' &&
+      currentPlanState.storedPlan === 'premium' &&
+      !window.confirm('Thu hồi Premium và chuyển Nhà đầu tư về gói Standard?')
+    ) return;
+
+    const startedAt = selectedPlan === 'premium'
+      ? dateBoundaryIso(planStartedAt)
+      : null;
+    const expiresAt = selectedPlan === 'premium'
+      ? dateBoundaryIso(planExpiresAt, true)
+      : null;
+    if (
+      startedAt && expiresAt &&
+      new Date(expiresAt).getTime() <= new Date(startedAt).getTime()
+    ) {
+      setError('Ngày hết hạn Premium phải sau ngày bắt đầu.');
+      return;
+    }
+
+    setPlanSaving(true);
+    setError('');
+    setMessage('');
+    const { error } = await supabase.rpc('admin_set_investor_plan', {
+      p_investor_id: investor.id,
+      p_plan: selectedPlan,
+      p_started_at: startedAt,
+      p_expires_at: expiresAt,
+      p_reason: planReason.trim() || null,
+    });
+    if (error) {
+      setPlanSaving(false);
+      setError(error.message);
+      return;
+    }
+    setPlanSaving(false);
+    setError('');
+    setMessage(
+      selectedPlan === 'premium'
+        ? `Đã cấp/gia hạn Premium cho ${investor.code || 'Investor'}.`
+        : `Đã thu hồi Premium và chuyển ${investor.code || 'Investor'} về Standard.`,
+    );
+    await onReload();
   }
 
   async function saveInvestor(event: FormEvent<HTMLFormElement>) {
@@ -416,6 +554,7 @@ function InvestorReviewEditor({
           </div>
         </div>
         <span className={`d68-admin-badge ${investor.visible ? 'ok' : 'warn'}`}>{investor.visible ? 'Hiển thị' : 'Ẩn'}</span>
+        <span className={`d68-admin-badge ${investorPlanBadgeClass(investor)}`}>{investorPlanLabel(investor)}</span>
         {reasons.any ? <span className="d68-admin-badge warn">Cần duyệt</span> : null}
       </div>
 
@@ -431,9 +570,54 @@ function InvestorReviewEditor({
 
       <div className="d68-admin-investor-summary-grid">
         <div><b>Tài khoản đăng nhập</b><span>{profile.username || investor.username || '—'}</span><span>{profile.email || investor.private_email || '—'}</span><span>Mật khẩu: Quản lý bằng Supabase Auth · không lưu trong database</span></div>
-        <div><b>Gói dịch vụ gần nhất</b><span>{payment?.title || payment?.price?.planLabel || 'Chưa có đơn'}</span><span>{payment?.status || '—'} {payment?.created_at ? `· ${new Date(payment.created_at).toLocaleDateString('vi-VN')}` : ''}</span></div>
-        <div><b>Ticket size</b><span>{Number(investor.ticket_min || 0).toLocaleString('en-US')} – {Number(investor.ticket_max || 0).toLocaleString('en-US')} USD</span><span>{investor.membership_expires_at ? `Hết hạn ${new Date(investor.membership_expires_at).toLocaleDateString('vi-VN')}` : 'Chưa có ngày hết hạn'}</span></div>
+        <div><b>Gói dịch vụ</b><span>{investorPlanLabel(investor)} · Nguồn: {planSource}</span><span>{payment?.title || payment?.price?.planLabel || 'Không có payment liên quan'}</span><span>{payment?.status || '—'} {payment?.created_at ? `· ${new Date(payment.created_at).toLocaleDateString('vi-VN')}` : ''}</span></div>
+        <div><b>Ticket size</b><span>{Number(investor.ticket_min || 0).toLocaleString('en-US')} – {Number(investor.ticket_max || 0).toLocaleString('en-US')} USD</span><span>{currentPlanState.effectivePlan === 'premium' ? 'Có quyền Báo cáo Phân tích cơ hội đầu tư' : 'Không có quyền Báo cáo Phân tích cơ hội đầu tư'}</span><span>{investor.membership_expires_at ? `${currentPlanState.expired ? 'Đã hết hạn' : 'Hết hạn'} ${new Date(investor.membership_expires_at).toLocaleDateString('vi-VN')}` : currentPlanState.storedPlan === 'premium' ? 'Premium không thời hạn' : 'Standard không có thời hạn Premium'}</span></div>
       </div>
+
+      <form onSubmit={saveInvestorPlan} className="d68-admin-investor-plan-box">
+        <div className="d68-admin-investor-plan-head">
+          <div>
+            <b>Gói dịch vụ Investor</b>
+            <span>Quản lý Standard/Premium độc lập với “Ưu tiên Homepage” (admin_priority).</span>
+          </div>
+          <span className={`d68-admin-badge ${investorPlanBadgeClass(investor)}`}>{investorPlanLabel(investor)}</span>
+        </div>
+        <div className="d68-admin-investor-plan-grid">
+          <label className="d68-admin-check d68-admin-investor-plan-toggle">
+            <input
+              type="checkbox"
+              checked={selectedPlan === 'premium'}
+              onChange={(event) => {
+                const nextPlan: InvestorPlan = event.target.checked ? 'premium' : 'standard';
+                setSelectedPlan(nextPlan);
+                if (nextPlan === 'premium' && !planStartedAt) {
+                  setPlanStartedAt(new Date().toISOString().slice(0, 10));
+                }
+              }}
+            />
+            Nhà đầu tư Nâng cao / Premium
+          </label>
+          <label className="d68-admin-field">
+            <span>Ngày bắt đầu</span>
+            <input type="date" className="d68-admin-input" value={planStartedAt} disabled={selectedPlan !== 'premium'} onChange={(event) => setPlanStartedAt(event.target.value)} />
+          </label>
+          <label className="d68-admin-field">
+            <span>Ngày hết hạn</span>
+            <input type="date" className="d68-admin-input" value={planExpiresAt} disabled={selectedPlan !== 'premium'} onChange={(event) => setPlanExpiresAt(event.target.value)} />
+            <small>Để trống nếu Admin cấp Premium không thời hạn.</small>
+          </label>
+          <label className="d68-admin-field d68-admin-span2">
+            <span>Ghi chú / lý do Admin</span>
+            <input className="d68-admin-input" value={planReason} onChange={(event) => setPlanReason(event.target.value)} placeholder="Thanh toán, đối tác, mã ưu đãi hoặc lý do cấp/thu hồi" />
+          </label>
+        </div>
+        <div className="d68-admin-actions d68-admin-investor-plan-actions">
+          <button type="submit" className={`d68-admin-btn ${selectedPlan === 'premium' ? 'gold' : 'light'}`} disabled={planSaving}>
+            {planSaving ? 'Đang lưu gói…' : selectedPlan === 'premium' ? 'Cấp / gia hạn Premium' : 'Lưu gói Standard'}
+          </button>
+          <span className="d68-admin-subtle">Mọi thay đổi được ghi audit bởi RPC Admin.</span>
+        </div>
+      </form>
 
       {reasons.any ? (
         <div className="d68-admin-investor-comparison-grid">
@@ -551,6 +735,7 @@ export default function InvestorAdminReviewPanel({
 }: Props) {
   const [stageFilter, setStageFilter] = useState('');
   const [dealFilter, setDealFilter] = useState('');
+  const [planFilter, setPlanFilter] = useState<InvestorPlanFilter>('');
 
   const queueStats = useMemo(() => {
     const result = { total: 0, newAccount: 0, intro: 0, appetite: 0 };
@@ -564,11 +749,28 @@ export default function InvestorAdminReviewPanel({
     return result;
   }, [investors]);
 
+  const planStats = useMemo(() => {
+    const result = { standard: 0, premium: 0, expiring: 0, expired: 0 };
+    investors.forEach((investor) => {
+      const state = investorPlanState(investor);
+      if (state.storedPlan === 'standard') result.standard += 1;
+      if (state.effectivePlan === 'premium') result.premium += 1;
+      if (state.expiringSoon) result.expiring += 1;
+      if (state.expired) result.expired += 1;
+    });
+    return result;
+  }, [investors]);
+
   const filtered = useMemo(() => {
     const keyword = search.trim().toLowerCase();
     return investors
       .filter((investor) => {
         const reasons = reviewReasons(investor);
+        const planState = investorPlanState(investor);
+        if (planFilter === 'standard' && planState.storedPlan !== 'standard') return false;
+        if (planFilter === 'premium' && planState.effectivePlan !== 'premium') return false;
+        if (planFilter === 'expiring' && !planState.expiringSoon) return false;
+        if (planFilter === 'expired' && !planState.expired) return false;
         if (reviewFilter === 'pending' && !reasons.any) return false;
         if (reviewFilter === 'new' && !reasons.newAccount) return false;
         if (reviewFilter === 'intro' && !reasons.introUpdated && !reasons.appetiteUpdated) return false;
@@ -594,7 +796,7 @@ export default function InvestorAdminReviewPanel({
         if (leftPending !== rightPending) return rightPending - leftPending;
         return String(right.created_at || right.updated_at || '').localeCompare(String(left.created_at || left.updated_at || ''));
       });
-  }, [investors, search, reviewFilter, visibilityFilter, officeCountryFilter, targetCountryFilter, industryFilter, typeFilter, stageFilter, dealFilter]);
+  }, [investors, search, reviewFilter, visibilityFilter, officeCountryFilter, targetCountryFilter, industryFilter, typeFilter, stageFilter, dealFilter, planFilter]);
 
   const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
   const safePage = Math.min(page, pageCount);
@@ -619,7 +821,13 @@ export default function InvestorAdminReviewPanel({
             <h3>Quản trị Nhà đầu tư</h3>
             <div className="d68-admin-subtle">Hiển thị {rows.length}/{filtered.length} kết quả · {pageSize}/trang · Giữ nguyên Admin shell MAIN</div>
           </div>
-          {queueStats.total ? <span className="d68-admin-badge warn">⚠️ {queueStats.total} cần duyệt</span> : <span className="d68-admin-badge ok">Không có hồ sơ cần duyệt</span>}
+          <div className="d68-admin-investor-plan-stats">
+            {queueStats.total ? <span className="d68-admin-badge warn">⚠️ {queueStats.total} cần duyệt</span> : <span className="d68-admin-badge ok">Không có hồ sơ cần duyệt</span>}
+            <span className="d68-admin-badge warn">{planStats.standard} Standard</span>
+            <span className="d68-admin-badge ok">{planStats.premium} Premium</span>
+            {planStats.expiring ? <span className="d68-admin-badge warn">{planStats.expiring} sắp hết hạn</span> : null}
+            {planStats.expired ? <span className="d68-admin-badge err">{planStats.expired} đã hết hạn</span> : null}
+          </div>
         </div>
 
         {queueStats.total ? (
@@ -629,6 +837,7 @@ export default function InvestorAdminReviewPanel({
         ) : null}
 
         <div className="d68-admin-investor-filter-grid">
+          <label>Gói dịch vụ<select value={planFilter} onChange={(event) => { setPlanFilter(event.target.value as InvestorPlanFilter); resetPage(); }} className="d68-admin-input"><option value="">Tất cả gói</option><option value="standard">Standard</option><option value="premium">Premium còn hiệu lực</option><option value="expiring">Premium sắp hết hạn (30 ngày)</option><option value="expired">Premium đã hết hạn</option></select></label>
           <label>Hàng chờ<select value={reviewFilter} onChange={(event) => onReviewFilterChange(event.target.value)} className="d68-admin-input"><option value="">Tất cả hồ sơ</option><option value="pending">Tất cả cần duyệt</option><option value="new">Tài khoản mới</option><option value="intro">Giới thiệu / Khẩu vị vừa sửa</option></select></label>
           <label>Trạng thái<select value={visibilityFilter} onChange={(event) => onVisibilityFilterChange(event.target.value)} className="d68-admin-input"><option value="">Tất cả</option><option value="visible">Hiển thị</option><option value="hidden">Ẩn</option></select></label>
           <label>{officeCountryLabel}<select value={officeCountryFilter} onChange={(event) => onOfficeCountryFilterChange(event.target.value)} className="d68-admin-input"><option value="">Tất cả</option>{officeCountries.map((value) => <option key={value} value={value}>{labelCountry(value, 'vi')}</option>)}</select></label>
