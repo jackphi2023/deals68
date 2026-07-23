@@ -4,6 +4,10 @@ on:
   push:
     branches:
       - feature/investor-register-plans-phase2-20260723
+  pull_request:
+    branches:
+      - building
+    types: [opened, synchronize, reopened]
 
 permissions:
   contents: write
@@ -17,6 +21,7 @@ jobs:
         with:
           fetch-depth: 1
           show-progress: false
+          ref: ${{ github.event.pull_request.head.ref || github.ref_name }}
 
       - uses: actions/setup-node@v4
         with:
@@ -51,6 +56,8 @@ jobs:
         run: git diff --check
 
       - name: Commit verified product source
+        env:
+          TARGET_BRANCH: ${{ github.event.pull_request.head.ref || github.ref_name }}
         run: |
           rm -f scripts/apply-investor-register-plans-phase2.mjs
           rm -f .github/workflows/investor-register-plans-phase2.yml
@@ -59,4 +66,4 @@ jobs:
           git add -A
           git diff --cached --check
           git commit -m "feat: add Standard and Premium Investor registration"
-          git push origin HEAD:${GITHUB_REF_NAME}
+          git push origin HEAD:${TARGET_BRANCH}
