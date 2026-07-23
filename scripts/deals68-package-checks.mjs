@@ -30,6 +30,7 @@ const scripts = [
   'scripts/deals68-session8-final-regression-check.mjs',
   'scripts/deals68-investor-plan-entitlements-check.mjs',
   'scripts/deals68-investor-register-plans-phase2-check.mjs',
+  'scripts/deals68-investor-pricing-phase3-check.mjs',
 ];
 
 for (const script of scripts) {
