@@ -4,6 +4,10 @@ on:
   push:
     branches:
       - feature/investor-plan-entitlements-phase1-20260723
+  pull_request:
+    branches:
+      - building
+    types: [opened, synchronize, reopened]
 
 permissions:
   contents: write
@@ -16,6 +20,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.ref || github.ref_name }}
 
       - uses: actions/setup-node@v4
         with:
@@ -44,6 +49,8 @@ jobs:
         run: git diff --check
 
       - name: Commit verified product source
+        env:
+          TARGET_BRANCH: ${{ github.event.pull_request.head.ref || github.ref_name }}
         run: |
           rm -f scripts/apply-investor-plan-entitlements-phase1.mjs
           rm -f .github/workflows/investor-plan-entitlements-phase1.yml
@@ -52,4 +59,4 @@ jobs:
           git add -A
           git diff --cached --check
           git commit -m "feat: add Investor Standard and Premium entitlement contract"
-          git push origin HEAD:${GITHUB_REF_NAME}
+          git push origin HEAD:${TARGET_BRANCH}
