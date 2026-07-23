@@ -33,7 +33,8 @@
     "qa:business-report-ui": "node scripts/deals68-business-report-ui-check.mjs",
     "qa:admin-reports": "node scripts/deals68-admin-reports-phase4-check.mjs",
     "qa:business-report-phase5": "node scripts/deals68-business-report-phase5-check.mjs",
-    "qa:business-report-phase6": "node scripts/deals68-business-report-phase6-check.mjs"
+    "qa:business-report-phase6": "node scripts/deals68-business-report-phase6-check.mjs",
+    "qa:investor-plans": "node scripts/deals68-investor-plan-entitlements-check.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.45.4",

@@ -24,6 +24,7 @@ const required = [
   '20260721103201_ai_report_phase2_preflight_and_hourly_limits_v1.sql',
   '20260721103504_ai_report_phase2_hourly_download_reconciliation_v1.sql',
   '20260721121832_ai_report_phase5_worker_artifact_v1.sql',
+  '20260723183000_investor_plan_entitlements_v1.sql',
 ];
 const forbidden = [
   '20260711103000_normalize_investor_taxonomy_on_write_v1.sql',
@@ -108,6 +109,18 @@ const migrationContracts = [
       'create or replace function public.d68_get_latest_business_report',
       'to service_role',
       'no private storage path is exposed',
+    ],
+  },
+  {
+    name: '20260723183000_investor_plan_entitlements_v1.sql',
+    snippets: [
+      "add column if not exists plan text not null default 'standard'",
+      "set plan = 'standard'",
+      'create or replace function public.d68_guard_investor_plan_contract',
+      'create or replace function public.d68_get_investor_plan_snapshot',
+      'create or replace function public.d68_investor_has_entitlement',
+      'create or replace function public.admin_set_investor_plan',
+      'then 50000000 else 2500 end',
     ],
   },
 ];

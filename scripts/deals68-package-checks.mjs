@@ -28,6 +28,7 @@ const scripts = [
   'scripts/deals68-migration-state-check.mjs',
   'scripts/deals68-ui-business-fixes-v1-contract-check.mjs',
   'scripts/deals68-session8-final-regression-check.mjs',
+  'scripts/deals68-investor-plan-entitlements-check.mjs',
 ];
 
 for (const script of scripts) {

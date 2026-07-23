@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import { BUSINESS_FEATURED_PROPOSAL_QUOTA, BUSINESS_STANDARD_PROPOSAL_QUOTA } from './businessPlans';
+import { INVESTOR_PREMIUM_MONTHLY_USD, INVESTOR_PREMIUM_MONTHLY_VND } from './investorPlans';
 
 export type PricingRole = 'business' | 'investor' | 'advisor' | 'affiliate';
 export type BusinessPlan = 'standard' | 'featured';
@@ -61,7 +62,11 @@ export function calculatePricing(input: PricingInput, promoDiscountPct = 0): Pri
   const termWeeks = Math.max(1, Math.min(104, Number(input.termWeeks || 1)));
   const termMonths = Math.max(1, Math.round(termWeeks / 4));
   const businessPlan: BusinessPlan = input.businessPlan === 'featured' ? 'featured' : 'standard';
-  const baseWeekly = role === 'business' ? (currency === 'VND' ? 500_000 : 20) : (currency === 'VND' ? 1_000_000 : 50);
+  const baseWeekly = role === 'business'
+    ? (currency === 'VND' ? 500_000 : 20)
+    : role === 'investor'
+      ? (currency === 'VND' ? INVESTOR_PREMIUM_MONTHLY_VND : INVESTOR_PREMIUM_MONTHLY_USD)
+      : (currency === 'VND' ? 1_000_000 : 50);
   const featuredWeekly = Math.round(baseWeekly * 1.3);
   const planWeekly = role === 'business' && businessPlan === 'featured' ? featuredWeekly : baseWeekly;
   const subtotal = planWeekly * (role === 'business' ? termWeeks : termMonths);
@@ -90,9 +95,13 @@ export function calculatePricing(input: PricingInput, promoDiscountPct = 0): Pri
     promoDiscount,
     total,
     proposalQuota,
-    planLabel: role === 'business' && businessPlan === 'featured' ? 'Featured' : 'Standard',
+    planLabel: role === 'business' && businessPlan === 'featured'
+      ? 'Featured'
+      : role === 'investor'
+        ? 'Premium'
+        : 'Standard',
     notes: [
-      role === 'business' && businessPlan === 'featured' ? `Featured visibility, ${BUSINESS_FEATURED_PROPOSAL_QUOTA} proposal quota, higher ranking.` : role === 'business' ? `Standard visibility, ${BUSINESS_STANDARD_PROPOSAL_QUOTA} proposal quota.` : 'Membership access is activated after payment/admin approval.',
+      role === 'business' && businessPlan === 'featured' ? `Featured visibility, ${BUSINESS_FEATURED_PROPOSAL_QUOTA} proposal quota, higher ranking.` : role === 'business' ? `Standard visibility, ${BUSINESS_STANDARD_PROPOSAL_QUOTA} proposal quota.` : role === 'investor' ? 'Premium Investor access is activated after payment or Admin approval.' : 'Membership access is activated after payment/admin approval.',
       'Country pricing matches Pricing page: Vietnam in VND, other countries in USD.',
       'Payment automation is in Beta; manual admin confirmation remains available.'
     ]
