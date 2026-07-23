@@ -1,6 +1,9 @@
 name: Investor Pricing Phase 3
 
 on:
+  pull_request:
+    branches:
+      - building
   push:
     branches:
       - feature/investor-pricing-phase3-20260723
@@ -48,6 +51,7 @@ jobs:
         run: git diff --check
 
       - name: Commit verified source
+        if: github.event_name == 'push'
         run: |
           rm -f .github/workflows/investor-pricing-phase3.yml
           git config user.name "github-actions[bot]"
