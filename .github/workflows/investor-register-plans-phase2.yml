@@ -31,6 +31,9 @@ jobs:
       - name: Apply scoped Phase 2 source
         run: node scripts/apply-investor-register-plans-phase2.mjs
 
+      - name: Fix generated migration registry
+        run: node scripts/fix-generated-investor-register-phase2.mjs
+
       - name: Install dependencies
         run: npm ci
 
@@ -60,6 +63,7 @@ jobs:
           TARGET_BRANCH: ${{ github.event.pull_request.head.ref || github.ref_name }}
         run: |
           rm -f scripts/apply-investor-register-plans-phase2.mjs
+          rm -f scripts/fix-generated-investor-register-phase2.mjs
           rm -f .github/workflows/investor-register-plans-phase2.yml
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
