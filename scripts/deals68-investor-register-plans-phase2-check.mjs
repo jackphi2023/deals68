@@ -4,7 +4,7 @@ import fs from 'node:fs';
 const failures = [];
 const register = fs.readFileSync('src/pages/Register.tsx', 'utf8');
 const e2e = fs.readFileSync('tests/e2e/03-register-investor.spec.ts', 'utf8');
-const migration = fs.readFileSync('supabase/migrations/20260723193000_investor_standard_premium_registration_v1.sql', 'utf8');
+const migration = fs.readFileSync('supabase/migrations/20260723134524_investor_standard_premium_registration_v1.sql', 'utf8');
 
 function requireSnippet(label, source, snippet) {
   if (!source.includes(snippet)) failures.push(label + ': missing ' + snippet);
