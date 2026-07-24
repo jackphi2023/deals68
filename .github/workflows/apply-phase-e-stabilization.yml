@@ -134,9 +134,17 @@ jobs:
           exit 0
 
       - name: Release static QA excluding the separately recorded package gate
+        shell: bash
         run: |
-          npm run build
-          node scripts/deals68-release-qa-check.mjs
+          set +e
+          OUTPUT="$(npm run build 2>&1 && node scripts/deals68-release-qa-check.mjs 2>&1)"
+          STATUS=$?
+          echo "$OUTPUT"
+          if [ "$STATUS" -ne 0 ]; then
+            printf '### Release static QA failure\n\n```text\n%s\n```\n' "$OUTPUT" > /tmp/phase-e-release-static.md
+            gh pr comment "${{ github.event.pull_request.number }}" --body-file /tmp/phase-e-release-static.md
+            exit "$STATUS"
+          fi
 
       - name: Business report regressions
         run: |
