@@ -25,9 +25,12 @@ const cleanup = read('src/styles/pages/release-cleanup.css');
   'to authenticated, service_role',
   'files select owner admin or active dataroom grant',
   'business files select owner admin or active dataroom grant',
+  'select f, b.owner_id',
+  "file_row.review_status is distinct from 'approved'",
   'Deliberately no INSERT/UPDATE into business_financial_access_grants',
 ].forEach((snippet) => check(migration.includes(snippet), 'Migration missing: ' + snippet));
-check(!/inserts+intos+public.business_financial_access_grants/i.test(migration), 'Phase E must not create/backfill Dataroom grants.');
+check(!migration.includes('select f.*, b.owner_id'), 'PL/pgSQL rowtype assignment must use the composite row, not f.* expansion.');
+check(!/insert\s+into\s+public\.business_financial_access_grants/i.test(migration), 'Phase E must not create/backfill Dataroom grants.');
 check(!detail.includes(".from('proposals')"), 'Business Detail must not infer file access from Proposal state.');
 check(detail.includes('getBusinessFinancialAccess(b.id)'), 'Business Detail must use the central access snapshot.');
 check(detail.includes('getBusinessDataroomFileAccess(String(doc.id))'), 'File download must pass the audited file-access RPC.');
@@ -40,6 +43,7 @@ check(data.includes("supabase.rpc('d68_get_business_financial_summaries'"), 'Exa
 check(netlify.includes('command = "npm run build"') && netlify.includes('publish = "dist"'), 'Netlify build/publish contract changed unexpectedly.');
 check(!cleanup.includes('{'), 'release-cleanup.css contains active CSS.');
 check(!fs.existsSync('scripts/apply-phase-e-stabilization.mjs'), 'Temporary Phase E applicator remains in the final tree.');
+check(!fs.existsSync('supabase/.temp/cli-latest'), 'Supabase CLI cache metadata must not be committed.');
 
 if (failures.length) {
   console.error('✗ Deals68 Phase E stabilization check failed:');
