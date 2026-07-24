@@ -1,24 +1,28 @@
 name: Apply Phase C Financial UI
 
 on:
-  push:
+  pull_request:
     branches:
-      - feature/financial-ui-phase-c-v1
+      - phase-c-ui-orchestrator
     paths:
       - tools/apply_phase_c.py
+    types:
+      - opened
+      - synchronize
+      - reopened
 
 permissions:
   contents: write
+  pull-requests: read
 
 jobs:
   apply-and-verify:
-    if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Phase C branch
+      - name: Checkout PR head
         uses: actions/checkout@v4
         with:
-          ref: feature/financial-ui-phase-c-v1
+          ref: ${{ github.event.pull_request.head.ref }}
           fetch-depth: 0
 
       - name: Apply reviewed Phase C source changes
@@ -43,4 +47,4 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
           git commit -m "feat(financials): finalize protected financial UI phase C"
-          git push origin HEAD:feature/financial-ui-phase-c-v1
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}
