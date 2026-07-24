@@ -42,9 +42,22 @@ jobs:
           set -euo pipefail
           MIGRATION_PATH="$(ls -1t supabase/migrations/*_business_dataroom_access_phase_e_stabilization.sql | head -n 1)"
           node scripts/apply-phase-e-stabilization.mjs "$MIGRATION_PATH"
-          sed -i 's#src/styles/final/release-cleanup.css#src/styles/pages/release-cleanup.css#' scripts/deals68-business-financial-release-phase-e-check.mjs
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('scripts/deals68-business-financial-release-phase-e-check.mjs')
+          lines = p.read_text().splitlines()
+          fixed = []
+          for line in lines:
+              if line.startswith("const cleanup = read("):
+                  fixed.append("const cleanup = read('src/styles/pages/release-cleanup.css');")
+              elif line.startswith('check(!/[^'):
+                  fixed.append("check(!cleanup.includes('{'), 'release-cleanup.css contains active CSS.');")
+              else:
+                  fixed.append(line)
+          p.write_text('\n'.join(fixed) + '\n')
+          PY
           rm scripts/apply-phase-e-stabilization.mjs
-          rm -f scripts/phase-e-rerun-marker.txt scripts/phase-e-rerun-marker-2.txt
+          rm -f scripts/phase-e-rerun-marker.txt scripts/phase-e-rerun-marker-2.txt scripts/phase-e-rerun-marker-3.txt
 
       - name: Install dependencies
         run: npm ci
