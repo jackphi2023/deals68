@@ -127,19 +127,43 @@ detailAssetsCheck = replaceOnce(
   'included_tangible_assets_en',`,
   'Business Detail transaction asset wording',
 );
-detailAssetsCheck = replaceOnce(
-  detailAssetsCheck,
-  String.raw`assert.match(css, /\.d68-detail-transaction-row\{display:grid/);`,
-  String.raw`assert.match(css, /\.d68-detail-transaction-row\{display:flex;flex-direction:column/);`,
-  'Business Detail transaction layout assertion',
-);
-detailAssetsCheck = replaceOnce(
-  detailAssetsCheck,
-  String.raw`assert.match(css, /@media\(max-width:620px\)\{\.d68-detail-transaction-row\{grid-template-columns:1fr/);`,
-  String.raw`assert.match(css, /@media\(max-width:620px\)\{\.d68-detail-transaction-row\{gap:7px;padding:14px 0/);`,
-  'Business Detail mobile transaction layout assertion',
-);
+detailAssetsCheck = replaceOnce(detailAssetsCheck, String.raw`assert.match(css, /\.d68-detail-transaction-row\{display:grid/);`, String.raw`assert.match(css, /\.d68-detail-transaction-row\{display:flex;flex-direction:column/);`, 'Business Detail transaction layout assertion');
+detailAssetsCheck = replaceOnce(detailAssetsCheck, String.raw`assert.match(css, /@media\(max-width:620px\)\{\.d68-detail-transaction-row\{grid-template-columns:1fr/);`, String.raw`assert.match(css, /@media\(max-width:620px\)\{\.d68-detail-transaction-row\{gap:7px;padding:14px 0/);`, 'Business Detail mobile transaction layout assertion');
 write(detailAssets, detailAssetsCheck);
+
+const manifestFile = 'tests/specs/deals68-ui-business-fixes-v1-contract.json';
+const manifest = JSON.parse(read(manifestFile));
+const contractById = (id) => {
+  const contract = manifest.contracts.find((item) => item.id === id);
+  if (!contract) throw new Error(`Missing manifest contract: ${id}`);
+  return contract;
+};
+const entityContract = contractById('ENTITY-TITLE-HOVER');
+const entityHome = entityContract.checks.find((check) => check.path === 'src/pages/Home.tsx');
+entityHome.contains = [
+  'd68-home-investor-title-link d68-entity-title-link',
+  '<h3 className="d68-entity-title-link">{deal.title}</h3>',
+];
+const locationContract = contractById('BUSINESS-LOCATION-CANONICAL-FLOW');
+locationContract.checks = locationContract.checks.filter((check) => check.path !== 'src/pages/Businesses.tsx');
+const locationData = locationContract.checks.find((check) => check.path === 'src/lib/data.ts');
+locationData.contains = [
+  "'city_key'",
+  'city_key.eq.${safeLikeTerm(value)}',
+  'locationKeyFromLabel(rawCityKey, countryIso2)',
+];
+locationData.notContains = ["q.ilike('city'"];
+const registerContract = contractById('BUSINESS-REGISTER-COPY-AND-TERM');
+const registerManifestCheck = registerContract.checks.find((check) => check.path === 'src/pages/Register.tsx');
+registerManifestCheck.contains = [
+  'const annualRevenueLabel = T(',
+  'const askAmountLabel = T(',
+  "currentCurrency === 'VND' ? 'VNĐ' : 'USD'",
+  'useState<number | null>',
+  'Boolean(plan && serviceWeeks)',
+  "const currentTermDisplay = currentTermValue ?? '—'",
+];
+write(manifestFile, JSON.stringify(manifest, null, 2) + '\n');
 
 const marker = 'scripts/pre-main-qa-diagnostic-marker.txt';
 if (fs.existsSync(marker)) fs.unlinkSync(marker);
