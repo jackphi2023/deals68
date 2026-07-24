@@ -127,6 +127,18 @@ detailAssetsCheck = replaceOnce(
   'included_tangible_assets_en',`,
   'Business Detail transaction asset wording',
 );
+detailAssetsCheck = replaceOnce(
+  detailAssetsCheck,
+  `assert.match(css, /\.d68-detail-transaction-row\{display:grid/);`,
+  `assert.match(css, /\.d68-detail-transaction-row\{display:flex;flex-direction:column/);`,
+  'Business Detail transaction layout assertion',
+);
+detailAssetsCheck = replaceOnce(
+  detailAssetsCheck,
+  `assert.match(css, /@media\(max-width:620px\)\{\.d68-detail-transaction-row\{grid-template-columns:1fr/);`,
+  `assert.match(css, /@media\(max-width:620px\)\{\.d68-detail-transaction-row\{gap:7px;padding:14px 0/);`,
+  'Business Detail mobile transaction layout assertion',
+);
 write(detailAssets, detailAssetsCheck);
 
 const marker = 'scripts/pre-main-qa-diagnostic-marker.txt';
