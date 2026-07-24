@@ -123,13 +123,14 @@ begin
     raise exception 'Authentication required' using errcode = '42501';
   end if;
 
-  select f.*, b.owner_id
+  select f, b.owner_id
   into file_row, business_owner
   from public.business_files f
   join public.businesses b on b.id = f.business_id
   where f.id = p_file_id;
 
-  if not found then
+  if not found
+     or nullif(trim(coalesce(file_row.file_path, '')), '') is null then
     raise exception 'Business file not found' using errcode = 'P0002';
   end if;
 
@@ -148,7 +149,7 @@ begin
 
     if resolved_investor_id is null
        or file_row.public_visible is not true
-       or file_row.review_status <> 'approved' then
+       or file_row.review_status is distinct from 'approved' then
       raise exception 'Dataroom access required' using errcode = '42501';
     end if;
 
