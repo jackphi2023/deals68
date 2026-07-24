@@ -1,1 +1,1 @@
-diagnostic trigger 4
+diagnostic trigger 5
