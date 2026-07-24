@@ -116,26 +116,21 @@ valuationCheck = replaceOnce(
 ]) {`,
   'G6 page-owned CSS list',
 );
-valuationCheck = replaceOnce(
-  valuationCheck,
-  `  'grid-template-columns: minmax(0, 1fr) minmax(140px, .42fr)',
-`,
-  '',
-  'G6 obsolete asymmetric valuation grid',
-);
-valuationCheck = replaceOnce(
-  valuationCheck,
-  "console.log(\n  '✓ Business and Investor packages start unselected on direct registration.',\n);",
-  "console.log(\n  '✓ Business package starts unselected; free Standard Investor is selected by default.',\n);",
-  'G6 package-selection conclusion',
-);
-valuationCheck = replaceOnce(
-  valuationCheck,
-  "console.log(\n  '✓ Asset value and financial-source controls are aligned.',\n);",
-  "console.log(\n  '✓ Asset descriptions and financial-source controls remain explicit and independently editable.',\n);",
-  'G6 asset/source conclusion',
-);
+valuationCheck = replaceOnce(valuationCheck, `  'grid-template-columns: minmax(0, 1fr) minmax(140px, .42fr)',
+`, '', 'G6 obsolete asymmetric valuation grid');
+valuationCheck = replaceOnce(valuationCheck, "console.log(\n  '✓ Business and Investor packages start unselected on direct registration.',\n);", "console.log(\n  '✓ Business package starts unselected; free Standard Investor is selected by default.',\n);", 'G6 package-selection conclusion');
+valuationCheck = replaceOnce(valuationCheck, "console.log(\n  '✓ Asset value and financial-source controls are aligned.',\n);", "console.log(\n  '✓ Asset descriptions and financial-source controls remain explicit and independently editable.',\n);", 'G6 asset/source conclusion');
 write(registerValuation, valuationCheck);
+
+const adminFinancial = 'scripts/deals68-admin-business-financial-review-check.mjs';
+let adminFinancialCheck = read(adminFinancial);
+adminFinancialCheck = adminFinancialCheck
+  .replaceAll('excluded_physical_asset_value_vi', 'included_tangible_assets_vi')
+  .replaceAll('excluded_physical_asset_value_en', 'included_tangible_assets_en');
+if (adminFinancialCheck === read(adminFinancial)) {
+  throw new Error('Admin financial review legacy field anchors not found.');
+}
+write(adminFinancial, adminFinancialCheck);
 
 const marker = 'scripts/pre-main-qa-diagnostic-marker.txt';
 if (fs.existsSync(marker)) fs.unlinkSync(marker);
