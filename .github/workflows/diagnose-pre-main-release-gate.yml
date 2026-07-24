@@ -25,6 +25,16 @@ jobs:
           node-version: 20
           cache: npm
       - run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('scripts/apply-pre-main-qa-gate-reconciliation.mjs')
+          text = p.read_text()
+          old = "'<p className=\"d68-register-financial-privacy-note\"'"
+          new = "'<p className=\\\\\"d68-register-financial-privacy-note\\\\\"'"
+          if old not in text:
+              raise SystemExit('Session 8 quote-normalization anchor missing')
+          p.write_text(text.replace(old, new, 1))
+          PY
           node scripts/apply-pre-main-qa-gate-reconciliation.mjs
           rm scripts/apply-pre-main-qa-gate-reconciliation.mjs
       - run: npm ci
