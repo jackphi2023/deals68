@@ -42,6 +42,16 @@ jobs:
         shell: bash
         run: |
           if [ -f scripts/patch-business-financial-redaction-phase-b-20260724.mjs ]; then
+            python - <<'PY'
+          from pathlib import Path
+          path = Path('scripts/patch-business-financial-redaction-phase-b-20260724.mjs')
+          text = path.read_text()
+          text = text.replace(
+              'Business Financial Access Phase A; adds the canonical access-grant ledger',
+              'Business Financial Access Phase A applied to production; adds the canonical access-grant ledger',
+          )
+          path.write_text(text)
+          PY
             if ! node scripts/patch-business-financial-redaction-phase-b-20260724.mjs > /tmp/phaseb-patch.log 2>&1; then
               tail -30 /tmp/phaseb-patch.log
               cp /tmp/phaseb-patch.log phaseb-patch-error.txt
