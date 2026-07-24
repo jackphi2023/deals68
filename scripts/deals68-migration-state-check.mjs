@@ -26,7 +26,7 @@ const required = [
   '20260721121832_ai_report_phase5_worker_artifact_v1.sql',
   '20260723115526_investor_plan_entitlements_v1.sql',
   '20260723134524_investor_standard_premium_registration_v1.sql',
-  '20260724100000_business_financial_access_phase_a_v1.sql',
+  '20260724073247_business_financial_access_phase_a_v1.sql',
 ];
 const forbidden = [
   '20260711103000_normalize_investor_taxonomy_on_write_v1.sql',
@@ -36,6 +36,7 @@ const forbidden = [
   '20260712132500_payment_order_code_collision_guard.sql',
   '20260723183000_investor_plan_entitlements_v1.sql',
   '20260723193000_investor_standard_premium_registration_v1.sql',
+  '20260724100000_business_financial_access_phase_a_v1.sql',
 ];
 
 for (const name of required) {
@@ -139,7 +140,7 @@ const migrationContracts = [
     ],
   },
   {
-    name: '20260724100000_business_financial_access_phase_a_v1.sql',
+    name: '20260724073247_business_financial_access_phase_a_v1.sql',
     snippets: [
       'create table if not exists public.business_financial_access_grants',
       'create unique index if not exists request_data_one_open_pair_uidx',
