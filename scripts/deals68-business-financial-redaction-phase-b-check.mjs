@@ -3,7 +3,7 @@ import fs from 'node:fs';
 
 const migrationName = '20260724085657_business_public_financial_redaction_phase_b_v1.sql';
 const hiddenInvestorFixName = '20260724090819_business_financial_redaction_phase_b_hidden_investor_fix_v1.sql';
-const publicEbitdaName = '20260724213000_business_public_ebitda_visibility_v1.sql';
+const publicEbitdaName = '20260724150019_business_public_ebitda_visibility_v1.sql';
 const failures = [];
 const read = (path) => fs.existsSync(path) ? fs.readFileSync(path, 'utf8') : '';
 const sql = read(`supabase/migrations/${migrationName}`);
