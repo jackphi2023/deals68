@@ -21,6 +21,7 @@ const businessDashboard = read('src/pages/BusinessDashboard.tsx');
 const dataLib = read('src/lib/data.ts');
 const pendingUploads = read('src/lib/pendingBusinessUploads.ts');
 const home = read('src/pages/Home.tsx');
+const homePublicData = read('src/lib/homePublicData.ts');
 const businessesPage = read('src/pages/Businesses.tsx');
 const app = read('src/App.tsx');
 const businessDetail = read('src/pages/BusinessDetail.tsx');
@@ -90,7 +91,8 @@ ok(
 
 ok(
   'homepage businesses use Admin editorial selection',
-  /listHomepageBusinesses\(6\)/.test(home)
+  /loadHomePublicData\(\)/.test(home)
+    && /listHomepageBusinesses\(6\)/.test(homePublicData)
     && /get_homepage_business_ids/.test(dataLib)
     && /show_on_homepage/.test(admin)
     && /Hiển thị Homepage/.test(admin),
@@ -99,7 +101,7 @@ ok(
 
 ok(
   'business industry links and filters use canonical taxonomy keys',
-  /\{ industry: it\.key \}/.test(home)
+  /\{ industry: item\.key \}/.test(home)
     && /key:\s*'it_software'/.test(home)
     && /industryKeyFromLabel\(rawIndustry\)/.test(businessesPage)
     && /industryKeyFromLabel\(f\.industry_key \|\| f\.industry\)/.test(businessesPage)
