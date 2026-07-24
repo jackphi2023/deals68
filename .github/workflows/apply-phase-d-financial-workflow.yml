@@ -1,0 +1,64 @@
+name: Apply Phase D Financial Workflow
+
+on:
+  pull_request:
+    branches:
+      - phase-d-workflow-orchestrator
+    paths:
+      - tools/apply_phase_d.py
+
+permissions:
+  contents: write
+  pull-requests: read
+
+jobs:
+  apply-and-verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PR head
+        uses: actions/checkout@v4
+        with:
+          ref: feature/business-financial-access-phase-d-workflow
+          fetch-depth: 0
+
+      - name: Apply reviewed Phase D source changes
+        run: python3 tools/apply_phase_d.py
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Production build
+        run: npm run build
+
+      - name: Phase A access regression
+        run: npm run qa:financial-access-phase-a
+
+      - name: Phase B redaction regression
+        run: npm run qa:financial-redaction-phase-b
+
+      - name: Phase C UI regression
+        run: npm run qa:financial-ui-phase-c
+
+      - name: Phase D workflow QA
+        run: npm run qa:financial-workflow-phase-d
+
+      - name: Migration registry
+        run: npm run qa:migrations
+
+      - name: CSS architecture
+        run: npm run qa:css
+
+      - name: Route regression
+        run: npm run check:routes
+
+      - name: Diff integrity
+        run: git diff --check
+
+      - name: Commit verified source only
+        run: |
+          rm -f tools/apply_phase_d.py
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "feat(financials): complete request and grant workflow phase D"
+          git push origin HEAD:feature/business-financial-access-phase-d-workflow
