@@ -131,6 +131,17 @@ detailAssetsCheck = replaceOnce(detailAssetsCheck, String.raw`assert.match(css, 
 detailAssetsCheck = replaceOnce(detailAssetsCheck, String.raw`assert.match(css, /@media\(max-width:620px\)\{\.d68-detail-transaction-row\{grid-template-columns:1fr/);`, String.raw`assert.match(css, /@media\(max-width:620px\)\{\.d68-detail-transaction-row\{gap:7px;padding:14px 0/);`, 'Business Detail mobile transaction layout assertion');
 write(detailAssets, detailAssetsCheck);
 
+const session8File = 'scripts/deals68-session8-final-regression-check.mjs';
+let session8Check = read(session8File);
+session8Check = session8Check
+  .replaceAll('const [investorPackageSelected', 'const [investorMonths')
+  .replaceAll('excluded physical asset value', 'included tangible assets')
+  .replaceAll('Giá trị tài sản vật chất KHÔNG nằm trong giao dịch', 'Tài sản hữu hình thuộc sở hữu doanh nghiệp sẽ được đưa vào giao dịch')
+  .replaceAll('excludedAssetValue', 'includedTangibleAssets')
+  .replaceAll('excluded_physical_asset_value', 'included_tangible_assets');
+if (session8Check === read(session8File)) throw new Error('Session 8 legacy Investor/asset anchors not found.');
+write(session8File, session8Check);
+
 const manifestFile = 'tests/specs/deals68-ui-business-fixes-v1-contract.json';
 const manifest = JSON.parse(read(manifestFile));
 const contractById = (id) => {
