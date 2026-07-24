@@ -141,8 +141,17 @@ jobs:
           STATUS=$?
           echo "$OUTPUT"
           if [ "$STATUS" -ne 0 ]; then
-            printf '### Release static QA failure\n\n```text\n%s\n```\n' "$OUTPUT" > /tmp/phase-e-release-static.md
-            gh pr comment "${{ github.event.pull_request.number }}" --body-file /tmp/phase-e-release-static.md
+            FAILED="$(printf '%s\n' "$OUTPUT" | grep '^✗ ' || true)"
+            cat > /tmp/pr-body.md <<EOF
+          Internal execution PR only. The Phase E financial gates passed, but release-static found the following baseline check(s):
+
+          \`\`\`text
+          ${FAILED:-No concise failure line was emitted.}
+          \`\`\`
+
+          The new migration is not applied to Supabase production.
+          EOF
+            gh pr edit "${{ github.event.pull_request.number }}" --body-file /tmp/pr-body.md
             exit "$STATUS"
           fi
 
