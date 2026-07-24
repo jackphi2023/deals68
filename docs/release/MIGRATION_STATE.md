@@ -24,6 +24,7 @@ This file reconciles the migration filenames in Git with the migration versions 
 | 20260724090819 | `20260724090819_business_financial_redaction_phase_b_hidden_investor_fix_v1.sql` |
 | 20260724130742 | `20260724130742_business_dataroom_access_phase_e_stabilization.sql` — applied to production |
 | 20260724130910 | `20260724130910_investor_premium_price_v2.sql` — applied to production |
+| 20260724140213 | `20260724140213_public_business_view_band_helper_acl_fix_v1.sql` — applied to production |
 
 The new Release Candidate migration is:
 
@@ -46,6 +47,7 @@ The new Release Candidate migration is:
 - `20260724090819_business_financial_redaction_phase_b_hidden_investor_fix_v1.sql` — Phase B compatibility fix applied to production; treats Investor status `hidden` as a public-profile visibility state rather than loss of entitlement, so the authenticated owner can use active Proposal/request grants and submit idempotent financial-data requests.
 - `20260724130742_business_dataroom_access_phase_e_stabilization.sql` — Phase E Dataroom stabilization applied to production. It replaces Proposal-based file metadata/Storage reads with an active, unexpired `dataroom` scope, adds an audited file-path RPC and creates no grants.
 - `20260724130910_investor_premium_price_v2.sql` — Investor Premium price V2 applied to production. It sets the canonical server price to 26,000,000 VND/month in Vietnam and 1,000 USD/month elsewhere; historical orders and entitlements are unchanged.
+- `20260724140213_public_business_view_band_helper_acl_fix_v1.sql` — public Business availability fix applied to production. It restores EXECUTE for anon/authenticated on four immutable, table-free coarse-band helpers required by `public_businesses_safe`; it does not reopen `businesses`, alter RLS, or expose exact financial values.
 
 Rules:
 
