@@ -21,6 +21,7 @@ import { loadHomePublicData } from '../lib/homePublicData';
 import { toLocalizedPath } from '../lib/i18nRoutes';
 import type { Lang } from '../lib/i18n';
 import { HeroBannerSlider, PromotionBanner } from '../components/SiteBanners';
+import SensitiveFinancialValue from '../components/business/SensitiveFinancialValue';
 
 type Deal = {
   id: string;
@@ -28,7 +29,7 @@ type Deal = {
   title: string;
   industry: string;
   city: string;
-  revenue: string;
+  hasRevenueData: boolean;
   ask: string;
   image: string | null;
   featured: boolean;
@@ -52,10 +53,9 @@ function normalizeDeal(b: any, lang: Lang): Deal {
     title,
     industry: labelIndustry(b.industry, lang),
     city: labelLocation(b.city_key || b.city || b.country_iso2 || 'VN', lang),
-    revenue:
-      b.revenue_2025 === null || b.revenue_2025 === undefined
-        ? T(lang, 'Được bảo mật', 'Restricted')
-        : formatMoneyForLang(b.revenue_2025, b.revenue_currency || 'VND', lang),
+    hasRevenueData:
+      String(b.revenue_band_key || 'unknown') !== 'unknown' ||
+      String(b.revenue_match_band_key || 'unknown') !== 'unknown',
     ask: formatMoneyForLang(
       b.ask_amount,
       b.ask_currency || b.revenue_currency || 'VND',
@@ -325,7 +325,13 @@ export default function Home({ lang }: { lang: Lang }) {
 
       <section className="d68-home-container d68-home-block d68-home-deals-section">
         <div className="d68-home-title d68-home-title--row"><div><span className="d68-home-badge d68-home-badge--gold">★ {T(lang, 'Thương vụ nổi bật', 'Featured Deals')}</span><h2>{T(lang, 'Cơ hội đang được chào', 'Opportunities on the market')}</h2></div><Link to={nav('/businesses')}>{T(lang, 'Xem tất cả', 'View all')} →</Link></div>
-        {loading ? <div className="d68-home-deals">{Array.from({ length: 3 }).map((_, index) => <div key={index} className="d68-home-business-card d68-home-business-card--loading"><div className="d68-home-business-card__media"/><div className="d68-home-business-card__body"/></div>)}</div> : deals.length ? <div className="d68-home-deals">{deals.map((deal) => <Link key={deal.id} to={nav(`/businesses/${deal.slug}`)} className="d68-home-business-card"><div className="d68-home-business-card__media">{deal.image ? <img src={deal.image} alt={deal.title} loading="lazy" decoding="async" fetchPriority="low" width={640} height={360} /> : <span>{T(lang, 'Deals68 · Hồ sơ ẩn danh', 'Deals68 · Anonymous listing')}</span>}{deal.featured ? <b>{T(lang, 'Nổi bật', 'Featured')}</b> : null}</div><div className="d68-home-business-card__body"><div className="d68-home-business-card__tags"><span>{deal.industry}</span><span>📍 {deal.city}</span></div><h3 className="d68-entity-title-link">{deal.title}</h3><div className="d68-home-business-card__metrics"><div><span>{T(lang, 'Doanh thu', 'Revenue')}</span><strong>{deal.revenue}</strong></div><div><span>{T(lang, 'Nhu cầu', 'Ask')}</span><strong>{deal.ask}</strong></div></div></div></Link>)}</div> : <div className="d68-home-empty">{T(lang, 'Chưa có doanh nghiệp đang hiển thị.', 'No active business listings yet.')}</div>}
+        {loading ? <div className="d68-home-deals">{Array.from({ length: 3 }).map((_, index) => <div key={index} className="d68-home-business-card d68-home-business-card--loading"><div className="d68-home-business-card__media"/><div className="d68-home-business-card__body"/></div>)}</div> : deals.length ? <div className="d68-home-deals">{deals.map((deal) => <Link key={deal.id} to={nav(`/businesses/${deal.slug}`)} className="d68-home-business-card"><div className="d68-home-business-card__media">{deal.image ? <img src={deal.image} alt={deal.title} loading="lazy" decoding="async" fetchPriority="low" width={640} height={360} /> : <span>{T(lang, 'Deals68 · Hồ sơ ẩn danh', 'Deals68 · Anonymous listing')}</span>}{deal.featured ? <b>{T(lang, 'Nổi bật', 'Featured')}</b> : null}</div><div className="d68-home-business-card__body"><div className="d68-home-business-card__tags"><span>{deal.industry}</span><span>📍 {deal.city}</span></div><h3 className="d68-entity-title-link">{deal.title}</h3><div className="d68-home-business-card__metrics"><div><span>{T(lang, 'Doanh thu', 'Revenue')}</span><strong><SensitiveFinancialValue
+          lang={lang}
+          value={null}
+          isAuthorized={false}
+          hasData={deal.hasRevenueData}
+          compact
+        /></strong></div><div><span>{T(lang, 'Nhu cầu', 'Ask')}</span><strong>{deal.ask}</strong></div></div></div></Link>)}</div> : <div className="d68-home-empty">{T(lang, 'Chưa có doanh nghiệp đang hiển thị.', 'No active business listings yet.')}</div>}
       </section>
 
       <section className="d68-home-block d68-home-industries">
