@@ -1,0 +1,60 @@
+name: Reconcile Pre-main QA Gates
+
+on:
+  pull_request:
+    branches:
+      - pre-main-qa-gate-verifier
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+
+jobs:
+  reconcile-and-verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Apply bounded QA contract reconciliation
+        run: |
+          node scripts/apply-pre-main-qa-gate-reconciliation.mjs
+          rm scripts/apply-pre-main-qa-gate-reconciliation.mjs
+      - run: npm ci
+      - name: Full release gate
+        run: npm run qa:release
+      - name: Focused feature regressions
+        run: |
+          npm run qa:migrations
+          npm run qa:investor-premium-price-v2
+          npm run qa:financial-release-phase-e
+          npm run qa:financial-access-phase-a
+          npm run qa:financial-redaction-phase-b
+          npm run qa:financial-ui-phase-c
+          npm run qa:financial-workflow-phase-d
+          npm run qa:business-report-ui
+          npm run qa:admin-reports
+          npm run qa:business-report-phase5
+          npm run qa:business-report-phase6
+          npm run qa:css
+          npm run check:routes
+      - name: Diff integrity
+        run: |
+          git diff --check
+          test ! -e scripts/apply-pre-main-qa-gate-reconciliation.mjs
+      - name: Commit verified QA contracts
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if ! git diff --cached --quiet; then
+            git commit -m "test(release): reconcile current Homepage and Hero contracts"
+            git push origin HEAD:${{ github.event.pull_request.head.ref }}
+          fi
