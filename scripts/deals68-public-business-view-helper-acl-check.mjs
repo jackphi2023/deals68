@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import fs from 'node:fs';
 
-const migrationName = '20260724163000_public_business_view_band_helper_acl_fix_v1.sql';
+const migrationName = '20260724140213_public_business_view_band_helper_acl_fix_v1.sql';
 const failures = [];
 const read = (path) => (fs.existsSync(path) ? fs.readFileSync(path, 'utf8') : '');
 const sql = read(`supabase/migrations/${migrationName}`);
