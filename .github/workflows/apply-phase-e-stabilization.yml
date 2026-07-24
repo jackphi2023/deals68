@@ -3,7 +3,7 @@ name: Apply Phase E Financial Stabilization
 on:
   pull_request:
     branches:
-      - phase-e-stabilization-orchestrator
+      - phase-e-stabilization-orchestrator-final
     types: [opened, synchronize, reopened]
 
 permissions:
