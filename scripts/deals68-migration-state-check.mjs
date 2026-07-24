@@ -29,8 +29,8 @@ const required = [
   '20260724073247_business_financial_access_phase_a_v1.sql',
   '20260724085657_business_public_financial_redaction_phase_b_v1.sql',
   '20260724090819_business_financial_redaction_phase_b_hidden_investor_fix_v1.sql',
-  '20260724120937_business_dataroom_access_phase_e_stabilization.sql',
-  '20260724130029_investor_premium_price_v2.sql',
+  '20260724130742_business_dataroom_access_phase_e_stabilization.sql',
+  '20260724130910_investor_premium_price_v2.sql',
 ];
 const forbidden = [
   '20260711103000_normalize_investor_taxonomy_on_write_v1.sql',
@@ -43,6 +43,8 @@ const forbidden = [
   '20260724100000_business_financial_access_phase_a_v1.sql',
   '20260724110000_business_public_financial_redaction_phase_b_v1.sql',
   '20260724120000_business_financial_redaction_phase_b_hidden_investor_fix_v1.sql',
+  '20260724120937_business_dataroom_access_phase_e_stabilization.sql',
+  '20260724130029_investor_premium_price_v2.sql',
 ];
 
 for (const name of required) {
@@ -186,7 +188,7 @@ const migrationContracts = [
     ],
   },
   {
-    name: '20260724120937_business_dataroom_access_phase_e_stabilization.sql',
+    name: '20260724130742_business_dataroom_access_phase_e_stabilization.sql',
     snippets: [
       'create or replace function public.get_business_file_metadata_for_viewer',
       'create or replace function public.d68_get_business_dataroom_file_access',
@@ -198,7 +200,7 @@ const migrationContracts = [
     ],
   },
   {
-    name: '20260724130029_investor_premium_price_v2.sql',
+    name: '20260724130910_investor_premium_price_v2.sql',
     snippets: [
       'create or replace function public.d68_get_investor_premium_price',
       'then 26000000',

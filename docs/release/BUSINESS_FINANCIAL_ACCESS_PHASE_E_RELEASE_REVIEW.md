@@ -8,7 +8,7 @@ Phase C and D are integrated into `building`. Phase E is a stabilization release
 
 A release blocker was found: approved/connected Proposal state still controlled private Business file metadata and Storage reads, while financial values already used the canonical access-grant ledger. That meant expiry or revocation of a central grant did not necessarily remove document access. This release aligns metadata, table RLS and Storage SELECT with an active, unexpired Business-specific `dataroom` scope.
 
-The new migration is committed but **NOT APPLIED** to Supabase production. Production deploy remains blocked until explicit migration approval and authenticated UAT.
+The migration is applied to Supabase production as version `20260724130742`. Production post-checks confirm the hardened Dataroom policies, zero active Dataroom grants and unchanged public financial redaction.
 
 ## Audited production baseline before source changes
 
@@ -53,12 +53,22 @@ Result: the migration compiled and both RPC calls completed inside the transacti
 Post-rollback verification confirmed:
 
 - `d68_get_business_dataroom_file_access(uuid)` does not exist in production;
-- migration version `20260724120937` is not recorded;
+- migration version `20260724130742` is not recorded;
 - active financial grants remain 287;
 - active Dataroom grants remain 0;
 - the legacy production table and Storage SELECT policies remain in place.
 
 No Phase E function, policy, migration record, grant or audit row was persisted by this validation.
+
+## Production application
+
+- Applied migration version: `20260724130742_business_dataroom_access_phase_e_stabilization.sql`.
+- `d68_get_business_dataroom_file_access(uuid)` exists.
+- `anon` cannot execute the Dataroom RPC or metadata RPC.
+- `authenticated` and `service_role` retain the intended execute permissions.
+- `business_files` and `storage.objects` SELECT policies use active, unexpired `dataroom` grants.
+- Active financial grants remain 287; active Dataroom grants remain 0.
+- Public exact revenue and EBITDA rows remain 0.
 
 ## Netlify readiness
 
@@ -97,7 +107,6 @@ Verification after rollback or forward-fix:
 
 ## Release blockers and NOT RUN
 
-- New migration **NOT APPLIED** to production.
 - Authenticated end-to-end tests with safe Investor/Business/Admin accounts: **NOT RUN** because protected role credentials were not available to the workflow.
 - Public E2E in the final workflow: **NOT RUN** because protected Supabase environment variables were unavailable to GitHub Actions.
 - eNDA and Dataroom grant issuance: outside Phase E and still disabled.
