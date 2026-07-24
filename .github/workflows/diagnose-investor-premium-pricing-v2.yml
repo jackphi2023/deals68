@@ -1,0 +1,38 @@
+name: Diagnose Investor Premium Pricing V2
+
+on:
+  pull_request:
+    branches:
+      - investor-premium-pricing-v2-orchestrator
+    types: [synchronize]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Run applicator and report concise error
+        shell: bash
+        run: |
+          set +e
+          npx --yes supabase@2.101.0 migration new investor_premium_price_v2 >/tmp/migration.log 2>&1
+          MIGRATION_PATH="$(ls -1t supabase/migrations/*_investor_premium_price_v2.sql | head -n 1)"
+          node scripts/apply-investor-premium-pricing-v2.mjs "$MIGRATION_PATH" >/tmp/apply.log 2>&1
+          STATUS=$?
+          cat /tmp/apply.log
+          if [ "$STATUS" -ne 0 ]; then
+            printf '### Pricing V2 applicator error\n\n```text\n%s\n```\n' "$(tail -n 12 /tmp/apply.log)" > /tmp/comment.md
+            gh pr comment "${{ github.event.pull_request.number }}" --body-file /tmp/comment.md
+            exit "$STATUS"
+          fi
