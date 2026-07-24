@@ -1,0 +1,69 @@
+name: Business Financial Redaction Phase B QA
+
+on:
+  pull_request:
+    paths:
+      - 'supabase/migrations/**business_public_financial_redaction_phase_b**'
+      - 'src/lib/data.ts'
+      - 'src/pages/Home.tsx'
+      - 'src/pages/Businesses.tsx'
+      - 'src/pages/BusinessDetail.tsx'
+      - 'src/pages/InvestorDashboard.tsx'
+      - 'netlify/edge-functions/seo.ts'
+      - 'scripts/deals68-business-financial-redaction-phase-b-check.mjs'
+      - 'scripts/deals68-business-financial-access-phase-a-check.mjs'
+      - 'scripts/deals68-migration-state-check.mjs'
+      - 'scripts/deals68-package-checks.mjs'
+      - 'docs/release/MIGRATION_STATE.md'
+      - 'package.json'
+      - '.github/workflows/business-financial-redaction-phase-b-qa.yml'
+      - 'scripts/patch-business-financial-redaction-phase-b-20260724.mjs'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref || github.ref_name }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - name: Apply one-time Phase B patch
+        run: |
+          if [ -f scripts/patch-business-financial-redaction-phase-b-20260724.mjs ]; then
+            node scripts/patch-business-financial-redaction-phase-b-20260724.mjs
+            rm scripts/patch-business-financial-redaction-phase-b-20260724.mjs
+          fi
+      - run: npm ci
+      - name: Financial redaction Phase B contract
+        run: npm run qa:financial-redaction-phase-b
+      - name: Financial access Phase A regression
+        run: npm run qa:financial-access-phase-a
+      - name: Migration registry contract
+        run: npm run qa:migrations
+      - name: Production build
+        run: npm run build
+      - name: CSS architecture regression
+        run: npm run qa:css
+      - name: Route regression
+        run: npm run check:routes
+      - name: Diff integrity
+        run: git diff --check origin/${{ github.base_ref || 'building' }}...HEAD
+      - name: Commit generated Phase B source
+        if: github.event_name == 'pull_request'
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            git config user.name "deals68-release-bot"
+            git config user.email "actions@users.noreply.github.com"
+            git add -A
+            git commit -m "Implement Business financial redaction Phase B"
+            git push origin HEAD:${{ github.head_ref }}
+          fi
