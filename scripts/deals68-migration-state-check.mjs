@@ -31,6 +31,7 @@ const required = [
   '20260724090819_business_financial_redaction_phase_b_hidden_investor_fix_v1.sql',
   '20260724130742_business_dataroom_access_phase_e_stabilization.sql',
   '20260724130910_investor_premium_price_v2.sql',
+  '20260724163000_public_business_view_band_helper_acl_fix_v1.sql',
 ];
 const forbidden = [
   '20260711103000_normalize_investor_taxonomy_on_write_v1.sql',
@@ -207,6 +208,18 @@ const migrationContracts = [
       'else 1000',
       "'price_version', 'investor-premium-v2-20260724'",
       'to anon, authenticated, service_role',
+    ],
+  },
+  {
+    name: '20260724163000_public_business_view_band_helper_acl_fix_v1.sql',
+    snippets: [
+      'd68_public_revenue_band_key(numeric, text)',
+      'd68_public_revenue_band_rank(numeric, text)',
+      'd68_public_revenue_match_band_key(numeric, text)',
+      'd68_public_ebitda_band_key(numeric)',
+      'to anon, authenticated, service_role',
+      "'base_table_select_changed', false",
+      "'exact_financial_public_changed', false",
     ],
   },
 ];
