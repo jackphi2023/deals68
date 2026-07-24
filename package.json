@@ -42,7 +42,8 @@
     "qa:financial-redaction-phase-b": "node scripts/deals68-business-financial-redaction-phase-b-check.mjs",
     "qa:financial-ui-phase-c": "node scripts/deals68-business-financial-ui-phase-c-check.mjs",
     "qa:financial-workflow-phase-d": "node scripts/deals68-business-financial-workflow-phase-d-check.mjs",
-    "qa:financial-release-phase-e": "node scripts/deals68-business-financial-release-phase-e-check.mjs"
+    "qa:financial-release-phase-e": "node scripts/deals68-business-financial-release-phase-e-check.mjs",
+    "qa:investor-premium-price-v2": "node scripts/deals68-investor-premium-price-v2-check.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.45.4",

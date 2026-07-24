@@ -29,8 +29,9 @@ function requireSnippet(label, source, snippet) {
   'to authenticated, service_role',
 ].forEach((snippet) => requireSnippet('migration', migration, snippet));
 
-requireSnippet('plan constants', planSource, 'INVESTOR_PREMIUM_MONTHLY_VND = 50_000_000');
-requireSnippet('plan constants', planSource, 'INVESTOR_PREMIUM_MONTHLY_USD = 2_500');
+requireSnippet('plan constants', planSource, 'INVESTOR_PREMIUM_MONTHLY_VND = 26_000_000');
+requireSnippet('plan constants', planSource, 'INVESTOR_PREMIUM_MONTHLY_USD = 1_000');
+requireSnippet('plan constants', planSource, "INVESTOR_PREMIUM_PRICE_VERSION = 'investor-premium-v2-20260724'");
 requireSnippet('plan constants', planSource, "'investment_opportunity_report'");
 requireSnippet('pricing core', pricingSource, 'INVESTOR_PREMIUM_MONTHLY_VND');
 requireSnippet('pricing core', pricingSource, "role === 'investor'");

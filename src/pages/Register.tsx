@@ -1224,12 +1224,12 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
               setPaymentAck(false);
             }}
           >
-            <h3>{T(lang, 'Nhà đầu tư Nâng cao', 'Premium Investor')}</h3>
+            <h3>{T(lang, 'Nhà đầu tư Nâng cao (Premium)', 'Premium Investor')}</h3>
             <p>
               {T(
                 lang,
-                'Được sử dụng tính năng Báo cáo Phân tích cơ hội đầu tư',
-                'Access the Investment Opportunity Analysis Report feature',
+                'Bao gồm toàn bộ quyền Tiêu chuẩn, Báo cáo Phân tích cơ hội đầu tư và các tính năng phân tích nâng cao.',
+                'Includes all Standard benefits, Investment Opportunity Analysis Reports and advanced analytics.',
               )}
             </p>
             <span>
@@ -2275,11 +2275,17 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
                     'Create business account',
                   )
                 : isInvestor
-                  ? T(
-                      lang,
-                      'Tạo tài khoản Nhà đầu tư',
-                      'Create investor account',
-                    )
+                  ? investorPremiumSelected
+                    ? T(
+                        lang,
+                        'Đăng ký gói Nhà đầu tư Nâng cao',
+                        'Choose Premium Investor plan',
+                      )
+                    : T(
+                        lang,
+                        'Tạo tài khoản Nhà đầu tư miễn phí',
+                        'Create free Investor account',
+                      )
                   : T(lang, 'Tạo tài khoản', 'Create account')}
           </button>
         </form>

@@ -30,6 +30,7 @@ const required = [
   '20260724085657_business_public_financial_redaction_phase_b_v1.sql',
   '20260724090819_business_financial_redaction_phase_b_hidden_investor_fix_v1.sql',
   '20260724120937_business_dataroom_access_phase_e_stabilization.sql',
+  '20260724130029_investor_premium_price_v2.sql',
 ];
 const forbidden = [
   '20260711103000_normalize_investor_taxonomy_on_write_v1.sql',
@@ -194,6 +195,16 @@ const migrationContracts = [
       'files select owner admin or active dataroom grant',
       'business files select owner admin or active dataroom grant',
       'Deliberately no INSERT/UPDATE into business_financial_access_grants',
+    ],
+  },
+  {
+    name: '20260724130029_investor_premium_price_v2.sql',
+    snippets: [
+      'create or replace function public.d68_get_investor_premium_price',
+      'then 26000000',
+      'else 1000',
+      "'price_version', 'investor-premium-v2-20260724'",
+      'to anon, authenticated, service_role',
     ],
   },
 ];
