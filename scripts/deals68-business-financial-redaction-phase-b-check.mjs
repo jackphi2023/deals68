@@ -48,6 +48,9 @@ if (!data.includes('filters.includeAuthorizedFinancials === false')) failures.pu
 const homepageFunction = data.slice(data.indexOf('export async function listHomepageBusinesses'), data.indexOf('export async function countBusinesses'));
 if (homepageFunction.includes('await attachAuthorizedBusinessFinancials')) failures.push('Homepage public cache must not hydrate exact financials');
 if (!homepageFunction.includes('includeAuthorizedFinancials: false')) failures.push('Homepage fallback must disable exact financial hydration');
+if (homepageFunction.includes("return listBusinesses({ limit: safeLimit, sort: 'featured' });")) failures.push('A Homepage error fallback can still hydrate exact financials');
+const publicOnlyFallbackCount = (homepageFunction.match(/includeAuthorizedFinancials: false/g) || []).length;
+if (publicOnlyFallbackCount < 3) failures.push('All three Homepage fallback paths must remain public-only');
 if (!businesses.includes('financialRestricted')) failures.push('Business cards restricted state missing');
 if (!detail.includes('restrictedFinancialText')) failures.push('Business detail restricted fallback missing');
 if (!investor.includes('revenue_match_band_key') || !investor.includes('attachAuthorizedBusinessFinancials')) failures.push('Investor Dashboard band/grant hydration missing');

@@ -466,7 +466,11 @@ export async function listHomepageBusinesses(limit = 6): Promise<any[]> {
   );
 
   if (rankError || !Array.isArray(ranked) || !ranked.length) {
-    return listBusinesses({ limit: safeLimit, sort: 'featured' });
+    return listBusinesses({
+      limit: safeLimit,
+      sort: 'featured',
+      includeAuthorizedFinancials: false,
+    });
   }
 
   const orderedRanked = [...ranked]
@@ -486,7 +490,11 @@ export async function listHomepageBusinesses(limit = 6): Promise<any[]> {
   const { data, error } = await query;
 
   if (error) {
-    return listBusinesses({ limit: safeLimit, sort: 'featured' });
+    return listBusinesses({
+      limit: safeLimit,
+      sort: 'featured',
+      includeAuthorizedFinancials: false,
+    });
   }
 
   // Homepage payload is cached as public data. Never hydrate exact financials here,
