@@ -45,7 +45,7 @@ const surfaces = [
   [
     'Homepage Business',
     home,
-    '<h3 className="d68-entity-title-link">{d.title}</h3>',
+    '<h3 className="d68-entity-title-link">{deal.title}</h3>',
   ],
   [
     'Homepage Investor',

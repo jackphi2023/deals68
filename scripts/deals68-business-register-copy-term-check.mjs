@@ -18,10 +18,11 @@ function forbidToken(token, message) {
 }
 
 for (const [token, message] of [
-  ['Doanh thu năm gần nhất (VNĐ)', 'Vietnamese annual-revenue label lacks VNĐ'],
-  ['Latest annual revenue (VND)', 'English annual-revenue label lacks VND'],
-  ['Số tiền gọi vốn / giá trị giao dịch mong muốn (VNĐ)', 'Vietnamese ask label lacks VNĐ'],
-  ['Capital sought / desired transaction value (VND)', 'English ask label lacks VND'],
+  ['const annualRevenueLabel = T(', 'Annual-revenue label is not centralized'],
+  ['const askAmountLabel = T(', 'Ask-amount label is not centralized'],
+  ["currentCurrency === 'VND' ? 'VNĐ' : 'USD'", 'Vietnamese financial labels do not switch VNĐ/USD'],
+  ['`Latest annual revenue (${currentCurrency})`', 'English annual-revenue label does not use current currency'],
+  ['`Capital sought / desired transaction value (${currentCurrency})`', 'English ask label does not use current currency'],
   ['useState<number | null>', 'Business term state is not nullable'],
   ["normalized === 'business'", 'Checkout term restoration is not limited to Business'],
   ['[4, 8, 12, 16, 24].includes(requestedTerm)', 'Checkout term is not validated against visible choices'],
@@ -52,7 +53,7 @@ if (failures.length) {
 }
 
 console.log('✓ Deals68 Business register copy/term contract: PASS');
-console.log('✓ Revenue and transaction-value labels include VNĐ/VND.');
+console.log('✓ Revenue and transaction-value labels use the selected VNĐ/USD currency dynamically.');
 console.log('✓ Direct registration starts with no active Business term.');
 console.log('✓ A valid checkout intent may restore only a visible term option.');
 console.log('✓ Payment remains hidden until both package and term are selected.');

@@ -47,7 +47,7 @@ for (const emoji of ['🏢', '💼', '🤝']) {
 // Session 2 — direct Investor registration has no preselected 12-month term.
 const investorTerm = section(
   register,
-  'const [investorPackageSelected',
+  'const [investorMonths',
   'const [promoCode',
   'Investor registration term',
 );
@@ -61,26 +61,27 @@ assert.doesNotMatch(
 );
 assert.match(register, /label=\{T\(lang, 'Giới thiệu', 'Introduction'\)\}[\s\S]{0,100}\bspaced\b/);
 
-// Session 2 — excluded physical asset value is free text and valuation/upload metadata survives.
+// Session 2 — included tangible assets is free text and valuation/upload metadata survives.
 const assetsSection = section(
   register,
-  "T(lang, 'Thông tin tài sản & nguồn số liệu'",
+  "<p className=\"d68-register-financial-privacy-note\"",
   '{paymentSection}',
   'Business asset registration section',
 );
 assert.match(
   assetsSection,
-  /Giá trị tài sản vật chất KHÔNG nằm trong giao dịch[\s\S]*?<textarea[\s\S]*?value=\{excludedAssetValue\}/,
+  /Mô tả giá trị của các tài sản hữu hình thuộc sở hữu của doanh nghiệp sẽ được đưa vào giao dịch[\s\S]*?<textarea[\s\S]*?value=\{includedTangibleAssets\}/,
 );
 assert.doesNotMatch(
   register,
-  /excluded_physical_asset_value:\s*parseFormattedNumber/,
+  /included_tangible_assets:\s*parseFormattedNumber/,
 );
 for (const token of [
-  'excluded_physical_asset_value: excludedAssetValue',
-  'excluded_physical_asset_value_vi:',
-  'excluded_physical_asset_value_en:',
-  'benchmark: benchmarkResult',
+  'included_tangible_assets: includedTangibleAssets',
+  'included_tangible_assets_vi:',
+  'included_tangible_assets_en:',
+  'benchmark: {',
+  'asset_inputs: benchmarkAssetInputs',
   'upload_plan: uploadPlan',
 ]) {
   assert.ok(register.includes(token), `Missing Register financial_input token: ${token}`);
@@ -103,8 +104,8 @@ const savedRows = section(
   'function ProposalRows',
   'Investor saved rows',
 );
-for (const token of ['Yêu cầu tài liệu', 'Request documents', 'd68-dashboard-btn gold']) {
-  assert.ok(savedRows.includes(token), `Missing Saved action: ${token}`);
+for (const token of ['Yêu cầu xem số liệu', 'Request financial access', 'd68-dashboard-btn gold']) {
+  assert.ok(savedRows.includes(token), `Missing Saved financial-access action: ${token}`);
 }
 for (const forbidden of ['Xem chi tiết', 'View details']) {
   assert.ok(!savedRows.includes(forbidden), `Removed Saved action returned: ${forbidden}`);
@@ -137,7 +138,10 @@ const saveProfile = section(
 for (const token of [
   'pending_changes_json: pending',
   "moderation_status: 'pending_admin_review'",
-  'financial_input: financialInputOf(ownerView)',
+  'const currentFinancialInput = financialInputOf(ownerView)',
+  '...currentFinancialInput',
+  '...localizedFinancialInput',
+  'financial_source: financialSource',
 ]) {
   assert.ok(saveProfile.includes(token), `Missing Business moderation token: ${token}`);
 }

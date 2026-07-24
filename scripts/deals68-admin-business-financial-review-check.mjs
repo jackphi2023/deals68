@@ -12,15 +12,15 @@ for (const token of [
   '...approvedFinancialInput',
   "assets_owned_vi: text(form.get('assets_owned_vi'))",
   "assets_owned_en: text(form.get('assets_owned_en'))",
-  "excluded_physical_asset_value_vi: text(form.get('excluded_physical_asset_value_vi'))",
-  "excluded_physical_asset_value_en: text(form.get('excluded_physical_asset_value_en'))",
+  "included_tangible_assets_vi: text(form.get('included_tangible_assets_vi'))",
+  "included_tangible_assets_en: text(form.get('included_tangible_assets_en'))",
   'Thông tin Tài sản & Giao dịch',
   'Assets & transaction information',
   'Business vừa cập nhật, cần duyệt',
   'name="assets_owned_vi"',
   'name="assets_owned_en"',
-  'name="excluded_physical_asset_value_vi"',
-  'name="excluded_physical_asset_value_en"',
+  'name="included_tangible_assets_vi"',
+  'name="included_tangible_assets_en"',
 ]) assert.ok(admin.includes(token), `Missing Session 6 token: ${token}`);
 
 assert.match(admin, /const approvedFinancialInput = \{[\s\S]*business\.financial_input[\s\S]*public_snapshot_json[\s\S]*pending_changes_json[\s\S]*\};/);

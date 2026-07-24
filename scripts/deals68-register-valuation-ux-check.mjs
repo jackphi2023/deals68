@@ -28,14 +28,18 @@ for (const token of [
   "'Tạm tính'",
   "'Tổng thanh toán'",
   "useState<BusinessPlan | ''>",
-  'investorPackageSelected',
+  'investorPremiumSelected',
+  "investorPlan === 'standard' ? 'active' : ''",
+  "'Mặc định · Miễn phí'",
   'const hasSelectedPackage =',
   "b={hasSelectedPackage ? money(price.subtotal, price.currency) : '-'}",
   'd68-bizreg-package-pending',
   'useState<number | null>',
   'Boolean(plan && serviceWeeks)',
   "const currentTermDisplay = currentTermValue ?? '—'",
-  'd68-assets-source-grid',
+  'value={assetsOwned}',
+  'value={includedTangibleAssets}',
+  'value={financialSource}',
 ]) {
   requireToken(register, token, `Register missing ${token}`);
 }
@@ -70,7 +74,6 @@ for (const token of [
 }
 
 for (const token of [
-  '.d68-assets-source-grid',
   'min-height: 34px',
   '.d68-bizreg-package-pending',
 ]) {
@@ -119,7 +122,6 @@ for (const token of [
   '.d68-val-revenue-row',
   '.d68-val-metrics-row',
   'grid-column: 1 / -1',
-  'grid-template-columns: minmax(0, 1fr) minmax(140px, .42fr)',
   'grid-template-columns: repeat(2, minmax(0, 1fr))',
   '@media (max-width: 620px)',
 ]) {
@@ -169,7 +171,7 @@ console.log(
   '✓ Deals68 G6 Register/Valuation UX static check: PASS',
 );
 console.log(
-  '✓ Business and Investor packages start unselected on direct registration.',
+  '✓ Business package starts unselected; free Standard Investor is selected by default.',
 );
 console.log('✓ Business term starts unselected on direct registration.');
 console.log(
@@ -179,7 +181,7 @@ console.log(
   '✓ Payment QR remains hidden until package selection.',
 );
 console.log(
-  '✓ Asset value and financial-source controls are aligned.',
+  '✓ Asset descriptions and financial-source controls remain explicit and independently editable.',
 );
 console.log(
   '✓ Business promo-code input is 200px on desktop.',
