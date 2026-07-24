@@ -25,6 +25,11 @@ const replacements = [
     '`Missing Saved financial-access action: ${token}`',
     'saved action failure label',
   ],
+  [
+    "  'financial_input: financialInputOf(ownerView)',",
+    "  'const currentFinancialInput = financialInputOf(ownerView)',\n  '...currentFinancialInput',\n  '...localizedFinancialInput',\n  'financial_source: financialSource',",
+    'Business financial moderation payload',
+  ],
 ];
 
 for (const [from, to, label] of replacements) {
@@ -36,4 +41,4 @@ for (const [from, to, label] of replacements) {
 }
 
 fs.writeFileSync(file, source);
-console.log('Session 8 Register, benchmark and saved financial-access contracts reconciled.');
+console.log('Session 8 Register, benchmark, saved action and Business moderation contracts reconciled.');
