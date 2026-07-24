@@ -1,0 +1,15 @@
+
+.d68-financial-request-list { display: grid; gap: 16px; }
+.d68-financial-request-row { border: 1px solid #dceaf5; border-radius: 12px; background: #f7fafc; padding: 16px; display: grid; gap: 12px; }
+.d68-financial-request-row__head { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; }
+.d68-financial-request-row__head div { display: grid; gap: 4px; }
+.d68-financial-request-row__head small { color: #64748b; }
+.d68-financial-request-row__meta { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.d68-financial-request-row__meta span { font-weight: 700; color: #29445f; }
+.d68-financial-request-row__meta em { border: 1px solid #cfe4f0; border-radius: 999px; background: #fff; padding: 4px 8px; color: #29445f; font-size: 12px; font-style: normal; }
+.d68-financial-request-row__controls { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 16px; }
+.d68-financial-request-row__controls label { display: grid; gap: 6px; color: #29445f; font-size: 13px; }
+.d68-financial-request-row__controls label:has(input[type='checkbox']) { grid-template-columns: auto 1fr; align-items: center; }
+.d68-financial-request-row__controls .is-disabled { opacity: .58; }
+.d68-financial-request-row__actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px; }
+@media (max-width: 700px) { .d68-financial-request-row__head { flex-direction: column; } .d68-financial-request-row__controls { grid-template-columns: 1fr; } .d68-financial-request-row__actions { justify-content: stretch; } .d68-financial-request-row__actions .d68-dashboard-btn { flex: 1; } }

@@ -35,6 +35,7 @@
 @import './pages/home-featured-investors.css' layer(d68-overrides);
 @import './pages/home-layout.css' layer(d68-overrides);
 @import './components/promotion-banner.css' layer(d68-overrides);
+@import './components/business-financial-access.css' layer(d68-overrides);
 @import './pages/pricing-session12.css' layer(d68-overrides);
 @import './pages/admin-promos.css' layer(d68-overrides);
 @import './pages/home-hero-media.css' layer(d68-overrides);

@@ -11,6 +11,7 @@ import { BusinessFaq } from '../components/BusinessFaq';
 import { applySeo, DEFAULT_SOCIAL_IMAGE } from '../lib/seo';
 import { businessQualityPublicExplanation, normalizeQualityBreakdown, qualityBand, qualityItemLabel, qualityItemNote, qualityPublicCriteria } from '../lib/businessQuality';
 import SensitiveFinancialValue from '../components/business/SensitiveFinancialValue';
+import { financialAccessErrorMessage, requestBusinessFinancialAccess } from '../lib/businessFinancialAccess';
 
 const T = (lang: Lang, vi: string, en: string) => (lang === 'en' ? en : vi);
 
@@ -127,6 +128,7 @@ export default function BusinessDetail({ lang }: { lang: Lang }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [msg, setMsg] = useState('');
+  const [requestBusy, setRequestBusy] = useState(false);
 
   useEffect(() => {
     let live = true;
@@ -393,12 +395,25 @@ export default function BusinessDetail({ lang }: { lang: Lang }) {
     }
   }
   async function requestData() {
+    if (requestBusy) return;
     if (!profile) { setMsg(T(lang, 'Bạn cần là nhà đầu tư để thao tác. Hãy đăng ký/đăng nhập tài khoản nhà đầu tư để thực hiện.', 'You need an Investor account to perform this action. Please register or log in as an investor.')); return; }
-    if (profile.role !== 'investor') { setMsg(T(lang, 'Chỉ tài khoản Nhà đầu tư được yêu cầu tài liệu.', 'Only Investor accounts can request documents.')); return; }
-    const inv = await getInvestorByOwner(profile.id).catch(() => null);
-    if (!inv?.id || !business?.id) { setMsg(T(lang, 'Không tìm thấy hồ sơ nhà đầu tư.', 'Investor profile not found.')); return; }
-    const { error: reqErr } = await supabase.from('request_data').insert({ investor_id: inv.id, business_id: business.id, requested_items: ['IM', 'Financials'], note: 'Requested from public business detail page. e-NDA placeholder pending Beta completion.', status: 'pending' });
-    setMsg(reqErr ? reqErr.message : T(lang, 'Đã gửi yêu cầu tài liệu qua Deals68. Luồng e-NDA sẽ được hoàn thiện ở bước tiếp theo.', 'Data request sent via Deals68. The e-NDA flow will be completed in the next step.'));
+    if (profile.role !== 'investor') { setMsg(T(lang, 'Chỉ tài khoản Nhà đầu tư được yêu cầu xem số liệu.', 'Only Investor accounts can request financial access.')); return; }
+    if (!business?.id) { setMsg(T(lang, 'Không tìm thấy hồ sơ doanh nghiệp.', 'Business profile not found.')); return; }
+    setRequestBusy(true);
+    try {
+      const result = await requestBusinessFinancialAccess(
+        business.id,
+        'Investor requested financial access from the public Business detail page.',
+      );
+      setMsg(result.existing
+        ? T(lang, 'Yêu cầu xem số liệu đang chờ doanh nghiệp chấp thuận.', 'Your financial access request is awaiting Business approval.')
+        : T(lang, 'Đã gửi yêu cầu xem số liệu tới doanh nghiệp.', 'Financial access request sent to the Business.'));
+      setBusiness((current: any) => current ? { ...current, financial_request_status: result.status } : current);
+    } catch (requestError: any) {
+      setMsg(financialAccessErrorMessage(lang, requestError));
+    } finally {
+      setRequestBusy(false);
+    }
   }
   async function downloadDoc(doc: Doc) {
     if (!investorAccess || !doc.file_path) { await requestData(); return; }
@@ -449,7 +464,7 @@ export default function BusinessDetail({ lang }: { lang: Lang }) {
           <section className="d68-detail-card d68-detail-card--bqs"><div className={`d68-bqs-card ${canViewRealQuality ? 'is-real' : 'is-demo'}`}><div className="d68-bqs-ring-col"><div className="d68-bqs-ring" style={{ background: `conic-gradient(${canViewRealQuality ? (bqsBand.cls === 'green' ? '#16A34A' : bqsBand.cls === 'blue' ? '#1596cc' : '#B8860B') : '#CBD5E1'} ${canViewRealQuality ? Math.max(0, Math.min(100, scoreNumber ?? 0)) * 3.6 : 0}deg, #EEF2F6 0deg)` }}><div><b>{canViewRealQuality ? (scoreNumber === null ? '—' : scoreNumber) : 'BQS'}</b><span>/100</span></div></div></div><div className="d68-bqs-body"><div className="d68-bqs-head"><h3>Business Quality Score</h3>{canViewRealQuality ? <span className={`d68-bqs-badge ${bqsBand.cls}`}>{bqsBand.label}</span> : null}</div><p>{canViewRealQuality ? businessQualityPublicExplanation(lang) : `${businessQualityPublicExplanation(lang)} ${T(lang, 'Chỉ Nhà đầu tư đăng nhập mới được xem cụ thể.', 'Only logged-in investors can view details.')}`}</p>{canViewRealQuality ? <div className="d68-bqs-breakdown">{qualityBreakdown?.items.map((item) => <div key={item.key} className="d68-bqs-breakdown__row"><b>{qualityItemLabel(item, lang)}</b><span>{item.score}/{item.max}</span><small>{qualityItemNote(item, lang)}</small></div>)}</div> : <div className="d68-bqs-public-criteria">{qualityCriteria.map((x) => <span key={x}>✓ {x}</span>)}</div>}{!canViewRealQuality ? <div className="d68-bqs-alert">🔒 {T(lang, 'Chỉ nhà đầu tư đã đăng nhập mới xem được điểm chi tiết.', 'Only logged-in investors can view the detailed score.')} <Link to={`${loginPath}?role=investor&next=${encodeURIComponent(`${businessListPath}/${slug}`)}`}>{T(lang, 'Đăng nhập nhà đầu tư', 'Investor login')}</Link></div> : null}</div></div></section>
         </div>
         <aside className="d68-detail-side"><div className="d68-detail-summary-card"><div className="d68-detail-summary-head"><span>{T(lang, 'Loại giao dịch', 'Transaction')}</span><strong>{dealTypeLabel}</strong></div><div className="d68-detail-summary-body"><span>{askLabel(lang, business.deal_type)}</span><b>{ask}</b><small>{business.ask_currency || business.revenue_currency ? `${T(lang, 'Tiền tệ', 'Currency')}: ${business.ask_currency || business.revenue_currency}` : T(lang, 'Tiền tệ đang cập nhật', 'Currency pending')}</small><div className="d68-detail-mini-metrics"><div><span>{T(lang, 'Doanh thu', 'Revenue')}</span><b>{revenue}</b></div><div><span>{T(lang, 'Cổ phần', 'Stake')}</span><b>{stake}</b></div><div><span>{T(lang, 'DN tự định giá', 'Self-valuation')}</span><b>{selfValLabel}</b></div></div></div></div>
-          <div className="d68-detail-contact-card"><h2>{T(lang, 'Kết nối với doanh nghiệp', 'Connect with the business')}</h2><p>{T(lang, 'Tên, số điện thoại, email và tài liệu nhạy cảm chỉ mở sau khi hai bên được duyệt kết nối.', 'Name, phone, email and sensitive documents unlock only after an approved connection.')}</p><LockedField label={T(lang, 'Tên doanh nghiệp', 'Business name')} masked="••••••" /><LockedField label="Email" masked="••••••" /><LockedField label={T(lang, 'Điện thoại', 'Phone')} masked="••••••" /><button type="button" className="d68-detail-primary" onClick={expressInterest}>{T(lang, 'Bày tỏ quan tâm', 'Express interest')}</button><div className="d68-detail-secondary-row"><button type="button" onClick={requestData}>🔒 {T(lang, 'Yêu cầu tài liệu', 'Request data')}</button><button type="button" onClick={sharePage}>↗ {T(lang, 'Chia sẻ', 'Share')}</button></div>{msg ? <div className="d68-detail-msg">{msg}</div> : null}</div>
+          <div className="d68-detail-contact-card"><h2>{T(lang, 'Kết nối với doanh nghiệp', 'Connect with the business')}</h2><p>{T(lang, 'Tên, số điện thoại, email và tài liệu nhạy cảm chỉ mở sau khi hai bên được duyệt kết nối.', 'Name, phone, email and sensitive documents unlock only after an approved connection.')}</p><LockedField label={T(lang, 'Tên doanh nghiệp', 'Business name')} masked="••••••" /><LockedField label="Email" masked="••••••" /><LockedField label={T(lang, 'Điện thoại', 'Phone')} masked="••••••" /><button type="button" className="d68-detail-primary" onClick={expressInterest}>{T(lang, 'Bày tỏ quan tâm', 'Express interest')}</button><div className="d68-detail-secondary-row"><button type="button" disabled={requestBusy} onClick={requestData}>🔒 {requestBusy ? T(lang, 'Đang gửi...', 'Sending...') : T(lang, 'Yêu cầu xem số liệu', 'Request financial access')}</button><button type="button" onClick={sharePage}>↗ {T(lang, 'Chia sẻ', 'Share')}</button></div>{msg ? <div className="d68-detail-msg">{msg}</div> : null}</div>
           <div className="d68-detail-verify-card"><h3>{T(lang, 'Đã xác minh', 'Verified')}</h3><div><span>✓ {T(lang, 'Bản public đã duyệt', 'Approved public snapshot')}</span><span>✓ {T(lang, 'Hồ sơ ẩn danh', 'Anonymous profile')}</span>{heroImages.length ? <span>✓ {T(lang, 'Ảnh public đã duyệt', 'Approved public images')}</span> : null}{docsToShow.length ? <span>✓ {T(lang, 'Có tài liệu hồ sơ', 'Profile documents listed')}</span> : null}</div></div>
         </aside>
       </div>

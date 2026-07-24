@@ -3,6 +3,7 @@ import {
   useEffect,
   useMemo,
   useState,
+  useRef,
 } from 'react';
 import {
   BarChart3,
@@ -71,6 +72,7 @@ import {
 } from '../lib/investorCriteria';
 import InvestorBillingPanel from '../components/investor/InvestorBillingPanel';
 import BusinessTitleLink from '../components/investor/BusinessTitleLink';
+import { financialAccessErrorMessage, requestBusinessFinancialAccess } from '../lib/businessFinancialAccess';
 import SensitiveFinancialValue from '../components/business/SensitiveFinancialValue';
 
 type Tab =
@@ -369,7 +371,7 @@ function MatchCard({
             className="d68-dashboard-btn blue"
             onClick={() => onRequest(business)}
           >
-            {T(lang, 'Yêu cầu dữ liệu', 'Request data')}
+            {T(lang, 'Yêu cầu xem số liệu', 'Request financial access')}
           </button>
         </div>
       </div>
@@ -458,7 +460,7 @@ function InterestRows({
                 className="d68-dashboard-btn gold"
                 onClick={() => onRequest(business)}
               >
-                {T(lang, 'Yêu cầu tài liệu', 'Request documents')}
+                {T(lang, 'Yêu cầu xem số liệu', 'Request financial access')}
               </button>
             ) : null}
           </article>
@@ -553,6 +555,7 @@ export default function InvestorDashboard() {
   const [notice, setNotice] = useState('');
   const [noticeType, setNoticeType] = useState<NoticeType>('ok');
   const [busy, setBusy] = useState(true);
+  const requestInFlight = useRef(new Set<string>());
 
   useEffect(() => {
     setTab(resolveTab(location.pathname));
@@ -821,22 +824,26 @@ export default function InvestorDashboard() {
   }
 
   async function requestData(business: any): Promise<boolean> {
-    if (!investor?.id || !business?.id) return false;
-    const { error } = await supabase.from('request_data').insert({
-      investor_id: investor.id,
-      business_id: business.id,
-      requested_items: ['IM', 'Financials'],
-      note: 'Investor requested data from Investor Dashboard.',
-      status: 'pending',
-    });
-    if (error) {
+    const businessId = String(business?.id || '');
+    if (!investor?.id || !businessId || requestInFlight.current.has(businessId)) return false;
+    requestInFlight.current.add(businessId);
+    try {
+      const result = await requestBusinessFinancialAccess(
+        businessId,
+        'Investor requested financial access from Investor Dashboard.',
+      );
+      setNoticeType(result.existing ? 'warn' : 'ok');
+      setNotice(result.existing
+        ? T(lang, 'Yêu cầu xem số liệu đang chờ doanh nghiệp chấp thuận.', 'Your financial access request is awaiting Business approval.')
+        : T(lang, 'Đã gửi yêu cầu xem số liệu.', 'Financial access request sent.'));
+      return true;
+    } catch (requestError: any) {
       setNoticeType('err');
-      setNotice(T(lang, 'Có lỗi', 'Something went wrong'));
+      setNotice(financialAccessErrorMessage(lang, requestError));
       return false;
+    } finally {
+      requestInFlight.current.delete(businessId);
     }
-    setNoticeType('ok');
-    setNotice(T(lang, 'Đã gửi yêu cầu dữ liệu.', 'Data request sent.'));
-    return true;
   }
 
   async function markProposal(row: any, status: ProposalStatus) {
