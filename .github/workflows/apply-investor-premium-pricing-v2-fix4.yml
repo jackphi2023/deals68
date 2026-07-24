@@ -1,0 +1,97 @@
+name: Apply Investor Premium Pricing V2 Fix4
+
+on:
+  pull_request:
+    branches:
+      - investor-premium-pricing-v2-orchestrator-final
+    types: [synchronize]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  apply-build-commit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Apply patch with literal escape normalization
+        if: hashFiles('scripts/apply-investor-premium-pricing-v2.mjs') != ''
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx --yes supabase@2.101.0 migration new investor_premium_price_v2
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('scripts/apply-investor-premium-pricing-v2.mjs')
+          text = p.read_text()
+          nl = chr(92) + 'n'
+          replacements = [
+              (
+                  "orderType: 'investor_service_upgrade'," + nl + "       role: 'investor',",
+                  "orderType: 'investor_service_upgrade'," + nl + "      role: 'investor',",
+              ),
+              (
+                  '</h3>' + nl + nl + '           <div className="d68-bizreg-paygrid">',
+                  '</h3>' + nl + nl + '          <div className="d68-bizreg-paygrid">',
+              ),
+              (
+                  "<span>{T(lang, 'Tạm tính', 'Estimate')}</span>" + nl + '               <div>',
+                  "<span>{T(lang, 'Tạm tính', 'Estimate')}</span>" + nl + '              <div>',
+              ),
+          ]
+          counts = []
+          for old, new in replacements:
+              counts.append(text.count(old))
+              text = text.replace(old, new, 1)
+          if counts != [1, 1, 1]:
+              raise SystemExit(f'Unexpected literal applicator anchor counts: {counts}')
+          p.write_text(text)
+          PY
+          MIGRATION_PATH="$(ls -1t supabase/migrations/*_investor_premium_price_v2.sql | head -n 1)"
+          set +e
+          node scripts/apply-investor-premium-pricing-v2.mjs "$MIGRATION_PATH" >/tmp/apply.log 2>&1
+          STATUS=$?
+          set -e
+          cat /tmp/apply.log
+          if [ "$STATUS" -ne 0 ]; then
+            printf '### Pricing V2 applicator error\n\n```text\n%s\n```\n' "$(tail -n 14 /tmp/apply.log)" > /tmp/comment.md
+            gh pr comment "${{ github.event.pull_request.number }}" --body-file /tmp/comment.md
+            exit "$STATUS"
+          fi
+          rm scripts/apply-investor-premium-pricing-v2.mjs
+          rm -f scripts/pricing-v2-diagnostic-marker.txt
+          rm -rf supabase/.temp
+      - run: npm ci
+      - run: npm run build
+      - name: Focused contracts
+        run: |
+          npm run qa:investor-plans
+          npm run qa:investor-register-plans
+          npm run qa:investor-pricing
+          npm run qa:investor-premium-price-v2
+          npm run qa:admin-investor-plans
+          npm run qa:migrations
+          npm run check:routes
+          git diff --check
+      - name: Commit verified source
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if ! git diff --cached --quiet; then
+            git commit -m "feat(pricing): update Investor Premium monthly rates"
+            git push origin HEAD:${{ github.event.pull_request.head.ref }}
+          fi
