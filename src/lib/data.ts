@@ -15,16 +15,16 @@ type BusinessAssetRow = Record<string, any>;
 type BusinessDetailAssets = { files: BusinessAssetRow[]; images: BusinessAssetRow[] };
 
 const businessPublicSelect = [
-  'id','public_code','slug','title_vi','title_en','description_vi','description_en','country_iso2','city','city_key','industry','industry_key','deal_type','plan','revenue_2025','revenue_currency','ebitda_margin','ask_amount','ask_currency','stake_pct','highlights_vi','highlights_en','investment_reason_vi','investment_reason_en','data_confidence','quality_score','valuation_reasonableness','visible','status','image_url','created_at','updated_at','public_snapshot_json','public_version','last_approved_at','moderation_status','hero_image_url','business_files_count','business_images_count','business_files','business_images'
+  'id','public_code','slug','title_vi','title_en','description_vi','description_en','country_iso2','city','city_key','industry','industry_key','deal_type','plan','revenue_2025','revenue_currency','ebitda_margin','revenue_band_key','revenue_band_rank','revenue_match_band_key','ebitda_band_key','has_financial_data','financial_data_updated_at','ask_amount','ask_currency','stake_pct','highlights_vi','highlights_en','investment_reason_vi','investment_reason_en','data_confidence','quality_score','valuation_reasonableness','visible','status','image_url','created_at','updated_at','public_snapshot_json','public_version','last_approved_at','moderation_status','hero_image_url','business_files_count','business_images_count','business_files','business_images'
 ].join(',');
 
 
 const businessCollectionSelect = [
-  'id','public_code','slug','title_vi','title_en','description_vi','description_en','country_iso2','city','city_key','industry','industry_key','deal_type','plan','revenue_2025','revenue_currency','ebitda_margin','ask_amount','ask_currency','stake_pct','highlights_vi','highlights_en','investment_reason_vi','investment_reason_en','data_confidence','quality_score','valuation_reasonableness','visible','status','image_url','created_at','updated_at','public_version','last_approved_at','moderation_status','hero_image_url','business_files_count','business_images_count'
+  'id','public_code','slug','title_vi','title_en','description_vi','description_en','country_iso2','city','city_key','industry','industry_key','deal_type','plan','revenue_2025','revenue_currency','ebitda_margin','revenue_band_key','revenue_band_rank','revenue_match_band_key','ebitda_band_key','has_financial_data','financial_data_updated_at','ask_amount','ask_currency','stake_pct','highlights_vi','highlights_en','investment_reason_vi','investment_reason_en','data_confidence','quality_score','valuation_reasonableness','visible','status','image_url','created_at','updated_at','public_version','last_approved_at','moderation_status','hero_image_url','business_files_count','business_images_count'
 ].join(',');
 
 const businessHomepageSelect = [
-  'id','public_code','slug','title_vi','title_en','country_iso2','city','city_key','industry','plan','revenue_2025','revenue_currency','ask_amount','ask_currency','stake_pct','visible','status','image_url','hero_image_url'
+  'id','public_code','slug','title_vi','title_en','country_iso2','city','city_key','industry','plan','revenue_2025','revenue_currency','revenue_band_key','revenue_band_rank','revenue_match_band_key','ebitda_band_key','has_financial_data','financial_data_updated_at','ask_amount','ask_currency','stake_pct','visible','status','image_url','hero_image_url'
 ].join(',');
 
 const investorPublicSelect = [
@@ -47,6 +47,15 @@ function firstValue(...values: any[]) {
   return values.find((v) => clean(v)) ?? '';
 }
 
+function nullableNumber(...values: any[]): number | null {
+  const value = values.find(
+    (item) => item !== null && item !== undefined && String(item).trim() !== '',
+  );
+  if (value === undefined) return null;
+  const numberValue = Number(value);
+  return Number.isFinite(numberValue) ? numberValue : null;
+}
+
 function snapshotOf(row: any) {
   const raw = row?.public_snapshot_json;
   return raw && typeof raw === 'object' && !Array.isArray(raw) ? raw : {};
@@ -63,6 +72,12 @@ export function getPublicBusinessView(row: any) {
     locationKeyFromLabel(rawCityKey, countryIso2) ||
     locationKeyFromLabel(city, countryIso2) ||
     clean(rawCityKey);
+  const revenue2025 = nullableNumber(s.revenue_2025, row.revenue_2025);
+  const ebitdaMargin = nullableNumber(s.ebitda_margin, row.ebitda_margin);
+  const declaredHasFinancialData = s.has_financial_data ?? row.has_financial_data;
+  const hasFinancialData = declaredHasFinancialData === undefined
+    ? revenue2025 !== null || ebitdaMargin !== null
+    : Boolean(declaredHasFinancialData);
   return {
     ...row,
     ...s,
@@ -91,9 +106,17 @@ export function getPublicBusinessView(row: any) {
     city,
     city_key: cityKey,
     country_iso2: countryIso2,
-    revenue_2025: Number(firstValue(s.revenue_2025, row.revenue_2025, 0) || 0),
+    revenue_2025: revenue2025,
     revenue_currency: firstValue(s.revenue_currency, row.revenue_currency, 'VND'),
-    ebitda_margin: s.ebitda_margin ?? row.ebitda_margin,
+    ebitda_margin: ebitdaMargin,
+    revenue_band_key: firstValue(s.revenue_band_key, row.revenue_band_key, 'unknown'),
+    revenue_band_rank: Number(s.revenue_band_rank ?? row.revenue_band_rank ?? 0),
+    revenue_match_band_key: firstValue(s.revenue_match_band_key, row.revenue_match_band_key, 'unknown'),
+    ebitda_band_key: firstValue(s.ebitda_band_key, row.ebitda_band_key, 'unknown'),
+    has_financial_data: hasFinancialData,
+    financial_data_updated_at: s.financial_data_updated_at ?? row.financial_data_updated_at ?? null,
+    financial_summary_authorized: revenue2025 !== null || ebitdaMargin !== null,
+    financials_restricted: hasFinancialData && revenue2025 === null,
     ask_amount: Number(firstValue(s.ask_amount, row.ask_amount, 0) || 0),
     ask_currency: firstValue(s.ask_currency, row.ask_currency, row.revenue_currency, 'VND'),
     stake_pct: s.stake_pct ?? row.stake_pct,
@@ -102,6 +125,63 @@ export function getPublicBusinessView(row: any) {
     image_url: firstValue(s.image_url, s.hero_image_url, row.hero_image_url, row.image_url),
     hero_image_url: firstValue(s.hero_image_url, s.image_url, row.hero_image_url, row.image_url)
   };
+}
+
+export async function getAuthorizedBusinessFinancialSummaries(
+  businessIds: string[],
+): Promise<any[]> {
+  const ids = Array.from(
+    new Set(businessIds.map((id) => String(id || '').trim()).filter(Boolean)),
+  );
+  if (!ids.length) return [];
+
+  const session = await supabase.auth.getSession().catch(() => null);
+  if (!session?.data?.session) return [];
+
+  const chunks: string[][] = [];
+  for (let index = 0; index < ids.length; index += 100) {
+    chunks.push(ids.slice(index, index + 100));
+  }
+
+  const responses = await Promise.all(
+    chunks.map((chunk) =>
+      supabase.rpc('d68_get_business_financial_summaries', {
+        p_business_ids: chunk,
+      }),
+    ),
+  );
+
+  const rows: any[] = [];
+  for (const response of responses) {
+    if (response.error) continue;
+    if (Array.isArray(response.data)) rows.push(...response.data);
+  }
+  return rows;
+}
+
+export async function attachAuthorizedBusinessFinancials<T extends Record<string, any>>(
+  rows: T[],
+): Promise<T[]> {
+  if (!rows.length) return rows;
+  const summaries = await getAuthorizedBusinessFinancialSummaries(
+    rows.map((row) => String(row.id || '')).filter(Boolean),
+  );
+  if (!summaries.length) return rows;
+
+  const byBusinessId = new Map(
+    summaries.map((summary) => [String(summary.business_id), summary]),
+  );
+  return rows.map((row) => {
+    const summary = byBusinessId.get(String(row.id));
+    if (!summary) return row;
+    return {
+      ...row,
+      ...summary,
+      id: row.id,
+      financial_summary_authorized: true,
+      financials_restricted: false,
+    };
+  });
 }
 
 function safeLikeTerm(value: any) {
@@ -267,12 +347,14 @@ function applyBusinessPublicFilters(q: any, filters: any) {
       q = q.or(locationFilter.clauses.join(','));
     }
   }
-  if (filters.revenueBand === 'small') {
+  if (filters.includeHidden && filters.revenueBand === 'small') {
     q = q.or('and(revenue_currency.eq.VND,revenue_2025.lt.10000000000),and(revenue_currency.eq.USD,revenue_2025.lt.400000)');
-  } else if (filters.revenueBand === 'mid') {
+  } else if (filters.includeHidden && filters.revenueBand === 'mid') {
     q = q.or('and(revenue_currency.eq.VND,revenue_2025.gte.10000000000,revenue_2025.lte.100000000000),and(revenue_currency.eq.USD,revenue_2025.gte.400000,revenue_2025.lte.4000000)');
-  } else if (filters.revenueBand === 'large') {
+  } else if (filters.includeHidden && filters.revenueBand === 'large') {
     q = q.or('and(revenue_currency.eq.VND,revenue_2025.gt.100000000000),and(revenue_currency.eq.USD,revenue_2025.gt.4000000)');
+  } else if (['small', 'mid', 'large'].includes(filters.revenueBand)) {
+    q = q.eq('revenue_band_key', filters.revenueBand);
   }
   if (filters.minQuality) q = q.gte('quality_score', Number(filters.minQuality));
   if (filters.featuredOnly) q = q.eq('plan', 'featured');
@@ -341,14 +423,22 @@ export async function listBusinesses(filters: any = {}): Promise<any[]> {
   let q: any = supabase.from(source).select(select as string);
   q = applyBusinessPublicFilters(q, filters);
   const sort = filters.sort || 'featured';
-  if (sort === 'revenue') q = q.order('revenue_2025', { ascending: false, nullsFirst: false });
+  if (sort === 'revenue') {
+    q = filters.includeHidden
+      ? q.order('revenue_2025', { ascending: false, nullsFirst: false })
+      : q.order('revenue_band_rank', { ascending: false, nullsFirst: false })
+          .order('quality_score', { ascending: false, nullsFirst: false })
+          .order('created_at', { ascending: false });
+  }
   else if (sort === 'ask') q = q.order('ask_amount', { ascending: false, nullsFirst: false });
   else if (sort === 'quality' || sort === 'featured') q = q.order('quality_score', { ascending: false, nullsFirst: false }).order('created_at', { ascending: false });
   else q = q.order('created_at', { ascending: false });
   q = applyPagination(q, filters);
   const { data, error } = await q;
   if (error) throw error;
-  return ((data || []) as any[]).map(getPublicBusinessView);
+  const rows = ((data || []) as any[]).map(getPublicBusinessView);
+  if (filters.includeHidden || filters.includeAuthorizedFinancials === false) return rows;
+  return attachAuthorizedBusinessFinancials(rows);
 }
 
 export async function listBusinessesPage(filters: any = {}): Promise<{ rows: any[]; total: number }> {
@@ -359,7 +449,13 @@ export async function listBusinessesPage(filters: any = {}): Promise<{ rows: any
   let q: any = supabase.from(source).select(select as string, { count: 'exact' });
   q = applyBusinessPublicFilters(q, filters);
   const sort = filters.sort || 'featured';
-  if (sort === 'revenue') q = q.order('revenue_2025', { ascending: false, nullsFirst: false });
+  if (sort === 'revenue') {
+    q = filters.includeHidden
+      ? q.order('revenue_2025', { ascending: false, nullsFirst: false })
+      : q.order('revenue_band_rank', { ascending: false, nullsFirst: false })
+          .order('quality_score', { ascending: false, nullsFirst: false })
+          .order('created_at', { ascending: false });
+  }
   else if (sort === 'ask') q = q.order('ask_amount', { ascending: false, nullsFirst: false });
   else if (sort === 'quality' || sort === 'featured') {
     q = q
@@ -369,7 +465,9 @@ export async function listBusinessesPage(filters: any = {}): Promise<{ rows: any
   q = applyPagination(q, filters);
   const { data, count, error } = await q;
   if (error) throw error;
-  const rows = ((data || []) as any[]).map(getPublicBusinessView);
+  const rows = await attachAuthorizedBusinessFinancials(
+    ((data || []) as any[]).map(getPublicBusinessView),
+  );
   return { rows, total: count ?? rows.length };
 }
 
@@ -386,7 +484,11 @@ export async function listHomepageBusinesses(limit = 6): Promise<any[]> {
   );
 
   if (rankError || !Array.isArray(ranked) || !ranked.length) {
-    return listBusinesses({ limit: safeLimit, sort: 'featured' });
+    return listBusinesses({
+      limit: safeLimit,
+      sort: 'featured',
+      includeAuthorizedFinancials: false,
+    });
   }
 
   const orderedRanked = [...ranked]
@@ -406,14 +508,18 @@ export async function listHomepageBusinesses(limit = 6): Promise<any[]> {
   const { data, error } = await query;
 
   if (error) {
-    return listBusinesses({ limit: safeLimit, sort: 'featured' });
+    return listBusinesses({
+      limit: safeLimit,
+      sort: 'featured',
+      includeAuthorizedFinancials: false,
+    });
   }
 
+  // Homepage payload is cached as public data. Never hydrate exact financials here,
+  // even when the current browser session belongs to an authorized Investor.
+  const homepageRows = ((data || []) as any[]).map(getPublicBusinessView);
   const byId = new Map(
-    ((data || []) as any[]).map((row) => [
-      String(row.id),
-      getPublicBusinessView(row),
-    ]),
+    homepageRows.map((row) => [String(row.id), row]),
   );
 
   const ordered = orderedRanked
@@ -425,6 +531,7 @@ export async function listHomepageBusinesses(limit = 6): Promise<any[]> {
   const fallback = await listBusinesses({
     limit: safeLimit * 3,
     sort: 'featured',
+    includeAuthorizedFinancials: false,
   });
   const used = new Set(ordered.map((row: any) => String(row.id)));
 
@@ -449,7 +556,11 @@ export async function getBusinessBySlug(slug: string, options: { includeHidden?:
   if (!options.includeHidden) q = q.eq('visible', true).eq('status', 'active').not('public_snapshot_json', 'is', null);
   const { data, error } = await q.maybeSingle();
   if (error) throw error;
-  return data ? getPublicBusinessView(data) : null;
+  if (!data) return null;
+  const [row] = await attachAuthorizedBusinessFinancials([
+    getPublicBusinessView(data),
+  ]);
+  return row || null;
 }
 
 export async function getBusinessFiles(

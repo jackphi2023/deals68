@@ -51,6 +51,7 @@ function fileSize(bytes?: number) {
   return `${n} B`;
 }
 function money(lang: Lang, value: any, currency: string) { return formatMoneyForLang(Number(value || 0), currency || 'VND', lang); }
+function restrictedFinancialText(lang: Lang) { return T(lang, 'Được bảo mật', 'Restricted'); }
 function qualityLabel(lang: Lang, value: any) {
   const n = Number(value);
   if (!Number.isFinite(n) || value === null || value === undefined || value === '') return T(lang, 'Đang cập nhật', 'Pending');
@@ -89,7 +90,7 @@ function normalizeSimilar(row: any, lang: Lang): SimilarDeal | null {
   const slug = cleanText(row.slug);
   if (!slug) return null;
   const title = T(lang, row.title_vi || row.public_code || 'Hồ sơ doanh nghiệp ẩn danh', row.title_en || row.title_vi || row.public_code || 'Anonymous business profile');
-  return { id: String(row.id || slug), slug, title, industry: labelIndustry(primaryIndustry(row.industry), lang), city: labelLocation(row.city_key || row.city || row.country_iso2, lang), revenue: money(lang, row.revenue_2025, row.revenue_currency || 'VND'), ask: money(lang, row.ask_amount, row.ask_currency || row.revenue_currency || 'VND'), image: row.image_url || row.hero_image_url || null };
+  return { id: String(row.id || slug), slug, title, industry: labelIndustry(primaryIndustry(row.industry), lang), city: labelLocation(row.city_key || row.city || row.country_iso2, lang), revenue: row.revenue_2025 === null || row.revenue_2025 === undefined ? restrictedFinancialText(lang) : money(lang, row.revenue_2025, row.revenue_currency || 'VND'), ask: money(lang, row.ask_amount, row.ask_currency || row.revenue_currency || 'VND'), image: row.image_url || row.hero_image_url || null };
 }
 function inferredSelfValuation(b: any) {
   const stored = Number(b?.self_valuation || 0);
@@ -278,7 +279,11 @@ export default function BusinessDetail({ lang }: { lang: Lang }) {
   ]);
   const dealTypeLabel = business ? dealLabel(lang, business.deal_type) : '';
   const ask = business ? money(lang, business.ask_amount, business.ask_currency || business.revenue_currency || 'VND') : '';
-  const revenue = business ? money(lang, business.revenue_2025, business.revenue_currency || 'VND') : '';
+  const revenue = business
+    ? business.revenue_2025 === null || business.revenue_2025 === undefined
+      ? restrictedFinancialText(lang)
+      : money(lang, business.revenue_2025, business.revenue_currency || 'VND')
+    : '';
   const stake = business?.stake_pct === null || business?.stake_pct === undefined ? T(lang, 'Đang cập nhật', 'Pending') : percent(business.stake_pct);
   const quality = business ? qualityLabel(lang, business.quality_score) : '';
   const industry = business ? labelIndustry(primaryIndustry(business.industry), lang) : '';
@@ -296,7 +301,7 @@ export default function BusinessDetail({ lang }: { lang: Lang }) {
     { label: T(lang, 'Địa điểm', 'Location'), value: location },
     { label: T(lang, 'Loại giao dịch', 'Transaction'), value: dealTypeLabel },
     { label: T(lang, 'Doanh thu năm', 'Annual revenue'), value: revenue },
-    { label: T(lang, 'Tỷ suất lợi nhuận/EBITDA', 'EBITDA margin'), value: business.ebitda_margin === null || business.ebitda_margin === undefined ? T(lang, 'Đang cập nhật', 'Pending') : percent(business.ebitda_margin) },
+    { label: T(lang, 'Tỷ suất lợi nhuận/EBITDA', 'EBITDA margin'), value: business.ebitda_margin === null || business.ebitda_margin === undefined ? (business.has_financial_data ? restrictedFinancialText(lang) : T(lang, 'Đang cập nhật', 'Pending')) : percent(business.ebitda_margin) },
     { label: askLabel(lang, business.deal_type), value: ask },
     { label: T(lang, 'Tỷ lệ cổ phần', 'Stake'), value: stake },
     { label: T(lang, 'DN tự định giá', 'Company self-valuation'), value: selfValLabel },
@@ -304,8 +309,8 @@ export default function BusinessDetail({ lang }: { lang: Lang }) {
   ] : [];
 
   const qualityItems = business ? [
-    { ok: !!business.revenue_2025, vi: 'Có doanh thu năm gần nhất', en: 'Latest annual revenue provided' },
-    { ok: business.ebitda_margin !== null && business.ebitda_margin !== undefined, vi: 'Có tỷ suất lợi nhuận/EBITDA', en: 'EBITDA margin provided' },
+    { ok: !!business.revenue_2025 || (business.revenue_band_key && business.revenue_band_key !== 'unknown'), vi: 'Có doanh thu năm gần nhất', en: 'Latest annual revenue provided' },
+    { ok: business.ebitda_margin !== null && business.ebitda_margin !== undefined || (business.ebitda_band_key && business.ebitda_band_key !== 'unknown'), vi: 'Có tỷ suất lợi nhuận/EBITDA', en: 'EBITDA margin provided' },
     { ok: !!business.ask_amount && !!business.stake_pct, vi: 'Có offer để suy ra định giá DN', en: 'Offer data supports self-valuation' },
     { ok: docsToShow.length > 0, vi: 'Có tài liệu hồ sơ doanh nghiệp đã duyệt tên hiển thị', en: 'Approved profile document names available' },
     { ok: heroImages.length > 0, vi: 'Có hình ảnh doanh nghiệp đã duyệt', en: 'Approved business images available' },
