@@ -2,7 +2,7 @@
 import fs from 'node:fs';
 
 const migrationName = '20260724140213_public_business_view_band_helper_acl_fix_v1.sql';
-const homepageMigrationName = '20260724153000_homepage_business_ids_safe_view_v1.sql';
+const homepageMigrationName = '20260724142506_homepage_business_ids_safe_view_v1.sql';
 const failures = [];
 const read = (path) => (fs.existsSync(path) ? fs.readFileSync(path, 'utf8') : '');
 const sql = read(`supabase/migrations/${migrationName}`);
