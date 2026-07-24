@@ -44,26 +44,36 @@ jobs:
           node scripts/apply-phase-e-stabilization.mjs "$MIGRATION_PATH"
           python - <<'PY'
           from pathlib import Path
-          p = Path('scripts/deals68-business-financial-release-phase-e-check.mjs')
-          lines = p.read_text().splitlines()
+
+          qa_path = Path('scripts/deals68-business-financial-release-phase-e-check.mjs')
           fixed = []
-          for line in lines:
+          for line in qa_path.read_text().splitlines():
               if line.startswith("const cleanup = read("):
                   fixed.append("const cleanup = read('src/styles/pages/release-cleanup.css');")
               elif line.startswith('check(!/[^'):
                   fixed.append("check(!cleanup.includes('{'), 'release-cleanup.css contains active CSS.');")
               else:
                   fixed.append(line)
-          p.write_text('\n'.join(fixed) + '\n')
+          qa_path.write_text('\n'.join(fixed) + '\n')
+
+          review_path = Path('docs/release/BUSINESS_FINANCIAL_ACCESS_PHASE_E_RELEASE_REVIEW.md')
+          legacy_note = (
+              '\n\n## Known pre-existing global package gate\n\n'
+              'The repository-wide qa:packages command still fails in '
+              'deals68-home-investors-hero-ux-check.mjs because its Banner G5 '
+              'contract expects the former multi-slide/Admin implementation tokens. '
+              'Phase E does not modify Homepage, Banner Admin, SiteBanners, Hero CSS '
+              'or banner persistence. This failure reproduces against the untouched '
+              'building Banner files and is recorded as a separate pre-existing '
+              'release blocker; it is not suppressed or reported as PASS.\n\n'
+              'Phase E therefore requires its dedicated A–E security contracts, '
+              'migration registry, CSS architecture, route checks, release static '
+              'check, Business Report regressions and Investor Plan regressions to '
+              'pass. The global package gate must be reconciled in a separate Banner '
+              'QA stabilization change before a production main release.\n'
+          )
+          review_path.write_text(review_path.read_text() + legacy_note)
           PY
-          cat >> docs/release/BUSINESS_FINANCIAL_ACCESS_PHASE_E_RELEASE_REVIEW.md <<'EOF'
-
-## Known pre-existing global package gate
-
-The repository-wide qa:packages command still fails in deals68-home-investors-hero-ux-check.mjs because its Banner G5 contract expects the former multi-slide/Admin implementation tokens. Phase E does not modify Homepage, Banner Admin, SiteBanners, Hero CSS or banner persistence. This failure reproduces against the untouched building Banner files and is recorded as a separate pre-existing release blocker; it is not suppressed or reported as PASS.
-
-Phase E therefore requires its dedicated A–E security contracts, migration registry, CSS architecture, route checks, release static check, Business Report regressions and Investor Plan regressions to pass. The global package gate must be reconciled in a separate Banner QA stabilization change before a production main release.
-EOF
           rm scripts/apply-phase-e-stabilization.mjs
           rm -f scripts/phase-e-rerun-marker*.txt
 
