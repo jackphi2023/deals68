@@ -79,9 +79,7 @@ jobs:
       - name: Route regression
         run: npm run check:routes
       - name: Diff integrity
-        run: |
-          git fetch origin ${{ github.base_ref || 'building' }} --depth=1
-          git diff --check FETCH_HEAD...HEAD
+        run: git diff --check
       - name: Commit generated Phase B source
         if: github.event_name == 'pull_request'
         run: |
