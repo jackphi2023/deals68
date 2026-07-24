@@ -36,7 +36,9 @@ jobs:
           p.write_text(text.replace(old, new, 1))
           PY
           node scripts/apply-pre-main-qa-gate-reconciliation.mjs
+          node scripts/apply-pre-main-session8-register-wording-fix.mjs
           rm scripts/apply-pre-main-qa-gate-reconciliation.mjs
+          rm scripts/apply-pre-main-session8-register-wording-fix.mjs
       - run: npm ci
       - name: Run release gate and surface concise failure
         shell: bash
