@@ -1,0 +1,58 @@
+name: Apply Phase D Financial Dashboard
+
+on:
+  pull_request:
+    branches:
+      - phase-d-dashboard-orchestrator
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+  pull-requests: read
+
+jobs:
+  apply-and-verify:
+    if: github.actor != 'github-actions[bot]' && github.head_ref == 'feature/financial-dashboard-phase-d-v1'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PR head
+        uses: actions/checkout@v4
+        with:
+          ref: feature/financial-dashboard-phase-d-v1
+          fetch-depth: 0
+
+      - name: Apply reviewed Phase D source changes
+        run: python tools/apply_phase_d.py
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Production build
+        run: npm run build
+
+      - name: Phase A access regression QA
+        run: npm run qa:financial-access-phase-a
+
+      - name: Phase B redaction regression QA
+        run: npm run qa:financial-redaction-phase-b
+
+      - name: Phase C UI regression QA
+        run: npm run qa:financial-ui-phase-c
+
+      - name: Phase D Dashboard QA
+        run: npm run qa:financial-dashboard-phase-d
+
+      - name: Migration ledger QA
+        run: npm run qa:migrations
+
+      - name: Diff hygiene
+        run: git diff --check
+
+      - name: Commit verified source only
+        run: |
+          rm -f tools/apply_phase_d.py
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "feat(financials): implement secure Dashboard workflow phase D"
+          git push origin HEAD:feature/financial-dashboard-phase-d-v1
