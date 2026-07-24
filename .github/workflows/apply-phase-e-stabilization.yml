@@ -1,0 +1,131 @@
+name: Apply Phase E Financial Stabilization
+
+on:
+  pull_request:
+    branches:
+      - phase-e-stabilization-orchestrator
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+
+jobs:
+  apply-and-verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+      VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+    steps:
+      - name: Checkout PR head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Create migration with pinned Supabase CLI
+        shell: bash
+        run: npx --yes supabase@2.101.0 migration new business_dataroom_access_phase_e_stabilization
+
+      - name: Apply reviewed Phase E source changes
+        shell: bash
+        run: |
+          set -euo pipefail
+          MIGRATION_PATH="$(ls -1t supabase/migrations/*_business_dataroom_access_phase_e_stabilization.sql | head -n 1)"
+          node scripts/apply-phase-e-stabilization.mjs "$MIGRATION_PATH"
+          rm scripts/apply-phase-e-stabilization.mjs
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Production build
+        run: npm run build
+
+      - name: Phase A access regression
+        run: npm run qa:financial-access-phase-a
+
+      - name: Phase B redaction regression
+        run: npm run qa:financial-redaction-phase-b
+
+      - name: Phase C UI regression
+        run: npm run qa:financial-ui-phase-c
+
+      - name: Phase D workflow regression
+        run: npm run qa:financial-workflow-phase-d
+
+      - name: Phase E release stabilization
+        run: npm run qa:financial-release-phase-e
+
+      - name: Migration registry
+        run: npm run qa:migrations
+
+      - name: CSS architecture
+        run: npm run qa:css
+
+      - name: Route regression
+        run: npm run check:routes
+
+      - name: Package checks
+        run: npm run qa:packages
+
+      - name: Release QA
+        run: npm run qa:release
+
+      - name: Business report regressions
+        run: |
+          npm run qa:business-report-ui
+          npm run qa:admin-reports
+          npm run qa:business-report-phase5
+          npm run qa:business-report-phase6
+
+      - name: Investor plan regressions
+        run: |
+          npm run qa:investor-plans
+          npm run qa:investor-register-plans
+          npm run qa:investor-pricing
+          npm run qa:admin-investor-plans
+
+      - name: Diff integrity
+        run: git diff --check
+
+      - name: Commit verified source only
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No source changes to commit"
+          else
+            git commit -m "chore(release): stabilize financial access Phase E"
+            git push origin HEAD:${{ github.event.pull_request.head.ref }}
+          fi
+
+      - name: Install Chromium for public E2E
+        id: playwright-install
+        continue-on-error: true
+        run: npx playwright install --with-deps chromium
+
+      - name: Public E2E on exact Phase E source
+        id: public-e2e
+        if: steps.playwright-install.outcome == 'success' && env.VITE_SUPABASE_URL != '' && env.VITE_SUPABASE_ANON_KEY != ''
+        continue-on-error: true
+        env:
+          D68_USE_LOCAL_SERVER: "1"
+          D68_BASE_URL: http://127.0.0.1:5173
+        run: npm run test:e2e:public
+
+      - name: Record optional E2E outcome
+        if: always()
+        run: |
+          echo "Playwright install: ${{ steps.playwright-install.outcome }}"
+          echo "Public E2E: ${{ steps.public-e2e.outcome }}"
+          echo "Authenticated E2E: NOT RUN (no safe role credentials supplied to this release workflow)"
