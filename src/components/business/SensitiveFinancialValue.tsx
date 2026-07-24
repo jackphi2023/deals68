@@ -60,6 +60,7 @@ export default function SensitiveFinancialValue({
     );
   const restricted = !hasExactValue && hasData;
   const sourceType = normalizedSource(source);
+  const showHint = (restricted || pending) && !compact;
 
   if (!hasExactValue && !hasData && !pending) {
     return (
@@ -97,14 +98,14 @@ export default function SensitiveFinancialValue({
         : '';
 
   function toggle(event: MouseEvent<HTMLSpanElement>) {
-    if (!restricted && !pending) return;
+    if (!showHint) return;
     event.preventDefault();
     event.stopPropagation();
     setMobileOpen((current) => !current);
   }
 
   function handleKey(event: KeyboardEvent<HTMLSpanElement>) {
-    if (!restricted && !pending) return;
+    if (!showHint) return;
     if (event.key !== 'Enter' && event.key !== ' ') return;
     event.preventDefault();
     event.stopPropagation();
@@ -120,24 +121,26 @@ export default function SensitiveFinancialValue({
         mobileOpen ? 'is-open' : '',
         className,
       ].filter(Boolean).join(' ')}
-      tabIndex={restricted || pending ? 0 : undefined}
-      aria-label={restricted || pending ? explanation : undefined}
-      aria-describedby={restricted || pending ? tooltipId : undefined}
+      tabIndex={showHint ? 0 : undefined}
+      aria-label={showHint ? explanation : undefined}
+      aria-describedby={showHint ? tooltipId : undefined}
       onClick={toggle}
       onKeyDown={handleKey}
     >
       {hasExactValue ? (
         <span className="d68-sensitive-financial__value">{value}</span>
       ) : (
-        <span className="d68-sensitive-financial__placeholder" aria-hidden="true">
-          ██████████
-        </span>
+        <span
+          className="d68-sensitive-financial__placeholder"
+          aria-label={text(lang, 'Doanh thu được ẩn', 'Revenue hidden')}
+          role="img"
+        />
       )}
-      {restricted || pending ? (
-        <span className="d68-sensitive-financial__info" aria-hidden="true">i</span>
+      {showHint ? (
+        <span className="d68-sensitive-financial__info" aria-hidden="true">[?]</span>
       ) : null}
       {badge ? <small className="d68-sensitive-financial__badge">✓ {badge}</small> : null}
-      {restricted || pending ? (
+      {showHint ? (
         <span id={tooltipId} role="tooltip" className="d68-sensitive-financial__tooltip">
           {explanation}
         </span>
