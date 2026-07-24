@@ -23,6 +23,7 @@ This file reconciles the migration filenames in Git with the migration versions 
 | 20260724085657 | `20260724085657_business_public_financial_redaction_phase_b_v1.sql` |
 | 20260724090819 | `20260724090819_business_financial_redaction_phase_b_hidden_investor_fix_v1.sql` |
 | 20260724120937 | `20260724120937_business_dataroom_access_phase_e_stabilization.sql` — committed, NOT APPLIED; requires explicit approval |
+| 20260724130029 | `20260724130029_investor_premium_price_v2.sql` — committed, NOT APPLIED; canonical Premium price V2 |
 
 The new Release Candidate migration is:
 
@@ -44,6 +45,7 @@ The new Release Candidate migration is:
 - `20260724085657_business_public_financial_redaction_phase_b_v1.sql` — Business Financial Redaction Phase B applied to production; removes exact revenue, EBITDA, growth and numeric asset values from public Business reads, preserves coarse discovery/matching bands, closes direct public base-table access, guards the quality calculator and adds a grant-aware batch summary RPC.
 - `20260724090819_business_financial_redaction_phase_b_hidden_investor_fix_v1.sql` — Phase B compatibility fix applied to production; treats Investor status `hidden` as a public-profile visibility state rather than loss of entitlement, so the authenticated owner can use active Proposal/request grants and submit idempotent financial-data requests.
 - `20260724120937_business_dataroom_access_phase_e_stabilization.sql` — Phase E additive Dataroom stabilization; committed but NOT APPLIED. It replaces Proposal-based file metadata/Storage reads with an active, unexpired `dataroom` scope, adds an audited file-path RPC and creates no grants. Apply only after explicit approval.
+- `20260724130029_investor_premium_price_v2.sql` — Investor Premium price V2; committed but NOT APPLIED. Overrides only the canonical server price RPC to 26,000,000 VND/month in Vietnam and 1,000 USD/month elsewhere. Historical orders and entitlements are unchanged.
 
 Rules:
 

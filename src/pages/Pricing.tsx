@@ -164,8 +164,8 @@ export default function Pricing({ lang }: { lang: Lang }) {
         ),
         T(
           lang,
-          'Xem Báo cáo Phân tích đầu tư: 50 triệu đ/tháng.',
-          'View Investment Analysis Reports: USD 2,500/month.',
+          'Gói Premium: 26.000.000 VNĐ/tháng tại Việt Nam hoặc 1.000 USD/tháng tại quốc gia khác.',
+          'Premium: VND 26,000,000/month in Vietnam or USD 1,000/month in other countries.',
         ),
       ],
     },
@@ -236,8 +236,8 @@ export default function Pricing({ lang }: { lang: Lang }) {
     {
       qVi: 'Giá tính như thế nào?',
       qEn: 'How is pricing calculated?',
-      aVi: 'Nhà đầu tư Tiêu chuẩn được miễn phí. Nhà đầu tư Nâng cao có giá 50.000.000 VNĐ/tháng tại Việt Nam hoặc 2.500 USD/tháng tại các quốc gia khác. Các gói trả phí được tính theo vai trò, quốc gia và kỳ hạn; kỳ hạn dài được giảm 15–20%.',
-      aEn: 'Standard Investors are free. Premium Investors cost VND 50,000,000 per month in Vietnam or USD 2,500 per month in other countries. Paid plans are calculated by role, country and term, with 15–20% discounts for longer terms.',
+      aVi: 'Nhà đầu tư Tiêu chuẩn được miễn phí. Nhà đầu tư Nâng cao (Premium) có giá 26.000.000 VNĐ/tháng tại Việt Nam hoặc 1.000 USD/tháng tại các quốc gia khác. Các gói trả phí được tính theo vai trò, quốc gia và kỳ hạn; kỳ hạn dài được giảm 15–20%.',
+      aEn: 'Standard Investors are free. Premium Investors cost VND 26,000,000 per month in Vietnam or USD 1,000 per month in other countries. Paid plans are calculated by role, country and term, with 15–20% discounts for longer terms.',
     },
     {
       qVi: 'Mã khuyến mãi có thể áp dụng thêm với Giảm giá theo gói không?',
@@ -476,7 +476,7 @@ export default function Pricing({ lang }: { lang: Lang }) {
                   <Row a={T(lang, 'Phí tài khoản', 'Account fee')} b={T(lang, 'Miễn phí', 'Free')} />
                   <Row
                     a={T(lang, 'Báo cáo Phân tích đầu tư', 'Investment Analysis Report')}
-                    b={T(lang, '50 triệu đ/tháng', 'USD 2,500/month')}
+                    b={premiumUnitPrice + '/' + T(lang, 'tháng', 'month')}
                   />
                 </>
               ) : (
@@ -526,7 +526,9 @@ export default function Pricing({ lang }: { lang: Lang }) {
                   ? T(lang, 'Tạo tài khoản', 'Create account')
                   : investorStandardSelected
                     ? T(lang, 'Tạo tài khoản miễn phí', 'Create free account')
-                    : T(lang, 'Đăng ký tài khoản', 'Register account')}{' '}
+                    : role === 'investor' && investorPlan === 'premium'
+                      ? T(lang, 'Đăng ký gói Nâng cao', 'Choose Premium')
+                      : T(lang, 'Đăng ký tài khoản', 'Register account')}{' '}
                 {!advisorComingSoon ? '→' : ''}
               </button>
             </span>
