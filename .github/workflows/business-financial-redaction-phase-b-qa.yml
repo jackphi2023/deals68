@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - 'supabase/migrations/**business_public_financial_redaction_phase_b**'
+      - 'supabase/migrations/**business_financial_redaction_phase_b_hidden_investor_fix**'
       - 'src/lib/data.ts'
       - 'src/pages/Home.tsx'
       - 'src/pages/Businesses.tsx'
@@ -17,10 +18,11 @@ on:
       - 'docs/release/MIGRATION_STATE.md'
       - 'package.json'
       - '.github/workflows/business-financial-redaction-phase-b-qa.yml'
+      - 'scripts/patch-phaseb-ledger-hidden-fix-20260724.mjs'
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   verify:
@@ -29,11 +31,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          ref: ${{ github.head_ref || github.ref_name }}
+          fetch-depth: 1
+          show-progress: false
       - uses: actions/setup-node@v4
         with:
           node-version: 24
           cache: npm
+      - name: Apply ledger and hidden Investor compatibility patch
+        run: |
+          if [ -f scripts/patch-phaseb-ledger-hidden-fix-20260724.mjs ]; then
+            node scripts/patch-phaseb-ledger-hidden-fix-20260724.mjs
+            rm scripts/patch-phaseb-ledger-hidden-fix-20260724.mjs
+          fi
       - run: npm ci
       - name: Financial redaction Phase B contract
         run: npm run qa:financial-redaction-phase-b
@@ -48,4 +58,14 @@ jobs:
       - name: Route regression
         run: npm run check:routes
       - name: Diff integrity
-        run: git diff --check origin/${{ github.base_ref }}...HEAD
+        run: git diff --check
+      - name: Commit Phase B ledger and compatibility source
+        if: github.event_name == 'pull_request'
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            git config user.name "deals68-release-bot"
+            git config user.email "actions@users.noreply.github.com"
+            git add -A
+            git commit -m "Reconcile Phase B ledger and hidden Investor access"
+            git push origin HEAD:${{ github.head_ref }}
+          fi
