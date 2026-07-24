@@ -22,6 +22,7 @@ This file reconciles the migration filenames in Git with the migration versions 
 | 20260724073247 | `20260724073247_business_financial_access_phase_a_v1.sql` |
 | 20260724085657 | `20260724085657_business_public_financial_redaction_phase_b_v1.sql` |
 | 20260724090819 | `20260724090819_business_financial_redaction_phase_b_hidden_investor_fix_v1.sql` |
+| 20260724120937 | `20260724120937_business_dataroom_access_phase_e_stabilization.sql` — committed, NOT APPLIED; requires explicit approval |
 
 The new Release Candidate migration is:
 
@@ -42,6 +43,7 @@ The new Release Candidate migration is:
 - `20260724073247_business_financial_access_phase_a_v1.sql` — Business Financial Access Phase A applied to production; adds the canonical access-grant ledger, Proposal summary grants, approved-request detail grants, idempotent request/response/revoke RPCs, trigger synchronization, audit history, RLS/ACL and legacy backfill. It intentionally does not modify the public Business view, financial display or Dataroom file policy.
 - `20260724085657_business_public_financial_redaction_phase_b_v1.sql` — Business Financial Redaction Phase B applied to production; removes exact revenue, EBITDA, growth and numeric asset values from public Business reads, preserves coarse discovery/matching bands, closes direct public base-table access, guards the quality calculator and adds a grant-aware batch summary RPC.
 - `20260724090819_business_financial_redaction_phase_b_hidden_investor_fix_v1.sql` — Phase B compatibility fix applied to production; treats Investor status `hidden` as a public-profile visibility state rather than loss of entitlement, so the authenticated owner can use active Proposal/request grants and submit idempotent financial-data requests.
+- `20260724120937_business_dataroom_access_phase_e_stabilization.sql` — Phase E additive Dataroom stabilization; committed but NOT APPLIED. It replaces Proposal-based file metadata/Storage reads with an active, unexpired `dataroom` scope, adds an audited file-path RPC and creates no grants. Apply only after explicit approval.
 
 Rules:
 
