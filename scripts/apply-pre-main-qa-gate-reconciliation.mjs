@@ -90,8 +90,8 @@ releaseCheck = replaceOnce(
 );
 releaseCheck = replaceOnce(
   releaseCheck,
-  '/\\{ industry: it\\.key \\/.test(home)',
-  '/\\{ industry: item\\.key \\/.test(home)',
+  '/\\{ industry: it\\.key \\}/.test(home)',
+  '/\\{ industry: item\\.key \\}/.test(home)',
   'Release canonical industry link check',
 );
 write(release, releaseCheck);
