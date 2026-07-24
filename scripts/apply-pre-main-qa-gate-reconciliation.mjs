@@ -63,19 +63,27 @@ write(entityTitle, entityCheck);
 
 const location = 'scripts/deals68-business-location-flow-check.mjs';
 let locationCheck = read(location);
-locationCheck = replaceOnce(
-  locationCheck,
-  `[data, ".eq('city_key', cityKey)", 'Public Business query does not use exact city_key filtering'],`,
-  `[data, 'city_key.eq.\${safeLikeTerm(value)}', 'Public Business query does not build canonical city_key clauses'],`,
-  'Business location query-builder token',
-);
-locationCheck = replaceOnce(
-  locationCheck,
-  `[businesses, 'locationKeyFromLabel(f.city_key || f.city', 'Business facets do not canonicalize legacy labels'],`,
-  `[data, 'locationKeyFromLabel(rawCityKey, countryIso2)', 'Public Business normalization does not canonicalize legacy labels'],`,
-  'Business location canonical view token',
-);
+locationCheck = replaceOnce(locationCheck, `[data, ".eq('city_key', cityKey)", 'Public Business query does not use exact city_key filtering'],`, `[data, 'city_key.eq.\${safeLikeTerm(value)}', 'Public Business query does not build canonical city_key clauses'],`, 'Business location query-builder token');
+locationCheck = replaceOnce(locationCheck, `[businesses, 'locationKeyFromLabel(f.city_key || f.city', 'Business facets do not canonicalize legacy labels'],`, `[data, 'locationKeyFromLabel(rawCityKey, countryIso2)', 'Public Business normalization does not canonicalize legacy labels'],`, 'Business location canonical view token');
 write(location, locationCheck);
+
+const registerCopy = 'scripts/deals68-business-register-copy-term-check.mjs';
+let registerCheck = read(registerCopy);
+registerCheck = replaceOnce(
+  registerCheck,
+  `  ['Doanh thu năm gần nhất (VNĐ)', 'Vietnamese annual-revenue label lacks VNĐ'],
+  ['Latest annual revenue (VND)', 'English annual-revenue label lacks VND'],
+  ['Số tiền gọi vốn / giá trị giao dịch mong muốn (VNĐ)', 'Vietnamese ask label lacks VNĐ'],
+  ['Capital sought / desired transaction value (VND)', 'English ask label lacks VND'],`,
+  `  ['const annualRevenueLabel = T(', 'Annual-revenue label is not centralized'],
+  ['const askAmountLabel = T(', 'Ask-amount label is not centralized'],
+  ["currentCurrency === 'VND' ? 'VNĐ' : 'USD'", 'Vietnamese financial labels do not switch VNĐ/USD'],
+  ['\`Latest annual revenue (\${currentCurrency})\`', 'English annual-revenue label does not use current currency'],
+  ['\`Capital sought / desired transaction value (\${currentCurrency})\`', 'English ask label does not use current currency'],`,
+  'Business registration dynamic currency labels',
+);
+registerCheck = replaceOnce(registerCheck, "console.log('✓ Revenue and transaction-value labels include VNĐ/VND.');", "console.log('✓ Revenue and transaction-value labels use the selected VNĐ/USD currency dynamically.');", 'Business registration currency conclusion');
+write(registerCopy, registerCheck);
 
 const marker = 'scripts/pre-main-qa-diagnostic-marker.txt';
 if (fs.existsSync(marker)) fs.unlinkSync(marker);
