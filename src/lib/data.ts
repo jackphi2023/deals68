@@ -424,9 +424,9 @@ export async function listBusinesses(filters: any = {}): Promise<any[]> {
   q = applyPagination(q, filters);
   const { data, error } = await q;
   if (error) throw error;
-  return attachAuthorizedBusinessFinancials(
-    ((data || []) as any[]).map(getPublicBusinessView),
-  );
+  const rows = ((data || []) as any[]).map(getPublicBusinessView);
+  if (filters.includeAuthorizedFinancials === false) return rows;
+  return attachAuthorizedBusinessFinancials(rows);
 }
 
 export async function listBusinessesPage(filters: any = {}): Promise<{ rows: any[]; total: number }> {
@@ -489,9 +489,9 @@ export async function listHomepageBusinesses(limit = 6): Promise<any[]> {
     return listBusinesses({ limit: safeLimit, sort: 'featured' });
   }
 
-  const homepageRows = await attachAuthorizedBusinessFinancials(
-    ((data || []) as any[]).map(getPublicBusinessView),
-  );
+  // Homepage payload is cached as public data. Never hydrate exact financials here,
+  // even when the current browser session belongs to an authorized Investor.
+  const homepageRows = ((data || []) as any[]).map(getPublicBusinessView);
   const byId = new Map(
     homepageRows.map((row) => [String(row.id), row]),
   );
@@ -505,6 +505,7 @@ export async function listHomepageBusinesses(limit = 6): Promise<any[]> {
   const fallback = await listBusinesses({
     limit: safeLimit * 3,
     sort: 'featured',
+    includeAuthorizedFinancials: false,
   });
   const used = new Set(ordered.map((row: any) => String(row.id)));
 

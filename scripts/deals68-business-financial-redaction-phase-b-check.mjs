@@ -44,6 +44,10 @@ for (const snippet of [
 ]) if (!data.includes(snippet)) failures.push(`Data layer missing: ${snippet}`);
 
 if (!home.includes("T(lang, 'Được bảo mật', 'Restricted')")) failures.push('Homepage restricted fallback missing');
+if (!data.includes('filters.includeAuthorizedFinancials === false')) failures.push('Public cache financial hydration opt-out missing');
+const homepageFunction = data.slice(data.indexOf('export async function listHomepageBusinesses'), data.indexOf('export async function countBusinesses'));
+if (homepageFunction.includes('await attachAuthorizedBusinessFinancials')) failures.push('Homepage public cache must not hydrate exact financials');
+if (!homepageFunction.includes('includeAuthorizedFinancials: false')) failures.push('Homepage fallback must disable exact financial hydration');
 if (!businesses.includes('financialRestricted')) failures.push('Business cards restricted state missing');
 if (!detail.includes('restrictedFinancialText')) failures.push('Business detail restricted fallback missing');
 if (!investor.includes('revenue_match_band_key') || !investor.includes('attachAuthorizedBusinessFinancials')) failures.push('Investor Dashboard band/grant hydration missing');
