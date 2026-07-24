@@ -19,6 +19,7 @@ This file reconciles the migration filenames in Git with the migration versions 
 | 20260721121832 | `20260721121832_ai_report_phase5_worker_artifact_v1.sql` |
 | 20260723115526 | `20260723115526_investor_plan_entitlements_v1.sql` |
 | 20260723134524 | `20260723134524_investor_standard_premium_registration_v1.sql` |
+| 20260724100000 | `20260724100000_business_financial_access_phase_a_v1.sql` |
 
 The new Release Candidate migration is:
 
@@ -36,6 +37,7 @@ The new Release Candidate migration is:
 - `20260721121832_ai_report_phase5_worker_artifact_v1.sql` — additive Phase 5 artifact foundation applied to production; creates the private `business-reports-private` bucket, atomic `ai_reports` storage, service-role finalize/fail RPCs and safe latest-report metadata for Business. Every PDF and artifact is constrained to `source_label = "Deals68 AI Report"`; private storage paths are not exposed to Business clients.
 - `20260723115526_investor_plan_entitlements_v1.sql` — Investor Plan Phase 1; backfills every existing Investor to Standard, protects plan fields from client-side mutation, promotes confirmed paid membership to Premium, provides audited Admin assignment and server-side entitlement/price contracts. Premium pricing is 50,000,000 VND/month in Vietnam and 2,500 USD/month elsewhere.
 - `20260723134524_investor_standard_premium_registration_v1.sql` — Investor Registration Phase 2 applied to production; allows free Standard Investor signup without retaining a payment order while preserving the existing Premium payment workflow and nonce verification.
+- `20260724100000_business_financial_access_phase_a_v1.sql` — Business Financial Access Phase A; adds the canonical access-grant ledger, Proposal summary grants, approved-request detail grants, idempotent request/response/revoke RPCs, trigger synchronization, audit history, RLS/ACL and legacy backfill. It intentionally does not modify the public Business view, financial display or Dataroom file policy.
 
 Rules:
 
