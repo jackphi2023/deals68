@@ -32,7 +32,7 @@ const required = [
   '20260724130742_business_dataroom_access_phase_e_stabilization.sql',
   '20260724130910_investor_premium_price_v2.sql',
   '20260724140213_public_business_view_band_helper_acl_fix_v1.sql',
-  '20260724153000_homepage_business_ids_safe_view_v1.sql',
+  '20260724142506_homepage_business_ids_safe_view_v1.sql',
 ];
 const forbidden = [
   '20260711103000_normalize_investor_taxonomy_on_write_v1.sql',
@@ -48,6 +48,7 @@ const forbidden = [
   '20260724120937_business_dataroom_access_phase_e_stabilization.sql',
   '20260724130029_investor_premium_price_v2.sql',
   '20260724163000_public_business_view_band_helper_acl_fix_v1.sql',
+  '20260724153000_homepage_business_ids_safe_view_v1.sql',
 ];
 
 for (const name of required) {
@@ -225,7 +226,7 @@ const migrationContracts = [
     ],
   },
   {
-    name: '20260724153000_homepage_business_ids_safe_view_v1.sql',
+    name: '20260724142506_homepage_business_ids_safe_view_v1.sql',
     snippets: [
       'create or replace function public.get_homepage_business_ids',
       'from public.public_businesses_safe b',
