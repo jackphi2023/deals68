@@ -57,7 +57,7 @@ jobs:
           p.write_text('\n'.join(fixed) + '\n')
           PY
           rm scripts/apply-phase-e-stabilization.mjs
-          rm -f scripts/phase-e-rerun-marker.txt scripts/phase-e-rerun-marker-2.txt scripts/phase-e-rerun-marker-3.txt
+          rm -f scripts/phase-e-rerun-marker*.txt
 
       - name: Install dependencies
         run: npm ci
@@ -100,7 +100,17 @@ jobs:
         run: npm run check:routes
 
       - name: Package checks
-        run: npm run qa:packages
+        shell: bash
+        run: |
+          set +e
+          OUTPUT="$(npm run qa:packages 2>&1)"
+          STATUS=$?
+          echo "$OUTPUT"
+          if [ "$STATUS" -ne 0 ]; then
+            printf '### Phase E package integration failure\n\n```text\n%s\n```\n' "$OUTPUT" > /tmp/phase-e-packages.md
+            gh pr comment "${{ github.event.pull_request.number }}" --body-file /tmp/phase-e-packages.md
+            exit "$STATUS"
+          fi
 
       - name: Release QA
         run: npm run qa:release
