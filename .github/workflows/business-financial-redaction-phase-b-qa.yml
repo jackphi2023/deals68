@@ -5,6 +5,7 @@ on:
     paths:
       - 'supabase/migrations/**business_public_financial_redaction_phase_b**'
       - 'supabase/migrations/**business_financial_redaction_phase_b_hidden_investor_fix**'
+      - 'supabase/migrations/**business_public_ebitda_visibility**'
       - 'supabase/migrations/**public_business_view_band_helper_acl_fix**'
       - 'supabase/migrations/**homepage_business_ids_safe_view**'
       - 'src/lib/data.ts'
@@ -12,10 +13,13 @@ on:
       - 'src/pages/Businesses.tsx'
       - 'src/pages/BusinessDetail.tsx'
       - 'src/pages/InvestorDashboard.tsx'
+      - 'src/components/business/SensitiveFinancialValue.tsx'
+      - 'src/styles/components/sensitive-financial-value.css'
       - 'netlify/edge-functions/seo.ts'
       - 'scripts/generate-sitemap.mjs'
       - 'scripts/deals68-public-business-view-helper-acl-check.mjs'
       - 'scripts/deals68-business-financial-redaction-phase-b-check.mjs'
+      - 'scripts/deals68-business-financial-ui-phase-c-check.mjs'
       - 'scripts/deals68-business-financial-access-phase-a-check.mjs'
       - 'scripts/deals68-migration-state-check.mjs'
       - 'scripts/deals68-package-checks.mjs'
@@ -44,6 +48,8 @@ jobs:
         run: npm run qa:public-business-view
       - name: Financial redaction Phase B contract
         run: npm run qa:financial-redaction-phase-b
+      - name: Financial UI Phase C contract
+        run: npm run qa:financial-ui-phase-c
       - name: Financial access Phase A regression
         run: npm run qa:financial-access-phase-a
       - name: Migration registry contract
