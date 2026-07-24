@@ -28,12 +28,7 @@ heroCheck = replaceOnce(
   'next?.mobile_image_url',`,
   'G5 public Hero token list',
 );
-heroCheck = replaceOnce(
-  heroCheck,
-  '`Banner Admin missing ${token}`',
-  '`Public Hero architecture missing ${token}`',
-  'G5 public Hero failure label',
-);
+heroCheck = replaceOnce(heroCheck, '`Banner Admin missing ${token}`', '`Public Hero architecture missing ${token}`', 'G5 public Hero failure label');
 heroCheck = replaceOnce(
   heroCheck,
   `  "'(prefers-reduced-motion: reduce)'",
@@ -48,63 +43,39 @@ heroCheck = replaceOnce(
   'setActive((current) => (current + 1) % rows.length)',`,
   'G5 single-active token list',
 );
-heroCheck = replaceOnce(
-  heroCheck,
-  '`Banner save/canonical logic missing ${token}`',
-  '`Hero single-active logic missing ${token}`',
-  'G5 single-active failure label',
-);
-heroCheck = replaceOnce(
-  heroCheck,
-  "console.log('✓ Hidden slides are removed from keyboard navigation.');",
-  "console.log('✓ Hero renders only the active slide, so inactive slides are absent from keyboard navigation.');",
-  'G5 keyboard-navigation conclusion',
-);
-heroCheck = replaceOnce(
-  heroCheck,
-  "console.log('✓ Latest saved Hero row wins in Admin and public.');",
-  "console.log('✓ Public banner loading prioritizes the latest saved row per placement and slot.');",
-  'G5 latest-row conclusion',
-);
-heroCheck = replaceOnce(
-  heroCheck,
-  "console.log('✓ Duplicate active rows are disabled on save.');",
-  "console.log('✓ Public banner loading deduplicates active rows by placement and sort order.');",
-  'G5 deduplication conclusion',
-);
+heroCheck = replaceOnce(heroCheck, '`Banner save/canonical logic missing ${token}`', '`Hero single-active logic missing ${token}`', 'G5 single-active failure label');
+heroCheck = replaceOnce(heroCheck, "console.log('✓ Hidden slides are removed from keyboard navigation.');", "console.log('✓ Hero renders only the active slide, so inactive slides are absent from keyboard navigation.');", 'G5 keyboard-navigation conclusion');
+heroCheck = replaceOnce(heroCheck, "console.log('✓ Latest saved Hero row wins in Admin and public.');", "console.log('✓ Public banner loading prioritizes the latest saved row per placement and slot.');", 'G5 latest-row conclusion');
+heroCheck = replaceOnce(heroCheck, "console.log('✓ Duplicate active rows are disabled on save.');", "console.log('✓ Public banner loading deduplicates active rows by placement and sort order.');", 'G5 deduplication conclusion');
 write(g5, heroCheck);
 
 const release = 'scripts/deals68-release-qa-check.mjs';
 let releaseCheck = read(release);
-releaseCheck = replaceOnce(
-  releaseCheck,
-  "const home = read('src/pages/Home.tsx');\n",
-  "const home = read('src/pages/Home.tsx');\nconst homePublicData = read('src/lib/homePublicData.ts');\n",
-  'Release Home data source declaration',
-);
-releaseCheck = replaceOnce(
-  releaseCheck,
-  '/listHomepageBusinesses\\(6\\)/.test(home)',
-  '/loadHomePublicData\\(\\)/.test(home)\n    && /listHomepageBusinesses\\(6\\)/.test(homePublicData)',
-  'Release Homepage editorial loader check',
-);
-releaseCheck = replaceOnce(
-  releaseCheck,
-  '/\\{ industry: it\\.key \\}/.test(home)',
-  '/\\{ industry: item\\.key \\}/.test(home)',
-  'Release canonical industry link check',
-);
+releaseCheck = replaceOnce(releaseCheck, "const home = read('src/pages/Home.tsx');\n", "const home = read('src/pages/Home.tsx');\nconst homePublicData = read('src/lib/homePublicData.ts');\n", 'Release Home data source declaration');
+releaseCheck = replaceOnce(releaseCheck, '/listHomepageBusinesses\\(6\\)/.test(home)', '/loadHomePublicData\\(\\)/.test(home)\n    && /listHomepageBusinesses\\(6\\)/.test(homePublicData)', 'Release Homepage editorial loader check');
+releaseCheck = replaceOnce(releaseCheck, '/\\{ industry: it\\.key \\}/.test(home)', '/\\{ industry: item\\.key \\}/.test(home)', 'Release canonical industry link check');
 write(release, releaseCheck);
 
 const entityTitle = 'scripts/deals68-entity-title-hover-check.mjs';
 let entityCheck = read(entityTitle);
-entityCheck = replaceOnce(
-  entityCheck,
-  '<h3 className="d68-entity-title-link">{d.title}</h3>',
-  '<h3 className="d68-entity-title-link">{deal.title}</h3>',
-  'Homepage Business entity-title token',
-);
+entityCheck = replaceOnce(entityCheck, '<h3 className="d68-entity-title-link">{d.title}</h3>', '<h3 className="d68-entity-title-link">{deal.title}</h3>', 'Homepage Business entity-title token');
 write(entityTitle, entityCheck);
+
+const location = 'scripts/deals68-business-location-flow-check.mjs';
+let locationCheck = read(location);
+locationCheck = replaceOnce(
+  locationCheck,
+  `[data, ".eq('city_key', cityKey)", 'Public Business query does not use exact city_key filtering'],`,
+  `[data, 'city_key.eq.\${safeLikeTerm(value)}', 'Public Business query does not build canonical city_key clauses'],`,
+  'Business location query-builder token',
+);
+locationCheck = replaceOnce(
+  locationCheck,
+  `[businesses, 'locationKeyFromLabel(f.city_key || f.city', 'Business facets do not canonicalize legacy labels'],`,
+  `[data, 'locationKeyFromLabel(rawCityKey, countryIso2)', 'Public Business normalization does not canonicalize legacy labels'],`,
+  'Business location canonical view token',
+);
+write(location, locationCheck);
 
 const marker = 'scripts/pre-main-qa-diagnostic-marker.txt';
 if (fs.existsSync(marker)) fs.unlinkSync(marker);
