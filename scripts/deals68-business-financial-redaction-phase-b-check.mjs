@@ -1,10 +1,12 @@
 #!/usr/bin/env node
 import fs from 'node:fs';
 
-const migrationName = '20260724110000_business_public_financial_redaction_phase_b_v1.sql';
+const migrationName = '20260724085657_business_public_financial_redaction_phase_b_v1.sql';
+const hiddenInvestorFixName = '20260724120000_business_financial_redaction_phase_b_hidden_investor_fix_v1.sql';
 const failures = [];
 const read = (path) => fs.existsSync(path) ? fs.readFileSync(path, 'utf8') : '';
 const sql = read(`supabase/migrations/${migrationName}`);
+const hiddenInvestorFixSql = read(`supabase/migrations/${hiddenInvestorFixName}`);
 const data = read('src/lib/data.ts');
 const home = read('src/pages/Home.tsx');
 const businesses = read('src/pages/Businesses.tsx');
@@ -27,6 +29,14 @@ const requiredSql = [
   "'exact_revenue_public', false",
 ];
 for (const snippet of requiredSql) if (!sql.includes(snippet)) failures.push(`Migration missing: ${snippet}`);
+for (const snippet of [
+  "i.status in (",
+  "'active'::public.account_status",
+  "'hidden'::public.account_status",
+  'create or replace function public.d68_get_business_financial_summaries',
+  'create or replace function public.d68_request_business_financial_access',
+  "'grant_required', true",
+]) if (!hiddenInvestorFixSql.includes(snippet)) failures.push(`Hidden Investor fix missing: ${snippet}`);
 
 const publicSnapshotStart = sql.indexOf("jsonb_build_object(\n      'title_vi'");
 const publicSnapshotEnd = sql.indexOf(') as public_snapshot_json', publicSnapshotStart);
