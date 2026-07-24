@@ -87,7 +87,7 @@ async function businessSeo(slug: string, lang: 'vi' | 'en') {
   params.set('status', 'eq.active');
   params.set('limit', '1');
 
-  const business = (await fetchRows('businesses', params))[0];
+  const business = (await fetchRows('public_businesses_safe', params))[0];
   if (!business) return null;
 
   const imageParams = new URLSearchParams();

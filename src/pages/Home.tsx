@@ -52,7 +52,10 @@ function normalizeDeal(b: any, lang: Lang): Deal {
     title,
     industry: labelIndustry(b.industry, lang),
     city: labelLocation(b.city_key || b.city || b.country_iso2 || 'VN', lang),
-    revenue: formatMoneyForLang(b.revenue_2025, b.revenue_currency || 'VND', lang),
+    revenue:
+      b.revenue_2025 === null || b.revenue_2025 === undefined
+        ? T(lang, 'Được bảo mật', 'Restricted')
+        : formatMoneyForLang(b.revenue_2025, b.revenue_currency || 'VND', lang),
     ask: formatMoneyForLang(
       b.ask_amount,
       b.ask_currency || b.revenue_currency || 'VND',

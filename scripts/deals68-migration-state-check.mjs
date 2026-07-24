@@ -27,6 +27,7 @@ const required = [
   '20260723115526_investor_plan_entitlements_v1.sql',
   '20260723134524_investor_standard_premium_registration_v1.sql',
   '20260724073247_business_financial_access_phase_a_v1.sql',
+  '20260724110000_business_public_financial_redaction_phase_b_v1.sql',
 ];
 const forbidden = [
   '20260711103000_normalize_investor_taxonomy_on_write_v1.sql',
@@ -152,6 +153,20 @@ const migrationContracts = [
       'request_data_financial_access_update',
       "'dataroom_inferred', false",
       'business_financial_access_grants_parties_select',
+    ],
+  },
+  {
+    name: '20260724110000_business_public_financial_redaction_phase_b_v1.sql',
+    snippets: [
+      'null::numeric as revenue_2025',
+      'null::numeric as ebitda_margin',
+      'security_invoker = false',
+      'create or replace function public.d68_get_business_financial_summaries',
+      'business_financial_access_grants g',
+      'revoke select on table public.businesses from public, anon',
+      'business select owner or admin',
+      'd68_calculate_business_quality_score_payload_internal',
+      "'exact_revenue_public', false",
     ],
   },
 ];

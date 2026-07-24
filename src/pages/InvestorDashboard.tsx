@@ -19,6 +19,7 @@ import {
 } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import {
+  attachAuthorizedBusinessFinancials,
   getInvestorByOwner,
   listBusinessFacets,
   listBusinesses,
@@ -226,6 +227,9 @@ function revenueUsd(business: any) {
 
 function matchesRevenueBand(business: any, band: string) {
   if (!band) return true;
+  if (business?.revenue_2025 === null || business?.revenue_2025 === undefined) {
+    return String(business?.revenue_match_band_key || 'unknown') === band;
+  }
   const value = revenueUsd(business);
   if (band === 'under_1m') return value < 1_000_000;
   if (band === '1_10m') return value >= 1_000_000 && value < 10_000_000;
@@ -236,11 +240,20 @@ function matchesRevenueBand(business: any, band: string) {
 
 function matchesEbitdaBand(business: any, band: string) {
   if (!band) return true;
-  const margin = Number(business?.ebitda_margin || 0);
-  if (band === '0_10') return margin < 10;
+  if (business?.ebitda_margin === null || business?.ebitda_margin === undefined) {
+    return String(business?.ebitda_band_key || 'unknown') === band;
+  }
+  const margin = Number(business.ebitda_margin);
+  if (band === '0_10') return margin >= 0 && margin < 10;
   if (band === '10_20') return margin >= 10 && margin <= 20;
   if (band === 'over_20') return margin > 20;
   return true;
+}
+
+function investorRevenueText(business: any, lang: Lang) {
+  return business?.revenue_2025 === null || business?.revenue_2025 === undefined
+    ? T(lang, 'Được bảo mật', 'Restricted')
+    : formatCompactMoney(business.revenue_2025, business.revenue_currency);
 }
 
 function statusText(lang: Lang, status: unknown) {
@@ -321,7 +334,7 @@ function MatchCard({
         <div className="d68-match-card__metrics">
           <div>
             <small>{T(lang, 'Doanh thu', 'Revenue')}</small>
-            <b>{formatCompactMoney(business.revenue_2025, business.revenue_currency)}</b>
+            <b>{investorRevenueText(business, lang)}</b>
           </div>
           <div>
             <small>{T(lang, 'Nhu cầu', 'Ask')}</small>
@@ -412,7 +425,7 @@ function InterestRows({
               <div className="d68-investor-interest-row__metrics">
                 <div>
                   <small>{T(lang, 'Doanh thu', 'Revenue')}</small>
-                  <b>{formatCompactMoney(business.revenue_2025, business.revenue_currency)}</b>
+                  <b>{investorRevenueText(business, lang)}</b>
                 </div>
                 <div>
                   <small>{T(lang, 'Nhu cầu', 'Ask')}</small>
@@ -576,8 +589,25 @@ export default function InvestorDashboard() {
       setBusinesses(nextBusinesses);
       setFacets(nextFacets);
       const relations = asObject(relationResult.data);
-      setInterests(Array.isArray(relations.interests) ? relations.interests : []);
-      setProposals(Array.isArray(relations.proposals) ? relations.proposals : []);
+      const rawInterests = Array.isArray(relations.interests) ? relations.interests : [];
+      const rawProposals = Array.isArray(relations.proposals) ? relations.proposals : [];
+      const relationBusinesses = [...rawInterests, ...rawProposals]
+        .map((row: any) => row?.businesses)
+        .filter((row: any) => row?.id);
+      const hydratedRelationBusinesses = await attachAuthorizedBusinessFinancials(
+        relationBusinesses,
+      );
+      const relationBusinessMap = new Map(
+        hydratedRelationBusinesses.map((row: any) => [String(row.id), row]),
+      );
+      const hydrateRelations = (rows: any[]) => rows.map((row: any) => ({
+        ...row,
+        businesses: row?.businesses?.id
+          ? relationBusinessMap.get(String(row.businesses.id)) || row.businesses
+          : row.businesses,
+      }));
+      setInterests(hydrateRelations(rawInterests));
+      setProposals(hydrateRelations(rawProposals));
       setPayments(paymentResult.data || []);
       setFilterIndustries(selectedKeys.filter((key) => availableKeys.includes(key)));
     } catch {
