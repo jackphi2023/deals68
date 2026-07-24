@@ -28,7 +28,7 @@ const required = [
   '20260723134524_investor_standard_premium_registration_v1.sql',
   '20260724073247_business_financial_access_phase_a_v1.sql',
   '20260724085657_business_public_financial_redaction_phase_b_v1.sql',
-  '20260724120000_business_financial_redaction_phase_b_hidden_investor_fix_v1.sql',
+  '20260724090819_business_financial_redaction_phase_b_hidden_investor_fix_v1.sql',
 ];
 const forbidden = [
   '20260711103000_normalize_investor_taxonomy_on_write_v1.sql',
@@ -40,6 +40,7 @@ const forbidden = [
   '20260723193000_investor_standard_premium_registration_v1.sql',
   '20260724100000_business_financial_access_phase_a_v1.sql',
   '20260724110000_business_public_financial_redaction_phase_b_v1.sql',
+  '20260724120000_business_financial_redaction_phase_b_hidden_investor_fix_v1.sql',
 ];
 
 for (const name of required) {
@@ -172,7 +173,7 @@ const migrationContracts = [
     ],
   },
   {
-    name: '20260724120000_business_financial_redaction_phase_b_hidden_investor_fix_v1.sql',
+    name: '20260724090819_business_financial_redaction_phase_b_hidden_investor_fix_v1.sql',
     snippets: [
       "'active'::public.account_status",
       "'hidden'::public.account_status",
