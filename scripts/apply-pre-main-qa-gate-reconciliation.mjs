@@ -96,4 +96,17 @@ releaseCheck = replaceOnce(
 );
 write(release, releaseCheck);
 
+const entityTitle = 'scripts/deals68-entity-title-hover-check.mjs';
+let entityCheck = read(entityTitle);
+entityCheck = replaceOnce(
+  entityCheck,
+  '<h3 className="d68-entity-title-link">{d.title}</h3>',
+  '<h3 className="d68-entity-title-link">{deal.title}</h3>',
+  'Homepage Business entity-title token',
+);
+write(entityTitle, entityCheck);
+
+const marker = 'scripts/pre-main-qa-diagnostic-marker.txt';
+if (fs.existsSync(marker)) fs.unlinkSync(marker);
+
 console.log('Pre-main QA gate reconciliation applied.');
