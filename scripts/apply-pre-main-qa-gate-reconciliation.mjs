@@ -87,35 +87,20 @@ write(registerCopy, registerCheck);
 
 const registerValuation = 'scripts/deals68-register-valuation-ux-check.mjs';
 let valuationCheck = read(registerValuation);
-valuationCheck = replaceOnce(
-  valuationCheck,
-  `  'investorPackageSelected',`,
-  `  'investorPremiumSelected',
+valuationCheck = replaceOnce(valuationCheck, `  'investorPackageSelected',`, `  'investorPremiumSelected',
   "investorPlan === 'standard' ? 'active' : ''",
-  "'Mặc định · Miễn phí'",`,
-  'G6 Investor plan-selection tokens',
-);
-valuationCheck = replaceOnce(
-  valuationCheck,
-  `  'd68-assets-source-grid',`,
-  `  'value={assetsOwned}',
+  "'Mặc định · Miễn phí'",`, 'G6 Investor plan-selection tokens');
+valuationCheck = replaceOnce(valuationCheck, `  'd68-assets-source-grid',`, `  'value={assetsOwned}',
   'value={includedTangibleAssets}',
-  'value={financialSource}',`,
-  'G6 asset and source controls',
-);
-valuationCheck = replaceOnce(
-  valuationCheck,
-  `for (const token of [
+  'value={financialSource}',`, 'G6 asset and source controls');
+valuationCheck = replaceOnce(valuationCheck, `for (const token of [
   '.d68-assets-source-grid',
   'min-height: 34px',
   '.d68-bizreg-package-pending',
-]) {`,
-  `for (const token of [
+]) {`, `for (const token of [
   'min-height: 34px',
   '.d68-bizreg-package-pending',
-]) {`,
-  'G6 page-owned CSS list',
-);
+]) {`, 'G6 page-owned CSS list');
 valuationCheck = replaceOnce(valuationCheck, `  'grid-template-columns: minmax(0, 1fr) minmax(140px, .42fr)',
 `, '', 'G6 obsolete asymmetric valuation grid');
 valuationCheck = replaceOnce(valuationCheck, "console.log(\n  '✓ Business and Investor packages start unselected on direct registration.',\n);", "console.log(\n  '✓ Business package starts unselected; free Standard Investor is selected by default.',\n);", 'G6 package-selection conclusion');
@@ -127,10 +112,22 @@ let adminFinancialCheck = read(adminFinancial);
 adminFinancialCheck = adminFinancialCheck
   .replaceAll('excluded_physical_asset_value_vi', 'included_tangible_assets_vi')
   .replaceAll('excluded_physical_asset_value_en', 'included_tangible_assets_en');
-if (adminFinancialCheck === read(adminFinancial)) {
-  throw new Error('Admin financial review legacy field anchors not found.');
-}
+if (adminFinancialCheck === read(adminFinancial)) throw new Error('Admin financial review legacy field anchors not found.');
 write(adminFinancial, adminFinancialCheck);
+
+const detailAssets = 'scripts/deals68-business-detail-assets-transaction-check.mjs';
+let detailAssetsCheck = read(detailAssets);
+detailAssetsCheck = replaceOnce(
+  detailAssetsCheck,
+  `  'Giá trị tài sản vật chất KHÔNG nằm trong giao dịch',
+  'Physical asset value NOT included in the transaction',`,
+  `  'Tài sản hữu hình thuộc sở hữu doanh nghiệp sẽ được đưa vào giao dịch',
+  'Tangible assets owned by the business that will be included in the transaction',
+  'included_tangible_assets_vi',
+  'included_tangible_assets_en',`,
+  'Business Detail transaction asset wording',
+);
+write(detailAssets, detailAssetsCheck);
 
 const marker = 'scripts/pre-main-qa-diagnostic-marker.txt';
 if (fs.existsSync(marker)) fs.unlinkSync(marker);
