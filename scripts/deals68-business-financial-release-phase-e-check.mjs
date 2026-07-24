@@ -25,11 +25,14 @@ const cleanup = read('src/styles/pages/release-cleanup.css');
   'to authenticated, service_role',
   'files select owner admin or active dataroom grant',
   'business files select owner admin or active dataroom grant',
-  'select f, b.owner_id',
+  'select f.*',
+  'into file_row',
+  'select b.owner_id',
+  'into business_owner',
   "file_row.review_status is distinct from 'approved'",
   'Deliberately no INSERT/UPDATE into business_financial_access_grants',
 ].forEach((snippet) => check(migration.includes(snippet), 'Migration missing: ' + snippet));
-check(!migration.includes('select f.*, b.owner_id'), 'PL/pgSQL rowtype assignment must use the composite row, not f.* expansion.');
+check(!migration.includes('into file_row, business_owner'), 'PL/pgSQL rowtype and owner lookups must be separate.');
 check(!/insert\s+into\s+public\.business_financial_access_grants/i.test(migration), 'Phase E must not create/backfill Dataroom grants.');
 check(!detail.includes(".from('proposals')"), 'Business Detail must not infer file access from Proposal state.');
 check(detail.includes('getBusinessFinancialAccess(b.id)'), 'Business Detail must use the central access snapshot.');
