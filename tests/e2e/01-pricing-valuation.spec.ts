@@ -51,7 +51,7 @@ test.describe('TC-PRICING — Pricing and registration payment summary', () => {
     await expect(result).toContainText(/Miễn phí|Free/i);
     await expect(panel).not.toContainText(/Kỳ hạn|Term/i);
     await expect(page.locator('.d68-pricing-plans')).toContainText(
-      /Xem Báo cáo Phân tích đầu tư: 50 triệu đ\/tháng\.|View Investment Analysis Reports: USD 2,500\/month\./i,
+      /Gói Premium: 26\.000\.000 VNĐ\/tháng.*1\.000 USD\/tháng|Premium: VND 26,000,000\/month.*USD 1,000\/month/i,
     );
 
     await premium.click();
@@ -60,9 +60,9 @@ test.describe('TC-PRICING — Pricing and registration payment summary', () => {
     for (const term of ['4', '8', '12', '16', '24']) {
       await expect(panel).toContainText(term);
     }
-    await expect(result).toContainText(/50\.000\.000 ₫|\$50,000,000|\$2,500/i);
+    await expect(result).toContainText(/26\.000\.000 ₫|\$1,000/i);
 
-    await result.getByRole('button', { name: /Đăng ký tài khoản|Register account/i }).click();
+    await result.getByRole('button', { name: /Đăng ký gói Nâng cao|Choose Premium/i }).click();
     await expect(page).toHaveURL(/register\/investor/);
     await expect(
       page.getByRole('button', { name: /Nhà đầu tư Nâng cao|Premium Investor/i }),

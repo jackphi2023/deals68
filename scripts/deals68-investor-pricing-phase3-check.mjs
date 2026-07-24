@@ -15,13 +15,15 @@ function requireSnippet(label, source, snippet) {
   "INVESTOR_PREMIUM_MONTHLY_USD",
   "Tiêu chuẩn · Miễn phí",
   "Nhà đầu tư Nâng cao",
-  "Xem Báo cáo Phân tích đầu tư: 50 triệu đ/tháng.",
-  "View Investment Analysis Reports: USD 2,500/month.",
+  "Gói Premium: 26.000.000 VNĐ/tháng tại Việt Nam hoặc 1.000 USD/tháng tại quốc gia khác.",
+  "Premium: VND 26,000,000/month in Vietnam or USD 1,000/month in other countries.",
   "investorPlan: role === 'investor' ? investorPlan : undefined",
   "investorStandardSelected ? T(lang, 'Miễn phí', 'Free')",
   "Tạo tài khoản miễn phí",
-  "50.000.000 VNĐ/tháng",
-  "2.500 USD/tháng",
+  "26.000.000 VNĐ/tháng",
+  "1.000 USD/tháng",
+  "Đăng ký gói Nâng cao",
+  "Choose Premium",
 ].forEach((snippet) => requireSnippet('pricing', pricing, snippet));
 
 requireSnippet(

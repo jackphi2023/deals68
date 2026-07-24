@@ -10,8 +10,9 @@ export type InvestorEntitlement =
   | 'portfolio_management'
   | 'advanced_analytics';
 
-export const INVESTOR_PREMIUM_MONTHLY_VND = 50_000_000;
-export const INVESTOR_PREMIUM_MONTHLY_USD = 2_500;
+export const INVESTOR_PREMIUM_MONTHLY_VND = 26_000_000;
+export const INVESTOR_PREMIUM_MONTHLY_USD = 1_000;
+export const INVESTOR_PREMIUM_PRICE_VERSION = 'investor-premium-v2-20260724';
 
 export const INVESTOR_STANDARD_ENTITLEMENTS: readonly InvestorEntitlement[] = [
   'receive_proposals',
