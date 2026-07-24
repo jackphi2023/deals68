@@ -19,16 +19,23 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: feature/financial-dashboard-phase-d-v1
-          fetch-depth: 0
+          fetch-depth: 1
+          show-progress: false
 
       - name: Apply reviewed Phase D source changes
         run: python tools/apply_phase_d.py
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --no-audit --no-fund --loglevel=error
 
       - name: Production build
-        run: npm run build
+        shell: bash
+        run: |
+          set +e
+          npm run build > /tmp/phase-d-build.log 2>&1
+          status=$?
+          tail -n 100 /tmp/phase-d-build.log
+          exit $status
 
       - name: Phase A access regression QA
         run: npm run qa:financial-access-phase-a
