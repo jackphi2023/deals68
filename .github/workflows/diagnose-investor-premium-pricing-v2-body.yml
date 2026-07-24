@@ -1,0 +1,78 @@
+name: Diagnose Investor Premium Pricing V2 Body
+
+on:
+  pull_request:
+    branches:
+      - investor-premium-pricing-v2-orchestrator-final
+    types: [synchronize]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Apply workspace patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx --yes supabase@2.101.0 migration new investor_premium_price_v2
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('src/components/investor/InvestorBillingPanel.tsx')
+          text = p.read_text()
+          replacements = [
+              ("orderType: 'investor_service_upgrade',\n      role: 'investor',", "orderType: 'investor_service_upgrade',\n       role: 'investor',"),
+              ('</h3>\n\n          <div className="d68-bizreg-paygrid">', '</h3>\n\n           <div className="d68-bizreg-paygrid">'),
+              ("<span>{T(lang, 'Tạm tính', 'Estimate')}</span>\n              <div>", "<span>{T(lang, 'Tạm tính', 'Estimate')}</span>\n               <div>"),
+          ]
+          for old, new in replacements:
+              if old not in text: raise SystemExit('Dashboard source alignment anchor missing')
+              text = text.replace(old, new, 1)
+          p.write_text(text)
+          PY
+          MIGRATION_PATH="$(ls -1t supabase/migrations/*_investor_premium_price_v2.sql | head -n 1)"
+          node scripts/apply-investor-premium-pricing-v2.mjs "$MIGRATION_PATH"
+          rm scripts/apply-investor-premium-pricing-v2.mjs
+          rm -f scripts/pricing-v2-diagnostic-marker.txt
+          rm -rf supabase/.temp
+      - run: npm ci
+      - run: npm run build
+      - name: Run focused commands and update PR body
+        shell: bash
+        run: |
+          set -euo pipefail
+          commands=(
+            "npm run qa:investor-plans"
+            "npm run qa:investor-register-plans"
+            "npm run qa:investor-pricing"
+            "npm run qa:investor-premium-price-v2"
+            "npm run qa:admin-investor-plans"
+            "npm run qa:migrations"
+            "npm run check:routes"
+            "git diff --check"
+          )
+          for command in "${commands[@]}"; do
+            set +e
+            bash -lc "$command" >/tmp/focused.log 2>&1
+            status=$?
+            set -e
+            if [ "$status" -ne 0 ]; then
+              printf 'Internal pricing V2 diagnostics. No production SQL applied.\n\nFailing command: `%s`\n\n```text\n%s\n```\n' "$command" "$(tail -n 35 /tmp/focused.log)" > /tmp/body.md
+              gh pr edit "${{ github.event.pull_request.number }}" --body-file /tmp/body.md
+              exit "$status"
+            fi
+          done
+          gh pr edit "${{ github.event.pull_request.number }}" --body "Internal pricing V2 diagnostics: all focused commands passed. No production SQL applied."
