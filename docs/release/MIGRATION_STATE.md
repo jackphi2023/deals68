@@ -25,7 +25,7 @@ This file reconciles the migration filenames in Git with the migration versions 
 | 20260724130742 | `20260724130742_business_dataroom_access_phase_e_stabilization.sql` — applied to production |
 | 20260724130910 | `20260724130910_investor_premium_price_v2.sql` — applied to production |
 | 20260724140213 | `20260724140213_public_business_view_band_helper_acl_fix_v1.sql` — applied to production |
-| Pending | `20260724153000_homepage_business_ids_safe_view_v1.sql` — apply after QA; reconcile to the production-assigned version immediately |
+| 20260724142506 | `20260724142506_homepage_business_ids_safe_view_v1.sql` — applied to production |
 
 The new Release Candidate migration is:
 
@@ -49,7 +49,7 @@ The new Release Candidate migration is:
 - `20260724130742_business_dataroom_access_phase_e_stabilization.sql` — Phase E Dataroom stabilization applied to production. It replaces Proposal-based file metadata/Storage reads with an active, unexpired `dataroom` scope, adds an audited file-path RPC and creates no grants.
 - `20260724130910_investor_premium_price_v2.sql` — Investor Premium price V2 applied to production. It sets the canonical server price to 26,000,000 VND/month in Vietnam and 1,000 USD/month elsewhere; historical orders and entitlements are unchanged.
 - `20260724140213_public_business_view_band_helper_acl_fix_v1.sql` — public Business availability fix applied to production. It restores EXECUTE for anon/authenticated on four immutable, table-free coarse-band helpers required by `public_businesses_safe`; it does not reopen `businesses`, alter RLS, or expose exact financial values.
-- `20260724153000_homepage_business_ids_safe_view_v1.sql` — pending additive Homepage selector fix. It replaces the anonymous base-table read in `get_homepage_business_ids` with `public_businesses_safe`, keeps explicit app-role EXECUTE only, and returns public Business IDs without financial values.
+- `20260724142506_homepage_business_ids_safe_view_v1.sql` — Homepage selector fix applied to production. It replaces the anonymous base-table read in `get_homepage_business_ids` with `public_businesses_safe`, keeps explicit app-role EXECUTE only, and returns public Business IDs without financial values.
 
 Rules:
 
