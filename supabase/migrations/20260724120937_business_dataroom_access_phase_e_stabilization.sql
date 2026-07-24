@@ -123,15 +123,23 @@ begin
     raise exception 'Authentication required' using errcode = '42501';
   end if;
 
-  select f, b.owner_id
-  into file_row, business_owner
+  select f.*
+  into file_row
   from public.business_files f
-  join public.businesses b on b.id = f.business_id
   where f.id = p_file_id;
 
   if not found
      or nullif(trim(coalesce(file_row.file_path, '')), '') is null then
     raise exception 'Business file not found' using errcode = 'P0002';
+  end if;
+
+  select b.owner_id
+  into business_owner
+  from public.businesses b
+  where b.id = file_row.business_id;
+
+  if not found then
+    raise exception 'Business not found' using errcode = 'P0002';
   end if;
 
   if service_actor or public.is_admin() then
