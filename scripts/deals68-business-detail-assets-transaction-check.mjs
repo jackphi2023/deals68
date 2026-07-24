@@ -13,8 +13,10 @@ for (const token of [
   'Assets & Transaction Information',
   'Tài sản hữu hình & vô hình DN sở hữu',
   'Tangible & intangible assets owned by the business',
-  'Giá trị tài sản vật chất KHÔNG nằm trong giao dịch',
-  'Physical asset value NOT included in the transaction',
+  'Tài sản hữu hình thuộc sở hữu doanh nghiệp sẽ được đưa vào giao dịch',
+  'Tangible assets owned by the business that will be included in the transaction',
+  'included_tangible_assets_vi',
+  'included_tangible_assets_en',
   'Lý do gọi vốn/chuyển nhượng',
   'Fundraising / transfer rationale',
   'd68-detail-transaction-info',
@@ -34,7 +36,7 @@ assert.match(detail, /getBusinessBySlug\(slug\)/);
 assert.match(data, /getBusinessBySlug[\s\S]*public_businesses_safe[\s\S]*getPublicBusinessView/);
 assert.match(css, /\.d68-detail-card--bqs \.d68-bqs-card\.is-real\{border:0;padding:0;box-shadow:none\}/);
 assert.match(css, /\.d68-detail-card--bqs \.d68-bqs-head\{justify-content:center;text-align:center\}/);
-assert.match(css, /\.d68-detail-transaction-row\{display:grid/);
-assert.match(css, /@media\(max-width:620px\)\{\.d68-detail-transaction-row\{grid-template-columns:1fr/);
+assert.match(css, /\.d68-detail-transaction-row\{display:flex;flex-direction:column/);
+assert.match(css, /@media\(max-width:620px\)\{\.d68-detail-transaction-row\{gap:7px;padding:14px 0/);
 
 console.log('✓ Session 7 Business Detail assets & transaction contract: PASS');

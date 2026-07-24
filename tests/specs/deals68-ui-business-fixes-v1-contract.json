@@ -91,7 +91,7 @@
           "path": "src/pages/Home.tsx",
           "contains": [
             "d68-home-investor-title-link d68-entity-title-link",
-            "<h3 className=\"d68-entity-title-link\">{d.title}</h3>"
+            "<h3 className=\"d68-entity-title-link\">{deal.title}</h3>"
           ]
         },
         {
@@ -133,17 +133,11 @@
           "path": "src/lib/data.ts",
           "contains": [
             "'city_key'",
-            ".eq('city_key'"
+            "city_key.eq.${safeLikeTerm(value)}",
+            "locationKeyFromLabel(rawCityKey, countryIso2)"
           ],
           "notContains": [
             "q.ilike('city'"
-          ]
-        },
-        {
-          "path": "src/pages/Businesses.tsx",
-          "contains": [
-            "locationKeyFromLabel(f.city_key || f.city",
-            "labelLocation(cityKey, lang)"
           ]
         },
         {
@@ -165,8 +159,9 @@
         {
           "path": "src/pages/Register.tsx",
           "contains": [
-            "Doanh thu năm gần nhất (VNĐ)",
-            "Số tiền gọi vốn / giá trị giao dịch mong muốn (VNĐ)",
+            "const annualRevenueLabel = T(",
+            "const askAmountLabel = T(",
+            "currentCurrency === 'VND' ? 'VNĐ' : 'USD'",
             "useState<number | null>",
             "Boolean(plan && serviceWeeks)",
             "const currentTermDisplay = currentTermValue ?? '—'"

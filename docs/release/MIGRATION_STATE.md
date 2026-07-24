@@ -22,6 +22,9 @@ This file reconciles the migration filenames in Git with the migration versions 
 | 20260724073247 | `20260724073247_business_financial_access_phase_a_v1.sql` |
 | 20260724085657 | `20260724085657_business_public_financial_redaction_phase_b_v1.sql` |
 | 20260724090819 | `20260724090819_business_financial_redaction_phase_b_hidden_investor_fix_v1.sql` |
+| 20260724130742 | `20260724130742_business_dataroom_access_phase_e_stabilization.sql` — applied to production |
+| 20260724130910 | `20260724130910_investor_premium_price_v2.sql` — applied to production |
+| 20260724140213 | `20260724140213_public_business_view_band_helper_acl_fix_v1.sql` — applied to production |
 
 The new Release Candidate migration is:
 
@@ -37,15 +40,18 @@ The new Release Candidate migration is:
 - `20260721103201_ai_report_phase2_preflight_and_hourly_limits_v1.sql` — additive report source snapshot, preflight metadata and rate-event ledger foundation applied during the concurrent Phase 2 rollout.
 - `20260721103504_ai_report_phase2_hourly_download_reconciliation_v1.sql` — reconciles the concurrent rollout: generation continues to use `ai_report_business_requests`, Business PDF downloads use `ai_report_rate_events`, and each action is limited independently to one successful action per rolling 60 minutes.
 - `20260721121832_ai_report_phase5_worker_artifact_v1.sql` — additive Phase 5 artifact foundation applied to production; creates the private `business-reports-private` bucket, atomic `ai_reports` storage, service-role finalize/fail RPCs and safe latest-report metadata for Business. Every PDF and artifact is constrained to `source_label = "Deals68 AI Report"`; private storage paths are not exposed to Business clients.
-- `20260723115526_investor_plan_entitlements_v1.sql` — Investor Plan Phase 1; backfills every existing Investor to Standard, protects plan fields from client-side mutation, promotes confirmed paid membership to Premium, provides audited Admin assignment and server-side entitlement/price contracts. Premium pricing is 50,000,000 VND/month in Vietnam and 2,500 USD/month elsewhere.
+- `20260723115526_investor_plan_entitlements_v1.sql` — Investor Plan Phase 1 applied to production; establishes Standard/Premium entitlements and the original price contract. Its historical 50,000,000 VND / 2,500 USD values are superseded by Investor Premium Pricing V2.
 - `20260723134524_investor_standard_premium_registration_v1.sql` — Investor Registration Phase 2 applied to production; allows free Standard Investor signup without retaining a payment order while preserving the existing Premium payment workflow and nonce verification.
 - `20260724073247_business_financial_access_phase_a_v1.sql` — Business Financial Access Phase A applied to production; adds the canonical access-grant ledger, Proposal summary grants, approved-request detail grants, idempotent request/response/revoke RPCs, trigger synchronization, audit history, RLS/ACL and legacy backfill. It intentionally does not modify the public Business view, financial display or Dataroom file policy.
 - `20260724085657_business_public_financial_redaction_phase_b_v1.sql` — Business Financial Redaction Phase B applied to production; removes exact revenue, EBITDA, growth and numeric asset values from public Business reads, preserves coarse discovery/matching bands, closes direct public base-table access, guards the quality calculator and adds a grant-aware batch summary RPC.
 - `20260724090819_business_financial_redaction_phase_b_hidden_investor_fix_v1.sql` — Phase B compatibility fix applied to production; treats Investor status `hidden` as a public-profile visibility state rather than loss of entitlement, so the authenticated owner can use active Proposal/request grants and submit idempotent financial-data requests.
+- `20260724130742_business_dataroom_access_phase_e_stabilization.sql` — Phase E Dataroom stabilization applied to production. It replaces Proposal-based file metadata/Storage reads with an active, unexpired `dataroom` scope, adds an audited file-path RPC and creates no grants.
+- `20260724130910_investor_premium_price_v2.sql` — Investor Premium price V2 applied to production. It sets the canonical server price to 26,000,000 VND/month in Vietnam and 1,000 USD/month elsewhere; historical orders and entitlements are unchanged.
+- `20260724140213_public_business_view_band_helper_acl_fix_v1.sql` — public Business availability fix applied to production. It restores EXECUTE for anon/authenticated on four immutable, table-free coarse-band helpers required by `public_businesses_safe`; it does not reopen `businesses`, alter RLS, or expose exact financial values.
 
 Rules:
 
-1. Never rename a migration after it is applied to Supabase.
+1. Reconcile any production-assigned migration version in Git immediately after apply; once reconciled, never rename it again.
 2. All new schema changes must be additive migrations.
 3. Do not apply SQL manually without committing the matching migration file.
 4. Before merging to `main`, run the Phase A hardening check and compare the Supabase migration ledger with this file.

@@ -22,6 +22,7 @@ import { businessQualityPublicExplanation, normalizeQualityBreakdown, qualityIte
 import { proposalQuotaTotal } from '../lib/proposals';
 import { calculatePricing, lookupPromo, type BusinessPlan } from '../lib/pricing';
 import { businessProposalQuotaForPlan } from '../lib/businessPlans';
+import { financialAccessErrorMessage, respondBusinessFinancialRequest, revokeBusinessFinancialAccess, type FinancialAccessScope } from '../lib/businessFinancialAccess';
 import {
   createOwnPaymentOrder,
   formatServiceExpiry,
@@ -483,6 +484,7 @@ export default function BusinessDashboard() {
   const [files, setFiles] = useState<any[]>([]);
   const [images, setImages] = useState<any[]>([]);
   const [requests, setRequests] = useState<any[]>([]);
+  const [requestActionBusy, setRequestActionBusy] = useState('');
   const [interests, setInterests] = useState<any[]>([]);
   const [proposals, setProposals] = useState<any[]>([]);
   const [savedBusinesses, setSavedBusinesses] = useState<any[]>([]);
@@ -532,6 +534,7 @@ export default function BusinessDashboard() {
           paymentsRes,
           savedRes,
           benchmarkRes,
+          grantsRes,
         ] = await Promise.all([
           getBusinessFiles(biz.id),
           getBusinessImages(biz.id),
@@ -557,6 +560,10 @@ export default function BusinessDashboard() {
             )
             .eq('country_iso2', biz.country_iso2 || 'VN')
             .limit(80),
+          supabase
+            .from('business_financial_access_grants')
+            .select('id,source_id,source_type,scopes,status,expires_at,granted_at,revoked_at,revoke_reason')
+            .eq('business_id', biz.id),
         ]);
 
         if (relationsRes.error) throw relationsRes.error;
@@ -569,8 +576,14 @@ export default function BusinessDashboard() {
 
         setFiles(nextFiles || []);
         setImages(nextImages || []);
+        const grantByRequest = new Map((grantsRes.error ? [] : (grantsRes.data || []))
+          .filter((grant: any) => grant.source_type === 'data_request' && grant.source_id)
+          .map((grant: any) => [String(grant.source_id), grant]));
         setRequests(
-          Array.isArray(relations.requests) ? relations.requests : [],
+          (Array.isArray(relations.requests) ? relations.requests : []).map((request: any) => ({
+            ...request,
+            financial_grant: grantByRequest.get(String(request.id)) || null,
+          })),
         );
         setInterests(
           Array.isArray(relations.interests) ? relations.interests : [],
@@ -865,7 +878,28 @@ export default function BusinessDashboard() {
 
   async function acceptInterest(row: any) { const { error } = await supabase.from('investor_interests').update({ status: 'connected' }).eq('id', row.id); setErr(error?.message || ''); setMsg(error ? '' : T(lang, 'Đã đồng ý kết nối.', 'Connection accepted.')); load(); }
   async function rejectInterest(row: any) { const { error } = await supabase.from('investor_interests').update({ status: 'rejected' }).eq('id', row.id); setErr(error?.message || ''); setMsg(error ? '' : T(lang, 'Đã từ chối kết nối.', 'Connection rejected.')); load(); }
-  async function fulfillRequest(row: any) { const { error } = await supabase.from('request_data').update({ status: 'fulfilled' }).eq('id', row.id); setErr(error?.message || ''); setMsg(error ? '' : T(lang, 'Đã đánh dấu hoàn tất.', 'Marked as fulfilled.')); load(); }
+  async function respondFinancialRequest(row: any, decision: 'approve' | 'reject', scopes: FinancialAccessScope[], expiresAt: string | null, responseNote: string) {
+    if (!row?.id || requestActionBusy) return;
+    setRequestActionBusy(String(row.id)); setErr(''); setMsg('');
+    try {
+      await respondBusinessFinancialRequest({ requestId: row.id, decision, grantedScopes: scopes, expiresAt, responseNote });
+      setMsg(decision === 'approve' ? T(lang, 'Đã chấp thuận và cấp quyền xem số liệu.', 'Financial access approved and granted.') : T(lang, 'Đã từ chối yêu cầu xem số liệu.', 'Financial access request declined.'));
+      await load();
+    } catch (actionError: any) { setErr(financialAccessErrorMessage(lang, actionError)); }
+    finally { setRequestActionBusy(''); }
+  }
+
+  async function revokeFinancialRequest(row: any, reason: string) {
+    const grantId = row?.financial_grant?.id;
+    if (!grantId || requestActionBusy) return;
+    setRequestActionBusy(String(row.id)); setErr(''); setMsg('');
+    try {
+      await revokeBusinessFinancialAccess(grantId, reason || 'Revoked by Business owner from Dashboard.');
+      setMsg(T(lang, 'Đã thu hồi quyền truy cập.', 'Access has been revoked.'));
+      await load();
+    } catch (actionError: any) { setErr(financialAccessErrorMessage(lang, actionError)); }
+    finally { setRequestActionBusy(''); }
+  }
 
   return <main className="d68-dashboard-page d68-business-dashboard-page"><div className="d68-dashboard-wrap">
     <header className="d68-dashboard-head"><div><div className="d68-dashboard-kicker">Business Dashboard</div><h1>{title}</h1></div><div className="d68-dashboard-actions"><span className="d68-dashboard-badge blue">{planLabel}</span><span className={`d68-dashboard-badge ${status.cls}`}>{status.label}</span></div></header>
@@ -883,12 +917,64 @@ export default function BusinessDashboard() {
       {tab === 'documents' ? <Documents lang={lang} files={files} deleteFile={deleteFile} renameFile={renameFile} downloadFile={downloadFile} fileChange={fileChange} newDocName={newDocName} setNewDocName={setNewDocName} newDocCategory={newDocCategory} setNewDocCategory={setNewDocCategory} /> : null}
       {tab === 'images' ? <Images lang={lang} images={images} imageChange={imageChange} deleteImage={deleteImage} renameImage={renameImage} suggestHero={suggestHero} /> : null}
       {tab === 'interests' ? <><ProposalRows lang={lang} rows={proposals} empty={T(lang,'Chưa gửi hồ sơ DN tới nhà đầu tư nào.','No business profile proposals sent yet.')} /><Rows title={T(lang,'Nhà đầu tư quan tâm','Investor interests')} rows={interests} empty={T(lang,'Chưa có nhà đầu tư quan tâm.','No investor interests yet.')} actions={(row: any) => <><button onClick={() => acceptInterest(row)} className="d68-dashboard-btn green">Accept</button><button onClick={() => rejectInterest(row)} className="d68-dashboard-btn red">Reject</button></>} /></> : null}
-      {tab === 'requests' ? <Rows title={T(lang,'Yêu cầu dữ liệu','Data requests')} rows={requests} empty={T(lang,'Chưa có yêu cầu dữ liệu.','No data requests yet.')} actions={(row: any) => <button onClick={() => fulfillRequest(row)} className="d68-dashboard-btn green">Fulfilled</button>} /> : null}
+      {tab === 'requests' ? <FinancialRequestRows lang={lang} rows={requests} busyId={requestActionBusy} onRespond={respondFinancialRequest} onRevoke={revokeFinancialRequest} /> : null}
       {tab === 'services' ? <BusinessBillingPanel lang={lang} b={b} payments={payments} profile={profile} setMsg={setMsg} setErr={setErr} onReload={load} /> : null}
     </section></div>
   </div></main>;
 }
 
+
+
+function scopeLabel(scope: string, lang: Lang) {
+  if (scope === 'financial_summary') return T(lang, 'Số liệu tài chính tóm tắt', 'Financial summary');
+  if (scope === 'financial_detail') return T(lang, 'Số liệu tài chính chi tiết', 'Financial detail');
+  return T(lang, 'Phòng dữ liệu', 'Dataroom');
+}
+
+function FinancialRequestRow({ lang, row, busyId, onRespond, onRevoke }: any) {
+  const requested: string[] = Array.isArray(row.requested_scopes) && row.requested_scopes.length
+    ? row.requested_scopes
+    : (Array.isArray(row.requested_items) ? row.requested_items : ['financial_summary', 'financial_detail']);
+  const [summary, setSummary] = useState(true);
+  const [detail, setDetail] = useState(requested.includes('financial_detail'));
+  const [expiresAt, setExpiresAt] = useState('');
+  const [responseNote, setResponseNote] = useState('');
+  const grant = row.financial_grant || null;
+  const status = String(row.status || 'pending').toLowerCase();
+  const activeGrant = grant && grant.status === 'active' && (!grant.expires_at || new Date(grant.expires_at).getTime() > Date.now());
+  const busy = String(busyId || '') === String(row.id);
+  const investor = row.investors || {};
+  const title = investor.title_vi || investor.title_en || investor.code || row.investor_id || row.id;
+  const grantedScopes: string[] = Array.isArray(grant?.scopes) ? grant.scopes : [];
+  const expiryIso = expiresAt ? new Date(`${expiresAt}T23:59:59`).toISOString() : null;
+
+  return <article className="d68-financial-request-row">
+    <div className="d68-financial-request-row__head">
+      <div><b>{title}</b><small>{new Date(row.created_at || Date.now()).toLocaleString(lang === 'en' ? 'en-US' : 'vi-VN')}</small></div>
+      <span className={`d68-dashboard-badge ${activeGrant ? 'green' : status === 'rejected' ? 'red' : 'gold'}`}>{activeGrant ? T(lang, 'Đã được cấp quyền', 'Access granted') : status === 'rejected' ? T(lang, 'Đã từ chối', 'Declined') : grant?.status === 'revoked' ? T(lang, 'Đã thu hồi', 'Revoked') : T(lang, 'Đang chờ doanh nghiệp chấp thuận', 'Awaiting Business approval')}</span>
+    </div>
+    <div className="d68-financial-request-row__meta"><span>{T(lang, 'Scope yêu cầu', 'Requested scopes')}</span>{requested.map((scope) => <em key={scope}>{scopeLabel(scope, lang)}</em>)}</div>
+    {userFacingNote(row) ? <p>{userFacingNote(row)}</p> : null}
+    {activeGrant ? <>
+      <div className="d68-financial-request-row__meta"><span>{T(lang, 'Đã cấp', 'Granted')}</span>{grantedScopes.map((scope) => <em key={scope}>{scopeLabel(scope, lang)}</em>)}</div>
+      {grant.expires_at ? <small>{T(lang, 'Hết hạn', 'Expires')}: {new Date(grant.expires_at).toLocaleString(lang === 'en' ? 'en-US' : 'vi-VN')}</small> : null}
+      <div className="d68-financial-request-row__actions"><button type="button" disabled={busy} className="d68-dashboard-btn red" onClick={() => onRevoke(row, responseNote)}>{T(lang, 'Thu hồi quyền truy cập', 'Revoke access')}</button></div>
+    </> : status === 'pending' || status === 'forwarded' ? <>
+      <div className="d68-financial-request-row__controls">
+        <label><input type="checkbox" checked={summary} disabled onChange={() => undefined} /> {scopeLabel('financial_summary', lang)}</label>
+        <label><input type="checkbox" checked={detail} onChange={(event) => setDetail(event.target.checked)} /> {scopeLabel('financial_detail', lang)}</label>
+        <label className="is-disabled"><input type="checkbox" disabled /> {scopeLabel('dataroom', lang)} · {T(lang, 'chưa mở trong Phiên D', 'not enabled in Phase D')}</label>
+        <label><span>{T(lang, 'Ngày hết hạn (không bắt buộc)', 'Expiry date (optional)')}</span><input className="d68-dashboard-input" type="date" min={new Date(Date.now() + 86400000).toISOString().slice(0, 10)} value={expiresAt} onChange={(event) => setExpiresAt(event.target.value)} /></label>
+        <label><span>{T(lang, 'Ghi chú phản hồi', 'Response note')}</span><textarea className="d68-dashboard-input" rows={2} value={responseNote} onChange={(event) => setResponseNote(event.target.value)} /></label>
+      </div>
+      <div className="d68-financial-request-row__actions"><button type="button" disabled={busy} className="d68-dashboard-btn green" onClick={() => onRespond(row, 'approve', [...(summary ? ['financial_summary'] : []), ...(detail ? ['financial_detail'] : [])], expiryIso, responseNote)}>{T(lang, 'Chấp thuận yêu cầu', 'Approve request')}</button><button type="button" disabled={busy} className="d68-dashboard-btn red" onClick={() => onRespond(row, 'reject', [], null, responseNote)}>{T(lang, 'Từ chối', 'Decline')}</button></div>
+    </> : null}
+  </article>;
+}
+
+function FinancialRequestRows({ lang, rows, busyId, onRespond, onRevoke }: any) {
+  return <div className="d68-dashboard-card d68-financial-request-list"><h2>{T(lang, 'Yêu cầu xem số liệu', 'Financial access requests')}</h2><p>{T(lang, 'Chỉ cấp số liệu theo đúng phạm vi cần thiết. Quyền Phòng dữ liệu chưa được tự động mở trong Phiên D.', 'Grant only the necessary financial scopes. Dataroom access is not automatically enabled in Phase D.')}</p>{rows.map((row: any) => <FinancialRequestRow key={row.id} lang={lang} row={row} busyId={busyId} onRespond={onRespond} onRevoke={onRevoke} />)}{!rows.length ? <div className="d68-dashboard-empty">{T(lang, 'Chưa có yêu cầu xem số liệu.', 'No financial access requests yet.')}</div> : null}</div>;
+}
 
 function BusinessBillingPanel({ lang, b, payments, profile, setMsg, setErr, onReload }: any) {
   const [open, setOpen] = useState(false);

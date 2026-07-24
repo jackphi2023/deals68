@@ -97,8 +97,10 @@ async function main() {
     urls.set(item, '');
   }
 
+  // Build-time sitemap generation uses only the same redacted public views as
+  // the browser and SEO edge function. It must never depend on base-table ACLs.
   const businesses = await fetchRows(
-    'businesses',
+    'public_businesses_safe',
     'slug,updated_at',
     '&visible=eq.true&status=eq.active&public_snapshot_json=not.is.null&slug=not.is.null',
   ).catch(() => []);
@@ -112,7 +114,7 @@ async function main() {
   }
 
   const investors = await fetchRows(
-    'investors',
+    'public_investors_safe',
     'code,updated_at',
     '&visible=eq.true&code=not.is.null',
   ).catch(() => []);

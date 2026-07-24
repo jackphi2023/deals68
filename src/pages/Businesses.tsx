@@ -15,6 +15,7 @@ import type { Lang } from '../lib/i18n';
 import { BusinessOnsiteContent } from '../components/BusinessFaq';
 import { PromotionBanner } from '../components/SiteBanners';
 import { industryKeyFromLabel } from '../lib/industryTaxonomy';
+import SensitiveFinancialValue from '../components/business/SensitiveFinancialValue';
 
 const PAGE_SIZE = 20;
 const BUSINESS_LIST_LOAD_ERROR = '__d68_business_list_load_error__';
@@ -27,8 +28,10 @@ type Deal = {
   id: string; slug: string; image: string | null;
   titleVi: string; titleEn: string; descVi: string; descEn: string;
   cityRaw: string; industryRaw: string; group: Tx; dealTypeRaw: string;
-  revenueValue: number | null; revenueCurrency: string; askValue: number; askCurrency: string; stakePct: number;
-  ebitda: string; financialRestricted: boolean; quality: number | null; featured: boolean;
+  revenueValue: number | null; revenueCurrency: string; hasRevenueData: boolean;
+  askValue: number; askCurrency: string; stakePct: number;
+  ebitda: string | null; hasEbitdaData: boolean; financialSource: string | null;
+  requestStatus: string | null; quality: number | null; featured: boolean;
 };
 
 function arrText(value: any) { return Array.isArray(value) ? value.filter(Boolean).join(' · ') : String(value || ''); }
@@ -85,11 +88,16 @@ function normalizeBusiness(b: any): Deal {
         ? null
         : Number(b.revenue_2025),
     revenueCurrency: b.revenue_currency || 'VND',
+    hasRevenueData:
+      String(b.revenue_band_key || 'unknown') !== 'unknown' ||
+      String(b.revenue_match_band_key || 'unknown') !== 'unknown',
     askValue: Number(b.ask_amount || 0),
     askCurrency: b.ask_currency || b.revenue_currency || 'VND',
     stakePct: Number(b.stake_pct || 0),
-    ebitda: b.ebitda_margin === null || b.ebitda_margin === undefined ? 'Đang cập nhật' : percent(b.ebitda_margin),
-    financialRestricted: Boolean(b.has_financial_data) && b.revenue_2025 === null,
+    ebitda: b.ebitda_margin === null || b.ebitda_margin === undefined ? null : percent(b.ebitda_margin),
+    hasEbitdaData: String(b.ebitda_band_key || 'unknown') !== 'unknown',
+    financialSource: b.financial_access_source || null,
+    requestStatus: b.financial_request_status || null,
     quality: Number.isFinite(q) ? q : null,
     featured: b.plan === 'featured'
   };
@@ -113,8 +121,24 @@ function DealCard({ d, lang, view, tintIndex }: { d: Deal; lang: Lang; view: Vie
         <h3 className="d68-entity-title-link">{title}</h3>
         <p>{desc}</p>
         <div className="d68-business-card__metrics">
-          <div><span>{T(lang, 'Doanh thu', 'Revenue')}</span><b>{d.revenueValue === null ? T(lang, 'Được bảo mật', 'Restricted') : formatMoneyForLang(d.revenueValue, d.revenueCurrency, lang)}</b></div>
-          <div><span>EBITDA</span><b>{d.financialRestricted ? T(lang, 'Được bảo mật', 'Restricted') : d.ebitda === 'Đang cập nhật' ? T(lang, 'Đang cập nhật', 'Pending') : d.ebitda}</b></div>
+          <div><span>{T(lang, 'Doanh thu', 'Revenue')}</span><b><SensitiveFinancialValue
+            lang={lang}
+            value={d.revenueValue === null ? null : formatMoneyForLang(d.revenueValue, d.revenueCurrency, lang)}
+            isAuthorized={d.revenueValue !== null}
+            hasData={d.hasRevenueData}
+            requestStatus={d.requestStatus}
+            source={d.financialSource}
+            compact
+          /></b></div>
+          <div><span>EBITDA</span><b><SensitiveFinancialValue
+            lang={lang}
+            value={d.ebitda}
+            isAuthorized={d.ebitda !== null}
+            hasData={d.hasEbitdaData}
+            requestStatus={d.requestStatus}
+            source={d.financialSource}
+            compact
+          /></b></div>
           <div><span>{T(lang, 'Nhu cầu', 'Ask')}</span><b>{formatMoneyForLang(d.askValue, d.askCurrency, lang, { stakePct: d.stakePct })}</b></div>
         </div>
         <div className="d68-business-card__foot"><span>{labelDealType(d.dealTypeRaw, lang)}</span><b>{T(lang, 'Xem chi tiết', 'View details')} →</b></div>

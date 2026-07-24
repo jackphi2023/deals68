@@ -3,6 +3,7 @@ import type { Lang } from '../../lib/i18n';
 import { T } from '../../lib/labels';
 import { calculatePricing, lookupPromo } from '../../lib/pricing';
 import { supabase } from '../../lib/supabase';
+import { INVESTOR_PREMIUM_PRICE_VERSION } from '../../lib/investorPlans';
 import {
   createOwnPaymentOrder,
   formatServiceExpiry,
@@ -139,7 +140,9 @@ export default function InvestorBillingPanel({
 
     const payload = {
       orderType: 'investor_service_upgrade',
-      role: 'investor',
+       role: 'investor',
+       investorPlan: 'premium',
+       priceVersion: INVESTOR_PREMIUM_PRICE_VERSION,
       termMonths: months,
       termWeeks: months * 4,
       amount: price.total,
@@ -157,7 +160,7 @@ export default function InvestorBillingPanel({
         entityId: investor.id,
         profileId: profile.id,
         title:
-          `${T(lang, 'Mua/Nâng cấp dịch vụ Nhà đầu tư', 'Buy/Upgrade investor service')}` +
+          `${T(lang, 'Nâng cấp gói Nhà đầu tư Nâng cao', 'Upgrade to Premium Investor')}` +
           ` · ${months} ${T(lang, 'tháng', 'months')}` +
           ` · ${money(price.total, price.currency)}`,
         payload,
@@ -203,7 +206,7 @@ export default function InvestorBillingPanel({
           className="d68-dashboard-btn gold"
           onClick={() => setOpen((value) => !value)}
         >
-          {T(lang, 'Mua/Nâng cấp dịch vụ', 'Buy/Upgrade service')}
+          {T(lang, 'Nâng cấp gói Premium', 'Upgrade to Premium')}
         </button>
       </div>
 
@@ -277,12 +280,19 @@ export default function InvestorBillingPanel({
           <h3>
             {T(
               lang,
-              'Dịch vụ Nhà đầu tư và Thanh toán',
-              'Investor service and payment',
+              'Nâng cấp Nhà đầu tư Nâng cao (Premium)',
+              'Upgrade to Premium Investor',
             )}
           </h3>
+          <p>
+            {T(
+              lang,
+              `Đơn giá Premium hiện tại: ${money(price.baseWeekly, price.currency)}/tháng. Kỳ hạn dài được áp dụng chiết khấu theo bảng giá.`,
+              `Current Premium rate: ${money(price.baseWeekly, price.currency)}/month. Longer terms receive the published term discount.`,
+            )}
+          </p>
 
-          <div className="d68-bizreg-paygrid">
+           <div className="d68-bizreg-paygrid">
             <div className="d68-bizreg-payleft">
               <label className="d68-bizreg-label">
                 {T(lang, 'Kỳ hạn', 'Term')}{' '}
@@ -354,6 +364,10 @@ export default function InvestorBillingPanel({
             <aside className="d68-bizreg-summary">
               <span>{T(lang, 'Tạm tính', 'Estimate')}</span>
               <div>
+                <span>{T(lang, 'Đơn giá Premium', 'Premium unit price')}</span>
+                <b>{money(price.baseWeekly, price.currency)} / {T(lang, 'tháng', 'month')}</b>
+              </div>
+               <div>
                 <span>{T(lang, 'Phí dịch vụ', 'Service fee')}</span>
                 <b>{money(price.subtotal, price.currency)}</b>
               </div>

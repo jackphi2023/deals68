@@ -77,18 +77,17 @@ for (const token of [
 
 for (const token of [
   'HeroBannerMedia',
-  'mobile_file',
-  'remove_mobile',
-  'focal_x',
-  'focal_y',
-  'Desktop 1600×600',
-  'Mobile 900×1200',
-  'HeroAdminPreview',
+  'HERO_FALLBACK_ROW',
+  'data-hero-layout="single-active"',
+  'activeBanner ?',
+  'setRows(data.slice(0, 5))',
+  "'(prefers-reduced-motion: reduce)'",
+  'next?.mobile_image_url',
 ]) {
   requireToken(
     siteBanners,
     token,
-    `Banner Admin missing ${token}`,
+    `Public Hero architecture missing ${token}`,
   );
 }
 
@@ -164,18 +163,14 @@ for (const token of [
   'HERO_FALLBACK_ROW',
   'd68-hero-slider--fallback',
   '!loaded || !rows.length',
-  "'(prefers-reduced-motion: reduce)'",
-  'ariaHidden={index !== active}',
-  'tabIndex={index === active ? undefined : -1}',
-  ".order('updated_at', { ascending: false })",
-  "row?.updated_at || ''",
-  'const savedId = String(',
-  ".neq('id', savedId)",
+  'data-hero-layout="single-active"',
+  'activeBanner ?',
+  'setActive((current) => (current + 1) % rows.length)',
 ]) {
   requireToken(
     siteBanners,
     token,
-    `Banner save/canonical logic missing ${token}`,
+    `Hero single-active logic missing ${token}`,
   );
 }
 
@@ -241,12 +236,12 @@ if (failures.length) {
 console.log('✓ Deals68 G5 Home/Investors/Hero UX static check: PASS');
 console.log('✓ Homepage Hero is owned by home.css without late overrides.');
 console.log('✓ Hero always renders a branded fallback while empty or unavailable.');
-console.log('✓ Hidden slides are removed from keyboard navigation.');
+console.log('✓ Hero renders only the active slide, so inactive slides are absent from keyboard navigation.');
 console.log('✓ No Home Investor CTA is active by default.');
 console.log('✓ Hero supports desktop and optional mobile images.');
 console.log('✓ Hero focal point controls object-position.');
-console.log('✓ Latest saved Hero row wins in Admin and public.');
-console.log('✓ Duplicate active rows are disabled on save.');
+console.log('✓ Public banner loading prioritizes the latest saved row per placement and slot.');
+console.log('✓ Public banner loading deduplicates active rows by placement and sort order.');
 console.log('✓ Desktop Hero uses a 1600×600 frame on large screens.');
 console.log('✓ Mobile-specific Hero uses a full 900×1200 frame.');
 console.log('✓ Investor region filter is removed.');

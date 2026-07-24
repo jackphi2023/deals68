@@ -10,13 +10,15 @@ import type { Lang } from '../lib/i18n';
 import { BusinessFaq } from '../components/BusinessFaq';
 import { applySeo, DEFAULT_SOCIAL_IMAGE } from '../lib/seo';
 import { businessQualityPublicExplanation, normalizeQualityBreakdown, qualityBand, qualityItemLabel, qualityItemNote, qualityPublicCriteria } from '../lib/businessQuality';
+import SensitiveFinancialValue from '../components/business/SensitiveFinancialValue';
+import { financialAccessErrorMessage, getBusinessDataroomFileAccess, getBusinessFinancialAccess, requestBusinessFinancialAccess } from '../lib/businessFinancialAccess';
 
 const T = (lang: Lang, vi: string, en: string) => (lang === 'en' ? en : vi);
 
 type Doc = { id?: string; file_name?: string; display_name?: string; file_type?: string; size_bytes?: number; category?: string; privacy_level?: string; public_visible?: boolean; file_path?: string; created_at?: string };
 type Img = { id?: string; public_url?: string; display_title?: string; title?: string; is_hero?: boolean };
-type SimilarDeal = { id: string; slug: string; title: string; industry: string; city: string; revenue: string; ask: string; image: string | null };
-type FactRow = { label: string; value: string };
+type SimilarDeal = { id: string; slug: string; title: string; industry: string; city: string; revenue: ReactNode; ask: string; image: string | null };
+type FactRow = { label: string; value: ReactNode };
 type TransactionInfoRow = { label: string; value: string };
 
 function cleanText(value: any) { return String(value || '').trim(); }
@@ -51,7 +53,6 @@ function fileSize(bytes?: number) {
   return `${n} B`;
 }
 function money(lang: Lang, value: any, currency: string) { return formatMoneyForLang(Number(value || 0), currency || 'VND', lang); }
-function restrictedFinancialText(lang: Lang) { return T(lang, 'Được bảo mật', 'Restricted'); }
 function qualityLabel(lang: Lang, value: any) {
   const n = Number(value);
   if (!Number.isFinite(n) || value === null || value === undefined || value === '') return T(lang, 'Đang cập nhật', 'Pending');
@@ -90,7 +91,17 @@ function normalizeSimilar(row: any, lang: Lang): SimilarDeal | null {
   const slug = cleanText(row.slug);
   if (!slug) return null;
   const title = T(lang, row.title_vi || row.public_code || 'Hồ sơ doanh nghiệp ẩn danh', row.title_en || row.title_vi || row.public_code || 'Anonymous business profile');
-  return { id: String(row.id || slug), slug, title, industry: labelIndustry(primaryIndustry(row.industry), lang), city: labelLocation(row.city_key || row.city || row.country_iso2, lang), revenue: row.revenue_2025 === null || row.revenue_2025 === undefined ? restrictedFinancialText(lang) : money(lang, row.revenue_2025, row.revenue_currency || 'VND'), ask: money(lang, row.ask_amount, row.ask_currency || row.revenue_currency || 'VND'), image: row.image_url || row.hero_image_url || null };
+  return { id: String(row.id || slug), slug, title, industry: labelIndustry(primaryIndustry(row.industry), lang), city: labelLocation(row.city_key || row.city || row.country_iso2, lang), revenue: (
+    <SensitiveFinancialValue
+      lang={lang}
+      value={row.revenue_2025 === null || row.revenue_2025 === undefined ? null : money(lang, row.revenue_2025, row.revenue_currency || 'VND')}
+      isAuthorized={row.revenue_2025 !== null && row.revenue_2025 !== undefined}
+      hasData={String(row.revenue_band_key || 'unknown') !== 'unknown' || String(row.revenue_match_band_key || 'unknown') !== 'unknown'}
+      requestStatus={row.financial_request_status}
+      source={row.financial_access_source}
+      compact
+    />
+  ), ask: money(lang, row.ask_amount, row.ask_currency || row.revenue_currency || 'VND'), image: row.image_url || row.hero_image_url || null };
 }
 function inferredSelfValuation(b: any) {
   const stored = Number(b?.self_valuation || 0);
@@ -117,6 +128,7 @@ export default function BusinessDetail({ lang }: { lang: Lang }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [msg, setMsg] = useState('');
+  const [requestBusy, setRequestBusy] = useState(false);
 
   useEffect(() => {
     let live = true;
@@ -144,21 +156,10 @@ export default function BusinessDetail({ lang }: { lang: Lang }) {
           if (live && qrow) setBusiness({ ...b, quality_score: qrow.quality_score ?? b.quality_score, quality_breakdown_json: qrow.quality_breakdown_json ?? qrow.quality_breakdown });
         }
 
-        let canDownload = false;
+        let canDownload = profile?.role === 'admin' || ownerViewing;
         if (profile?.role === 'investor') {
-          const inv = await getInvestorByOwner(profile.id).catch(() => null);
-          if (inv?.id) {
-            const proposal = await supabase
-              .from('proposals')
-              .select('id,status')
-              .eq('business_id', b.id)
-              .eq('investor_id', inv.id)
-              .in('status', ['approved','connected'])
-              .limit(1)
-              .maybeSingle()
-              .catch(() => ({ data: null } as any));
-            canDownload = !!proposal.data;
-          }
+          const access = await getBusinessFinancialAccess(b.id).catch(() => null);
+          canDownload = Boolean(access?.has_dataroom);
         }
         if (!live) return;
         setInvestorAccess(canDownload);
@@ -279,11 +280,14 @@ export default function BusinessDetail({ lang }: { lang: Lang }) {
   ]);
   const dealTypeLabel = business ? dealLabel(lang, business.deal_type) : '';
   const ask = business ? money(lang, business.ask_amount, business.ask_currency || business.revenue_currency || 'VND') : '';
-  const revenue = business
-    ? business.revenue_2025 === null || business.revenue_2025 === undefined
-      ? restrictedFinancialText(lang)
-      : money(lang, business.revenue_2025, business.revenue_currency || 'VND')
-    : '';
+  const revenue = business ? <SensitiveFinancialValue
+    lang={lang}
+    value={business.revenue_2025 === null || business.revenue_2025 === undefined ? null : money(lang, business.revenue_2025, business.revenue_currency || 'VND')}
+    isAuthorized={business.revenue_2025 !== null && business.revenue_2025 !== undefined}
+    hasData={String(business.revenue_band_key || 'unknown') !== 'unknown' || String(business.revenue_match_band_key || 'unknown') !== 'unknown'}
+    requestStatus={business.financial_request_status}
+    source={business.financial_access_source}
+  /> : null;
   const stake = business?.stake_pct === null || business?.stake_pct === undefined ? T(lang, 'Đang cập nhật', 'Pending') : percent(business.stake_pct);
   const quality = business ? qualityLabel(lang, business.quality_score) : '';
   const industry = business ? labelIndustry(primaryIndustry(business.industry), lang) : '';
@@ -301,7 +305,14 @@ export default function BusinessDetail({ lang }: { lang: Lang }) {
     { label: T(lang, 'Địa điểm', 'Location'), value: location },
     { label: T(lang, 'Loại giao dịch', 'Transaction'), value: dealTypeLabel },
     { label: T(lang, 'Doanh thu năm', 'Annual revenue'), value: revenue },
-    { label: T(lang, 'Tỷ suất lợi nhuận/EBITDA', 'EBITDA margin'), value: business.ebitda_margin === null || business.ebitda_margin === undefined ? (business.has_financial_data ? restrictedFinancialText(lang) : T(lang, 'Đang cập nhật', 'Pending')) : percent(business.ebitda_margin) },
+    { label: T(lang, 'Tỷ suất lợi nhuận/EBITDA', 'EBITDA margin'), value: <SensitiveFinancialValue
+      lang={lang}
+      value={business.ebitda_margin === null || business.ebitda_margin === undefined ? null : percent(business.ebitda_margin)}
+      isAuthorized={business.ebitda_margin !== null && business.ebitda_margin !== undefined}
+      hasData={String(business.ebitda_band_key || 'unknown') !== 'unknown'}
+      requestStatus={business.financial_request_status}
+      source={business.financial_access_source}
+    /> },
     { label: askLabel(lang, business.deal_type), value: ask },
     { label: T(lang, 'Tỷ lệ cổ phần', 'Stake'), value: stake },
     { label: T(lang, 'DN tự định giá', 'Company self-valuation'), value: selfValLabel },
@@ -373,18 +384,50 @@ export default function BusinessDetail({ lang }: { lang: Lang }) {
     }
   }
   async function requestData() {
+    if (requestBusy) return;
     if (!profile) { setMsg(T(lang, 'Bạn cần là nhà đầu tư để thao tác. Hãy đăng ký/đăng nhập tài khoản nhà đầu tư để thực hiện.', 'You need an Investor account to perform this action. Please register or log in as an investor.')); return; }
-    if (profile.role !== 'investor') { setMsg(T(lang, 'Chỉ tài khoản Nhà đầu tư được yêu cầu tài liệu.', 'Only Investor accounts can request documents.')); return; }
-    const inv = await getInvestorByOwner(profile.id).catch(() => null);
-    if (!inv?.id || !business?.id) { setMsg(T(lang, 'Không tìm thấy hồ sơ nhà đầu tư.', 'Investor profile not found.')); return; }
-    const { error: reqErr } = await supabase.from('request_data').insert({ investor_id: inv.id, business_id: business.id, requested_items: ['IM', 'Financials'], note: 'Requested from public business detail page. e-NDA placeholder pending Beta completion.', status: 'pending' });
-    setMsg(reqErr ? reqErr.message : T(lang, 'Đã gửi yêu cầu tài liệu qua Deals68. Luồng e-NDA sẽ được hoàn thiện ở bước tiếp theo.', 'Data request sent via Deals68. The e-NDA flow will be completed in the next step.'));
+    if (profile.role !== 'investor') { setMsg(T(lang, 'Chỉ tài khoản Nhà đầu tư được yêu cầu xem số liệu.', 'Only Investor accounts can request financial access.')); return; }
+    if (!business?.id) { setMsg(T(lang, 'Không tìm thấy hồ sơ doanh nghiệp.', 'Business profile not found.')); return; }
+    setRequestBusy(true);
+    try {
+      const result = await requestBusinessFinancialAccess(
+        business.id,
+        'Investor requested financial access from the public Business detail page.',
+      );
+      setMsg(result.existing
+        ? T(lang, 'Yêu cầu xem số liệu đang chờ doanh nghiệp chấp thuận.', 'Your financial access request is awaiting Business approval.')
+        : T(lang, 'Đã gửi yêu cầu xem số liệu tới doanh nghiệp.', 'Financial access request sent to the Business.'));
+      setBusiness((current: any) => current ? { ...current, financial_request_status: result.status } : current);
+    } catch (requestError: any) {
+      setMsg(financialAccessErrorMessage(lang, requestError));
+    } finally {
+      setRequestBusy(false);
+    }
   }
   async function downloadDoc(doc: Doc) {
-    if (!investorAccess || !doc.file_path) { await requestData(); return; }
-    const { data, error } = await supabase.storage.from('business-files-private').createSignedUrl(doc.file_path, 60 * 5);
-    if (error || !data?.signedUrl) { setMsg(error?.message || T(lang, 'Chưa tạo được link tải tài liệu.', 'Could not create document download link.')); return; }
-    window.open(data.signedUrl, '_blank', 'noopener,noreferrer');
+    const canOpenDataroom = investorAccess || isOwnerBusiness || profile?.role === 'admin';
+    if (!canOpenDataroom) {
+      setMsg(T(
+        lang,
+        'Tài liệu yêu cầu quyền Dataroom riêng. Quyền xem số liệu tài chính không tự động mở tệp.',
+        'Documents require a separate Dataroom grant. Financial access does not automatically unlock files.',
+      ));
+      return;
+    }
+    if (!doc.id) {
+      setMsg(T(lang, 'Không tìm thấy tài liệu.', 'Document not found.'));
+      return;
+    }
+    try {
+      const fileAccess = await getBusinessDataroomFileAccess(String(doc.id));
+      const { data, error } = await supabase.storage
+        .from('business-files-private')
+        .createSignedUrl(fileAccess.file_path, 60);
+      if (error || !data?.signedUrl) throw error || new Error('Signed URL unavailable');
+      window.open(data.signedUrl, '_blank', 'noopener,noreferrer');
+    } catch (downloadError: any) {
+      setMsg(financialAccessErrorMessage(lang, downloadError));
+    }
   }
   function sharePage() {
     const url = typeof window !== 'undefined' ? window.location.href : '';
@@ -429,7 +472,7 @@ export default function BusinessDetail({ lang }: { lang: Lang }) {
           <section className="d68-detail-card d68-detail-card--bqs"><div className={`d68-bqs-card ${canViewRealQuality ? 'is-real' : 'is-demo'}`}><div className="d68-bqs-ring-col"><div className="d68-bqs-ring" style={{ background: `conic-gradient(${canViewRealQuality ? (bqsBand.cls === 'green' ? '#16A34A' : bqsBand.cls === 'blue' ? '#1596cc' : '#B8860B') : '#CBD5E1'} ${canViewRealQuality ? Math.max(0, Math.min(100, scoreNumber ?? 0)) * 3.6 : 0}deg, #EEF2F6 0deg)` }}><div><b>{canViewRealQuality ? (scoreNumber === null ? '—' : scoreNumber) : 'BQS'}</b><span>/100</span></div></div></div><div className="d68-bqs-body"><div className="d68-bqs-head"><h3>Business Quality Score</h3>{canViewRealQuality ? <span className={`d68-bqs-badge ${bqsBand.cls}`}>{bqsBand.label}</span> : null}</div><p>{canViewRealQuality ? businessQualityPublicExplanation(lang) : `${businessQualityPublicExplanation(lang)} ${T(lang, 'Chỉ Nhà đầu tư đăng nhập mới được xem cụ thể.', 'Only logged-in investors can view details.')}`}</p>{canViewRealQuality ? <div className="d68-bqs-breakdown">{qualityBreakdown?.items.map((item) => <div key={item.key} className="d68-bqs-breakdown__row"><b>{qualityItemLabel(item, lang)}</b><span>{item.score}/{item.max}</span><small>{qualityItemNote(item, lang)}</small></div>)}</div> : <div className="d68-bqs-public-criteria">{qualityCriteria.map((x) => <span key={x}>✓ {x}</span>)}</div>}{!canViewRealQuality ? <div className="d68-bqs-alert">🔒 {T(lang, 'Chỉ nhà đầu tư đã đăng nhập mới xem được điểm chi tiết.', 'Only logged-in investors can view the detailed score.')} <Link to={`${loginPath}?role=investor&next=${encodeURIComponent(`${businessListPath}/${slug}`)}`}>{T(lang, 'Đăng nhập nhà đầu tư', 'Investor login')}</Link></div> : null}</div></div></section>
         </div>
         <aside className="d68-detail-side"><div className="d68-detail-summary-card"><div className="d68-detail-summary-head"><span>{T(lang, 'Loại giao dịch', 'Transaction')}</span><strong>{dealTypeLabel}</strong></div><div className="d68-detail-summary-body"><span>{askLabel(lang, business.deal_type)}</span><b>{ask}</b><small>{business.ask_currency || business.revenue_currency ? `${T(lang, 'Tiền tệ', 'Currency')}: ${business.ask_currency || business.revenue_currency}` : T(lang, 'Tiền tệ đang cập nhật', 'Currency pending')}</small><div className="d68-detail-mini-metrics"><div><span>{T(lang, 'Doanh thu', 'Revenue')}</span><b>{revenue}</b></div><div><span>{T(lang, 'Cổ phần', 'Stake')}</span><b>{stake}</b></div><div><span>{T(lang, 'DN tự định giá', 'Self-valuation')}</span><b>{selfValLabel}</b></div></div></div></div>
-          <div className="d68-detail-contact-card"><h2>{T(lang, 'Kết nối với doanh nghiệp', 'Connect with the business')}</h2><p>{T(lang, 'Tên, số điện thoại, email và tài liệu nhạy cảm chỉ mở sau khi hai bên được duyệt kết nối.', 'Name, phone, email and sensitive documents unlock only after an approved connection.')}</p><LockedField label={T(lang, 'Tên doanh nghiệp', 'Business name')} masked="••••••" /><LockedField label="Email" masked="••••••" /><LockedField label={T(lang, 'Điện thoại', 'Phone')} masked="••••••" /><button type="button" className="d68-detail-primary" onClick={expressInterest}>{T(lang, 'Bày tỏ quan tâm', 'Express interest')}</button><div className="d68-detail-secondary-row"><button type="button" onClick={requestData}>🔒 {T(lang, 'Yêu cầu tài liệu', 'Request data')}</button><button type="button" onClick={sharePage}>↗ {T(lang, 'Chia sẻ', 'Share')}</button></div>{msg ? <div className="d68-detail-msg">{msg}</div> : null}</div>
+          <div className="d68-detail-contact-card"><h2>{T(lang, 'Kết nối với doanh nghiệp', 'Connect with the business')}</h2><p>{T(lang, 'Tên, số điện thoại, email và tài liệu nhạy cảm chỉ mở sau khi hai bên được duyệt kết nối.', 'Name, phone, email and sensitive documents unlock only after an approved connection.')}</p><LockedField label={T(lang, 'Tên doanh nghiệp', 'Business name')} masked="••••••" /><LockedField label="Email" masked="••••••" /><LockedField label={T(lang, 'Điện thoại', 'Phone')} masked="••••••" /><button type="button" className="d68-detail-primary" onClick={expressInterest}>{T(lang, 'Bày tỏ quan tâm', 'Express interest')}</button><div className="d68-detail-secondary-row"><button type="button" disabled={requestBusy} onClick={requestData}>🔒 {requestBusy ? T(lang, 'Đang gửi...', 'Sending...') : T(lang, 'Yêu cầu xem số liệu', 'Request financial access')}</button><button type="button" onClick={sharePage}>↗ {T(lang, 'Chia sẻ', 'Share')}</button></div>{msg ? <div className="d68-detail-msg">{msg}</div> : null}</div>
           <div className="d68-detail-verify-card"><h3>{T(lang, 'Đã xác minh', 'Verified')}</h3><div><span>✓ {T(lang, 'Bản public đã duyệt', 'Approved public snapshot')}</span><span>✓ {T(lang, 'Hồ sơ ẩn danh', 'Anonymous profile')}</span>{heroImages.length ? <span>✓ {T(lang, 'Ảnh public đã duyệt', 'Approved public images')}</span> : null}{docsToShow.length ? <span>✓ {T(lang, 'Có tài liệu hồ sơ', 'Profile documents listed')}</span> : null}</div></div>
         </aside>
       </div>

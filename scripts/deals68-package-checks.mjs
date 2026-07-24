@@ -31,9 +31,11 @@ const scripts = [
   'scripts/deals68-investor-plan-entitlements-check.mjs',
   'scripts/deals68-investor-register-plans-phase2-check.mjs',
   'scripts/deals68-investor-pricing-phase3-check.mjs',
+  'scripts/deals68-investor-premium-price-v2-check.mjs',
   'scripts/deals68-admin-investor-plans-phase4-check.mjs',
   'scripts/deals68-business-financial-access-phase-a-check.mjs',
   'scripts/deals68-business-financial-redaction-phase-b-check.mjs',
+  'scripts/deals68-public-business-view-helper-acl-check.mjs',
 ];
 
 for (const script of scripts) {

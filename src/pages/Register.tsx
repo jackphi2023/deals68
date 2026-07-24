@@ -1224,12 +1224,12 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
               setPaymentAck(false);
             }}
           >
-            <h3>{T(lang, 'Nhà đầu tư Nâng cao', 'Premium Investor')}</h3>
+            <h3>{T(lang, 'Nhà đầu tư Nâng cao (Premium)', 'Premium Investor')}</h3>
             <p>
               {T(
                 lang,
-                'Được sử dụng tính năng Báo cáo Phân tích cơ hội đầu tư',
-                'Access the Investment Opportunity Analysis Report feature',
+                'Bao gồm toàn bộ quyền Tiêu chuẩn, Báo cáo Phân tích cơ hội đầu tư và các tính năng phân tích nâng cao.',
+                'Includes all Standard benefits, Investment Opportunity Analysis Reports and advanced analytics.',
               )}
             </p>
             <span>
@@ -1778,6 +1778,13 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
                     />
                   </Field>
                 </div>
+                <p className="d68-register-financial-privacy-note" role="note">
+                  {T(
+                    lang,
+                    'Các số liệu tài chính chính xác chỉ được chia sẻ với nhà đầu tư khi doanh nghiệp gửi Proposal hoặc chấp thuận yêu cầu dữ liệu. Người xem công khai và nhà đầu tư chưa được cấp quyền chỉ thấy trạng thái bảo mật hoặc khoảng dữ liệu tổng quát.',
+                    'Exact financial figures are shared only when the Business sends a Proposal to an investor or approves the investor’s data request. Public visitors and investors without access see only restricted states or general data ranges.',
+                  )}
+                </p>
                 <Field
                   label={T(
                     lang,
@@ -2268,11 +2275,17 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
                     'Create business account',
                   )
                 : isInvestor
-                  ? T(
-                      lang,
-                      'Tạo tài khoản Nhà đầu tư',
-                      'Create investor account',
-                    )
+                  ? investorPremiumSelected
+                    ? T(
+                        lang,
+                        'Đăng ký gói Nhà đầu tư Nâng cao',
+                        'Choose Premium Investor plan',
+                      )
+                    : T(
+                        lang,
+                        'Tạo tài khoản Nhà đầu tư miễn phí',
+                        'Create free Investor account',
+                      )
                   : T(lang, 'Tạo tài khoản', 'Create account')}
           </button>
         </form>
