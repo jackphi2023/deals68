@@ -1,0 +1,52 @@
+name: Business Financial Redaction Phase B QA
+
+on:
+  pull_request:
+    paths:
+      - 'supabase/migrations/**business_public_financial_redaction_phase_b**'
+      - 'supabase/migrations/**business_financial_redaction_phase_b_hidden_investor_fix**'
+      - 'src/lib/data.ts'
+      - 'src/pages/Home.tsx'
+      - 'src/pages/Businesses.tsx'
+      - 'src/pages/BusinessDetail.tsx'
+      - 'src/pages/InvestorDashboard.tsx'
+      - 'netlify/edge-functions/seo.ts'
+      - 'scripts/deals68-business-financial-redaction-phase-b-check.mjs'
+      - 'scripts/deals68-business-financial-access-phase-a-check.mjs'
+      - 'scripts/deals68-migration-state-check.mjs'
+      - 'scripts/deals68-package-checks.mjs'
+      - 'docs/release/MIGRATION_STATE.md'
+      - 'package.json'
+      - '.github/workflows/business-financial-redaction-phase-b-qa.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Financial redaction Phase B contract
+        run: npm run qa:financial-redaction-phase-b
+      - name: Financial access Phase A regression
+        run: npm run qa:financial-access-phase-a
+      - name: Migration registry contract
+        run: npm run qa:migrations
+      - name: Production build
+        run: npm run build
+      - name: CSS architecture regression
+        run: npm run qa:css
+      - name: Route regression
+        run: npm run check:routes
+      - name: Diff integrity
+        run: git diff --check origin/${{ github.base_ref }}...HEAD
