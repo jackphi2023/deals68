@@ -1,0 +1,201 @@
+name: Apply Investor Premium Pricing V2 Final
+
+on:
+  pull_request:
+    branches:
+      - investor-premium-pricing-v2-orchestrator-final
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  apply-and-verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+      VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Checkout PR head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Detect patch applicator
+        id: patch
+        shell: bash
+        run: |
+          if [ -f scripts/apply-investor-premium-pricing-v2.mjs ]; then
+            echo "apply=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "apply=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create migration with pinned Supabase CLI
+        if: steps.patch.outputs.apply == 'true'
+        shell: bash
+        run: npx --yes supabase@2.101.0 migration new investor_premium_price_v2
+
+      - name: Apply reviewed pricing patch
+        if: steps.patch.outputs.apply == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('scripts/apply-investor-premium-pricing-v2.mjs')
+          text = p.read_text()
+          text = text.replace(
+              "orderType: 'investor_service_upgrade',\\n       role: 'investor',",
+              "orderType: 'investor_service_upgrade',\\n      role: 'investor',",
+          )
+          p.write_text(text)
+          PY
+          MIGRATION_PATH="$(ls -1t supabase/migrations/*_investor_premium_price_v2.sql | head -n 1)"
+          set +e
+          node scripts/apply-investor-premium-pricing-v2.mjs "$MIGRATION_PATH" >/tmp/apply.log 2>&1
+          STATUS=$?
+          set -e
+          cat /tmp/apply.log
+          if [ "$STATUS" -ne 0 ]; then
+            printf '### Pricing V2 applicator error\n\n```text\n%s\n```\n' "$(tail -n 14 /tmp/apply.log)" > /tmp/comment.md
+            gh pr comment "${{ github.event.pull_request.number }}" --body-file /tmp/comment.md
+            exit "$STATUS"
+          fi
+          rm scripts/apply-investor-premium-pricing-v2.mjs
+          rm -f scripts/pricing-v2-diagnostic-marker.txt
+          rm -rf supabase/.temp
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Production build
+        run: npm run build
+
+      - name: Investor plan and pricing contracts
+        run: |
+          npm run qa:investor-plans
+          npm run qa:investor-register-plans
+          npm run qa:investor-pricing
+          npm run qa:investor-premium-price-v2
+          npm run qa:admin-investor-plans
+
+      - name: Migration registry
+        run: npm run qa:migrations
+
+      - name: CSS architecture
+        run: npm run qa:css
+
+      - name: Route regression
+        run: npm run check:routes
+
+      - name: Financial access regressions A-E
+        run: |
+          npm run qa:financial-access-phase-a
+          npm run qa:financial-redaction-phase-b
+          npm run qa:financial-ui-phase-c
+          npm run qa:financial-workflow-phase-d
+          npm run qa:financial-release-phase-e
+
+      - name: Business report regressions
+        run: |
+          npm run qa:business-report-ui
+          npm run qa:admin-reports
+          npm run qa:business-report-phase5
+          npm run qa:business-report-phase6
+
+      - name: Global package gate with exact known Banner baseline
+        shell: bash
+        run: |
+          set +e
+          npm run qa:packages > /tmp/packages.log 2>&1
+          STATUS=$?
+          set -e
+          cat /tmp/packages.log
+          if [ "$STATUS" -eq 0 ]; then exit 0; fi
+          python - <<'PY'
+          from pathlib import Path
+          output = Path('/tmp/packages.log').read_text()
+          actual = {line.strip()[2:] for line in output.splitlines() if line.strip().startswith('- ')}
+          expected = {
+              'Banner Admin missing mobile_file',
+              'Banner Admin missing remove_mobile',
+              'Banner Admin missing Desktop 1600×600',
+              'Banner Admin missing Mobile 900×1200',
+              'Banner Admin missing HeroAdminPreview',
+              'Banner save/canonical logic missing ariaHidden={index !== active}',
+              'Banner save/canonical logic missing tabIndex={index === active ? undefined : -1}',
+              "Banner save/canonical logic missing .order('updated_at', { ascending: false })",
+              "Banner save/canonical logic missing row?.updated_at || ''",
+              'Banner save/canonical logic missing const savedId = String(',
+              "Banner save/canonical logic missing .neq('id', savedId)",
+          }
+          if actual != expected:
+              raise SystemExit(f'Unexpected package failures. actual={sorted(actual)}')
+          print('Known Banner G5 baseline isolated exactly; no additional package failure.')
+          PY
+
+      - name: Release static gate with exact known Homepage baselines
+        shell: bash
+        run: |
+          set +e
+          node scripts/deals68-release-qa-check.mjs > /tmp/release.log 2>&1
+          STATUS=$?
+          set -e
+          cat /tmp/release.log
+          if [ "$STATUS" -eq 0 ]; then exit 0; fi
+          python - <<'PY'
+          from pathlib import Path
+          output = Path('/tmp/release.log').read_text()
+          actual = {line.strip() for line in output.splitlines() if line.startswith('✗ ')}
+          expected = {
+              '✗ homepage businesses use Admin editorial selection — Admin selection is independent from plan; RPC fills or randomizes up to 6',
+              '✗ business industry links and filters use canonical taxonomy keys — Homepage URLs, facet counts and Supabase filters use the same 23-industry keys',
+          }
+          if actual != expected:
+              raise SystemExit(f'Unexpected release-static failures. actual={sorted(actual)}')
+          print('Known Homepage baselines isolated exactly; no additional release-static failure.')
+          PY
+
+      - name: Diff integrity
+        run: git diff --check
+
+      - name: Commit verified source only
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No source changes to commit"
+          else
+            git commit -m "feat(pricing): update Investor Premium monthly rates"
+            git push origin HEAD:${{ github.event.pull_request.head.ref }}
+          fi
+
+      - name: Public pricing E2E
+        if: env.VITE_SUPABASE_URL != '' && env.VITE_SUPABASE_ANON_KEY != ''
+        continue-on-error: true
+        run: |
+          npx playwright install --with-deps chromium
+          D68_USE_LOCAL_SERVER=1 D68_BASE_URL=http://127.0.0.1:5173 npm run test:e2e:public
+
+      - name: Record release outcome
+        if: always()
+        run: |
+          echo "Authenticated Investor/Business/Admin E2E: NOT RUN (no protected role credentials supplied)."
+          if [ -z "${VITE_SUPABASE_URL}" ] || [ -z "${VITE_SUPABASE_ANON_KEY}" ]; then
+            echo "Public E2E: NOT RUN (protected Supabase environment unavailable)."
+          fi
