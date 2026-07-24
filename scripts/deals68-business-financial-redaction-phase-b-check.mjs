@@ -45,6 +45,9 @@ for (const snippet of [
 
 if (!home.includes("T(lang, 'Được bảo mật', 'Restricted')")) failures.push('Homepage restricted fallback missing');
 if (!data.includes('filters.includeAuthorizedFinancials === false')) failures.push('Public cache financial hydration opt-out missing');
+if (!data.includes("filters.includeHidden && filters.revenueBand === 'small'")) failures.push('Owner/Admin exact revenue filtering regression');
+if (!data.includes("q.order('revenue_2025', { ascending: false")) failures.push('Owner/Admin exact revenue sorting regression');
+if (!data.includes('filters.includeHidden || filters.includeAuthorizedFinancials === false')) failures.push('Owner/Admin base rows should not require secure re-hydration');
 const homepageFunction = data.slice(data.indexOf('export async function listHomepageBusinesses'), data.indexOf('export async function countBusinesses'));
 if (homepageFunction.includes('await attachAuthorizedBusinessFinancials')) failures.push('Homepage public cache must not hydrate exact financials');
 if (!homepageFunction.includes('includeAuthorizedFinancials: false')) failures.push('Homepage fallback must disable exact financial hydration');

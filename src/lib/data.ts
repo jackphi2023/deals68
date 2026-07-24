@@ -347,7 +347,13 @@ function applyBusinessPublicFilters(q: any, filters: any) {
       q = q.or(locationFilter.clauses.join(','));
     }
   }
-  if (['small', 'mid', 'large'].includes(filters.revenueBand)) {
+  if (filters.includeHidden && filters.revenueBand === 'small') {
+    q = q.or('and(revenue_currency.eq.VND,revenue_2025.lt.10000000000),and(revenue_currency.eq.USD,revenue_2025.lt.400000)');
+  } else if (filters.includeHidden && filters.revenueBand === 'mid') {
+    q = q.or('and(revenue_currency.eq.VND,revenue_2025.gte.10000000000,revenue_2025.lte.100000000000),and(revenue_currency.eq.USD,revenue_2025.gte.400000,revenue_2025.lte.4000000)');
+  } else if (filters.includeHidden && filters.revenueBand === 'large') {
+    q = q.or('and(revenue_currency.eq.VND,revenue_2025.gt.100000000000),and(revenue_currency.eq.USD,revenue_2025.gt.4000000)');
+  } else if (['small', 'mid', 'large'].includes(filters.revenueBand)) {
     q = q.eq('revenue_band_key', filters.revenueBand);
   }
   if (filters.minQuality) q = q.gte('quality_score', Number(filters.minQuality));
@@ -417,7 +423,13 @@ export async function listBusinesses(filters: any = {}): Promise<any[]> {
   let q: any = supabase.from(source).select(select as string);
   q = applyBusinessPublicFilters(q, filters);
   const sort = filters.sort || 'featured';
-  if (sort === 'revenue') q = q.order('revenue_band_rank', { ascending: false, nullsFirst: false }).order('quality_score', { ascending: false, nullsFirst: false }).order('created_at', { ascending: false });
+  if (sort === 'revenue') {
+    q = filters.includeHidden
+      ? q.order('revenue_2025', { ascending: false, nullsFirst: false })
+      : q.order('revenue_band_rank', { ascending: false, nullsFirst: false })
+          .order('quality_score', { ascending: false, nullsFirst: false })
+          .order('created_at', { ascending: false });
+  }
   else if (sort === 'ask') q = q.order('ask_amount', { ascending: false, nullsFirst: false });
   else if (sort === 'quality' || sort === 'featured') q = q.order('quality_score', { ascending: false, nullsFirst: false }).order('created_at', { ascending: false });
   else q = q.order('created_at', { ascending: false });
@@ -425,7 +437,7 @@ export async function listBusinesses(filters: any = {}): Promise<any[]> {
   const { data, error } = await q;
   if (error) throw error;
   const rows = ((data || []) as any[]).map(getPublicBusinessView);
-  if (filters.includeAuthorizedFinancials === false) return rows;
+  if (filters.includeHidden || filters.includeAuthorizedFinancials === false) return rows;
   return attachAuthorizedBusinessFinancials(rows);
 }
 
@@ -437,7 +449,13 @@ export async function listBusinessesPage(filters: any = {}): Promise<{ rows: any
   let q: any = supabase.from(source).select(select as string, { count: 'exact' });
   q = applyBusinessPublicFilters(q, filters);
   const sort = filters.sort || 'featured';
-  if (sort === 'revenue') q = q.order('revenue_band_rank', { ascending: false, nullsFirst: false }).order('quality_score', { ascending: false, nullsFirst: false }).order('created_at', { ascending: false });
+  if (sort === 'revenue') {
+    q = filters.includeHidden
+      ? q.order('revenue_2025', { ascending: false, nullsFirst: false })
+      : q.order('revenue_band_rank', { ascending: false, nullsFirst: false })
+          .order('quality_score', { ascending: false, nullsFirst: false })
+          .order('created_at', { ascending: false });
+  }
   else if (sort === 'ask') q = q.order('ask_amount', { ascending: false, nullsFirst: false });
   else if (sort === 'quality' || sort === 'featured') {
     q = q
