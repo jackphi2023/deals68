@@ -129,14 +129,14 @@ detailAssetsCheck = replaceOnce(
 );
 detailAssetsCheck = replaceOnce(
   detailAssetsCheck,
-  `assert.match(css, /\.d68-detail-transaction-row\{display:grid/);`,
-  `assert.match(css, /\.d68-detail-transaction-row\{display:flex;flex-direction:column/);`,
+  String.raw`assert.match(css, /\.d68-detail-transaction-row\{display:grid/);`,
+  String.raw`assert.match(css, /\.d68-detail-transaction-row\{display:flex;flex-direction:column/);`,
   'Business Detail transaction layout assertion',
 );
 detailAssetsCheck = replaceOnce(
   detailAssetsCheck,
-  `assert.match(css, /@media\(max-width:620px\)\{\.d68-detail-transaction-row\{grid-template-columns:1fr/);`,
-  `assert.match(css, /@media\(max-width:620px\)\{\.d68-detail-transaction-row\{gap:7px;padding:14px 0/);`,
+  String.raw`assert.match(css, /@media\(max-width:620px\)\{\.d68-detail-transaction-row\{grid-template-columns:1fr/);`,
+  String.raw`assert.match(css, /@media\(max-width:620px\)\{\.d68-detail-transaction-row\{gap:7px;padding:14px 0/);`,
   'Business Detail mobile transaction layout assertion',
 );
 write(detailAssets, detailAssetsCheck);
