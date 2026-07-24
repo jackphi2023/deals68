@@ -5,7 +5,7 @@ on:
     branches:
       - feature/financial-ui-phase-c-v1
     paths:
-      - tools/phase-c-ui.patch
+      - tools/apply_phase_c.py
 
 permissions:
   contents: write
@@ -21,10 +21,8 @@ jobs:
           ref: feature/financial-ui-phase-c-v1
           fetch-depth: 0
 
-      - name: Apply reviewed Phase C patch
-        run: |
-          git apply --check --recount tools/phase-c-ui.patch
-          git apply --recount tools/phase-c-ui.patch
+      - name: Apply reviewed Phase C source changes
+        run: python3 tools/apply_phase_c.py
 
       - name: Install dependencies
         run: npm ci
@@ -40,7 +38,7 @@ jobs:
 
       - name: Commit verified source only
         run: |
-          rm -f tools/phase-c-ui.patch .github/workflows/apply-phase-c-financial-ui.yml
+          rm -f tools/apply_phase_c.py .github/workflows/apply-phase-c-financial-ui.yml
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
