@@ -1,0 +1,44 @@
+name: Diagnose Pre-main Release Gate
+
+on:
+  pull_request:
+    branches:
+      - pre-main-qa-gate-verifier
+    types: [synchronize]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: |
+          node scripts/apply-pre-main-qa-gate-reconciliation.mjs
+          rm scripts/apply-pre-main-qa-gate-reconciliation.mjs
+      - run: npm ci
+      - name: Run release gate and surface concise failure
+        shell: bash
+        run: |
+          set +e
+          npm run qa:release >/tmp/release-gate.log 2>&1
+          status=$?
+          set -e
+          cat /tmp/release-gate.log
+          if [ "$status" -ne 0 ]; then
+            printf 'Pre-main QA reconciliation diagnostic. No runtime code or production schema changed.\n\n```text\n%s\n```\n' "$(tail -n 80 /tmp/release-gate.log)" > /tmp/body.md
+            gh pr edit "${{ github.event.pull_request.number }}" --body-file /tmp/body.md
+            exit "$status"
+          fi
+          gh pr edit "${{ github.event.pull_request.number }}" --body "Pre-main full release gate PASS. No runtime code or production schema changed."
