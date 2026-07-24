@@ -6,6 +6,7 @@ on:
       - 'supabase/migrations/**business_public_financial_redaction_phase_b**'
       - 'supabase/migrations/**business_financial_redaction_phase_b_hidden_investor_fix**'
       - 'supabase/migrations/**public_business_view_band_helper_acl_fix**'
+      - 'supabase/migrations/**homepage_business_ids_safe_view**'
       - 'src/lib/data.ts'
       - 'src/pages/Home.tsx'
       - 'src/pages/Businesses.tsx'
