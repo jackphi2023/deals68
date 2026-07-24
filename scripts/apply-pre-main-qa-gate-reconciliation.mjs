@@ -85,6 +85,58 @@ registerCheck = replaceOnce(
 registerCheck = replaceOnce(registerCheck, "console.log('✓ Revenue and transaction-value labels include VNĐ/VND.');", "console.log('✓ Revenue and transaction-value labels use the selected VNĐ/USD currency dynamically.');", 'Business registration currency conclusion');
 write(registerCopy, registerCheck);
 
+const registerValuation = 'scripts/deals68-register-valuation-ux-check.mjs';
+let valuationCheck = read(registerValuation);
+valuationCheck = replaceOnce(
+  valuationCheck,
+  `  'investorPackageSelected',`,
+  `  'investorPremiumSelected',
+  "investorPlan === 'standard' ? 'active' : ''",
+  "'Mặc định · Miễn phí'",`,
+  'G6 Investor plan-selection tokens',
+);
+valuationCheck = replaceOnce(
+  valuationCheck,
+  `  'd68-assets-source-grid',`,
+  `  'value={assetsOwned}',
+  'value={includedTangibleAssets}',
+  'value={financialSource}',`,
+  'G6 asset and source controls',
+);
+valuationCheck = replaceOnce(
+  valuationCheck,
+  `for (const token of [
+  '.d68-assets-source-grid',
+  'min-height: 34px',
+  '.d68-bizreg-package-pending',
+]) {`,
+  `for (const token of [
+  'min-height: 34px',
+  '.d68-bizreg-package-pending',
+]) {`,
+  'G6 page-owned CSS list',
+);
+valuationCheck = replaceOnce(
+  valuationCheck,
+  `  'grid-template-columns: minmax(0, 1fr) minmax(140px, .42fr)',
+`,
+  '',
+  'G6 obsolete asymmetric valuation grid',
+);
+valuationCheck = replaceOnce(
+  valuationCheck,
+  "console.log(\n  '✓ Business and Investor packages start unselected on direct registration.',\n);",
+  "console.log(\n  '✓ Business package starts unselected; free Standard Investor is selected by default.',\n);",
+  'G6 package-selection conclusion',
+);
+valuationCheck = replaceOnce(
+  valuationCheck,
+  "console.log(\n  '✓ Asset value and financial-source controls are aligned.',\n);",
+  "console.log(\n  '✓ Asset descriptions and financial-source controls remain explicit and independently editable.',\n);",
+  'G6 asset/source conclusion',
+);
+write(registerValuation, valuationCheck);
+
 const marker = 'scripts/pre-main-qa-diagnostic-marker.txt';
 if (fs.existsSync(marker)) fs.unlinkSync(marker);
 
