@@ -135,6 +135,7 @@ const session8File = 'scripts/deals68-session8-final-regression-check.mjs';
 let session8Check = read(session8File);
 session8Check = session8Check
   .replaceAll('const [investorPackageSelected', 'const [investorMonths')
+  .replaceAll("T(lang, 'Thông tin tài sản & nguồn số liệu'", '<p className="d68-register-financial-privacy-note"')
   .replaceAll('excluded physical asset value', 'included tangible assets')
   .replaceAll('Giá trị tài sản vật chất KHÔNG nằm trong giao dịch', 'Tài sản hữu hình thuộc sở hữu doanh nghiệp sẽ được đưa vào giao dịch')
   .replaceAll('excludedAssetValue', 'includedTangibleAssets')
