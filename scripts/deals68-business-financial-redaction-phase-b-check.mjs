@@ -3,10 +3,12 @@ import fs from 'node:fs';
 
 const migrationName = '20260724085657_business_public_financial_redaction_phase_b_v1.sql';
 const hiddenInvestorFixName = '20260724090819_business_financial_redaction_phase_b_hidden_investor_fix_v1.sql';
+const publicEbitdaName = '20260724150019_business_public_ebitda_visibility_v1.sql';
 const failures = [];
 const read = (path) => fs.existsSync(path) ? fs.readFileSync(path, 'utf8') : '';
 const sql = read(`supabase/migrations/${migrationName}`);
 const hiddenInvestorFixSql = read(`supabase/migrations/${hiddenInvestorFixName}`);
+const publicEbitdaSql = read(`supabase/migrations/${publicEbitdaName}`);
 const data = read('src/lib/data.ts');
 const home = read('src/pages/Home.tsx');
 const businesses = read('src/pages/Businesses.tsx');
@@ -37,6 +39,15 @@ for (const snippet of [
   'create or replace function public.d68_request_business_financial_access',
   "'grant_required', true",
 ]) if (!hiddenInvestorFixSql.includes(snippet)) failures.push(`Hidden Investor fix missing: ${snippet}`);
+for (const snippet of [
+  'public_businesses_safe_revenue_redacted_v1',
+  "'revenue_2025', null",
+  "'ebitda_margin', coalesce(",
+  "'exact_revenue_public', false",
+  "'exact_ebitda_public', true",
+  "notify pgrst, 'reload schema'",
+]) if (!publicEbitdaSql.includes(snippet)) failures.push(`Public EBITDA migration missing: ${snippet}`);
+if (publicEbitdaSql.includes("'revenue_2025', coalesce(")) failures.push('Public EBITDA migration must not restore exact Revenue');
 
 const publicSnapshotStart = sql.indexOf("jsonb_build_object(\n      'title_vi'");
 const publicSnapshotEnd = sql.indexOf(') as public_snapshot_json', publicSnapshotStart);
