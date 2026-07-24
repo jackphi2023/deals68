@@ -11,7 +11,7 @@ import { BusinessFaq } from '../components/BusinessFaq';
 import { applySeo, DEFAULT_SOCIAL_IMAGE } from '../lib/seo';
 import { businessQualityPublicExplanation, normalizeQualityBreakdown, qualityBand, qualityItemLabel, qualityItemNote, qualityPublicCriteria } from '../lib/businessQuality';
 import SensitiveFinancialValue from '../components/business/SensitiveFinancialValue';
-import { financialAccessErrorMessage, requestBusinessFinancialAccess } from '../lib/businessFinancialAccess';
+import { financialAccessErrorMessage, getBusinessDataroomFileAccess, getBusinessFinancialAccess, requestBusinessFinancialAccess } from '../lib/businessFinancialAccess';
 
 const T = (lang: Lang, vi: string, en: string) => (lang === 'en' ? en : vi);
 
@@ -156,21 +156,10 @@ export default function BusinessDetail({ lang }: { lang: Lang }) {
           if (live && qrow) setBusiness({ ...b, quality_score: qrow.quality_score ?? b.quality_score, quality_breakdown_json: qrow.quality_breakdown_json ?? qrow.quality_breakdown });
         }
 
-        let canDownload = false;
+        let canDownload = profile?.role === 'admin' || ownerViewing;
         if (profile?.role === 'investor') {
-          const inv = await getInvestorByOwner(profile.id).catch(() => null);
-          if (inv?.id) {
-            const proposal = await supabase
-              .from('proposals')
-              .select('id,status')
-              .eq('business_id', b.id)
-              .eq('investor_id', inv.id)
-              .in('status', ['approved','connected'])
-              .limit(1)
-              .maybeSingle()
-              .catch(() => ({ data: null } as any));
-            canDownload = !!proposal.data;
-          }
+          const access = await getBusinessFinancialAccess(b.id).catch(() => null);
+          canDownload = Boolean(access?.has_dataroom);
         }
         if (!live) return;
         setInvestorAccess(canDownload);
@@ -416,10 +405,29 @@ export default function BusinessDetail({ lang }: { lang: Lang }) {
     }
   }
   async function downloadDoc(doc: Doc) {
-    if (!investorAccess || !doc.file_path) { await requestData(); return; }
-    const { data, error } = await supabase.storage.from('business-files-private').createSignedUrl(doc.file_path, 60 * 5);
-    if (error || !data?.signedUrl) { setMsg(error?.message || T(lang, 'Chưa tạo được link tải tài liệu.', 'Could not create document download link.')); return; }
-    window.open(data.signedUrl, '_blank', 'noopener,noreferrer');
+    const canOpenDataroom = investorAccess || isOwnerBusiness || profile?.role === 'admin';
+    if (!canOpenDataroom) {
+      setMsg(T(
+        lang,
+        'Tài liệu yêu cầu quyền Dataroom riêng. Quyền xem số liệu tài chính không tự động mở tệp.',
+        'Documents require a separate Dataroom grant. Financial access does not automatically unlock files.',
+      ));
+      return;
+    }
+    if (!doc.id) {
+      setMsg(T(lang, 'Không tìm thấy tài liệu.', 'Document not found.'));
+      return;
+    }
+    try {
+      const fileAccess = await getBusinessDataroomFileAccess(String(doc.id));
+      const { data, error } = await supabase.storage
+        .from('business-files-private')
+        .createSignedUrl(fileAccess.file_path, 60);
+      if (error || !data?.signedUrl) throw error || new Error('Signed URL unavailable');
+      window.open(data.signedUrl, '_blank', 'noopener,noreferrer');
+    } catch (downloadError: any) {
+      setMsg(financialAccessErrorMessage(lang, downloadError));
+    }
   }
   function sharePage() {
     const url = typeof window !== 'undefined' ? window.location.href : '';

@@ -29,6 +29,7 @@ const required = [
   '20260724073247_business_financial_access_phase_a_v1.sql',
   '20260724085657_business_public_financial_redaction_phase_b_v1.sql',
   '20260724090819_business_financial_redaction_phase_b_hidden_investor_fix_v1.sql',
+  '20260724120937_business_dataroom_access_phase_e_stabilization.sql',
 ];
 const forbidden = [
   '20260711103000_normalize_investor_taxonomy_on_write_v1.sql',
@@ -181,6 +182,18 @@ const migrationContracts = [
       'create or replace function public.d68_request_business_financial_access',
       "'grant_required', true",
       "'public_redaction_unchanged', true",
+    ],
+  },
+  {
+    name: '20260724120937_business_dataroom_access_phase_e_stabilization.sql',
+    snippets: [
+      'create or replace function public.get_business_file_metadata_for_viewer',
+      'create or replace function public.d68_get_business_dataroom_file_access',
+      "'dataroom' = any(g.scopes)",
+      'access_business_dataroom_file',
+      'files select owner admin or active dataroom grant',
+      'business files select owner admin or active dataroom grant',
+      'Deliberately no INSERT/UPDATE into business_financial_access_grants',
     ],
   },
 ];
