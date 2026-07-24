@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import fs from 'node:fs';
 
-const migrationName = '20260724100000_business_financial_access_phase_a_v1.sql';
+const migrationName = '20260724073247_business_financial_access_phase_a_v1.sql';
 const migrationPath = `supabase/migrations/${migrationName}`;
 const failures = [];
 
@@ -69,6 +69,10 @@ if (!fs.existsSync(migrationPath)) {
   if (!sql.includes("array['financial_summary', 'financial_detail']::text[]")) {
     failures.push('Fulfilled request access must default to summary + detail.');
   }
+}
+
+if (fs.existsSync('supabase/migrations/20260724100000_business_financial_access_phase_a_v1.sql')) {
+  failures.push('Obsolete provisional Phase A migration filename remains.');
 }
 
 const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf8'));
