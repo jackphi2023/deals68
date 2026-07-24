@@ -71,6 +71,7 @@ import {
 } from '../lib/investorCriteria';
 import InvestorBillingPanel from '../components/investor/InvestorBillingPanel';
 import BusinessTitleLink from '../components/investor/BusinessTitleLink';
+import SensitiveFinancialValue from '../components/business/SensitiveFinancialValue';
 
 type Tab =
   | 'profile'
@@ -251,9 +252,18 @@ function matchesEbitdaBand(business: any, band: string) {
 }
 
 function investorRevenueText(business: any, lang: Lang) {
-  return business?.revenue_2025 === null || business?.revenue_2025 === undefined
-    ? T(lang, 'Được bảo mật', 'Restricted')
-    : formatCompactMoney(business.revenue_2025, business.revenue_currency);
+  const hasValue =
+    business?.revenue_2025 !== null &&
+    business?.revenue_2025 !== undefined;
+  return <SensitiveFinancialValue
+    lang={lang}
+    value={hasValue ? formatCompactMoney(business.revenue_2025, business.revenue_currency) : null}
+    isAuthorized={hasValue}
+    hasData={String(business?.revenue_band_key || 'unknown') !== 'unknown' || String(business?.revenue_match_band_key || 'unknown') !== 'unknown'}
+    requestStatus={business?.financial_request_status}
+    source={business?.financial_access_source}
+    compact
+  />;
 }
 
 function statusText(lang: Lang, status: unknown) {

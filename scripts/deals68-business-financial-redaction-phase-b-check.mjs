@@ -53,7 +53,7 @@ for (const snippet of [
   'financials_restricted',
 ]) if (!data.includes(snippet)) failures.push(`Data layer missing: ${snippet}`);
 
-if (!home.includes("T(lang, 'Được bảo mật', 'Restricted')")) failures.push('Homepage restricted fallback missing');
+if (!home.includes('SensitiveFinancialValue') || !home.includes('value={null}')) failures.push('Homepage restricted component or public-only value missing');
 if (!data.includes('filters.includeAuthorizedFinancials === false')) failures.push('Public cache financial hydration opt-out missing');
 if (!data.includes("filters.includeHidden && filters.revenueBand === 'small'")) failures.push('Owner/Admin exact revenue filtering regression');
 if (!data.includes("q.order('revenue_2025', { ascending: false")) failures.push('Owner/Admin exact revenue sorting regression');
@@ -64,8 +64,8 @@ if (!homepageFunction.includes('includeAuthorizedFinancials: false')) failures.p
 if (homepageFunction.includes("return listBusinesses({ limit: safeLimit, sort: 'featured' });")) failures.push('A Homepage error fallback can still hydrate exact financials');
 const publicOnlyFallbackCount = (homepageFunction.match(/includeAuthorizedFinancials: false/g) || []).length;
 if (publicOnlyFallbackCount < 3) failures.push('All three Homepage fallback paths must remain public-only');
-if (!businesses.includes('financialRestricted')) failures.push('Business cards restricted state missing');
-if (!detail.includes('restrictedFinancialText')) failures.push('Business detail restricted fallback missing');
+if (!businesses.includes('SensitiveFinancialValue')) failures.push('Business cards restricted component missing');
+if (!detail.includes('SensitiveFinancialValue')) failures.push('Business detail restricted component missing');
 if (!investor.includes('revenue_match_band_key') || !investor.includes('attachAuthorizedBusinessFinancials')) failures.push('Investor Dashboard band/grant hydration missing');
 if (!seo.includes("fetchRows('public_businesses_safe', params)")) failures.push('SEO still bypasses safe Business view');
 if (seo.includes("fetchRows('businesses', params)")) failures.push('SEO directly reads businesses table');

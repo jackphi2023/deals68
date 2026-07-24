@@ -1,0 +1,130 @@
+.d68-sensitive-financial {
+  position: relative;
+  display: inline-flex;
+  max-width: 100%;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  color: inherit;
+  line-height: 1.35;
+}
+
+.d68-sensitive-financial__value {
+  font: inherit;
+  color: inherit;
+}
+
+.d68-sensitive-financial__placeholder {
+  display: inline-flex;
+  min-width: 112px;
+  min-height: 28px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #dceaf5;
+  border-radius: 7px;
+  background: #f7fafc;
+  padding: 4px 9px;
+  color: #c8d6e3;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1.4px;
+  user-select: none;
+}
+
+.d68-sensitive-financial.is-compact .d68-sensitive-financial__placeholder {
+  min-width: 92px;
+  min-height: 24px;
+  padding: 3px 7px;
+  font-size: 9px;
+}
+
+.d68-sensitive-financial__info {
+  position: absolute;
+  top: -6px;
+  right: -9px;
+  display: inline-flex;
+  width: 18px;
+  height: 18px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #b9d9ea;
+  border-radius: 999px;
+  background: #fff;
+  color: #1596cc;
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.d68-sensitive-financial__badge {
+  display: inline-flex;
+  max-width: 280px;
+  align-items: flex-start;
+  gap: 4px;
+  color: #256b45;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.d68-sensitive-financial__tooltip {
+  position: absolute;
+  z-index: 80;
+  left: 0;
+  top: calc(100% + 9px);
+  display: none;
+  width: min(320px, calc(100vw - 40px));
+  border: 1px solid #cfe4f0;
+  border-radius: 10px;
+  background: #fff;
+  padding: 10px 12px;
+  box-shadow: 0 12px 28px rgba(15, 42, 74, 0.14);
+  color: #29445f;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.5;
+  white-space: normal;
+}
+
+.d68-sensitive-financial:hover .d68-sensitive-financial__tooltip,
+.d68-sensitive-financial:focus .d68-sensitive-financial__tooltip,
+.d68-sensitive-financial:focus-within .d68-sensitive-financial__tooltip,
+.d68-sensitive-financial.is-open .d68-sensitive-financial__tooltip {
+  display: block;
+}
+
+.d68-sensitive-financial:focus {
+  outline: 2px solid #1badea;
+  outline-offset: 3px;
+  border-radius: 8px;
+}
+
+.d68-sensitive-financial.is-empty {
+  color: #718096;
+  font-size: 0.92em;
+  font-weight: 500;
+}
+
+.d68-register-financial-privacy-note {
+  margin: 10px 0 4px;
+  border: 1px solid #dceaf5;
+  border-radius: 10px;
+  background: #f7fafc;
+  padding: 12px 14px;
+  color: #29445f;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+@media (max-width: 700px) {
+  .d68-sensitive-financial__tooltip {
+    position: fixed;
+    z-index: 1200;
+    left: 20px;
+    right: 20px;
+    top: auto;
+    bottom: 20px;
+    width: auto;
+  }
+}

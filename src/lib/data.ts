@@ -159,6 +159,30 @@ export async function getAuthorizedBusinessFinancialSummaries(
   return rows;
 }
 
+
+function financialAccessMetadata(access: any) {
+  const sources = Array.isArray(access?.sources) ? access.sources : [];
+  const sourceTypes = sources
+    .map((item: any) => String(item?.source_type || '').trim().toLowerCase())
+    .filter(Boolean);
+  const source = sourceTypes.includes('data_request')
+    ? 'data_request'
+    : sourceTypes.includes('proposal')
+      ? 'proposal'
+      : sourceTypes.includes('owner')
+        ? 'owner'
+        : sourceTypes.includes('admin')
+          ? 'admin'
+          : sourceTypes[0] || null;
+  return {
+    financial_access_level: access?.access_level || 'none',
+    financial_access_source: source,
+    financial_request_status: access?.request_status || null,
+    financial_proposal_status: access?.proposal_status || null,
+    financial_access_expires_at: access?.expires_at || null,
+  };
+}
+
 export async function attachAuthorizedBusinessFinancials<T extends Record<string, any>>(
   rows: T[],
 ): Promise<T[]> {
@@ -168,15 +192,34 @@ export async function attachAuthorizedBusinessFinancials<T extends Record<string
   );
   if (!summaries.length) return rows;
 
+  const accessRows = await Promise.all(
+    summaries.map(async (summary) => {
+      const response = await supabase.rpc('d68_get_business_financial_access', {
+        p_business_id: summary.business_id,
+      });
+      if (response.error || !response.data) return null;
+      return {
+        businessId: String(summary.business_id),
+        ...financialAccessMetadata(response.data),
+      };
+    }),
+  );
   const byBusinessId = new Map(
     summaries.map((summary) => [String(summary.business_id), summary]),
+  );
+  const accessByBusinessId = new Map(
+    accessRows
+      .filter(Boolean)
+      .map((access: any) => [String(access.businessId), access]),
   );
   return rows.map((row) => {
     const summary = byBusinessId.get(String(row.id));
     if (!summary) return row;
+    const access = accessByBusinessId.get(String(row.id)) || {};
     return {
       ...row,
       ...summary,
+      ...access,
       id: row.id,
       financial_summary_authorized: true,
       financials_restricted: false,
@@ -557,9 +600,23 @@ export async function getBusinessBySlug(slug: string, options: { includeHidden?:
   const { data, error } = await q.maybeSingle();
   if (error) throw error;
   if (!data) return null;
-  const [row] = await attachAuthorizedBusinessFinancials([
+  let [row] = await attachAuthorizedBusinessFinancials([
     getPublicBusinessView(data),
   ]);
+  if (row && !row.financial_access_level) {
+    const session = await supabase.auth.getSession().catch(() => null);
+    if (session?.data?.session) {
+      const access = await supabase.rpc('d68_get_business_financial_access', {
+        p_business_id: row.id,
+      });
+      if (!access.error && access.data) {
+        row = {
+          ...row,
+          ...financialAccessMetadata(access.data),
+        };
+      }
+    }
+  }
   return row || null;
 }
 

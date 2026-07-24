@@ -10,13 +10,14 @@ import type { Lang } from '../lib/i18n';
 import { BusinessFaq } from '../components/BusinessFaq';
 import { applySeo, DEFAULT_SOCIAL_IMAGE } from '../lib/seo';
 import { businessQualityPublicExplanation, normalizeQualityBreakdown, qualityBand, qualityItemLabel, qualityItemNote, qualityPublicCriteria } from '../lib/businessQuality';
+import SensitiveFinancialValue from '../components/business/SensitiveFinancialValue';
 
 const T = (lang: Lang, vi: string, en: string) => (lang === 'en' ? en : vi);
 
 type Doc = { id?: string; file_name?: string; display_name?: string; file_type?: string; size_bytes?: number; category?: string; privacy_level?: string; public_visible?: boolean; file_path?: string; created_at?: string };
 type Img = { id?: string; public_url?: string; display_title?: string; title?: string; is_hero?: boolean };
-type SimilarDeal = { id: string; slug: string; title: string; industry: string; city: string; revenue: string; ask: string; image: string | null };
-type FactRow = { label: string; value: string };
+type SimilarDeal = { id: string; slug: string; title: string; industry: string; city: string; revenue: ReactNode; ask: string; image: string | null };
+type FactRow = { label: string; value: ReactNode };
 type TransactionInfoRow = { label: string; value: string };
 
 function cleanText(value: any) { return String(value || '').trim(); }
@@ -51,7 +52,6 @@ function fileSize(bytes?: number) {
   return `${n} B`;
 }
 function money(lang: Lang, value: any, currency: string) { return formatMoneyForLang(Number(value || 0), currency || 'VND', lang); }
-function restrictedFinancialText(lang: Lang) { return T(lang, 'Được bảo mật', 'Restricted'); }
 function qualityLabel(lang: Lang, value: any) {
   const n = Number(value);
   if (!Number.isFinite(n) || value === null || value === undefined || value === '') return T(lang, 'Đang cập nhật', 'Pending');
@@ -90,7 +90,17 @@ function normalizeSimilar(row: any, lang: Lang): SimilarDeal | null {
   const slug = cleanText(row.slug);
   if (!slug) return null;
   const title = T(lang, row.title_vi || row.public_code || 'Hồ sơ doanh nghiệp ẩn danh', row.title_en || row.title_vi || row.public_code || 'Anonymous business profile');
-  return { id: String(row.id || slug), slug, title, industry: labelIndustry(primaryIndustry(row.industry), lang), city: labelLocation(row.city_key || row.city || row.country_iso2, lang), revenue: row.revenue_2025 === null || row.revenue_2025 === undefined ? restrictedFinancialText(lang) : money(lang, row.revenue_2025, row.revenue_currency || 'VND'), ask: money(lang, row.ask_amount, row.ask_currency || row.revenue_currency || 'VND'), image: row.image_url || row.hero_image_url || null };
+  return { id: String(row.id || slug), slug, title, industry: labelIndustry(primaryIndustry(row.industry), lang), city: labelLocation(row.city_key || row.city || row.country_iso2, lang), revenue: (
+    <SensitiveFinancialValue
+      lang={lang}
+      value={row.revenue_2025 === null || row.revenue_2025 === undefined ? null : money(lang, row.revenue_2025, row.revenue_currency || 'VND')}
+      isAuthorized={row.revenue_2025 !== null && row.revenue_2025 !== undefined}
+      hasData={String(row.revenue_band_key || 'unknown') !== 'unknown' || String(row.revenue_match_band_key || 'unknown') !== 'unknown'}
+      requestStatus={row.financial_request_status}
+      source={row.financial_access_source}
+      compact
+    />
+  ), ask: money(lang, row.ask_amount, row.ask_currency || row.revenue_currency || 'VND'), image: row.image_url || row.hero_image_url || null };
 }
 function inferredSelfValuation(b: any) {
   const stored = Number(b?.self_valuation || 0);
@@ -279,11 +289,14 @@ export default function BusinessDetail({ lang }: { lang: Lang }) {
   ]);
   const dealTypeLabel = business ? dealLabel(lang, business.deal_type) : '';
   const ask = business ? money(lang, business.ask_amount, business.ask_currency || business.revenue_currency || 'VND') : '';
-  const revenue = business
-    ? business.revenue_2025 === null || business.revenue_2025 === undefined
-      ? restrictedFinancialText(lang)
-      : money(lang, business.revenue_2025, business.revenue_currency || 'VND')
-    : '';
+  const revenue = business ? <SensitiveFinancialValue
+    lang={lang}
+    value={business.revenue_2025 === null || business.revenue_2025 === undefined ? null : money(lang, business.revenue_2025, business.revenue_currency || 'VND')}
+    isAuthorized={business.revenue_2025 !== null && business.revenue_2025 !== undefined}
+    hasData={String(business.revenue_band_key || 'unknown') !== 'unknown' || String(business.revenue_match_band_key || 'unknown') !== 'unknown'}
+    requestStatus={business.financial_request_status}
+    source={business.financial_access_source}
+  /> : null;
   const stake = business?.stake_pct === null || business?.stake_pct === undefined ? T(lang, 'Đang cập nhật', 'Pending') : percent(business.stake_pct);
   const quality = business ? qualityLabel(lang, business.quality_score) : '';
   const industry = business ? labelIndustry(primaryIndustry(business.industry), lang) : '';
@@ -301,7 +314,14 @@ export default function BusinessDetail({ lang }: { lang: Lang }) {
     { label: T(lang, 'Địa điểm', 'Location'), value: location },
     { label: T(lang, 'Loại giao dịch', 'Transaction'), value: dealTypeLabel },
     { label: T(lang, 'Doanh thu năm', 'Annual revenue'), value: revenue },
-    { label: T(lang, 'Tỷ suất lợi nhuận/EBITDA', 'EBITDA margin'), value: business.ebitda_margin === null || business.ebitda_margin === undefined ? (business.has_financial_data ? restrictedFinancialText(lang) : T(lang, 'Đang cập nhật', 'Pending')) : percent(business.ebitda_margin) },
+    { label: T(lang, 'Tỷ suất lợi nhuận/EBITDA', 'EBITDA margin'), value: <SensitiveFinancialValue
+      lang={lang}
+      value={business.ebitda_margin === null || business.ebitda_margin === undefined ? null : percent(business.ebitda_margin)}
+      isAuthorized={business.ebitda_margin !== null && business.ebitda_margin !== undefined}
+      hasData={String(business.ebitda_band_key || 'unknown') !== 'unknown'}
+      requestStatus={business.financial_request_status}
+      source={business.financial_access_source}
+    /> },
     { label: askLabel(lang, business.deal_type), value: ask },
     { label: T(lang, 'Tỷ lệ cổ phần', 'Stake'), value: stake },
     { label: T(lang, 'DN tự định giá', 'Company self-valuation'), value: selfValLabel },
