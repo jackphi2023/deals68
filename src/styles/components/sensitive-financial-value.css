@@ -17,8 +17,9 @@
 .d68-sensitive-financial__placeholder {
   position: relative;
   display: inline-block;
-  width: 126px;
-  height: 30px;
+  width: 68px;
+  height: auto;
+  aspect-ratio: 257 / 81;
   overflow: hidden;
   border: 0;
   border-radius: 999px;
@@ -28,7 +29,7 @@
 
 .d68-sensitive-financial__placeholder::before {
   position: absolute;
-  inset: 5px 3px;
+  inset: 3px 1px;
   border-radius: 999px;
   background:
     radial-gradient(
@@ -38,19 +39,18 @@
       rgba(164, 172, 180, 0.16) 56%,
       rgba(255, 255, 255, 0) 80%
     );
-  filter: blur(6px);
+  filter: blur(4px);
   content: '';
   transform: scaleX(1.08);
 }
 
 .d68-sensitive-financial.is-compact .d68-sensitive-financial__placeholder {
-  width: 100px;
-  height: 24px;
+  width: 68px;
 }
 
 .d68-sensitive-financial.is-compact .d68-sensitive-financial__placeholder::before {
-  inset: 4px 2px;
-  filter: blur(5px);
+  inset: 3px 1px;
+  filter: blur(4px);
 }
 
 .d68-sensitive-financial__info {
@@ -67,17 +67,6 @@
   line-height: 1;
   transform: translateY(-50%);
   white-space: nowrap;
-}
-
-.d68-sensitive-financial__badge {
-  display: inline-flex;
-  max-width: 280px;
-  align-items: flex-start;
-  gap: 4px;
-  color: #256b45;
-  font-size: 11px;
-  font-weight: 600;
-  line-height: 1.35;
 }
 
 .d68-sensitive-financial__tooltip {
