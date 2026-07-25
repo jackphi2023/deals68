@@ -8,6 +8,7 @@ function expect(name, condition) {
 
 const component = read('src/components/business/SensitiveFinancialValue.tsx');
 const css = read('src/styles/components/sensitive-financial-value.css');
+const pricingSessionCss = read('src/styles/pages/pricing-session12.css');
 const stylesEntry = read('src/styles/index.css');
 const home = read('src/pages/Home.tsx');
 const businesses = read('src/pages/Businesses.tsx');
@@ -33,6 +34,10 @@ expect('detail hint uses [?]', component.includes('>[?]</span>'));
 expect('keyboard support', component.includes("event.key !== 'Enter'") && component.includes("event.key !== ' '"));
 expect('aria support', component.includes('aria-describedby') && component.includes('role="tooltip"'));
 expect('compact cards have no tooltip trigger', component.includes('tabIndex={showHint ? 0 : undefined}') && component.includes('{showHint ? ('));
+expect('Business Detail facts contain the hint inside the value column', css.includes('.d68-detail-facts .d68-sensitive-financial.is-restricted') && css.includes('grid-template-columns: 68px max-content'));
+expect('Business Detail summary contains the hint inside the value column', css.includes('.d68-detail-summary-card .d68-sensitive-financial.is-restricted'));
+expect('Business Detail hint no longer uses absolute overflow', css.includes('.d68-detail-summary-card .d68-sensitive-financial.is-pending .d68-sensitive-financial__info') && css.includes('position: static'));
+expect('Pricing promo placeholder is visually removed', pricingSessionCss.includes('.d68-pricing-page .d68-pricing-promo input::placeholder') && pricingSessionCss.includes('color:transparent') && pricingSessionCss.includes('opacity:0'));
 expect('component css imported by owner', stylesEntry.includes("./components/sensitive-financial-value.css"));
 expect('Homepage uses shared component', home.includes('<SensitiveFinancialValue'));
 expect('Homepage always supplies null exact Revenue value', home.includes('value={null}'));
