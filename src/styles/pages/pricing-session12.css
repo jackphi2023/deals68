@@ -75,6 +75,12 @@
   box-shadow:0 0 0 3px rgba(242,181,29,.38);
 }
 
+/* Keep the promo input visually empty until the user enters a code. */
+.d68-pricing-page .d68-pricing-promo input::placeholder{
+  color:transparent;
+  opacity:0;
+}
+
 @media (prefers-reduced-motion:reduce){
   .d68-pricing-page .d68-pricing-checkout-wrap[data-tooltip]::after,
   .d68-pricing-page .d68-pricing-checkout-wrap[data-tooltip]::before{
