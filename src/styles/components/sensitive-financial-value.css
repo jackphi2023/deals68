@@ -69,6 +69,29 @@
   white-space: nowrap;
 }
 
+/* Business Detail keeps the blur and [?] inside the value column.
+   The inline grid is right-aligned by the existing fact/summary value styles,
+   so the hint no longer overflows either card. */
+.d68-detail-facts .d68-sensitive-financial.is-restricted,
+.d68-detail-facts .d68-sensitive-financial.is-pending,
+.d68-detail-summary-card .d68-sensitive-financial.is-restricted,
+.d68-detail-summary-card .d68-sensitive-financial.is-pending {
+  display: inline-grid;
+  grid-template-columns: 68px max-content;
+  align-items: center;
+  justify-content: end;
+  column-gap: 6px;
+  vertical-align: middle;
+}
+
+.d68-detail-facts .d68-sensitive-financial.is-restricted .d68-sensitive-financial__info,
+.d68-detail-facts .d68-sensitive-financial.is-pending .d68-sensitive-financial__info,
+.d68-detail-summary-card .d68-sensitive-financial.is-restricted .d68-sensitive-financial__info,
+.d68-detail-summary-card .d68-sensitive-financial.is-pending .d68-sensitive-financial__info {
+  position: static;
+  transform: none;
+}
+
 .d68-sensitive-financial__tooltip {
   position: absolute;
   z-index: 80;
