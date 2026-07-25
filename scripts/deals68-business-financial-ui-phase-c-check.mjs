@@ -41,7 +41,7 @@ expect('Business List uses shared component twice', (businesses.match(/<Sensitiv
 expect('Business Detail uses shared component', (detail.match(/<SensitiveFinancialValue/g) || []).length >= 3);
 expect('Investor Dashboard uses shared component', investorDashboard.includes('<SensitiveFinancialValue'));
 expect('Register privacy wording source remains centralized', register.includes('Các số liệu tài chính chính xác chỉ được chia sẻ'));
-expect('Register privacy wording removes general ranges', labelsBase.includes('chỉ thấy trạng thái bảo mật\'') && !labelsBase.includes('chỉ thấy trạng thái bảo mật hoặc khoảng dữ liệu tổng quát.\':'));
+expect('Register privacy wording updated', labelsBase.includes("'Các số liệu tài chính chính xác chỉ được chia sẻ với nhà đầu tư khi doanh nghiệp gửi Proposal hoặc chấp thuận yêu cầu dữ liệu. Người xem công khai và nhà đầu tư chưa được cấp quyền chỉ thấy trạng thái bảo mật',"));
 expect('Register asset placeholder copy updated', labelsBase.includes('Nhập số: giá trị đất đai/nhà máy/khách sạn/tòa nhà...'));
 expect('server-derived access metadata', data.includes('d68_get_business_financial_access'));
 expect('public revenue sorting remains band-based', data.includes("q.order('revenue_band_rank'"));
