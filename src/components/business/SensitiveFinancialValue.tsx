@@ -31,18 +31,12 @@ function text(lang: Lang, vi: string, en: string) {
   return lang === 'en' ? en : vi;
 }
 
-function normalizedSource(source: SensitiveFinancialSource) {
-  const value = String(source || '').trim().toLowerCase();
-  return value === 'data-request' ? 'data_request' : value;
-}
-
 export default function SensitiveFinancialValue({
   lang,
   value,
   isAuthorized = false,
   hasData = true,
   requestStatus,
-  source,
   compact = false,
   className = '',
 }: Props) {
@@ -59,7 +53,6 @@ export default function SensitiveFinancialValue({
       String(requestStatus || '').trim().toLowerCase(),
     );
   const restricted = !hasExactValue && hasData;
-  const sourceType = normalizedSource(source);
   const showHint = (restricted || pending) && !compact;
 
   if (!hasExactValue && !hasData && !pending) {
@@ -81,21 +74,6 @@ export default function SensitiveFinancialValue({
         'Chỉ nhà đầu tư được doanh nghiệp gửi Proposal hoặc được doanh nghiệp chấp thuận yêu cầu dữ liệu mới xem được.',
         'Only investors who receive a Proposal from the Business or whose data request is approved by the Business can view this information.',
       );
-
-  const badge =
-    hasExactValue && sourceType === 'proposal'
-      ? text(
-          lang,
-          'Được doanh nghiệp chia sẻ qua Proposal.',
-          'Shared by the Business through a Proposal.',
-        )
-      : hasExactValue && sourceType === 'data_request'
-        ? text(
-            lang,
-            'Doanh nghiệp đã cấp quyền xem số liệu.',
-            'The Business has granted access to this information.',
-          )
-        : '';
 
   function toggle(event: MouseEvent<HTMLSpanElement>) {
     if (!showHint) return;
@@ -139,7 +117,6 @@ export default function SensitiveFinancialValue({
       {showHint ? (
         <span className="d68-sensitive-financial__info" aria-hidden="true">[?]</span>
       ) : null}
-      {badge ? <small className="d68-sensitive-financial__badge">✓ {badge}</small> : null}
       {showHint ? (
         <span id={tooltipId} role="tooltip" className="d68-sensitive-financial__tooltip">
           {explanation}
