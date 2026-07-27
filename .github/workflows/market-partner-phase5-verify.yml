@@ -1,0 +1,79 @@
+name: Market Partner Phase 5 Apply and Verify
+
+'on':
+  pull_request:
+    branches: [building]
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    if: github.head_ref == 'feature/market-partner-affiliate-v1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/market-partner-affiliate-v1
+          fetch-depth: 1
+          show-progress: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Apply exact Phase 5 patches
+        run: |
+          node scripts/_apply_market_partner_phase5_admin.mjs
+          node scripts/_apply_market_partner_phase5_css.mjs
+          node scripts/_apply_market_partner_phase5_registry.mjs
+          node scripts/_apply_market_partner_phase5_qa_reconcile.mjs
+      - run: npm ci
+      - name: Required Phase 1-5 QA
+        run: |
+          set +e
+          {
+            npm run build
+            npm run qa:release
+            npm run qa:css
+            npm run qa:migrations
+            node scripts/qa-market-partner-v1.mjs
+            node scripts/qa-market-partner-phase4.mjs
+            node scripts/qa-market-partner-phase5.mjs
+            git diff --check
+          } > /tmp/phase5-qa.log 2>&1
+          QA_STATUS=$?
+          cat /tmp/phase5-qa.log
+          exit "$QA_STATUS"
+      - name: Upload Phase 5 QA diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: market-partner-phase5-qa
+          path: /tmp/phase5-qa.log
+          if-no-files-found: error
+      - name: Remove temporary Phase 5 files
+        run: |
+          rm -f scripts/_apply_market_partner_phase5_admin.mjs
+          rm -f scripts/_apply_market_partner_phase5_css.mjs
+          rm -f scripts/_apply_market_partner_phase5_registry.mjs
+          rm -f scripts/_apply_market_partner_phase5_qa_reconcile.mjs
+          rm -f docs/release/.market-partner-phase5-trigger
+          rm -f .github/workflows/market-partner-phase5-verify.yml
+      - name: Commit verified Phase 5 tree
+        run: |
+          git config user.name 'deals68-phase5-bot'
+          git config user.email 'actions@users.noreply.github.com'
+          git add -A
+          if git diff --cached --diff-filter=ACMR --name-only | grep -E '(^scripts/_apply_market_partner_phase5_|^docs/release/\.market-partner-phase5-trigger$|^\.github/workflows/market-partner-phase5-verify\.yml$)'; then
+            echo 'Temporary Phase 5 files remain in final staged tree'
+            exit 1
+          fi
+          git diff --cached --check
+          if git diff --cached --quiet; then
+            echo 'No Phase 5 changes to commit'
+            exit 0
+          fi
+          git commit -m 'feat(market-partner): complete Phase 5 commission payout lifecycle'
+          git push origin HEAD:feature/market-partner-affiliate-v1
