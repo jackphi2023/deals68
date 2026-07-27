@@ -2,6 +2,8 @@ import { supabase } from './supabase';
 
 export type MarketPartnerStatus = 'active' | 'suspended';
 export type CommissionBasisCurrency = 'VND' | 'USD';
+export type AffiliateCommissionStatus = 'pending' | 'approved' | 'rejected' | 'paid' | 'reversed';
+export type AffiliatePayoutStatus = 'draft' | 'approved' | 'processing' | 'paid' | 'rejected' | 'cancelled';
 
 export const DEFAULT_MARKET_PARTNER_COMMERCIAL_POLICY = {
   customerDiscountPct: 40,
@@ -57,6 +59,52 @@ export type PartnerLeadRow = {
   updated_at?: string | null;
 };
 
+export type AffiliateCommissionRow = {
+  id: string;
+  partner_id: string;
+  partner_name?: string;
+  affiliate_code?: string;
+  payment_order_code?: string | null;
+  currency: string;
+  net_paid_amount: number;
+  commission_pct: number;
+  commission_amount: number;
+  status: AffiliateCommissionStatus;
+  payout_id?: string | null;
+  payout_code?: string | null;
+  source?: string;
+  policy_snapshot?: Record<string, unknown>;
+  approved_at?: string | null;
+  rejected_at?: string | null;
+  rejection_reason?: string | null;
+  paid_at?: string | null;
+  note?: string | null;
+  created_at: string;
+  updated_at?: string;
+};
+
+export type AffiliatePayoutRow = {
+  id: string;
+  partner_id: string;
+  partner_name?: string;
+  affiliate_code?: string;
+  payout_code: string;
+  period_start?: string | null;
+  period_end?: string | null;
+  currency: string;
+  gross_commission_amount: number;
+  adjustment_amount: number;
+  net_payout_amount: number;
+  commission_count: number;
+  status: AffiliatePayoutStatus;
+  payment_reference?: string | null;
+  note?: string | null;
+  approved_at?: string | null;
+  paid_at?: string | null;
+  created_at: string;
+  updated_at?: string;
+};
+
 export type MarketPartnerCommercialPolicyInput = {
   customerDiscountPct: number;
   commissionPct: number;
@@ -99,6 +147,8 @@ export type MarketPartnerDashboardMetrics = {
 export type MarketPartnerDashboardData = {
   partner: MarketPartnerRow;
   metrics: MarketPartnerDashboardMetrics;
+  commissions: AffiliateCommissionRow[];
+  payouts: AffiliatePayoutRow[];
 };
 
 export type MarketPartnerBankAccount = {
@@ -155,12 +205,26 @@ function asDashboard(value: unknown): MarketPartnerDashboardData {
   if (!source.partner || !source.metrics) {
     throw new Error('Market Partner dashboard response is incomplete.');
   }
-  return source as MarketPartnerDashboardData;
+  return {
+    ...(source as unknown as MarketPartnerDashboardData),
+    commissions: Array.isArray(source.commissions) ? source.commissions as AffiliateCommissionRow[] : [],
+    payouts: Array.isArray(source.payouts) ? source.payouts as AffiliatePayoutRow[] : [],
+  };
 }
 
 function normalizePartnerList(value: unknown): MarketPartnerRow[] {
   if (!Array.isArray(value)) return [];
   return value.filter((item) => item && typeof item === 'object') as MarketPartnerRow[];
+}
+
+function normalizeCommissionList(value: unknown): AffiliateCommissionRow[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter((item) => item && typeof item === 'object') as AffiliateCommissionRow[];
+}
+
+function normalizePayoutList(value: unknown): AffiliatePayoutRow[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter((item) => item && typeof item === 'object') as AffiliatePayoutRow[];
 }
 
 function throwRpcError(error: { message?: string } | null, fallback: string): never {
@@ -203,11 +267,29 @@ async function updateCommercialPolicy(
 
 export async function listAdminMarketPartners(): Promise<MarketPartnerRow[]> {
   const { data, error } = await supabase.rpc('d68_admin_list_market_partners');
-  // Keep existing Admin modules usable before the additive migration is applied.
-  // Mutation RPCs remain fail-closed; only the list call degrades to an empty module.
   if (error && isPhaseOneRpcUnavailable(error)) return [];
   if (error) throwRpcError(error, 'Could not load Market Partners.');
   return normalizePartnerList(data);
+}
+
+export async function listAdminAffiliateCommissions(): Promise<AffiliateCommissionRow[]> {
+  const { data, error } = await supabase.rpc('d68_admin_list_affiliate_commissions', {
+    p_partner_id: null,
+    p_status: null,
+  });
+  if (error && isPhaseOneRpcUnavailable(error)) return [];
+  if (error) throwRpcError(error, 'Could not load affiliate commissions.');
+  return normalizeCommissionList(data);
+}
+
+export async function listAdminAffiliatePayouts(): Promise<AffiliatePayoutRow[]> {
+  const { data, error } = await supabase.rpc('d68_admin_list_affiliate_payouts', {
+    p_partner_id: null,
+    p_status: null,
+  });
+  if (error && isPhaseOneRpcUnavailable(error)) return [];
+  if (error) throwRpcError(error, 'Could not load affiliate payouts.');
+  return normalizePayoutList(data);
 }
 
 export async function createMarketPartner(input: MarketPartnerInput): Promise<MarketPartnerRow> {
@@ -280,6 +362,66 @@ export async function regenerateMarketPartnerCode(
   });
   if (error) throwRpcError(error, 'Could not generate a new affiliate code.');
   return asPartner(data);
+}
+
+export async function setAffiliateCommissionStatus(
+  commissionId: string,
+  status: 'approved' | 'rejected' | 'reversed',
+  note?: string,
+): Promise<AffiliateCommissionRow> {
+  const { data, error } = await supabase.rpc('d68_admin_set_affiliate_commission_status', {
+    p_commission_id: commissionId,
+    p_status: status,
+    p_note: note?.trim() || null,
+  });
+  if (error) throwRpcError(error, 'Could not update affiliate commission.');
+  return data as AffiliateCommissionRow;
+}
+
+export async function createAffiliatePayout(input: {
+  partnerId: string;
+  currency: string;
+  commissionIds: string[];
+  periodStart?: string;
+  periodEnd?: string;
+  adjustmentAmount?: number;
+  note?: string;
+}): Promise<AffiliatePayoutRow> {
+  const { data, error } = await supabase.rpc('d68_admin_create_affiliate_payout', {
+    p_partner_id: input.partnerId,
+    p_currency: input.currency.trim().toUpperCase(),
+    p_commission_ids: input.commissionIds,
+    p_period_start: input.periodStart || null,
+    p_period_end: input.periodEnd || null,
+    p_adjustment_amount: Number(input.adjustmentAmount || 0),
+    p_note: input.note?.trim() || null,
+  });
+  if (error) throwRpcError(error, 'Could not create affiliate payout.');
+  return data as AffiliatePayoutRow;
+}
+
+export async function setAffiliatePayoutStatus(
+  payoutId: string,
+  status: 'approved' | 'processing' | 'paid' | 'rejected' | 'cancelled',
+  paymentReference?: string,
+  note?: string,
+): Promise<AffiliatePayoutRow> {
+  const { data, error } = await supabase.rpc('d68_admin_set_affiliate_payout_status', {
+    p_payout_id: payoutId,
+    p_status: status,
+    p_payment_reference: paymentReference?.trim() || null,
+    p_note: note?.trim() || null,
+  });
+  if (error) throwRpcError(error, 'Could not update affiliate payout.');
+  return data as AffiliatePayoutRow;
+}
+
+export async function reconcileAffiliatePayment(paymentOrderId: string) {
+  const { data, error } = await supabase.rpc('d68_admin_reconcile_affiliate_payment', {
+    p_payment_order_id: paymentOrderId,
+  });
+  if (error) throwRpcError(error, 'Could not reconcile affiliate payment.');
+  return data as AffiliateCommissionRow | null;
 }
 
 export async function getMyMarketPartnerDashboard(): Promise<MarketPartnerDashboardData> {
