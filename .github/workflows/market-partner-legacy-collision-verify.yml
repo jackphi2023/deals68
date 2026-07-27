@@ -1,0 +1,68 @@
+name: Market Partner Legacy Collision Verify
+
+'on':
+  pull_request:
+    branches: [building]
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    if: github.head_ref == 'feature/market-partner-affiliate-v1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/market-partner-affiliate-v1
+          fetch-depth: 1
+          show-progress: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Apply production collision hardening
+        run: node scripts/_apply_market_partner_legacy_collision_hardening.mjs
+      - run: npm ci
+      - name: Required final Phase 1-5 QA
+        run: |
+          set +e
+          {
+            npm run build
+            npm run qa:release
+            npm run qa:css
+            npm run qa:migrations
+            node scripts/qa-market-partner-v1.mjs
+            node scripts/qa-market-partner-phase4.mjs
+            node scripts/qa-market-partner-phase5.mjs
+            git diff --check
+          } > /tmp/market-partner-collision-qa.log 2>&1
+          STATUS=$?
+          cat /tmp/market-partner-collision-qa.log
+          exit "$STATUS"
+      - name: Upload collision diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: market-partner-legacy-collision-qa
+          path: /tmp/market-partner-collision-qa.log
+          if-no-files-found: error
+      - name: Remove temporary collision files
+        run: |
+          rm -f scripts/_apply_market_partner_legacy_collision_hardening.mjs
+          rm -f docs/release/.market-partner-legacy-collision-trigger
+          rm -f .github/workflows/market-partner-legacy-collision-verify.yml
+      - name: Commit verified collision-safe tree
+        run: |
+          git config user.name 'deals68-market-partner-collision-bot'
+          git config user.email 'actions@users.noreply.github.com'
+          git add -A
+          if git diff --cached --diff-filter=ACMR --name-only | grep -E '(^scripts/_apply_market_partner_legacy_collision_hardening\.mjs$|^docs/release/\.market-partner-legacy-collision-trigger$|^\.github/workflows/market-partner-legacy-collision-verify\.yml$)'; then
+            echo 'Temporary collision files remain'
+            exit 1
+          fi
+          git diff --cached --check
+          git commit -m 'fix(market-partner): preserve legacy affiliate placeholder tables'
+          git push origin HEAD:feature/market-partner-affiliate-v1
