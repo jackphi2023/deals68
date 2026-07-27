@@ -1,0 +1,35 @@
+name: Market Partner Phase 2 Verify
+
+on:
+  pull_request:
+    branches: [building]
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/market-partner-affiliate-v1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Phase 2 required QA
+        run: |
+          npm run build
+          npm run qa:release
+          npm run qa:css
+          npm run qa:migrations
+          node scripts/qa-market-partner-v1.mjs
+      - name: Diff integrity
+        run: |
+          git diff --check
+          git status --short
