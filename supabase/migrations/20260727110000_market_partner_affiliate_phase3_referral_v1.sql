@@ -54,14 +54,20 @@ begin
     v_requested_click_id := null;
   end;
 
-  if v_requested_click_id is not null then
-    select c.id into v_click_id
-    from public.affiliate_clicks c
-    where c.id = v_requested_click_id
-      and c.partner_id = v_partner.id
-      and c.affiliate_code = v_partner.affiliate_code
-      and c.clicked_at >= now() - interval '30 days'
-    limit 1;
+  if v_requested_click_id is null then
+    return new;
+  end if;
+
+  select c.id into v_click_id
+  from public.affiliate_clicks c
+  where c.id = v_requested_click_id
+    and c.partner_id = v_partner.id
+    and c.affiliate_code = v_partner.affiliate_code
+    and c.clicked_at >= now() - interval '30 days'
+  limit 1;
+
+  if v_click_id is null then
+    return new;
   end if;
 
   insert into public.affiliate_attributions (
@@ -86,7 +92,7 @@ begin
     jsonb_build_object(
       'source', 'signup',
       'attribution_model', 'last_valid_referral_30d',
-      'click_validated', v_click_id is not null
+      'click_validated', true
     ),
     now(),
     now()
@@ -126,4 +132,4 @@ after insert or update of role on public.profiles
 for each row execute function public.d68_attach_affiliate_attribution_from_profile();
 
 comment on function public.d68_attach_affiliate_attribution_from_profile() is
-  'Phase 3 server-side signup attribution. Reads validated referral metadata from the new Auth user, accepts only active partners and an optional matching click from the last 30 days, and never creates commission or changes payment.';
+  'Phase 3 server-side signup attribution. Requires an active partner and a matching referral click from the last 30 days; never creates commission or changes payment.';
