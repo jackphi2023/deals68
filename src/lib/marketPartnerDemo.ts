@@ -42,7 +42,7 @@ export type DemoAffiliateCommissionRow = AffiliateCommissionRow & {
   term_weeks: number;
 };
 
-export type MarketPartnerDemoDashboardData = MarketPartnerDashboardData & {
+export type MarketPartnerDemoDashboardData = Omit<MarketPartnerDashboardData, 'commissions'> & {
   transactions: DemoPartnerTransaction[];
   summary: {
     confirmedRevenue: number;
