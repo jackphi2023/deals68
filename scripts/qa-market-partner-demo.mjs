@@ -55,6 +55,8 @@ for (const publicTitleVi of [
 ]) assert.ok(dataSource.includes(publicTitleVi), `Missing public Vietnamese business title: ${publicTitleVi}`);
 assert.ok(dashboardSource.includes('row.businessTitleVi'));
 assert.ok(dashboardSource.includes('row.business_title_vi'));
+assert.equal((dashboardSource.match(/row\.businessTitleVi/g) || []).length, 1);
+assert.equal((dashboardSource.match(/row\.business_title_vi/g) || []).length, 1);
 assert.ok(!dashboardSource.includes('<td><b>{row.businessCode}</b>'));
 assert.ok(!dashboardSource.includes('<td><b>{row.business_code}</b></td>'));
 
