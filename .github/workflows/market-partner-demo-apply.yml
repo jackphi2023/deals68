@@ -6,12 +6,16 @@ name: Market Partner Demo Apply
     paths:
       - 'scripts/_apply_market_partner_demo_routes.mjs'
       - '.github/workflows/market-partner-demo-apply.yml'
+  pull_request:
+    branches: [building]
+    types: [opened, synchronize, reopened]
 
 permissions:
   contents: write
 
 jobs:
   apply-and-verify:
+    if: github.head_ref == 'feature/market-partner-demo-static-v1' || github.ref_name == 'feature/market-partner-demo-static-v1'
     runs-on: ubuntu-latest
     timeout-minutes: 50
     steps:
