@@ -154,7 +154,7 @@ export default function MarketPartnerDemoDashboard() {
               <div className="d68-mp-metrics">
                 <Metric label="Doanh thu đã xác nhận" value={money(summary.confirmedRevenue, currency)} note="4 giao dịch thành công" positive />
                 <Metric label="Chờ xác nhận" value={money(summary.pendingRevenue, currency)} note="1 giao dịch chuyển khoản" gold />
-                <Metric label="Hoa hồng dự kiến" value={money(summary.projectedPendingCommission, currency)} note="chưa ghi nhận đến khi payment confirmed" />
+                <Metric label="Hoa hồng dự kiến" value={money(summary.projectedPendingCommission, currency)} note="chưa ghi nhận đến khi thanh toán đã được xác thực" />
               </div>
               <TransactionHistory rows={transactions} />
             </div>
@@ -165,14 +165,14 @@ export default function MarketPartnerDemoDashboard() {
           {tab === 'campaigns' ? (
             <div className="d68-mp-finance-history">
               <article className="d68-mp-referral-card">
-                <div><h2>Link giới thiệu của bạn</h2><a href={referralLink} target="_blank" rel="noreferrer">{referralLink}</a><p>Mã affiliate: {partner.affiliate_code}. Giảm giá X = 40%; promo code khác không được cộng dồn.</p></div>
+                <div><h2>Link giới thiệu của bạn</h2><a href={referralLink} target="_blank" rel="noreferrer">{referralLink}</a><p>Mã Đối tác: {partner.affiliate_code}. Giảm giá X = 40%; promo code khác không được cộng dồn.</p></div>
                 <button onClick={copyLink}><Copy size={17} /> Copy link</button>
               </article>
               <article className="d68-mp-history-card">
-                <div><h2>Hiệu quả chiến dịch</h2><p>Tổng hợp theo mã affiliate hiện tại.</p></div>
+                <div><h2>Hiệu quả chiến dịch</h2><p>Tổng hợp theo mã đối tác hiện tại.</p></div>
                 <div className="d68-mp-table-wrap">
                   <table className="d68-mp-table">
-                    <thead><tr><th>Mã affiliate</th><th>Lượt click</th><th>Đăng ký</th><th>Đã thanh toán</th><th>Tỷ lệ chuyển đổi</th></tr></thead>
+                    <thead><tr><th>Mã Đối tác</th><th>Lượt click</th><th>Đăng ký</th><th>Đã thanh toán</th><th>Tỷ lệ chuyển đổi</th></tr></thead>
                     <tbody><tr><td><b>{partner.affiliate_code}</b></td><td>{metrics.click_count}</td><td>{metrics.signup_count}</td><td>{metrics.paid_transaction_count}</td><td><b>{conversionRate}%</b></td></tr></tbody>
                   </table>
                 </div>
@@ -194,14 +194,14 @@ function Metric({ label, value, note, positive, gold }: { label: string; value: 
 function TransactionHistory({ rows }: { rows: DemoPartnerTransaction[] }) {
   return (
     <article className="d68-mp-history-card">
-      <div><h2>Giao dịch giới thiệu</h2><p>Giá và hoa hồng được tính theo đúng thứ tự: giảm kỳ hạn → giảm Partner X → hoa hồng Y trên số tiền thực trả.</p></div>
+      <div><h2>Giao dịch giới thiệu</h2><p>Giá và hoa hồng được tính theo trị thanh toán của khách hàng.</p></div>
       <div className="d68-mp-table-wrap">
         <table className="d68-mp-table">
           <thead><tr><th>Doanh nghiệp</th><th>Gói</th><th>Phí gốc</th><th>Giảm kỳ hạn</th><th>Giảm Partner</th><th>Khách thực trả</th><th>Hoa hồng</th><th>Thanh toán</th></tr></thead>
           <tbody>
             {rows.map((row) => (
               <tr key={row.businessCode}>
-                <td><b>{row.businessCode}</b><br /><small>{new Date(row.createdAt).toLocaleDateString('vi-VN')}</small></td>
+                <td><b>{row.businessTitleVi}</b><br /><small>{new Date(row.createdAt).toLocaleDateString('vi-VN')}</small></td>
                 <td>{row.termWeeks} tuần</td>
                 <td>{money(row.subtotal)}</td>
                 <td>{row.termDiscountPct}%<br /><small>−{money(row.termDiscount)}</small></td>
@@ -222,17 +222,17 @@ function PartnerFinanceHistory({ commissions, payouts }: { commissions: typeof M
   return (
     <div className="d68-mp-finance-history">
       <article className="d68-mp-history-card">
-        <div><h2>Commission</h2><p>Không hiển thị danh tính khách hàng hoặc payment payload.</p></div>
+        <div><h2>Thu nhập</h2><p>Khách hàng đã được xác nhận thanh toán dịch vụ thành công.</p></div>
         <div className="d68-mp-table-wrap">
           <table className="d68-mp-table">
             <thead><tr><th>Ngày</th><th>Doanh nghiệp</th><th>Gói</th><th>Khách thực trả</th><th>Y</th><th>Hoa hồng</th><th>Trạng thái</th></tr></thead>
-            <tbody>{commissions.map((row) => <tr key={row.id}><td>{new Date(row.created_at).toLocaleDateString('vi-VN')}</td><td><b>{row.business_code}</b></td><td>{row.term_weeks} tuần</td><td>{money(row.net_paid_amount, row.currency)}</td><td>{number(row.commission_pct)}%</td><td><b>{money(row.commission_amount, row.currency)}</b></td><td><span className={`d68-mp-status d68-mp-status--${row.status}`}>{statusLabel(row.status)}</span>{row.payout_code ? <><br /><code>{row.payout_code}</code></> : null}</td></tr>)}</tbody>
+            <tbody>{commissions.map((row) => <tr key={row.id}><td>{new Date(row.created_at).toLocaleDateString('vi-VN')}</td><td><b>{row.business_title_vi}</b></td><td>{row.term_weeks} tuần</td><td>{money(row.net_paid_amount, row.currency)}</td><td>{number(row.commission_pct)}%</td><td><b>{money(row.commission_amount, row.currency)}</b></td><td><span className={`d68-mp-status d68-mp-status--${row.status}`}>{statusLabel(row.status)}</span>{row.payout_code ? <><br /><code>{row.payout_code}</code></> : null}</td></tr>)}</tbody>
           </table>
         </div>
       </article>
 
       <article className="d68-mp-history-card">
-        <div><h2>Lịch sử payout</h2><p>Admin quản lý duyệt, xử lý và đánh dấu đã chi trả.</p></div>
+        <div><h2>Lịch sử chi trả</h2><p>Admin quản lý duyệt, xử lý và đánh dấu đã chi trả.</p></div>
         <div className="d68-mp-table-wrap">
           <table className="d68-mp-table">
             <thead><tr><th>Mã payout</th><th>Số commission</th><th>Số tiền</th><th>Trạng thái</th><th>Tham chiếu</th></tr></thead>
@@ -248,7 +248,7 @@ function ReadOnlyBankAccount() {
   const bank = MARKET_PARTNER_DEMO_DATA.partner.bank_account_json || {};
   return (
     <article className="d68-mp-bank-card">
-      <div><h2>Tài khoản nhận hoa hồng</h2><p>Thông tin này chỉ Partner và Admin được xem. Cần hoàn tất trước khi payout được đánh dấu đã trả.</p></div>
+      <div><h2>Tài khoản nhận hoa hồng</h2><p>Thông tin này chỉ Đối tác và Admin được xem. Cần hoàn tất trước khi thanh toán.</p></div>
       <div className="d68-mp-bank-grid">
         <label>Tên ngân hàng<input readOnly value={String(bank.bank_name || '')} /></label>
         <label>Chủ tài khoản<input readOnly value={String(bank.account_holder || '')} /></label>

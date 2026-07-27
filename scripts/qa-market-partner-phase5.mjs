@@ -64,9 +64,9 @@ for (const token of [
 ]) assert.ok(login.includes(token), `Partner activation UI missing ${token}`);
 
 for (const token of [
-  'Commission',
-  'Lịch sử payout',
-  'Không hiển thị danh tính khách hàng hoặc payment payload',
+  'Thu nhập',
+  'Lịch sử chi trả',
+  'Khách hàng đã được xác nhận thanh toán dịch vụ thành công.',
   'pending_commission',
   'approved_commission',
   'paid_commission',
