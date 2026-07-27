@@ -169,8 +169,8 @@ export default function MarketPartnerDashboard() {
 
   const navItems: Array<{ id: PartnerTab; label: string; icon: typeof LayoutDashboard }> = [
     { id: 'overview', label: 'Tổng quan', icon: LayoutDashboard },
-    { id: 'leads', label: 'Lead & chuyển đổi', icon: Users },
-    { id: 'commissions', label: 'Hoa hồng & thanh toán', icon: WalletCards },
+    { id: 'leads', label: 'Giao dịch', icon: Users },
+    { id: 'commissions', label: 'Thu nhập', icon: WalletCards },
     { id: 'campaigns', label: 'Mã & chiến dịch', icon: Link2 },
     { id: 'settings', label: 'Cài đặt', icon: Settings },
   ];
@@ -230,14 +230,14 @@ export default function MarketPartnerDashboard() {
                   <div><span>Đã duyệt</span><strong>{money(metrics.approved_commission, currency)}</strong></div>
                   <div><span>Đã chi trả</span><strong>{money(metrics.paid_commission, currency)}</strong></div>
                   <hr />
-                  <div className="available"><span>Khả dụng để lập payout</span><strong>{money(metrics.available_commission, currency)}</strong></div>
-                  <p>Commission chỉ được chi trả sau khi Admin duyệt và hoàn tất đối soát.</p>
+                  <div className="available"><span>Chờ thanh toán</span><strong>{money(metrics.available_commission, currency)}</strong></div>
+                  <p>Thu nhập/Hoa hồng chỉ được chi trả sau khi Admin deals68 duyệt và hoàn tất đối soát.</p>
                 </article>
 
                 <article className="d68-mp-progress-card">
                   <h2>CƠ CẤU HOA HỒNG THEO DOANH THU</h2>
                   <div className="d68-mp-progress-title"><strong>{policy.tier1Pct}%–{policy.tier3Pct}%</strong><span>trên số tiền khách thực thanh toán</span></div>
-                  <p>Đồng tiền cơ sở: {policy.basisCurrency}. Commission lịch sử dùng snapshot X/Y tại thời điểm payment.</p>
+                  <p>Đơn vị: {policy.basisCurrency === 'VND' ? 'VNĐ' : policy.basisCurrency}. Thu nhập/Hoa hồng theo Chính sách Đối tác thị trường của Deals68.com.</p>
                   <div className="d68-mp-tier-row active"><b>Dưới mốc 1</b><span>&lt; {compactAmount(policy.tier1Max, policy.basisCurrency)}</span><strong>{policy.tier1Pct}%</strong></div>
                   <div className="d68-mp-tier-row"><b>Từ mốc 1 đến mốc 2</b><span>{compactAmount(policy.tier1Max, policy.basisCurrency)} – {compactAmount(policy.tier2Max, policy.basisCurrency)}</span><strong>{policy.tier2Pct}%</strong></div>
                   <div className="d68-mp-tier-row"><b>Trên mốc 2</b><span>&gt; {compactAmount(policy.tier2Max, policy.basisCurrency)}</span><strong>{policy.tier3Pct}%</strong></div>
@@ -251,9 +251,9 @@ export default function MarketPartnerDashboard() {
             </>
           ) : null}
 
-          {tab === 'leads' ? <ReadOnlyPanel title="Lead & chuyển đổi" text="Dashboard chỉ hiển thị số tổng hợp, không công khai danh tính Business/Investor được giới thiệu." /> : null}
+          {tab === 'leads' ? <ReadOnlyPanel title="Giao dịch" text="Dashboard chỉ hiển thị số tổng hợp, không công khai danh tính Business/Investor được giới thiệu." /> : null}
           {tab === 'commissions' ? <PartnerFinanceHistory commissions={commissions} payouts={payouts} /> : null}
-          {tab === 'campaigns' ? <ReadOnlyPanel title="Mã & chiến dịch" text={`Mã affiliate hiện tại: ${partner.affiliate_code}. Giảm giá X = ${number(partner.customer_discount_pct)}%; promo code khác không được cộng dồn.`} /> : null}
+          {tab === 'campaigns' ? <ReadOnlyPanel title="Mã & chiến dịch" text={`Mã Đối tác hiện tại: ${partner.affiliate_code}. Giảm giá X = ${number(partner.customer_discount_pct)}%; promo code khác không được cộng dồn.`} /> : null}
           {tab === 'settings' ? <BankAccountForm bank={bank} setBank={setBank} saving={saving} onSubmit={saveBank} /> : null}
         </section>
       </div>
@@ -273,7 +273,7 @@ function PartnerFinanceHistory({ commissions, payouts }: { commissions: Affiliat
   return (
     <div className="d68-mp-finance-history">
       <article className="d68-mp-history-card">
-        <div><h2>Commission</h2><p>Không hiển thị danh tính khách hàng hoặc payment payload.</p></div>
+        <div><h2>Thu nhập</h2><p>Khách hàng đã được xác nhận thanh toán dịch vụ thành công.</p></div>
         {commissions.length ? (
           <div className="d68-mp-table-wrap">
             <table className="d68-mp-table">
@@ -281,11 +281,11 @@ function PartnerFinanceHistory({ commissions, payouts }: { commissions: Affiliat
               <tbody>{commissions.map((row) => <tr key={row.id}><td>{new Date(row.created_at).toLocaleDateString('vi-VN')}</td><td>{money(row.net_paid_amount, row.currency)}</td><td>{number(row.commission_pct)}%</td><td><b>{money(row.commission_amount, row.currency)}</b></td><td><span className={`d68-mp-status d68-mp-status--${row.status}`}>{statusLabel(row.status)}</span>{row.payout_code ? <><br /><code>{row.payout_code}</code></> : null}</td></tr>)}</tbody>
             </table>
           </div>
-        ) : <p className="d68-mp-empty">Chưa có commission được ghi nhận.</p>}
+        ) : <p className="d68-mp-empty">Chưa có thu nhập được ghi nhận.</p>}
       </article>
 
       <article className="d68-mp-history-card">
-        <div><h2>Lịch sử payout</h2><p>Admin quản lý duyệt, xử lý và đánh dấu đã chi trả.</p></div>
+        <div><h2>Lịch sử chi trả</h2><p>Admin quản lý duyệt, xử lý và đánh dấu đã chi trả.</p></div>
         {payouts.length ? (
           <div className="d68-mp-table-wrap">
             <table className="d68-mp-table">
@@ -293,7 +293,7 @@ function PartnerFinanceHistory({ commissions, payouts }: { commissions: Affiliat
               <tbody>{payouts.map((row) => <tr key={row.id}><td><b>{row.payout_code}</b><br /><small>{new Date(row.created_at).toLocaleDateString('vi-VN')}</small></td><td>{row.commission_count}</td><td>{money(row.net_payout_amount, row.currency)}</td><td><span className={`d68-mp-status d68-mp-status--${row.status}`}>{statusLabel(row.status)}</span></td><td>{row.payment_reference || '—'}</td></tr>)}</tbody>
             </table>
           </div>
-        ) : <p className="d68-mp-empty">Chưa có payout.</p>}
+        ) : <p className="d68-mp-empty">Chưa có lịch sử chi trả.</p>}
       </article>
     </div>
   );
@@ -302,7 +302,7 @@ function PartnerFinanceHistory({ commissions, payouts }: { commissions: Affiliat
 function BankAccountForm({ bank, setBank, saving, onSubmit }: { bank: MarketPartnerBankAccount; setBank: React.Dispatch<React.SetStateAction<MarketPartnerBankAccount>>; saving: boolean; onSubmit: (event: FormEvent) => Promise<void> }) {
   return (
     <form className="d68-mp-bank-card" onSubmit={onSubmit}>
-      <div><h2>Tài khoản nhận hoa hồng</h2><p>Thông tin này chỉ Partner và Admin được xem. Cần hoàn tất trước khi payout được đánh dấu đã trả.</p></div>
+      <div><h2>Tài khoản nhận hoa hồng</h2><p>Thông tin này chỉ Đối tác và Admin được xem. Cần hoàn tất trước khi thanh toán.</p></div>
       <div className="d68-mp-bank-grid">
         <label>Tên ngân hàng<input required value={bank.bank_name} onChange={(e) => setBank((v) => ({ ...v, bank_name: e.target.value }))} /></label>
         <label>Chủ tài khoản<input required value={bank.account_holder} onChange={(e) => setBank((v) => ({ ...v, account_holder: e.target.value }))} /></label>

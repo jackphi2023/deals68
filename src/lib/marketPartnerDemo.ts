@@ -20,6 +20,7 @@ const COMMISSION_TIER_3_PCT = 60;
 
 export type DemoPartnerTransaction = {
   businessCode: string;
+  businessTitleVi: string;
   termWeeks: 4 | 8 | 12 | 16 | 24;
   createdAt: string;
   confirmedAt: string | null;
@@ -39,6 +40,7 @@ export type DemoPartnerTransaction = {
 
 export type DemoAffiliateCommissionRow = AffiliateCommissionRow & {
   business_code: string;
+  business_title_vi: string;
   term_weeks: number;
 };
 
@@ -66,6 +68,7 @@ function commissionPct(netPaidAmount: number) {
 
 function calculateTransaction(input: {
   businessCode: string;
+  businessTitleVi: string;
   termWeeks: DemoPartnerTransaction['termWeeks'];
   createdAt: string;
   confirmedAt?: string;
@@ -81,6 +84,7 @@ function calculateTransaction(input: {
 
   return {
     businessCode: input.businessCode,
+    businessTitleVi: input.businessTitleVi,
     termWeeks: input.termWeeks,
     createdAt: input.createdAt,
     confirmedAt: input.confirmedAt || null,
@@ -102,30 +106,35 @@ function calculateTransaction(input: {
 export const MARKET_PARTNER_DEMO_TRANSACTIONS: DemoPartnerTransaction[] = [
   calculateTransaction({
     businessCode: 'D68-20260710-F343',
+    businessTitleVi: 'Chuyển nhượng Khách sạn 5*, Quận 1, Tp HCM',
     termWeeks: 12,
     createdAt: '2026-07-10T09:30:00+07:00',
     confirmedAt: '2026-07-15T10:15:00+07:00',
   }),
   calculateTransaction({
     businessCode: 'D68-02',
+    businessTitleVi: 'Công ty Mobile App đang gọi vốn 2M USD cho 30%',
     termWeeks: 4,
     createdAt: '2026-07-11T14:00:00+07:00',
     confirmedAt: '2026-07-16T11:20:00+07:00',
   }),
   calculateTransaction({
     businessCode: 'D68-01',
+    businessTitleVi: 'Chuỗi phòng khám da liễu & thẩm mỹ 5 chi nhánh đang gọi vốn mở rộng toàn quốc',
     termWeeks: 16,
     createdAt: '2026-07-12T08:45:00+07:00',
     confirmedAt: '2026-07-17T15:05:00+07:00',
   }),
   calculateTransaction({
     businessCode: 'D68-03',
+    businessTitleVi: 'Nền tảng may đo cá nhân hóa gọi vốn 300.000 USD cho 22,6%',
     termWeeks: 24,
     createdAt: '2026-07-13T16:10:00+07:00',
     confirmedAt: '2026-07-18T09:40:00+07:00',
   }),
   calculateTransaction({
     businessCode: 'D68-20260713-7030',
+    businessTitleVi: 'Gọi vốn · Nông nghiệp · TP. Hồ Chí Minh',
     termWeeks: 8,
     createdAt: '2026-07-19T10:25:00+07:00',
   }),
@@ -143,6 +152,7 @@ const commissions: DemoAffiliateCommissionRow[] = confirmedTransactions.map((row
   id: `demo-commission-${index + 1}`,
   partner_id: 'demo-market-partner-static',
   business_code: row.businessCode,
+  business_title_vi: row.businessTitleVi,
   term_weeks: row.termWeeks,
   currency: 'VND',
   net_paid_amount: row.netPaidAmount,
