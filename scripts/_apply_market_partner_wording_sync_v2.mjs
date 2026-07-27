@@ -9,9 +9,17 @@ function replaceOnce(path, before, after) {
 }
 
 const dataPath = 'src/lib/marketPartnerDemo.ts';
-replaceOnce(dataPath, '  businessCode: string;\n  termWeeks:', '  businessCode: string;\n  businessTitleVi: string;\n  termWeeks:');
+replaceOnce(
+  dataPath,
+  'export type DemoPartnerTransaction = {\n  businessCode: string;\n  termWeeks:',
+  'export type DemoPartnerTransaction = {\n  businessCode: string;\n  businessTitleVi: string;\n  termWeeks:',
+);
 replaceOnce(dataPath, '  business_code: string;\n  term_weeks:', '  business_code: string;\n  business_title_vi: string;\n  term_weeks:');
-replaceOnce(dataPath, '  businessCode: string;\n  termWeeks: DemoPartnerTransaction', '  businessCode: string;\n  businessTitleVi: string;\n  termWeeks: DemoPartnerTransaction');
+replaceOnce(
+  dataPath,
+  'function calculateTransaction(input: {\n  businessCode: string;\n  termWeeks: DemoPartnerTransaction',
+  'function calculateTransaction(input: {\n  businessCode: string;\n  businessTitleVi: string;\n  termWeeks: DemoPartnerTransaction',
+);
 replaceOnce(dataPath, '    businessCode: input.businessCode,\n    termWeeks:', '    businessCode: input.businessCode,\n    businessTitleVi: input.businessTitleVi,\n    termWeeks:');
 
 const titles = [
@@ -77,11 +85,6 @@ replaceOnce(
   qaPath,
   "const dashboardSource = fs.readFileSync('src/pages/MarketPartnerDemoDashboard.tsx', 'utf8');",
   "const dashboardSource = fs.readFileSync('src/pages/MarketPartnerDemoDashboard.tsx', 'utf8');\nconst realDashboardSource = fs.readFileSync('src/pages/MarketPartnerDashboard.tsx', 'utf8');",
-);
-replaceOnce(
-  qaPath,
-  "  assert.ok(dataSource.includes(`termWeeks: ${weeks}`), `Missing ${weeks}-week package`);",
-  "  assert.ok(dataSource.includes(`termWeeks: ${weeks}`), `Missing ${weeks}-week package`);",
 );
 replaceOnce(
   qaPath,
