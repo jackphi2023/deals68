@@ -87,6 +87,13 @@ replaceOnce(qaV1Path, 'assert.match(partnerDashboard, /Commission lịch sử d�
 replaceOnce(qaV1Path, 'assert.match(partnerDashboard, /Lịch sử payout/);', 'assert.match(partnerDashboard, /Lịch sử chi trả/);');
 replaceOnce(qaV1Path, 'assert.match(partnerDashboard, /Không hiển thị danh tính khách hàng hoặc payment payload/);', 'assert.match(partnerDashboard, /Khách hàng đã được xác nhận thanh toán dịch vụ thành công/);');
 
+const qaV5Path = 'scripts/qa-market-partner-phase5.mjs';
+replaceOnce(
+  qaV5Path,
+  "for (const token of [\n  'Commission',\n  'Lịch sử payout',\n  'Không hiển thị danh tính khách hàng hoặc payment payload',",
+  "for (const token of [\n  'Thu nhập',\n  'Lịch sử chi trả',\n  'Khách hàng đã được xác nhận thanh toán dịch vụ thành công.',",
+);
+
 const qaPath = 'scripts/qa-market-partner-demo.mjs';
 replaceOnce(
   qaPath,
