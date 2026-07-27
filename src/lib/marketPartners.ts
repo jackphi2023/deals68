@@ -61,6 +61,34 @@ export type PartnerLeadConversionInput = {
   affiliateCode?: string;
 };
 
+export type MarketPartnerDashboardMetrics = {
+  click_count: number;
+  signup_count: number;
+  paid_transaction_count: number;
+  recorded_commission: number;
+  pending_commission: number;
+  approved_commission: number;
+  paid_commission: number;
+  available_commission: number;
+  currency: string;
+};
+
+export type MarketPartnerDashboardData = {
+  partner: MarketPartnerRow;
+  metrics: MarketPartnerDashboardMetrics;
+};
+
+export type MarketPartnerBankAccount = {
+  bank_name: string;
+  account_holder: string;
+  account_number: string;
+  branch?: string;
+  swift_code?: string;
+  currency?: string;
+  country?: string;
+  note?: string;
+};
+
 function normalizePercent(value: number) {
   if (!Number.isFinite(value)) return 0;
   return Math.min(100, Math.max(0, Math.round(value * 100) / 100));
@@ -87,6 +115,17 @@ function asPartner(value: unknown): MarketPartnerRow {
   return value as MarketPartnerRow;
 }
 
+function asDashboard(value: unknown): MarketPartnerDashboardData {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    throw new Error('Market Partner dashboard response is invalid.');
+  }
+  const source = value as Record<string, unknown>;
+  if (!source.partner || !source.metrics) {
+    throw new Error('Market Partner dashboard response is incomplete.');
+  }
+  return source as MarketPartnerDashboardData;
+}
+
 function normalizePartnerList(value: unknown): MarketPartnerRow[] {
   if (!Array.isArray(value)) return [];
   return value.filter((item) => item && typeof item === 'object') as MarketPartnerRow[];
@@ -106,7 +145,7 @@ function isPhaseOneRpcUnavailable(error: { code?: string; message?: string } | n
 
 export async function listAdminMarketPartners(): Promise<MarketPartnerRow[]> {
   const { data, error } = await supabase.rpc('d68_admin_list_market_partners');
-  // Keep the existing Admin modules usable before the additive migration is applied.
+  // Keep existing Admin modules usable before the additive migration is applied.
   // Mutation RPCs remain fail-closed; only the list call degrades to an empty module.
   if (error && isPhaseOneRpcUnavailable(error)) return [];
   if (error) throwRpcError(error, 'Could not load Market Partners.');
@@ -181,4 +220,33 @@ export async function regenerateMarketPartnerCode(
   });
   if (error) throwRpcError(error, 'Could not generate a new affiliate code.');
   return asPartner(data);
+}
+
+export async function getMyMarketPartnerDashboard(): Promise<MarketPartnerDashboardData> {
+  const { data, error } = await supabase.rpc('d68_get_my_market_partner_dashboard');
+  if (error) throwRpcError(error, 'Could not load Market Partner dashboard.');
+  return asDashboard(data);
+}
+
+export async function updateMyMarketPartnerBankAccount(
+  input: MarketPartnerBankAccount,
+): Promise<Record<string, unknown>> {
+  const clean: MarketPartnerBankAccount = {
+    bank_name: input.bank_name.trim(),
+    account_holder: input.account_holder.trim(),
+    account_number: input.account_number.trim(),
+    branch: input.branch?.trim() || undefined,
+    swift_code: input.swift_code?.trim().toUpperCase() || undefined,
+    currency: input.currency?.trim().toUpperCase() || undefined,
+    country: input.country?.trim() || undefined,
+    note: input.note?.trim() || undefined,
+  };
+  const { data, error } = await supabase.rpc('d68_update_my_market_partner_bank_account', {
+    p_bank_account: clean,
+  });
+  if (error) throwRpcError(error, 'Could not update bank account.');
+  if (!data || typeof data !== 'object' || Array.isArray(data)) {
+    throw new Error('Bank account response is invalid.');
+  }
+  return data as Record<string, unknown>;
 }
