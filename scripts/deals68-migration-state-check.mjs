@@ -33,6 +33,9 @@ const required = [
   '20260724130910_investor_premium_price_v2.sql',
   '20260724140213_public_business_view_band_helper_acl_fix_v1.sql',
   '20260724142506_homepage_business_ids_safe_view_v1.sql',
+  '20260727084802_market_partner_affiliate_phase1_v1.sql',
+  '20260727103000_market_partner_affiliate_phase2_dashboard_v1.sql',
+  '20260727110000_market_partner_affiliate_phase3_referral_v1.sql',
 ];
 const forbidden = [
   '20260711103000_normalize_investor_taxonomy_on_write_v1.sql',
@@ -235,6 +238,42 @@ const migrationContracts = [
       'to anon, authenticated, service_role',
       "'base_table_read', false",
       "'returns_public_ids_only', true",
+    ],
+  },
+  {
+    name: '20260727084802_market_partner_affiliate_phase1_v1.sql',
+    snippets: [
+      "alter type public.user_role add value if not exists 'market_partner'",
+      'create table if not exists public.market_partners',
+      'create table if not exists public.affiliate_clicks',
+      'create table if not exists public.affiliate_attributions',
+      'create table if not exists public.affiliate_commissions',
+      'create table if not exists public.affiliate_payouts',
+      'create or replace function public.d68_record_affiliate_click',
+      'No automatic payment trigger is installed in Phase 1',
+    ],
+  },
+  {
+    name: '20260727103000_market_partner_affiliate_phase2_dashboard_v1.sql',
+    snippets: [
+      'create or replace function public.d68_get_my_market_partner_dashboard',
+      'create or replace function public.d68_update_my_market_partner_bank_account',
+      'no customer identity or payment payload',
+      'strict field whitelist and server-side validation',
+    ],
+  },
+  {
+    name: '20260727110000_market_partner_affiliate_phase3_referral_v1.sql',
+    snippets: [
+      'create or replace function public.d68_attach_affiliate_attribution_from_profile',
+      "new.role::text not in ('business', 'investor')",
+      "mp.status = 'active'",
+      "clicked_at >= now() - interval '30 days'",
+      'if v_requested_click_id is null then',
+      'if v_click_id is null then',
+      'on conflict (subject_profile_id) do nothing',
+      'create trigger d68_profiles_attach_affiliate_attribution',
+      'never creates commission or changes payment',
     ],
   },
 ];
