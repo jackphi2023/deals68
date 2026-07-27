@@ -44,7 +44,19 @@ jobs:
       - name: Market Partner Phase 4 QA
         run: npm run qa:market-partner-phase4
       - name: Market Partner Phase 5 QA
-        run: npm run qa:market-partner-phase5
+        run: |
+          set +e
+          npm run qa:market-partner-phase5 > /tmp/market-partner-phase5.log 2>&1
+          STATUS=$?
+          cat /tmp/market-partner-phase5.log
+          exit "$STATUS"
+      - name: Upload Phase 5 diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: market-partner-phase5-repair-diagnostics
+          path: /tmp/market-partner-phase5.log
+          if-no-files-found: error
       - name: Diff integrity
         run: git diff --check
       - name: Remove temporary repair files
