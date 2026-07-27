@@ -7,8 +7,10 @@ name: Market Partner Phase 1-5 QA
       - 'src/pages/Login.tsx'
       - 'src/pages/MarketPartnerLogin.tsx'
       - 'src/pages/MarketPartnerDashboard.tsx'
+      - 'src/pages/MarketPartnerDemoDashboard.tsx'
       - 'src/components/admin/AdminMarketPartnerFinance.tsx'
       - 'src/lib/marketPartners.ts'
+      - 'src/lib/marketPartnerDemo.ts'
       - 'src/lib/affiliate.ts'
       - 'src/styles/pages/market-partner.css'
       - 'supabase/migrations/*market_partner_affiliate*'
@@ -50,5 +52,7 @@ jobs:
         run: npm run qa:market-partner-phase4
       - name: Market Partner Phase 5 QA
         run: npm run qa:market-partner-phase5
+      - name: Market Partner static demo QA
+        run: npm run qa:market-partner-demo
       - name: Diff integrity
         run: git diff --check
