@@ -13,6 +13,7 @@ export type AdminTab =
   | 'promos'
   | 'requests'
   | 'leads'
+  | 'market_partners'
   | 'logs'
   | 'settings';
 
@@ -40,7 +41,7 @@ export const ADMIN_NAV_SECTIONS: AdminNavSection[] = [
       { id: 'proposals', label: 'Proposal', icon: '📨', href: '/admin/proposals', aliases: ['proposals'] },
       { id: 'reports', label: 'Báo cáo AI', icon: '📄', href: '/admin/reports', aliases: ['reports', 'ai-reports'] },
       { id: 'requests', label: 'Yêu cầu data', icon: '📂', href: '/admin/data-requests', aliases: ['data-requests', 'requests'] },
-      { id: 'leads', label: 'Liên hệ/Đối tác', icon: '📨', href: '/admin/leads', aliases: ['leads', 'market-partners', 'contacts'] },
+      { id: 'leads', label: 'Liên hệ', icon: '📨', href: '/admin/leads', aliases: ['leads', 'contacts'] },
     ],
   },
   {
@@ -51,6 +52,7 @@ export const ADMIN_NAV_SECTIONS: AdminNavSection[] = [
       { id: 'businesses', label: 'Doanh nghiệp', icon: '🏢', href: '/admin/businesses', aliases: ['businesses'] },
       { id: 'assets', label: 'Ảnh/File DN', icon: '🖼️', href: '/admin/assets', aliases: ['assets'] },
       { id: 'investors', label: 'Nhà đầu tư', icon: '📈', href: '/admin/investors', aliases: ['investors'] },
+      { id: 'market_partners', label: 'Đối tác thị trường', icon: '🤝', href: '/admin/market-partners', aliases: ['market-partners'] },
     ],
   },
   {

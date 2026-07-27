@@ -6,6 +6,7 @@ import Footer from './components/Footer';
 import Home from './pages/Home';
 import { useAuth } from './contexts/AuthContext';
 import { langFromPath, stripLangPrefix, toLocalizedPath } from './lib/i18nRoutes';
+import { captureAffiliateReferralFromCurrentPage } from './lib/affiliate';
 
 type RouteLoader = () => Promise<unknown>;
 type IdleCapableWindow = Window & {
@@ -30,6 +31,8 @@ const loadModuleScreen = () => import('./pages/ModuleScreen');
 const loadNotFound = () => import('./pages/NotFound');
 const loadBusinessDashboard = () => import('./pages/BusinessDashboardWithReports');
 const loadInvestorDashboard = () => import('./pages/InvestorDashboard');
+const loadMarketPartnerLogin = () => import('./pages/MarketPartnerLogin');
+const loadMarketPartnerDashboard = () => import('./pages/MarketPartnerDashboard');
 const loadAdmin = () => import('./pages/Admin');
 const loadAdminValuation = () => import('./pages/AdminValuation');
 const loadStaticPages = () => import('./pages/StaticPages');
@@ -48,6 +51,8 @@ const ModuleScreen = lazy(loadModuleScreen);
 const NotFound = lazy(loadNotFound);
 const BusinessDashboard = lazy(loadBusinessDashboard);
 const InvestorDashboard = lazy(loadInvestorDashboard);
+const MarketPartnerLogin = lazy(loadMarketPartnerLogin);
+const MarketPartnerDashboard = lazy(loadMarketPartnerDashboard);
 const Admin = lazy(loadAdmin);
 const AdminValuation = lazy(loadAdminValuation);
 const About = lazy(() => loadStaticPages().then((m) => ({ default: m.About })));
@@ -65,6 +70,8 @@ function likelyNextRouteLoaders(pathname: string): RouteLoader[] {
   if (path.startsWith('/investors/')) return [loadBusinesses];
   if (path === '/pricing') return [loadRegister];
   if (path === '/login') return [loadForgotPassword];
+  if (path === '/market-partner') return [loadMarketPartnerLogin];
+  if (path === '/market-partner/login') return [loadMarketPartnerDashboard];
   return [];
 }
 
@@ -76,6 +83,14 @@ function ScrollToTop() {
   const location = useLocation();
   useEffect(() => {
     if (typeof window !== 'undefined') window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+  }, [location.pathname, location.search]);
+  return null;
+}
+
+function AffiliateReferralRuntime() {
+  const location = useLocation();
+  useEffect(() => {
+    void captureAffiliateReferralFromCurrentPage().catch(() => undefined);
   }, [location.pathname, location.search]);
   return null;
 }
@@ -135,7 +150,7 @@ function LanguageMemory() {
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const path = location.pathname;
-    const privatePrefix = ['/dashboard', '/admin', '/checkout', '/payment', '/data-room', '/messages', '/notifications', '/support'];
+    const privatePrefix = ['/dashboard', '/admin', '/checkout', '/payment', '/data-room', '/messages', '/notifications', '/support', '/market-partner/dashboard'];
     const isPrivate = privatePrefix.some((p) => path === p || path.startsWith(`${p}/`));
     if (path === '/vi' || path.startsWith('/vi/')) return;
     if (isPrivate) return;
@@ -181,12 +196,27 @@ function DashboardGate({ role, children }: { role: 'business' | 'investor'; chil
   return <>{children}</>;
 }
 
+function MarketPartnerGate({ children }: { children: ReactNode }) {
+  const { profile, loading } = useAuth();
+  const location = useLocation();
+  if (loading) return <RouteFallback />;
+  if (!profile) {
+    const next = encodeURIComponent(location.pathname + location.search);
+    return <Navigate to={`/market-partner/login?next=${next}`} replace />;
+  }
+  if (!['market_partner', 'admin'].includes(String(profile.role))) {
+    return <section style={{ maxWidth: 760, margin: '0 auto', padding: '56px 24px' }}><div style={{ background: '#fff', border: '1px solid #E7EDF3', borderRadius: 16, padding: 24 }}><h2>Access restricted</h2><p>Dashboard này chỉ dành cho tài khoản Đối tác thị trường.</p></div></section>;
+  }
+  return <>{children}</>;
+}
+
 export default function App(){
   const location = useLocation();
   const lang = langFromPath(location.pathname);
 
   return <div data-lang={lang}>
     <ScrollToTop />
+    <AffiliateReferralRuntime />
     <RoutePrefetch />
     <LanguageMemory />
     <SeoManager />
@@ -210,6 +240,8 @@ export default function App(){
         <Route path="/privacy" element={<Privacy lang="vi"/>}/>
         <Route path="/contact" element={<Contact lang="vi"/>}/>
         <Route path="/partners" element={<MarketPartner lang="vi"/>}/>
+        <Route path="/market-partner/login" element={<MarketPartnerLogin/>}/>
+        <Route path="/market-partner/dashboard" element={<MarketPartnerGate><MarketPartnerDashboard/></MarketPartnerGate>}/>
         <Route path="/market-partner" element={<MarketPartner lang="vi"/>}/>
 
         <Route path="/en" element={<Home lang="en"/>}/>
@@ -229,6 +261,8 @@ export default function App(){
         <Route path="/en/privacy" element={<Privacy lang="en"/>}/>
         <Route path="/en/contact" element={<Contact lang="en"/>}/>
         <Route path="/en/partners" element={<MarketPartner lang="en"/>}/>
+        <Route path="/en/market-partner/login" element={<MarketPartnerLogin/>}/>
+        <Route path="/en/market-partner/dashboard" element={<MarketPartnerGate><MarketPartnerDashboard/></MarketPartnerGate>}/>
         <Route path="/en/market-partner" element={<MarketPartner lang="en"/>}/>
         <Route path="/en/dashboard/business" element={<DashboardGate role="business"><BusinessDashboard/></DashboardGate>}/>
         <Route path="/en/dashboard/business/*" element={<DashboardGate role="business"><BusinessDashboard/></DashboardGate>}/>
@@ -250,6 +284,7 @@ export default function App(){
         <Route path="/admin/promos" element={<Admin/>}/>
         <Route path="/admin/banners" element={<Admin/>}/>
         <Route path="/admin/banner" element={<Admin/>}/>
+        <Route path="/admin/market-partners" element={<Admin/>}/>
         <Route path="/admin" element={<Admin/>}/>
         <Route path="/admin/*" element={<Admin/>}/>
 
@@ -271,17 +306,17 @@ export default function App(){
         <Route path="/dashboard/advisor/clients" element={<ModuleScreen/>}/>
         <Route path="/dashboard/advisor/opportunities" element={<ModuleScreen/>}/>
         <Route path="/dashboard/advisor/settings" element={<ModuleScreen/>}/>
-        <Route path="/dashboard/market-partner" element={<ModuleScreen/>}/>
-        <Route path="/dashboard/market-partner/register" element={<ModuleScreen/>}/>
-        <Route path="/dashboard/market-partner/links" element={<ModuleScreen/>}/>
-        <Route path="/dashboard/market-partner/conversions" element={<ModuleScreen/>}/>
-        <Route path="/dashboard/market-partner/payouts" element={<ModuleScreen/>}/>
-        <Route path="/dashboard/market-partner/settings" element={<ModuleScreen/>}/>
-        <Route path="/dashboard/affiliate/register" element={<Navigate to="/dashboard/market-partner/register" replace/>}/>
-        <Route path="/dashboard/affiliate/links" element={<Navigate to="/dashboard/market-partner/links" replace/>}/>
-        <Route path="/dashboard/affiliate/conversions" element={<Navigate to="/dashboard/market-partner/conversions" replace/>}/>
-        <Route path="/dashboard/affiliate/payouts" element={<Navigate to="/dashboard/market-partner/payouts" replace/>}/>
-        <Route path="/dashboard/affiliate/settings" element={<Navigate to="/dashboard/market-partner/settings" replace/>}/>
+        <Route path="/dashboard/market-partner" element={<Navigate to="/market-partner/dashboard" replace/>}/>
+        <Route path="/dashboard/market-partner/register" element={<Navigate to="/market-partner" replace/>}/>
+        <Route path="/dashboard/market-partner/links" element={<Navigate to="/market-partner/dashboard" replace/>}/>
+        <Route path="/dashboard/market-partner/conversions" element={<Navigate to="/market-partner/dashboard" replace/>}/>
+        <Route path="/dashboard/market-partner/payouts" element={<Navigate to="/market-partner/dashboard" replace/>}/>
+        <Route path="/dashboard/market-partner/settings" element={<Navigate to="/market-partner/dashboard" replace/>}/>
+        <Route path="/dashboard/affiliate/register" element={<Navigate to="/market-partner" replace/>}/>
+        <Route path="/dashboard/affiliate/links" element={<Navigate to="/market-partner/dashboard" replace/>}/>
+        <Route path="/dashboard/affiliate/conversions" element={<Navigate to="/market-partner/dashboard" replace/>}/>
+        <Route path="/dashboard/affiliate/payouts" element={<Navigate to="/market-partner/dashboard" replace/>}/>
+        <Route path="/dashboard/affiliate/settings" element={<Navigate to="/market-partner/dashboard" replace/>}/>
         <Route path="/checkout" element={<ModuleScreen/>}/>
         <Route path="/payment/pending" element={<ModuleScreen/>}/>
         <Route path="/payment/success" element={<ModuleScreen/>}/>

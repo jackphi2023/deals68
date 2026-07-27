@@ -29,6 +29,7 @@ import {
 } from '../lib/paymentOrders';
 import { AdminOperationsOverview } from '../components/admin/AdminOperationsOverview';
 import AdminPromoManager from '../components/admin/AdminPromoManager';
+import AdminMarketPartnerFinance from '../components/admin/AdminMarketPartnerFinance';
 import {
   ADMIN_NAV_SECTIONS,
   adminTabUsesGlobalSearch,
@@ -44,6 +45,26 @@ import {
   sortAdminQueueFirst,
   type AdminQueueCounts,
 } from '../lib/adminOperations';
+import {
+  DEFAULT_MARKET_PARTNER_COMMERCIAL_POLICY,
+  convertPartnerLead,
+  createAffiliatePayout,
+  createMarketPartner,
+  listAdminAffiliateCommissions,
+  listAdminAffiliatePayouts,
+  listAdminMarketPartners,
+  regenerateMarketPartnerCode,
+  setAffiliateCommissionStatus,
+  setAffiliatePayoutStatus,
+  updateMarketPartner,
+  type AffiliateCommissionRow,
+  type AffiliatePayoutRow,
+  type MarketPartnerInput,
+  type MarketPartnerRow,
+  type MarketPartnerStatus,
+  type PartnerLeadConversionInput,
+  type PartnerLeadRow,
+} from '../lib/marketPartners';
 
 type Row = Record<string, any>;
 
@@ -375,6 +396,9 @@ export default function Admin() {
   const [logs, setLogs] = useState<Row[]>([]);
   const [contactMessages, setContactMessages] = useState<Row[]>([]);
   const [partnerLeads, setPartnerLeads] = useState<Row[]>([]);
+  const [marketPartners, setMarketPartners] = useState<MarketPartnerRow[]>([]);
+  const [affiliateCommissions, setAffiliateCommissions] = useState<AffiliateCommissionRow[]>([]);
+  const [affiliatePayouts, setAffiliatePayouts] = useState<AffiliatePayoutRow[]>([]);
   const [businessFiles, setBusinessFiles] = useState<Row[]>([]);
   const [businessImages, setBusinessImages] = useState<Row[]>([]);
   const [msg, setMsg] = useState('');
@@ -477,6 +501,9 @@ export default function Admin() {
         logResult,
         contactResult,
         leadResult,
+        marketPartnerResult,
+        affiliateCommissionResult,
+        affiliatePayoutResult,
       ] = await Promise.all([
         supabase.from('businesses').select('*, business_files(count), business_images(count)').order('created_at', { ascending: false }).limit(2000),
         supabase.from('business_files').select('id,business_id,display_name,file_name,privacy_level,public_visible,admin_note,created_at,updated_at').order('created_at', { ascending: false }).limit(2000),
@@ -489,6 +516,9 @@ export default function Admin() {
         supabase.from('audit_logs').select('*').order('created_at', { ascending: false }).limit(120),
         supabase.from('contact_messages').select('*').order('created_at', { ascending: false }).limit(300),
         supabase.from('partner_leads').select('*').order('created_at', { ascending: false }).limit(300),
+        listAdminMarketPartners(),
+        listAdminAffiliateCommissions(),
+        listAdminAffiliatePayouts(),
       ]);
 
       setBusinesses(businessResult.data || []);
@@ -502,6 +532,9 @@ export default function Admin() {
       setLogs(logResult.data || []);
       setContactMessages(contactResult.data || []);
       setPartnerLeads(leadResult.data || []);
+      setMarketPartners(marketPartnerResult || []);
+      setAffiliateCommissions(affiliateCommissionResult || []);
+      setAffiliatePayouts(affiliatePayoutResult || []);
       setLastRefreshedAt(new Date().toISOString());
 
       const firstError =
@@ -543,6 +576,9 @@ export default function Admin() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'investors' }, () => load())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'payment_orders' }, () => load())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'proposals' }, () => load())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'market_partners' }, () => load())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'affiliate_commissions' }, () => load())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'affiliate_payouts' }, () => load())
       .subscribe();
     return () => {
       window.removeEventListener('focus', refreshWhenVisible);
@@ -870,6 +906,89 @@ export default function Admin() {
     load();
   }
 
+  async function createMarketPartnerAdmin(input: MarketPartnerInput) {
+    setBusy(true); setError(''); setMsg('');
+    try {
+      const partner = await createMarketPartner(input);
+      setMsg(`Đã tạo Market Partner ${partner.display_name} · mã ${partner.affiliate_code}.`);
+      await load();
+    } catch (actionError: any) { setError(actionError?.message || 'Could not create Market Partner.'); }
+    finally { setBusy(false); }
+  }
+
+  async function convertPartnerLeadAdmin(lead: PartnerLeadRow, input: PartnerLeadConversionInput) {
+    setBusy(true); setError(''); setMsg('');
+    try {
+      const partner = await convertPartnerLead(lead.id, input);
+      setMsg(`Đã convert lead thành Market Partner · mã ${partner.affiliate_code}.`);
+      await load();
+    } catch (actionError: any) { setError(actionError?.message || 'Could not convert partner lead.'); }
+    finally { setBusy(false); }
+  }
+
+  async function updateMarketPartnerAdmin(partner: MarketPartnerRow, input: MarketPartnerInput & { suspensionReason?: string }) {
+    setBusy(true); setError(''); setMsg('');
+    try {
+      const updated = await updateMarketPartner(partner.id, input);
+      setMsg(`Đã cập nhật Market Partner ${updated.display_name}.`);
+      await load();
+    } catch (actionError: any) { setError(actionError?.message || 'Could not update Market Partner.'); }
+    finally { setBusy(false); }
+  }
+
+  async function regenerateMarketPartnerCodeAdmin(partner: MarketPartnerRow, preferredCode?: string) {
+    setBusy(true); setError(''); setMsg('');
+    try {
+      const updated = await regenerateMarketPartnerCode(partner.id, preferredCode);
+      setMsg(`Mã affiliate mới: ${updated.affiliate_code}.`);
+      await load();
+    } catch (actionError: any) { setError(actionError?.message || 'Could not regenerate affiliate code.'); }
+    finally { setBusy(false); }
+  }
+
+  async function setAffiliateCommissionStatusAdmin(
+    commission: AffiliateCommissionRow,
+    status: 'approved' | 'rejected' | 'reversed',
+    note?: string,
+  ) {
+    setBusy(true); setError(''); setMsg('');
+    try {
+      await setAffiliateCommissionStatus(commission.id, status, note);
+      setMsg(`Đã cập nhật commission thành ${status}.`);
+      await load();
+    } catch (actionError: any) { setError(actionError?.message || 'Could not update affiliate commission.'); }
+    finally { setBusy(false); }
+  }
+
+  async function createAffiliatePayoutAdmin(
+    partnerId: string,
+    currency: string,
+    commissionIds: string[],
+  ) {
+    setBusy(true); setError(''); setMsg('');
+    try {
+      const payout = await createAffiliatePayout({ partnerId, currency, commissionIds });
+      setMsg(`Đã tạo payout draft ${payout.payout_code}.`);
+      await load();
+    } catch (actionError: any) { setError(actionError?.message || 'Could not create affiliate payout.'); }
+    finally { setBusy(false); }
+  }
+
+  async function setAffiliatePayoutStatusAdmin(
+    payout: AffiliatePayoutRow,
+    status: 'approved' | 'processing' | 'paid' | 'rejected' | 'cancelled',
+    paymentReference?: string,
+    note?: string,
+  ) {
+    setBusy(true); setError(''); setMsg('');
+    try {
+      await setAffiliatePayoutStatus(payout.id, status, paymentReference, note);
+      setMsg(`Đã cập nhật payout ${payout.payout_code} thành ${status}.`);
+      await load();
+    } catch (actionError: any) { setError(actionError?.message || 'Could not update affiliate payout.'); }
+    finally { setBusy(false); }
+  }
+
   return (
     <section className="d68-admin-page">
       <header className="d68-admin-head">
@@ -1092,6 +1211,22 @@ export default function Admin() {
               />
             )}
             {tab === 'requests' && <Requests requests={requests} markRequest={markRequest} />}
+            {tab === 'market_partners' && (
+              <MarketPartnersAdmin
+                partners={marketPartners}
+                leads={partnerLeads as PartnerLeadRow[]}
+                commissions={affiliateCommissions}
+                payouts={affiliatePayouts}
+                busy={busy}
+                onCreate={createMarketPartnerAdmin}
+                onConvert={convertPartnerLeadAdmin}
+                onUpdate={updateMarketPartnerAdmin}
+                onRegenerate={regenerateMarketPartnerCodeAdmin}
+                onCommissionStatus={setAffiliateCommissionStatusAdmin}
+                onCreatePayout={createAffiliatePayoutAdmin}
+                onPayoutStatus={setAffiliatePayoutStatusAdmin}
+              />
+            )}
             {tab === 'leads' && (
               <Leads
                 contactMessages={contactMessages}
@@ -1414,6 +1549,287 @@ function Requests({ requests, markRequest }: any) {
 function Leads({ contactMessages, partnerLeads, markLead }: any) {
   return <div><Card><h3>Contact messages</h3>{contactMessages.length ? contactMessages.map((message: Row) => <div key={message.id} className="d68-admin-card"><b>{message.name}</b> · <a href={`mailto:${message.email}`}>{message.email}</a><p>{message.message}</p><span className="d68-admin-badge warn">{message.status}</span><div className="d68-admin-actions"><button className="d68-admin-btn green" onClick={() => markLead('contact_messages', message, 'handled')}>Handled</button><button className="d68-admin-btn blue" onClick={() => markLead('contact_messages', message, 'follow_up')}>Follow up</button></div></div>) : <Empty text="No contact messages." />}</Card><Card><h3>Market Partner leads</h3>{partnerLeads.length ? partnerLeads.map((lead: Row) => <div key={lead.id} className="d68-admin-card"><b>{lead.full_name}</b> · <a href={`mailto:${lead.email}`}>{lead.email}</a> · {lead.country}<p>{lead.phone}</p><p>{lead.intro}</p><span className="d68-admin-badge warn">{lead.status}</span><div className="d68-admin-actions"><button className="d68-admin-btn green" onClick={() => markLead('partner_leads', lead, 'approved')}>Approved</button><button className="d68-admin-btn blue" onClick={() => markLead('partner_leads', lead, 'follow_up')}>Follow up</button><button className="d68-admin-btn red" onClick={() => markLead('partner_leads', lead, 'rejected')}>Rejected</button></div></div>) : <Empty text="No partner leads." />}</Card></div>;
 }
+
+
+type MarketPartnerAdminProps = {
+  partners: MarketPartnerRow[];
+  leads: PartnerLeadRow[];
+  commissions: AffiliateCommissionRow[];
+  payouts: AffiliatePayoutRow[];
+  busy: boolean;
+  onCreate: (input: MarketPartnerInput) => Promise<void>;
+  onConvert: (lead: PartnerLeadRow, input: PartnerLeadConversionInput) => Promise<void>;
+  onUpdate: (partner: MarketPartnerRow, input: MarketPartnerInput & { suspensionReason?: string }) => Promise<void>;
+  onRegenerate: (partner: MarketPartnerRow, preferredCode?: string) => Promise<void>;
+  onCommissionStatus: (commission: AffiliateCommissionRow, status: 'approved' | 'rejected' | 'reversed', note?: string) => Promise<void>;
+  onCreatePayout: (partnerId: string, currency: string, commissionIds: string[]) => Promise<void>;
+  onPayoutStatus: (payout: AffiliatePayoutRow, status: 'approved' | 'processing' | 'paid' | 'rejected' | 'cancelled', paymentReference?: string, note?: string) => Promise<void>;
+};
+
+const EMPTY_MARKET_PARTNER_INPUT: MarketPartnerInput = {
+  displayName: '',
+  contactEmail: '',
+  phone: '',
+  country: 'Vietnam',
+  countryIso2: 'VN',
+  intro: '',
+  ...DEFAULT_MARKET_PARTNER_COMMERCIAL_POLICY,
+  status: 'active',
+  affiliateCode: '',
+};
+
+function MarketPartnersAdmin({
+  partners,
+  leads,
+  commissions,
+  payouts,
+  busy,
+  onCreate,
+  onConvert,
+  onUpdate,
+  onRegenerate,
+  onCommissionStatus,
+  onCreatePayout,
+  onPayoutStatus,
+}: MarketPartnerAdminProps) {
+  const activePartners = partners.filter((partner) => partner.status === 'active');
+  const suspendedPartners = partners.filter((partner) => partner.status === 'suspended');
+  const openLeads = leads.filter((lead) => !['converted', 'rejected'].includes(String(lead.status || '').toLowerCase()));
+
+  return <div className="d68-admin-market-partners">
+    <div className="d68-admin-grid4">
+      <Metric label="Tổng Market Partner" value={String(partners.length)} color="#0F2A4A" />
+      <Metric label="Đang hoạt động" value={String(activePartners.length)} color="#16A34A" />
+      <Metric label="Tạm ngưng" value={String(suspendedPartners.length)} color="#DC2626" />
+      <Metric label="Lead chưa chuyển đổi" value={String(openLeads.length)} color="#B8860B" />
+    </div>
+
+    <ManualMarketPartnerForm busy={busy} onCreate={onCreate} />
+
+    <Card>
+      <div className="d68-admin-row-head">
+        <div>
+          <h3>Lead đăng ký Đối tác thị trường</h3>
+          <p className="d68-admin-subtle">
+            partner_leads chỉ là form tiếp nhận. Sau khi convert, Partner kích hoạt tài khoản bằng email và mã affiliate đã được Admin phê duyệt.
+          </p>
+        </div>
+        <span className="d68-admin-badge warn">{openLeads.length} cần xử lý</span>
+      </div>
+      {leads.length ? <div className="d68-admin-market-partner-leads">
+        {leads.map((lead) => (
+          <PartnerLeadConversionCard
+            key={`${lead.id}:${lead.updated_at || ''}`}
+            lead={lead}
+            busy={busy}
+            onConvert={onConvert}
+          />
+        ))}
+      </div> : <Empty text="Chưa có Market Partner lead." />}
+    </Card>
+
+    <Card>
+      <div className="d68-admin-row-head">
+        <div>
+          <h3>Danh sách Market Partner</h3>
+          <p className="d68-admin-subtle">
+            Admin cấu hình X và biểu Y riêng cho từng Partner. X giảm trên phí sau chiết khấu kỳ hạn; Y tính trên tiền khách thực thanh toán. Không cộng dồn promo và không dùng dữ liệu Investor.
+          </p>
+        </div>
+        <span className="d68-admin-badge ok">{partners.length} partner</span>
+      </div>
+      {partners.length ? <div className="d68-admin-market-partner-list">
+        {partners.map((partner) => (
+          <MarketPartnerEditor
+            key={`${partner.id}:${partner.updated_at}`}
+            partner={partner}
+            busy={busy}
+            onUpdate={onUpdate}
+            onRegenerate={onRegenerate}
+          />
+        ))}
+      </div> : <Empty text="Chưa có Market Partner account record." />}
+    </Card>
+
+    <AdminMarketPartnerFinance
+      partners={partners}
+      commissions={commissions}
+      payouts={payouts}
+      busy={busy}
+      onCommissionStatus={onCommissionStatus}
+      onCreatePayout={onCreatePayout}
+      onPayoutStatus={onPayoutStatus}
+    />
+  </div>;
+}
+
+function ManualMarketPartnerForm({ busy, onCreate }: { busy: boolean; onCreate: (input: MarketPartnerInput) => Promise<void> }) {
+  const [draft, setDraft] = useState<MarketPartnerInput>({ ...EMPTY_MARKET_PARTNER_INPUT });
+
+  async function submit(event: FormEvent) {
+    event.preventDefault();
+    await onCreate(draft);
+    setDraft({ ...EMPTY_MARKET_PARTNER_INPUT });
+  }
+
+  return <Card>
+    <form onSubmit={submit} className="d68-admin-market-partner-form">
+      <div className="d68-admin-row-head">
+        <div>
+          <h3>Tạo Market Partner thủ công</h3>
+          <p className="d68-admin-subtle">Để trống mã affiliate để server sinh mã duy nhất. Partner dùng email + mã này để kích hoạt tài khoản qua OTP.</p>
+        </div>
+        <button className="d68-admin-btn green" disabled={busy}>Tạo Market Partner</button>
+      </div>
+      <MarketPartnerFields draft={draft} setDraft={setDraft} includeAffiliateCode />
+    </form>
+  </Card>;
+}
+
+function PartnerLeadConversionCard({
+  lead,
+  busy,
+  onConvert,
+}: {
+  lead: PartnerLeadRow;
+  busy: boolean;
+  onConvert: (lead: PartnerLeadRow, input: PartnerLeadConversionInput) => Promise<void>;
+}) {
+  const converted = String(lead.status || '').toLowerCase() === 'converted';
+  const rejected = String(lead.status || '').toLowerCase() === 'rejected';
+  const [customerDiscountPct, setCustomerDiscountPct] = useState(DEFAULT_MARKET_PARTNER_COMMERCIAL_POLICY.customerDiscountPct);
+  const [commissionPct, setCommissionPct] = useState(DEFAULT_MARKET_PARTNER_COMMERCIAL_POLICY.commissionPct);
+  const [commissionBasisCurrency, setCommissionBasisCurrency] = useState<'VND' | 'USD'>(DEFAULT_MARKET_PARTNER_COMMERCIAL_POLICY.commissionBasisCurrency);
+  const [commissionTier1Max, setCommissionTier1Max] = useState(DEFAULT_MARKET_PARTNER_COMMERCIAL_POLICY.commissionTier1Max);
+  const [commissionTier2Max, setCommissionTier2Max] = useState(DEFAULT_MARKET_PARTNER_COMMERCIAL_POLICY.commissionTier2Max);
+  const [commissionTier2Pct, setCommissionTier2Pct] = useState(DEFAULT_MARKET_PARTNER_COMMERCIAL_POLICY.commissionTier2Pct);
+  const [commissionTier3Pct, setCommissionTier3Pct] = useState(DEFAULT_MARKET_PARTNER_COMMERCIAL_POLICY.commissionTier3Pct);
+  const [status, setStatus] = useState<MarketPartnerStatus>('active');
+  const [affiliateCode, setAffiliateCode] = useState('');
+
+  return <article className="d68-admin-market-partner-lead">
+    <div className="d68-admin-row-head">
+      <div>
+        <b>{lead.full_name}</b> · <a href={`mailto:${lead.email}`}>{lead.email}</a>
+        <p className="d68-admin-subtle">{lead.phone || '—'} · {lead.country || '—'} · {lead.source || 'market_partner_page'}</p>
+      </div>
+      <span className={`d68-admin-badge ${converted ? 'ok' : rejected ? 'err' : 'warn'}`}>{lead.status || 'new'}</span>
+    </div>
+    {lead.intro ? <p>{lead.intro}</p> : null}
+    <div className="d68-admin-market-partner-config-grid">
+      <label>Mã mong muốn (tùy chọn)<input className="d68-admin-input" value={affiliateCode} onChange={(event) => setAffiliateCode(event.target.value.toUpperCase())} placeholder="Server tự sinh nếu để trống" /></label>
+      <label>Giảm giá khách hàng (%)<input className="d68-admin-input" type="number" min="0" max="100" step="0.01" value={customerDiscountPct} onChange={(event) => setCustomerDiscountPct(Number(event.target.value || 0))} /></label>
+      <label>Y1 · Hoa hồng dưới mốc 1 (%)<input className="d68-admin-input" type="number" min="0" max="100" step="0.01" value={commissionPct} onChange={(event) => setCommissionPct(Number(event.target.value || 0))} /></label>
+      <label>Đồng tiền mốc Y<select className="d68-admin-input" value={commissionBasisCurrency} onChange={(event) => setCommissionBasisCurrency(event.target.value as 'VND' | 'USD')}><option value="VND">VND</option><option value="USD">USD</option></select></label>
+      <label>Mốc doanh thu 1<input className="d68-admin-input" type="number" min="0" step="1" value={commissionTier1Max} onChange={(event) => setCommissionTier1Max(Number(event.target.value || 0))} /></label>
+      <label>Mốc doanh thu 2<input className="d68-admin-input" type="number" min="0" step="1" value={commissionTier2Max} onChange={(event) => setCommissionTier2Max(Number(event.target.value || 0))} /></label>
+      <label>Y2 · Hoa hồng mốc 1–2 (%)<input className="d68-admin-input" type="number" min="0" max="100" step="0.01" value={commissionTier2Pct} onChange={(event) => setCommissionTier2Pct(Number(event.target.value || 0))} /></label>
+      <label>Y3 · Hoa hồng trên mốc 2 (%)<input className="d68-admin-input" type="number" min="0" max="100" step="0.01" value={commissionTier3Pct} onChange={(event) => setCommissionTier3Pct(Number(event.target.value || 0))} /></label>
+      <label>Trạng thái<select className="d68-admin-input" value={status} onChange={(event) => setStatus(event.target.value as MarketPartnerStatus)}><option value="active">Active</option><option value="suspended">Suspended</option></select></label>
+    </div>
+    <div className="d68-admin-actions">
+      <button
+        type="button"
+        className="d68-admin-btn green"
+        disabled={busy || converted || rejected}
+        onClick={() => onConvert(lead, {
+          customerDiscountPct,
+          commissionPct,
+          commissionBasisCurrency,
+          commissionTier1Max,
+          commissionTier2Max,
+          commissionTier2Pct,
+          commissionTier3Pct,
+          status,
+          affiliateCode,
+        })}
+      >
+        {converted ? 'Đã chuyển đổi' : 'Convert lead → Market Partner'}
+      </button>
+    </div>
+  </article>;
+}
+
+function MarketPartnerEditor({
+  partner,
+  busy,
+  onUpdate,
+  onRegenerate,
+}: {
+  partner: MarketPartnerRow;
+  busy: boolean;
+  onUpdate: (partner: MarketPartnerRow, input: MarketPartnerInput & { suspensionReason?: string }) => Promise<void>;
+  onRegenerate: (partner: MarketPartnerRow, preferredCode?: string) => Promise<void>;
+}) {
+  const [draft, setDraft] = useState<MarketPartnerInput>({
+    displayName: partner.display_name,
+    contactEmail: partner.contact_email,
+    phone: partner.phone || '',
+    country: partner.country || '',
+    countryIso2: partner.country_iso2 || '',
+    intro: partner.intro || '',
+    customerDiscountPct: Number(partner.customer_discount_pct || 0),
+    commissionPct: Number(partner.commission_tier_1_pct ?? partner.commission_pct ?? DEFAULT_MARKET_PARTNER_COMMERCIAL_POLICY.commissionPct),
+    commissionBasisCurrency: String(partner.commission_basis_currency || DEFAULT_MARKET_PARTNER_COMMERCIAL_POLICY.commissionBasisCurrency) === 'USD' ? 'USD' : 'VND',
+    commissionTier1Max: Number(partner.commission_tier_1_max ?? DEFAULT_MARKET_PARTNER_COMMERCIAL_POLICY.commissionTier1Max),
+    commissionTier2Max: Number(partner.commission_tier_2_max ?? DEFAULT_MARKET_PARTNER_COMMERCIAL_POLICY.commissionTier2Max),
+    commissionTier2Pct: Number(partner.commission_tier_2_pct ?? DEFAULT_MARKET_PARTNER_COMMERCIAL_POLICY.commissionTier2Pct),
+    commissionTier3Pct: Number(partner.commission_tier_3_pct ?? DEFAULT_MARKET_PARTNER_COMMERCIAL_POLICY.commissionTier3Pct),
+    status: partner.status,
+    affiliateCode: partner.affiliate_code,
+  });
+  const [suspensionReason, setSuspensionReason] = useState(partner.suspension_reason || '');
+  const [preferredCode, setPreferredCode] = useState('');
+
+  return <article className="d68-admin-market-partner-card">
+    <div className="d68-admin-row-head">
+      <div>
+        <h3>{partner.display_name}</h3>
+        <p className="d68-admin-subtle">Tạo {new Date(partner.created_at).toLocaleString('vi-VN')} · Click {Number(partner.click_count || 0)} · Signup {Number(partner.attribution_count || 0)} · Commission {Number(partner.commission_count || 0)}</p>
+      </div>
+      <span className={`d68-admin-badge ${partner.status === 'active' ? 'ok' : 'err'}`}>{partner.status}</span>
+    </div>
+    <div className="d68-admin-affiliate-code-row">
+      <label>Mã affiliate<input className="d68-admin-input" value={partner.affiliate_code} readOnly /></label>
+      <label>Mã mới (tùy chọn)<input className="d68-admin-input" value={preferredCode} onChange={(event) => setPreferredCode(event.target.value.toUpperCase())} placeholder="Tự sinh nếu trống" /></label>
+      <button type="button" className="d68-admin-btn blue" disabled={busy} onClick={() => onRegenerate(partner, preferredCode)}>Sinh mã affiliate</button>
+    </div>
+    <MarketPartnerFields draft={draft} setDraft={setDraft} />
+    {draft.status === 'suspended' ? <label className="d68-admin-field"><span>Lý do tạm ngưng</span><input className="d68-admin-input" value={suspensionReason} onChange={(event) => setSuspensionReason(event.target.value)} /></label> : null}
+    <div className="d68-admin-actions">
+      <button type="button" className="d68-admin-btn green" disabled={busy} onClick={() => onUpdate(partner, { ...draft, suspensionReason })}>Lưu cấu hình</button>
+    </div>
+  </article>;
+}
+
+function MarketPartnerFields({
+  draft,
+  setDraft,
+  includeAffiliateCode = false,
+}: {
+  draft: MarketPartnerInput;
+  setDraft: React.Dispatch<React.SetStateAction<MarketPartnerInput>>;
+  includeAffiliateCode?: boolean;
+}) {
+  return <div className="d68-admin-market-partner-form-grid">
+    <label>Tên hiển thị<input required className="d68-admin-input" value={draft.displayName} onChange={(event) => setDraft((current) => ({ ...current, displayName: event.target.value }))} /></label>
+    <label>Email<input required type="email" className="d68-admin-input" value={draft.contactEmail} onChange={(event) => setDraft((current) => ({ ...current, contactEmail: event.target.value }))} /></label>
+    <label>Số điện thoại<input className="d68-admin-input" value={draft.phone || ''} onChange={(event) => setDraft((current) => ({ ...current, phone: event.target.value }))} /></label>
+    <label>Quốc gia<input className="d68-admin-input" value={draft.country || ''} onChange={(event) => setDraft((current) => ({ ...current, country: event.target.value }))} /></label>
+    <label>ISO2<input className="d68-admin-input" maxLength={2} value={draft.countryIso2 || ''} onChange={(event) => setDraft((current) => ({ ...current, countryIso2: event.target.value.toUpperCase() }))} /></label>
+    {includeAffiliateCode ? <label>Mã affiliate (tùy chọn)<input className="d68-admin-input" value={draft.affiliateCode || ''} onChange={(event) => setDraft((current) => ({ ...current, affiliateCode: event.target.value.toUpperCase() }))} placeholder="Server tự sinh" /></label> : null}
+    <label>X · Giảm giá khách hàng (%)<input className="d68-admin-input" type="number" min="0" max="100" step="0.01" value={draft.customerDiscountPct} onChange={(event) => setDraft((current) => ({ ...current, customerDiscountPct: Number(event.target.value || 0) }))} /></label>
+    <label>Đồng tiền mốc Y<select className="d68-admin-input" value={draft.commissionBasisCurrency} onChange={(event) => setDraft((current) => ({ ...current, commissionBasisCurrency: event.target.value as 'VND' | 'USD' }))}><option value="VND">VND</option><option value="USD">USD</option></select></label>
+    <label>Mốc doanh thu 1<input className="d68-admin-input" type="number" min="0" step="1" value={draft.commissionTier1Max} onChange={(event) => setDraft((current) => ({ ...current, commissionTier1Max: Number(event.target.value || 0) }))} /></label>
+    <label>Y1 · Dưới mốc 1 (%)<input className="d68-admin-input" type="number" min="0" max="100" step="0.01" value={draft.commissionPct} onChange={(event) => setDraft((current) => ({ ...current, commissionPct: Number(event.target.value || 0) }))} /></label>
+    <label>Mốc doanh thu 2<input className="d68-admin-input" type="number" min="0" step="1" value={draft.commissionTier2Max} onChange={(event) => setDraft((current) => ({ ...current, commissionTier2Max: Number(event.target.value || 0) }))} /></label>
+    <label>Y2 · Từ mốc 1 đến mốc 2 (%)<input className="d68-admin-input" type="number" min="0" max="100" step="0.01" value={draft.commissionTier2Pct} onChange={(event) => setDraft((current) => ({ ...current, commissionTier2Pct: Number(event.target.value || 0) }))} /></label>
+    <label>Y3 · Trên mốc 2 (%)<input className="d68-admin-input" type="number" min="0" max="100" step="0.01" value={draft.commissionTier3Pct} onChange={(event) => setDraft((current) => ({ ...current, commissionTier3Pct: Number(event.target.value || 0) }))} /></label>
+    <label>Trạng thái<select className="d68-admin-input" value={draft.status} onChange={(event) => setDraft((current) => ({ ...current, status: event.target.value as MarketPartnerStatus }))}><option value="active">Active</option><option value="suspended">Suspended</option></select></label>
+    <label className="d68-admin-span2">Giới thiệu<textarea className="d68-admin-input textarea" value={draft.intro || ''} onChange={(event) => setDraft((current) => ({ ...current, intro: event.target.value }))} /></label>
+  </div>;
+}
+
 
 function Logs({ logs }: { logs: Row[] }) {
   return <Card><h3>Audit logs</h3>{logs.length ? <div className="d68-admin-table-wrap"><table className="d68-admin-table"><tbody>{logs.map((log) => <tr key={log.id}><td>{new Date(log.created_at).toLocaleString()}</td><td><b>{log.action}</b></td><td>{log.entity_type}</td><td><pre>{JSON.stringify(log.detail || {}, null, 2)}</pre></td></tr>)}</tbody></table></div> : <Empty text="No audit logs." />}</Card>;
