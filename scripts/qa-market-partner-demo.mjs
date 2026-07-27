@@ -45,6 +45,7 @@ assert.equal(confirmed.reduce((sum, row) => sum + row.commission, 0), 5_544_000)
 assert.equal(pending.netPaid, 2_040_000);
 assert.equal(pending.commission, 816_000);
 
+// Requested Market Partner demo wording must remain exact and legacy wording must not return.
 assert.ok(dashboardSource.includes('Quản trị doanh thu Đối tác thị trường'));
 assert.equal((dashboardSource.match(/Quản trị doanh thu Đối tác thị trường/g) || []).length, 1);
 assert.ok(dashboardSource.includes('<h1>Đối tác Thị trường</h1>'));
