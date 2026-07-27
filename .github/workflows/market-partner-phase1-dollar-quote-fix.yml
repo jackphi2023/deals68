@@ -1,0 +1,56 @@
+name: Market Partner Phase 1 Dollar Quote Repair
+
+'on':
+  pull_request:
+    branches: [building]
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    if: github.head_ref == 'feature/market-partner-affiliate-v1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/market-partner-affiliate-v1
+          fetch-depth: 1
+          show-progress: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Repair Phase 1 collision block dollar quotes
+        run: node scripts/_fix_market_partner_phase1_dollar_quote.mjs
+      - run: npm ci
+      - name: Verify complete Phase 1-5 tree
+        run: |
+          npm run build
+          npm run qa:release
+          npm run qa:css
+          npm run qa:migrations
+          npm run qa:public-login-roles
+          npm run qa:market-partner-v1
+          npm run qa:market-partner-phase4
+          npm run qa:market-partner-phase5
+          git diff --check
+      - name: Remove temporary repair files
+        run: |
+          rm -f scripts/_fix_market_partner_phase1_dollar_quote.mjs
+          rm -f docs/release/.market-partner-phase1-dollar-quote-trigger
+          rm -f .github/workflows/market-partner-phase1-dollar-quote-fix.yml
+      - name: Commit verified repair
+        run: |
+          git config user.name 'deals68-market-partner-repair-bot'
+          git config user.email 'actions@users.noreply.github.com'
+          git add -A
+          if git diff --cached --diff-filter=ACMR --name-only | grep -E '(^scripts/_fix_market_partner_phase1_dollar_quote\.mjs$|^docs/release/\.market-partner-phase1-dollar-quote-trigger$|^\.github/workflows/market-partner-phase1-dollar-quote-fix\.yml$)'; then
+            echo 'Temporary repair files remain'
+            exit 1
+          fi
+          git diff --cached --check
+          git commit -m 'fix(market-partner): repair Phase 1 collision dollar quotes'
+          git push origin HEAD:feature/market-partner-affiliate-v1
