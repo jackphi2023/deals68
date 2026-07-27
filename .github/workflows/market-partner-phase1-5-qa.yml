@@ -1,0 +1,46 @@
+name: Market Partner Phase 1-5 QA
+
+'on':
+  pull_request:
+    branches: [building, main]
+    paths:
+      - 'src/pages/Login.tsx'
+      - 'src/pages/MarketPartnerLogin.tsx'
+      - 'src/pages/MarketPartnerDashboard.tsx'
+      - 'src/components/admin/AdminMarketPartnerFinance.tsx'
+      - 'src/lib/marketPartners.ts'
+      - 'src/lib/affiliate.ts'
+      - 'src/styles/pages/market-partner.css'
+      - 'supabase/migrations/*market_partner_affiliate*'
+      - 'scripts/qa-market-partner-*.mjs'
+      - 'scripts/deals68-public-login-role-contract-check.mjs'
+      - 'scripts/deals68-migration-state-check.mjs'
+      - 'package.json'
+      - '.github/workflows/market-partner-phase1-5-qa.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Build and release contracts
+        run: |
+          npm run build
+          npm run qa:release
+          npm run qa:css
+          npm run qa:migrations
+          npm run qa:public-login-roles
+          npm run qa:market-partner-v1
+          npm run qa:market-partner-phase4
+          npm run qa:market-partner-phase5
+          git diff --check
