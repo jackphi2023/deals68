@@ -53,13 +53,26 @@ jobs:
       - run: npm ci
       - name: Required Phase 4 QA
         run: |
-          npm run build
-          npm run qa:release
-          npm run qa:css
-          npm run qa:migrations
-          node scripts/qa-market-partner-v1.mjs
-          node scripts/qa-market-partner-phase4.mjs
-          git diff --check
+          set +e
+          {
+            npm run build
+            npm run qa:release
+            npm run qa:css
+            npm run qa:migrations
+            node scripts/qa-market-partner-v1.mjs
+            node scripts/qa-market-partner-phase4.mjs
+            git diff --check
+          } > /tmp/phase4-qa-error.log 2>&1
+          QA_STATUS=$?
+          cat /tmp/phase4-qa-error.log
+          exit "$QA_STATUS"
+      - name: Upload QA diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase4-qa-error
+          path: /tmp/phase4-qa-error.log
+          if-no-files-found: error
       - name: Remove temporary applicators
         run: |
           rm -f scripts/_fix_market_partner_phase4_applicator.mjs
