@@ -13,6 +13,10 @@ Status: source complete on `feature/market-partner-affiliate-v1`; production mig
 7. Admin groups approved, unassigned commission records for one Partner and currency into a payout draft.
 8. Payout moves through approved/processing/paid. Marking paid atomically marks its commission and attribution records paid.
 
+## Production schema collision handling
+
+Production contained empty generic placeholder tables named `affiliate_clicks` and `affiliate_payouts` with an incompatible Business/Investor payload schema. Phase 1 preserves them unchanged in the locked `d68_legacy` schema before creating the Market Partner tables. No rows are deleted and the archive schema is not granted to public, anon or authenticated roles.
+
 ## Security boundaries
 
 - Frontend never inserts or updates commission/payout tables directly.

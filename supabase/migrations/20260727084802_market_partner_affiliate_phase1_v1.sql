@@ -1,5 +1,45 @@
 -- Deals68 Market Partner / Affiliate v1 — Phase 1 foundation.
 -- Additive only. No payment trigger, no automatic commission creation, and no public table reads.
+-- Production compatibility: empty legacy placeholder tables with incompatible schemas are
+-- preserved in a locked archive schema before the Market Partner tables are created.
+
+create schema if not exists d68_legacy;
+revoke all on schema d68_legacy from public, anon, authenticated;
+grant usage on schema d68_legacy to service_role;
+comment on schema d68_legacy is
+  'Locked archive for incompatible pre-Market-Partner placeholder tables. Not exposed to public/anon/authenticated.';
+
+do $
+begin
+  if to_regclass('public.affiliate_clicks') is not null
+     and not exists (
+       select 1 from information_schema.columns
+       where table_schema = 'public'
+         and table_name = 'affiliate_clicks'
+         and column_name = 'partner_id'
+     ) then
+    if to_regclass('d68_legacy.affiliate_clicks_pre_market_partner') is not null then
+      raise exception 'Legacy affiliate_clicks archive already exists; manual reconciliation required';
+    end if;
+    alter table public.affiliate_clicks set schema d68_legacy;
+    alter table d68_legacy.affiliate_clicks rename to affiliate_clicks_pre_market_partner;
+  end if;
+
+  if to_regclass('public.affiliate_payouts') is not null
+     and not exists (
+       select 1 from information_schema.columns
+       where table_schema = 'public'
+         and table_name = 'affiliate_payouts'
+         and column_name = 'partner_id'
+     ) then
+    if to_regclass('d68_legacy.affiliate_payouts_pre_market_partner') is not null then
+      raise exception 'Legacy affiliate_payouts archive already exists; manual reconciliation required';
+    end if;
+    alter table public.affiliate_payouts set schema d68_legacy;
+    alter table d68_legacy.affiliate_payouts rename to affiliate_payouts_pre_market_partner;
+  end if;
+end;
+$;
 
 alter type public.user_role add value if not exists 'market_partner';
 

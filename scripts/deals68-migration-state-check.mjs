@@ -245,6 +245,9 @@ const migrationContracts = [
   {
     name: '20260727084802_market_partner_affiliate_phase1_v1.sql',
     snippets: [
+      'create schema if not exists d68_legacy',
+      'alter table public.affiliate_clicks set schema d68_legacy',
+      'alter table public.affiliate_payouts set schema d68_legacy',
       "alter type public.user_role add value if not exists 'market_partner'",
       'create table if not exists public.market_partners',
       'create table if not exists public.affiliate_clicks',

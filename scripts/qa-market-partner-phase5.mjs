@@ -125,6 +125,34 @@ create table public.profiles (
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );
+create table public.affiliate_clicks (
+  id uuid primary key default gen_random_uuid(),
+  business_id uuid,
+  investor_id uuid,
+  profile_id uuid,
+  created_by uuid,
+  status text default 'active',
+  title text,
+  payload jsonb default '{}'::jsonb,
+  visibility text default 'private',
+  sort_order integer default 100,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+create table public.affiliate_payouts (
+  id uuid primary key default gen_random_uuid(),
+  business_id uuid,
+  investor_id uuid,
+  profile_id uuid,
+  created_by uuid,
+  status text default 'active',
+  title text,
+  payload jsonb default '{}'::jsonb,
+  visibility text default 'private',
+  sort_order integer default 100,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
 create table public.partner_leads (
   id uuid primary key default gen_random_uuid(),
   full_name text not null,
@@ -224,6 +252,20 @@ try {
   await db.exec(phase3);
   await db.exec(phase4);
   await db.exec(phase5);
+
+  const collisionState = await db.query(`
+    select
+      to_regclass('d68_legacy.affiliate_clicks_pre_market_partner') is not null as legacy_clicks,
+      to_regclass('d68_legacy.affiliate_payouts_pre_market_partner') is not null as legacy_payouts,
+      exists(select 1 from information_schema.columns where table_schema='public' and table_name='affiliate_clicks' and column_name='partner_id') as new_clicks,
+      exists(select 1 from information_schema.columns where table_schema='public' and table_name='affiliate_payouts' and column_name='partner_id') as new_payouts;
+  `);
+  assert.deepEqual(collisionState.rows[0], {
+    legacy_clicks: true,
+    legacy_payouts: true,
+    new_clicks: true,
+    new_payouts: true,
+  });
 
   const adminId = '00000000-0000-0000-0000-000000000001';
   const partnerProfileId = '00000000-0000-0000-0000-000000000002';
