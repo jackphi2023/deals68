@@ -2,25 +2,27 @@
 import fs from 'node:fs';
 
 const path = 'supabase/migrations/20260727084802_market_partner_affiliate_phase1_v1.sql';
-let source = fs.readFileSync(path, 'utf8');
+const source = fs.readFileSync(path, 'utf8');
+const newline = source.includes('\r\n') ? '\r\n' : '\n';
+const lines = source.split(/\r?\n/);
 const dollarQuote = String.fromCharCode(36).repeat(2);
-const openPattern = /^do \$\r?$/gm;
-const closePattern = /^\$;\r?$/gm;
-const openMatches = source.match(openPattern) || [];
-const closeMatches = source.match(closePattern) || [];
+const opening = lines.reduce((all, line, index) => line === 'do $' ? [...all, index] : all, []);
+const closing = lines.reduce((all, line, index) => line === '$;' ? [...all, index] : all, []);
 
-if (openMatches.length !== 1) throw new Error(`Expected one broken opening dollar quote, found ${openMatches.length}`);
-if (closeMatches.length !== 1) throw new Error(`Expected one broken closing dollar quote, found ${closeMatches.length}`);
+if (opening.length !== 1) throw new Error(`Expected one broken opening dollar quote, found ${opening.length}`);
+if (closing.length !== 1) throw new Error(`Expected one broken closing dollar quote, found ${closing.length}`);
+if (closing[0] <= opening[0]) throw new Error('Broken dollar-quote order is invalid');
 
-source = source.replace(openPattern, `do ${dollarQuote}`);
-source = source.replace(closePattern, `${dollarQuote};`);
+lines[opening[0]] = `do ${dollarQuote}`;
+lines[closing[0]] = `${dollarQuote};`;
+const repaired = lines.join(newline);
 
-if (!source.includes(`do ${dollarQuote}\nbegin`) && !source.includes(`do ${dollarQuote}\r\nbegin`)) {
+if (repaired.split(/\r?\n/).filter((line) => line === `do ${dollarQuote}`).length !== 1) {
   throw new Error('Opening dollar quote repair failed');
 }
-if (!source.includes(`\n${dollarQuote};\n\nalter type public.user_role`) && !source.includes(`\r\n${dollarQuote};\r\n\r\nalter type public.user_role`)) {
+if (repaired.split(/\r?\n/).filter((line) => line === `${dollarQuote};`).length < 1) {
   throw new Error('Closing dollar quote repair failed');
 }
 
-fs.writeFileSync(path, source);
+fs.writeFileSync(path, repaired);
 console.log('✓ Phase 1 collision block dollar quotes repaired.');
