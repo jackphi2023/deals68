@@ -11,6 +11,7 @@ const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
 
 assert.ok(dataSource.includes("MARKET_PARTNER_DEMO_EMAIL = 'partnerdemo@deals68.com'"));
 assert.ok(dataSource.includes("MARKET_PARTNER_DEMO_PASSWORD = 'Abc@12345'"));
+assert.ok(dataSource.includes('24 * 60 * 60 * 1000'), 'Demo session must expire after 24 hours.');
 const codeMatch = dataSource.match(/MARKET_PARTNER_DEMO_AFFILIATE_CODE = '([^']+)'/);
 assert.ok(codeMatch, 'Demo affiliate code is missing.');
 assert.match(codeMatch[1], /^D68[A-F0-9]{9}$/, 'Demo code must follow D68 + 9 uppercase hex characters.');
