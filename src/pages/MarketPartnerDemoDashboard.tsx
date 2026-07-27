@@ -85,9 +85,9 @@ export default function MarketPartnerDemoDashboard() {
     <main className="d68-mp-dashboard-page">
       <header className="d68-mp-dashboard-head">
         <div>
-          <span className="d68-mp-eyebrow">Trang quản trị demo của Đối tác thị trường</span>
+          <span className="d68-mp-eyebrow">Quản trị doanh thu Đối tác thị trường</span>
           <div className="d68-mp-title-row">
-            <h1>{partner.display_name}</h1>
+            <h1>Đối tác Thị trường</h1>
             <span>· {partner.affiliate_code}</span>
             <span className="d68-mp-country-badge">🌐 {partner.country}</span>
           </div>
