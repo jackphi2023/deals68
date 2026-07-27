@@ -1,0 +1,60 @@
+name: Market Partner Phase 4 Apply and Verify
+
+'on':
+  pull_request:
+    branches: [building]
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    if: github.head_ref == 'feature/market-partner-affiliate-v1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/market-partner-affiliate-v1
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Apply exact Phase 4 UI and registry patches
+        run: |
+          node scripts/_apply_market_partner_phase4_ui.mjs
+          node scripts/_apply_market_partner_phase4_registry.mjs
+      - run: npm ci
+      - name: Required Phase 4 QA
+        run: |
+          npm run build
+          npm run qa:release
+          npm run qa:css
+          npm run qa:migrations
+          node scripts/qa-market-partner-v1.mjs
+          node scripts/qa-market-partner-phase4.mjs
+          git diff --check
+      - name: Remove temporary applicators
+        run: |
+          rm -f scripts/_apply_market_partner_phase4_ui.mjs
+          rm -f scripts/_apply_market_partner_phase4_registry.mjs
+          rm -f docs/release/.market-partner-phase4-trigger
+          rm -f .github/workflows/market-partner-phase4-verify.yml
+      - name: Commit verified Phase 4 tree
+        run: |
+          git config user.name 'deals68-phase4-bot'
+          git config user.email 'actions@users.noreply.github.com'
+          git add -A
+          if git diff --cached --name-only | grep -E '(^scripts/_apply_market_partner_phase4_|^docs/release/\.market-partner-phase4-trigger$|^\.github/workflows/market-partner-phase4-verify\.yml$)'; then
+            echo 'Temporary Phase 4 files remain in staged tree'
+            exit 1
+          fi
+          git diff --cached --check
+          if git diff --cached --quiet; then
+            echo 'No Phase 4 changes to commit'
+            exit 0
+          fi
+          git commit -m 'feat(market-partner): complete Phase 4 affiliate checkout policy'
+          git push origin HEAD:feature/market-partner-affiliate-v1
