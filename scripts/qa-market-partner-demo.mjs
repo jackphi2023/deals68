@@ -54,6 +54,20 @@ assert.doesNotMatch(dashboardSource, /supabase\.(from|rpc|auth)/i);
 assert.ok(dashboardSource.includes('Chuyển khoản thành công'));
 assert.ok(dashboardSource.includes('Chờ xác nhận'));
 assert.ok(dashboardSource.includes('Chưa duyệt thanh toán'));
+for (const wording of [
+  "label: 'Giao dịch'",
+  "label: 'Thu nhập'",
+  'Chờ thanh toán',
+  'Thu nhập/Hoa hồng chỉ được chi trả sau khi Admin deals68 duyệt và hoàn tất đối soát.',
+  'Đơn vị: VNĐ. Thu nhập/Hoa hồng theo Chính sách Đối tác thị trường của Deals68.com.',
+]) assert.ok(dashboardSource.includes(wording), `Missing requested demo wording: ${wording}`);
+for (const legacyWording of [
+  "label: 'Lead & chuyển đổi'",
+  "label: 'Hoa hồng & thanh toán'",
+  'Khả dụng để lập payout',
+  'Commission chỉ được chi trả sau khi Admin duyệt và hoàn tất đối soát.',
+  'Đồng tiền cơ sở: VND. Commission lịch sử dùng snapshot X/Y tại thời điểm payment.',
+]) assert.ok(!dashboardSource.includes(legacyWording), `Legacy demo wording still present: ${legacyWording}`);
 
 for (const token of [
   'isMarketPartnerDemoCredentials',
