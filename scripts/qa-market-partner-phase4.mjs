@@ -88,7 +88,7 @@ for (const token of [
   'CƠ CẤU HOA HỒNG THEO DOANH THU',
   'trên số tiền khách thực thanh toán',
   'Không cộng dồn mã khuyến mãi khác',
-  'READ-ONLY · PHASE 4',
+  'READ-ONLY · MARKET PARTNER',
 ]) assert.ok(dashboard.includes(token), `Partner Dashboard Phase 4 missing ${token}`);
 
 assert.equal(pkg.scripts['qa:market-partner-phase4'], 'node scripts/qa-market-partner-phase4.mjs');

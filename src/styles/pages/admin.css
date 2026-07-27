@@ -532,3 +532,12 @@
 .d68-admin-affiliate-code-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto;gap:12px;align-items:end}
 @media(max-width:900px){.d68-admin-market-partner-form-grid,.d68-admin-market-partner-config-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.d68-admin-affiliate-code-row{grid-template-columns:1fr 1fr}.d68-admin-affiliate-code-row .d68-admin-btn{grid-column:1/-1}}
 @media(max-width:620px){.d68-admin-market-partner-form-grid,.d68-admin-market-partner-config-grid,.d68-admin-affiliate-code-row{grid-template-columns:1fr}.d68-admin-market-partner-form-grid .d68-admin-span2{grid-column:auto}}
+
+/* Market Partner Phase 5 finance */
+.d68-admin-market-partner-finance{display:grid;gap:14px;margin-top:14px}
+.d68-admin-market-partner-finance>.d68-admin-card{margin-top:0}
+.d68-admin-payout-groups{display:grid;gap:10px}
+.d68-admin-payout-group{display:flex;justify-content:space-between;align-items:center;gap:16px;border:1px solid #E2E8F0;background:#F8FAFC;border-radius:12px;padding:14px}
+.d68-admin-payout-group p{margin:5px 0 0;color:#64748B;font-size:13px}
+.d68-admin-market-partner-finance code{font-size:11px;word-break:break-all}
+@media(max-width:700px){.d68-admin-payout-group{align-items:flex-start;flex-direction:column}.d68-admin-payout-group .d68-admin-btn{width:100%}}

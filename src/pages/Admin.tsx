@@ -29,6 +29,7 @@ import {
 } from '../lib/paymentOrders';
 import { AdminOperationsOverview } from '../components/admin/AdminOperationsOverview';
 import AdminPromoManager from '../components/admin/AdminPromoManager';
+import AdminMarketPartnerFinance from '../components/admin/AdminMarketPartnerFinance';
 import {
   ADMIN_NAV_SECTIONS,
   adminTabUsesGlobalSearch,
@@ -47,10 +48,17 @@ import {
 import {
   DEFAULT_MARKET_PARTNER_COMMERCIAL_POLICY,
   convertPartnerLead,
+  createAffiliatePayout,
   createMarketPartner,
+  listAdminAffiliateCommissions,
+  listAdminAffiliatePayouts,
   listAdminMarketPartners,
   regenerateMarketPartnerCode,
+  setAffiliateCommissionStatus,
+  setAffiliatePayoutStatus,
   updateMarketPartner,
+  type AffiliateCommissionRow,
+  type AffiliatePayoutRow,
   type MarketPartnerInput,
   type MarketPartnerRow,
   type MarketPartnerStatus,
@@ -389,6 +397,8 @@ export default function Admin() {
   const [contactMessages, setContactMessages] = useState<Row[]>([]);
   const [partnerLeads, setPartnerLeads] = useState<Row[]>([]);
   const [marketPartners, setMarketPartners] = useState<MarketPartnerRow[]>([]);
+  const [affiliateCommissions, setAffiliateCommissions] = useState<AffiliateCommissionRow[]>([]);
+  const [affiliatePayouts, setAffiliatePayouts] = useState<AffiliatePayoutRow[]>([]);
   const [businessFiles, setBusinessFiles] = useState<Row[]>([]);
   const [businessImages, setBusinessImages] = useState<Row[]>([]);
   const [msg, setMsg] = useState('');
@@ -492,6 +502,8 @@ export default function Admin() {
         contactResult,
         leadResult,
         marketPartnerResult,
+        affiliateCommissionResult,
+        affiliatePayoutResult,
       ] = await Promise.all([
         supabase.from('businesses').select('*, business_files(count), business_images(count)').order('created_at', { ascending: false }).limit(2000),
         supabase.from('business_files').select('id,business_id,display_name,file_name,privacy_level,public_visible,admin_note,created_at,updated_at').order('created_at', { ascending: false }).limit(2000),
@@ -505,6 +517,8 @@ export default function Admin() {
         supabase.from('contact_messages').select('*').order('created_at', { ascending: false }).limit(300),
         supabase.from('partner_leads').select('*').order('created_at', { ascending: false }).limit(300),
         listAdminMarketPartners(),
+        listAdminAffiliateCommissions(),
+        listAdminAffiliatePayouts(),
       ]);
 
       setBusinesses(businessResult.data || []);
@@ -519,6 +533,8 @@ export default function Admin() {
       setContactMessages(contactResult.data || []);
       setPartnerLeads(leadResult.data || []);
       setMarketPartners(marketPartnerResult || []);
+      setAffiliateCommissions(affiliateCommissionResult || []);
+      setAffiliatePayouts(affiliatePayoutResult || []);
       setLastRefreshedAt(new Date().toISOString());
 
       const firstError =
@@ -561,6 +577,8 @@ export default function Admin() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'payment_orders' }, () => load())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'proposals' }, () => load())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'market_partners' }, () => load())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'affiliate_commissions' }, () => load())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'affiliate_payouts' }, () => load())
       .subscribe();
     return () => {
       window.removeEventListener('focus', refreshWhenVisible);
@@ -928,6 +946,49 @@ export default function Admin() {
     finally { setBusy(false); }
   }
 
+  async function setAffiliateCommissionStatusAdmin(
+    commission: AffiliateCommissionRow,
+    status: 'approved' | 'rejected' | 'reversed',
+    note?: string,
+  ) {
+    setBusy(true); setError(''); setMsg('');
+    try {
+      await setAffiliateCommissionStatus(commission.id, status, note);
+      setMsg(`Đã cập nhật commission thành ${status}.`);
+      await load();
+    } catch (actionError: any) { setError(actionError?.message || 'Could not update affiliate commission.'); }
+    finally { setBusy(false); }
+  }
+
+  async function createAffiliatePayoutAdmin(
+    partnerId: string,
+    currency: string,
+    commissionIds: string[],
+  ) {
+    setBusy(true); setError(''); setMsg('');
+    try {
+      const payout = await createAffiliatePayout({ partnerId, currency, commissionIds });
+      setMsg(`Đã tạo payout draft ${payout.payout_code}.`);
+      await load();
+    } catch (actionError: any) { setError(actionError?.message || 'Could not create affiliate payout.'); }
+    finally { setBusy(false); }
+  }
+
+  async function setAffiliatePayoutStatusAdmin(
+    payout: AffiliatePayoutRow,
+    status: 'approved' | 'processing' | 'paid' | 'rejected' | 'cancelled',
+    paymentReference?: string,
+    note?: string,
+  ) {
+    setBusy(true); setError(''); setMsg('');
+    try {
+      await setAffiliatePayoutStatus(payout.id, status, paymentReference, note);
+      setMsg(`Đã cập nhật payout ${payout.payout_code} thành ${status}.`);
+      await load();
+    } catch (actionError: any) { setError(actionError?.message || 'Could not update affiliate payout.'); }
+    finally { setBusy(false); }
+  }
+
   return (
     <section className="d68-admin-page">
       <header className="d68-admin-head">
@@ -1154,11 +1215,16 @@ export default function Admin() {
               <MarketPartnersAdmin
                 partners={marketPartners}
                 leads={partnerLeads as PartnerLeadRow[]}
+                commissions={affiliateCommissions}
+                payouts={affiliatePayouts}
                 busy={busy}
                 onCreate={createMarketPartnerAdmin}
                 onConvert={convertPartnerLeadAdmin}
                 onUpdate={updateMarketPartnerAdmin}
                 onRegenerate={regenerateMarketPartnerCodeAdmin}
+                onCommissionStatus={setAffiliateCommissionStatusAdmin}
+                onCreatePayout={createAffiliatePayoutAdmin}
+                onPayoutStatus={setAffiliatePayoutStatusAdmin}
               />
             )}
             {tab === 'leads' && (
@@ -1488,11 +1554,16 @@ function Leads({ contactMessages, partnerLeads, markLead }: any) {
 type MarketPartnerAdminProps = {
   partners: MarketPartnerRow[];
   leads: PartnerLeadRow[];
+  commissions: AffiliateCommissionRow[];
+  payouts: AffiliatePayoutRow[];
   busy: boolean;
   onCreate: (input: MarketPartnerInput) => Promise<void>;
   onConvert: (lead: PartnerLeadRow, input: PartnerLeadConversionInput) => Promise<void>;
   onUpdate: (partner: MarketPartnerRow, input: MarketPartnerInput & { suspensionReason?: string }) => Promise<void>;
   onRegenerate: (partner: MarketPartnerRow, preferredCode?: string) => Promise<void>;
+  onCommissionStatus: (commission: AffiliateCommissionRow, status: 'approved' | 'rejected' | 'reversed', note?: string) => Promise<void>;
+  onCreatePayout: (partnerId: string, currency: string, commissionIds: string[]) => Promise<void>;
+  onPayoutStatus: (payout: AffiliatePayoutRow, status: 'approved' | 'processing' | 'paid' | 'rejected' | 'cancelled', paymentReference?: string, note?: string) => Promise<void>;
 };
 
 const EMPTY_MARKET_PARTNER_INPUT: MarketPartnerInput = {
@@ -1510,11 +1581,16 @@ const EMPTY_MARKET_PARTNER_INPUT: MarketPartnerInput = {
 function MarketPartnersAdmin({
   partners,
   leads,
+  commissions,
+  payouts,
   busy,
   onCreate,
   onConvert,
   onUpdate,
   onRegenerate,
+  onCommissionStatus,
+  onCreatePayout,
+  onPayoutStatus,
 }: MarketPartnerAdminProps) {
   const activePartners = partners.filter((partner) => partner.status === 'active');
   const suspendedPartners = partners.filter((partner) => partner.status === 'suspended');
@@ -1535,7 +1611,7 @@ function MarketPartnersAdmin({
         <div>
           <h3>Lead đăng ký Đối tác thị trường</h3>
           <p className="d68-admin-subtle">
-            partner_leads chỉ là form tiếp nhận. Chuyển đổi tạo một market_partners record độc lập; tài khoản Auth sẽ được liên kết ở Phase 2.
+            partner_leads chỉ là form tiếp nhận. Sau khi convert, Partner kích hoạt tài khoản bằng email và mã affiliate đã được Admin phê duyệt.
           </p>
         </div>
         <span className="d68-admin-badge warn">{openLeads.length} cần xử lý</span>
@@ -1574,6 +1650,16 @@ function MarketPartnersAdmin({
         ))}
       </div> : <Empty text="Chưa có Market Partner account record." />}
     </Card>
+
+    <AdminMarketPartnerFinance
+      partners={partners}
+      commissions={commissions}
+      payouts={payouts}
+      busy={busy}
+      onCommissionStatus={onCommissionStatus}
+      onCreatePayout={onCreatePayout}
+      onPayoutStatus={onPayoutStatus}
+    />
   </div>;
 }
 
@@ -1591,7 +1677,7 @@ function ManualMarketPartnerForm({ busy, onCreate }: { busy: boolean; onCreate: 
       <div className="d68-admin-row-head">
         <div>
           <h3>Tạo Market Partner thủ công</h3>
-          <p className="d68-admin-subtle">Để trống mã affiliate để server sinh mã duy nhất. Phase 1 không tạo hoặc đổi Auth user.</p>
+          <p className="d68-admin-subtle">Để trống mã affiliate để server sinh mã duy nhất. Partner dùng email + mã này để kích hoạt tài khoản qua OTP.</p>
         </div>
         <button className="d68-admin-btn green" disabled={busy}>Tạo Market Partner</button>
       </div>

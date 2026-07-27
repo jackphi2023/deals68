@@ -37,6 +37,7 @@ const required = [
   '20260727103000_market_partner_affiliate_phase2_dashboard_v1.sql',
   '20260727110000_market_partner_affiliate_phase3_referral_v1.sql',
   '20260727113000_market_partner_affiliate_phase4_checkout_v1.sql',
+  '20260727124500_market_partner_affiliate_phase5_commission_payout_v1.sql',
 ];
 const forbidden = [
   '20260711103000_normalize_investor_taxonomy_on_write_v1.sql',
@@ -292,6 +293,23 @@ const migrationContracts = [
       'Promo code cannot be combined with a Market Partner code',
       "'calculation_basis', 'net_paid_amount'",
       'No automatic commission trigger is installed in Phase 4',
+    ],
+  },
+  {
+    name: '20260727124500_market_partner_affiliate_phase5_commission_payout_v1.sql',
+    snippets: [
+      'create or replace function public.d68_claim_market_partner_signup',
+      'create or replace function public.d68_create_affiliate_commission_for_payment',
+      'create trigger d68_payment_confirmed_affiliate_commission',
+      'affiliate_commission_auto_create_failed',
+      "'snapshot_source', 'payment_order.payload.affiliate'",
+      'create or replace function public.d68_admin_set_affiliate_commission_status',
+      'create or replace function public.d68_admin_create_affiliate_payout',
+      'create or replace function public.d68_admin_set_affiliate_payout_status',
+      'Paid commission is immutable',
+      'Payment reference is required',
+      "'partner_customer_data_exposed', false",
+      "'partner_payment_payload_exposed', false",
     ],
   },
 ];

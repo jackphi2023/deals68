@@ -56,6 +56,7 @@ The new Release Candidate migration is:
 - `20260727103000_market_partner_affiliate_phase2_dashboard_v1.sql` — Market Partner/Affiliate Phase 2 source only; adds owner-only Dashboard aggregates and bank-account self-service RPC. **Not applied to production.**
 - `20260727110000_market_partner_affiliate_phase3_referral_v1.sql` — Market Partner/Affiliate Phase 3 source only; creates server-side Business/Investor signup attribution only when a matching active Partner click exists within 30 days. It does not change payment, discount or commission. **Not applied to production.**
 - `20260727113000_market_partner_affiliate_phase4_checkout_v1.sql` — Market Partner/Affiliate Phase 4 source only; adds per-Partner X discount and three-tier Y policy, server-side package/term/affiliate repricing, private affiliate payment snapshots and explicit promo non-stacking. It installs no automatic payment/commission trigger. **Not applied to production.**
+- `20260727124500_market_partner_affiliate_phase5_commission_payout_v1.sql` — Market Partner/Affiliate Phase 5 source only; adds secure Partner account claiming, automatic idempotent commission creation from the immutable Phase 4 payment snapshot, Admin approval/rejection, payout lifecycle and safe Partner history. Affiliate reconciliation errors never roll back payment confirmation. **Not applied to production.**
 
 Rules:
 
