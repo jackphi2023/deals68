@@ -80,6 +80,13 @@ replaceOnce(
   'Thông tin này chỉ Đối tác và Admin được xem. Cần hoàn tất trước khi thanh toán.',
 );
 
+const qaV1Path = 'scripts/qa-market-partner-v1.mjs';
+replaceOnce(qaV1Path, 'assert.match(partnerDashboard, /Lead & chuyển đổi/);', 'assert.match(partnerDashboard, /Giao dịch/);');
+replaceOnce(qaV1Path, 'assert.match(partnerDashboard, /Hoa hồng & thanh toán/);', 'assert.match(partnerDashboard, /Thu nhập/);');
+replaceOnce(qaV1Path, 'assert.match(partnerDashboard, /Commission lịch sử dùng snapshot X\\/Y/);', 'assert.match(partnerDashboard, /Thu nhập\\/Hoa hồng theo Chính sách Đối tác thị trường/);');
+replaceOnce(qaV1Path, 'assert.match(partnerDashboard, /Lịch sử payout/);', 'assert.match(partnerDashboard, /Lịch sử chi trả/);');
+replaceOnce(qaV1Path, 'assert.match(partnerDashboard, /Không hiển thị danh tính khách hàng hoặc payment payload/);', 'assert.match(partnerDashboard, /Khách hàng đã được xác nhận thanh toán dịch vụ thành công/);');
+
 const qaPath = 'scripts/qa-market-partner-demo.mjs';
 replaceOnce(
   qaPath,
