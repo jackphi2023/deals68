@@ -2,6 +2,12 @@ import { FormEvent, useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
+import {
+  MARKET_PARTNER_DEMO_EMAIL,
+  MARKET_PARTNER_DEMO_PASSWORD,
+  isMarketPartnerDemoCredentials,
+  startMarketPartnerDemoSession,
+} from '../lib/marketPartnerDemo';
 import '../styles/pages/market-partner.css';
 
 type Mode = 'login' | 'activate' | 'otp';
@@ -33,9 +39,10 @@ export default function MarketPartnerLogin() {
   const { signIn, signOut, profile, loading: authLoading, refreshProfile } = useAuth();
   const [params] = useSearchParams();
   const navigate = useNavigate();
+  const isDemoPrefill = params.get('demo') === '1';
   const [mode, setMode] = useState<Mode>(params.get('activate') === '1' ? 'activate' : 'login');
-  const [email, setEmail] = useState(params.get('email') || '');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState(params.get('email') || (isDemoPrefill ? MARKET_PARTNER_DEMO_EMAIL : ''));
+  const [password, setPassword] = useState(isDemoPrefill ? MARKET_PARTNER_DEMO_PASSWORD : '');
   const [affiliateCode, setAffiliateCode] = useState(params.get('code') || '');
   const [otp, setOtp] = useState('');
   const [error, setError] = useState('');
@@ -82,6 +89,12 @@ export default function MarketPartnerLogin() {
   }
 
   async function login() {
+    if (isMarketPartnerDemoCredentials(email, password)) {
+      startMarketPartnerDemoSession();
+      navigate('/market-partner/demo', { replace: true });
+      return;
+    }
+
     const result = await signIn(email.trim(), password);
     if (result.error) {
       if (isEmailNotConfirmed(result)) {

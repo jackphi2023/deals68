@@ -33,6 +33,7 @@ const loadBusinessDashboard = () => import('./pages/BusinessDashboardWithReports
 const loadInvestorDashboard = () => import('./pages/InvestorDashboard');
 const loadMarketPartnerLogin = () => import('./pages/MarketPartnerLogin');
 const loadMarketPartnerDashboard = () => import('./pages/MarketPartnerDashboard');
+const loadMarketPartnerDemoDashboard = () => import('./pages/MarketPartnerDemoDashboard');
 const loadAdmin = () => import('./pages/Admin');
 const loadAdminValuation = () => import('./pages/AdminValuation');
 const loadStaticPages = () => import('./pages/StaticPages');
@@ -53,6 +54,7 @@ const BusinessDashboard = lazy(loadBusinessDashboard);
 const InvestorDashboard = lazy(loadInvestorDashboard);
 const MarketPartnerLogin = lazy(loadMarketPartnerLogin);
 const MarketPartnerDashboard = lazy(loadMarketPartnerDashboard);
+const MarketPartnerDemoDashboard = lazy(loadMarketPartnerDemoDashboard);
 const Admin = lazy(loadAdmin);
 const AdminValuation = lazy(loadAdminValuation);
 const About = lazy(() => loadStaticPages().then((m) => ({ default: m.About })));
@@ -71,7 +73,7 @@ function likelyNextRouteLoaders(pathname: string): RouteLoader[] {
   if (path === '/pricing') return [loadRegister];
   if (path === '/login') return [loadForgotPassword];
   if (path === '/market-partner') return [loadMarketPartnerLogin];
-  if (path === '/market-partner/login') return [loadMarketPartnerDashboard];
+  if (path === '/market-partner/login') return [loadMarketPartnerDashboard, loadMarketPartnerDemoDashboard];
   return [];
 }
 
@@ -150,7 +152,7 @@ function LanguageMemory() {
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const path = location.pathname;
-    const privatePrefix = ['/dashboard', '/admin', '/checkout', '/payment', '/data-room', '/messages', '/notifications', '/support', '/market-partner/dashboard'];
+    const privatePrefix = ['/dashboard', '/admin', '/checkout', '/payment', '/data-room', '/messages', '/notifications', '/support', '/market-partner/dashboard', '/market-partner/demo'];
     const isPrivate = privatePrefix.some((p) => path === p || path.startsWith(`${p}/`));
     if (path === '/vi' || path.startsWith('/vi/')) return;
     if (isPrivate) return;
@@ -242,6 +244,7 @@ export default function App(){
         <Route path="/partners" element={<MarketPartner lang="vi"/>}/>
         <Route path="/market-partner/login" element={<MarketPartnerLogin/>}/>
         <Route path="/market-partner/dashboard" element={<MarketPartnerGate><MarketPartnerDashboard/></MarketPartnerGate>}/>
+        <Route path="/market-partner/demo" element={<MarketPartnerDemoDashboard/>}/>
         <Route path="/market-partner" element={<MarketPartner lang="vi"/>}/>
 
         <Route path="/en" element={<Home lang="en"/>}/>
@@ -263,6 +266,7 @@ export default function App(){
         <Route path="/en/partners" element={<MarketPartner lang="en"/>}/>
         <Route path="/en/market-partner/login" element={<MarketPartnerLogin/>}/>
         <Route path="/en/market-partner/dashboard" element={<MarketPartnerGate><MarketPartnerDashboard/></MarketPartnerGate>}/>
+        <Route path="/en/market-partner/demo" element={<MarketPartnerDemoDashboard/>}/>
         <Route path="/en/market-partner" element={<MarketPartner lang="en"/>}/>
         <Route path="/en/dashboard/business" element={<DashboardGate role="business"><BusinessDashboard/></DashboardGate>}/>
         <Route path="/en/dashboard/business/*" element={<DashboardGate role="business"><BusinessDashboard/></DashboardGate>}/>
