@@ -25,8 +25,30 @@ jobs:
           cache: npm
       - name: Apply exact Phase 4 UI and registry patches
         run: |
-          node scripts/_apply_market_partner_phase4_ui.mjs
-          node scripts/_apply_market_partner_phase4_registry.mjs
+          set +e
+          node scripts/_apply_market_partner_phase4_ui.mjs > /tmp/phase4-ui.log 2>&1
+          UI_STATUS=$?
+          if [ "$UI_STATUS" -ne 0 ]; then
+            cat /tmp/phase4-ui.log
+            cp /tmp/phase4-ui.log /tmp/phase4-applicator-error.log
+            exit "$UI_STATUS"
+          fi
+          node scripts/_apply_market_partner_phase4_registry.mjs > /tmp/phase4-registry.log 2>&1
+          REGISTRY_STATUS=$?
+          if [ "$REGISTRY_STATUS" -ne 0 ]; then
+            cat /tmp/phase4-registry.log
+            cp /tmp/phase4-registry.log /tmp/phase4-applicator-error.log
+            exit "$REGISTRY_STATUS"
+          fi
+          cat /tmp/phase4-ui.log
+          cat /tmp/phase4-registry.log
+      - name: Upload applicator diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase4-applicator-error
+          path: /tmp/phase4-applicator-error.log
+          if-no-files-found: error
       - run: npm ci
       - name: Required Phase 4 QA
         run: |
