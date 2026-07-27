@@ -66,8 +66,8 @@ export default function MarketPartnerDemoDashboard() {
 
   const navItems: Array<{ id: PartnerTab; label: string; icon: typeof LayoutDashboard }> = [
     { id: 'overview', label: 'Tổng quan', icon: LayoutDashboard },
-    { id: 'leads', label: 'Lead & chuyển đổi', icon: Users },
-    { id: 'commissions', label: 'Hoa hồng & thanh toán', icon: WalletCards },
+    { id: 'leads', label: 'Giao dịch', icon: Users },
+    { id: 'commissions', label: 'Thu nhập', icon: WalletCards },
     { id: 'campaigns', label: 'Mã & chiến dịch', icon: Link2 },
     { id: 'settings', label: 'Cài đặt', icon: Settings },
   ];
@@ -85,9 +85,9 @@ export default function MarketPartnerDemoDashboard() {
     <main className="d68-mp-dashboard-page">
       <header className="d68-mp-dashboard-head">
         <div>
-          <span className="d68-mp-eyebrow">Trang quản trị demo của Đối tác thị trường</span>
+          <span className="d68-mp-eyebrow">Quản trị doanh thu Đối tác thị trường</span>
           <div className="d68-mp-title-row">
-            <h1>{partner.display_name}</h1>
+            <h1>Đối tác Thị trường</h1>
             <span>· {partner.affiliate_code}</span>
             <span className="d68-mp-country-badge">🌐 {partner.country}</span>
           </div>
@@ -128,14 +128,14 @@ export default function MarketPartnerDemoDashboard() {
                   <div><span>Đã duyệt</span><strong>{money(metrics.approved_commission, currency)}</strong></div>
                   <div><span>Đã chi trả</span><strong>{money(metrics.paid_commission, currency)}</strong></div>
                   <hr />
-                  <div className="available"><span>Khả dụng để lập payout</span><strong>{money(metrics.available_commission, currency)}</strong></div>
-                  <p>Commission chỉ được chi trả sau khi Admin duyệt và hoàn tất đối soát.</p>
+                  <div className="available"><span>Chờ thanh toán</span><strong>{money(metrics.available_commission, currency)}</strong></div>
+                  <p>Thu nhập/Hoa hồng chỉ được chi trả sau khi Admin deals68 duyệt và hoàn tất đối soát.</p>
                 </article>
 
                 <article className="d68-mp-progress-card">
                   <h2>CƠ CẤU HOA HỒNG THEO DOANH THU</h2>
                   <div className="d68-mp-progress-title"><strong>40%–60%</strong><span>trên số tiền khách thực thanh toán</span></div>
-                  <p>Đồng tiền cơ sở: VND. Commission lịch sử dùng snapshot X/Y tại thời điểm payment.</p>
+                  <p>Đơn vị: VNĐ. Thu nhập/Hoa hồng theo Chính sách Đối tác thị trường của Deals68.com.</p>
                   <div className="d68-mp-tier-row active"><b>Dưới mốc 1</b><span>&lt; {compactAmount(20_000_000)}</span><strong>40%</strong></div>
                   <div className="d68-mp-tier-row"><b>Từ mốc 1 đến mốc 2</b><span>{compactAmount(20_000_000)} – {compactAmount(50_000_000)}</span><strong>50%</strong></div>
                   <div className="d68-mp-tier-row"><b>Trên mốc 2</b><span>&gt; {compactAmount(50_000_000)}</span><strong>60%</strong></div>
