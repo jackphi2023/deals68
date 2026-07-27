@@ -1,6 +1,17 @@
 import { supabase } from './supabase';
 
 export type MarketPartnerStatus = 'active' | 'suspended';
+export type CommissionBasisCurrency = 'VND' | 'USD';
+
+export const DEFAULT_MARKET_PARTNER_COMMERCIAL_POLICY = {
+  customerDiscountPct: 40,
+  commissionPct: 40,
+  commissionBasisCurrency: 'VND' as CommissionBasisCurrency,
+  commissionTier1Max: 20_000_000,
+  commissionTier2Max: 50_000_000,
+  commissionTier2Pct: 50,
+  commissionTier3Pct: 60,
+};
 
 export type MarketPartnerRow = {
   id: string;
@@ -15,6 +26,12 @@ export type MarketPartnerRow = {
   affiliate_code: string;
   customer_discount_pct: number;
   commission_pct: number;
+  commission_basis_currency?: string;
+  commission_tier_1_max?: number;
+  commission_tier_2_max?: number;
+  commission_tier_1_pct?: number;
+  commission_tier_2_pct?: number;
+  commission_tier_3_pct?: number;
   status: MarketPartnerStatus;
   bank_account_json?: Record<string, unknown>;
   activated_at?: string | null;
@@ -40,23 +57,29 @@ export type PartnerLeadRow = {
   updated_at?: string | null;
 };
 
-export type MarketPartnerInput = {
+export type MarketPartnerCommercialPolicyInput = {
+  customerDiscountPct: number;
+  commissionPct: number;
+  commissionBasisCurrency: CommissionBasisCurrency;
+  commissionTier1Max: number;
+  commissionTier2Max: number;
+  commissionTier2Pct: number;
+  commissionTier3Pct: number;
+};
+
+export type MarketPartnerInput = MarketPartnerCommercialPolicyInput & {
   displayName: string;
   contactEmail: string;
   phone?: string;
   country?: string;
   countryIso2?: string;
   intro?: string;
-  customerDiscountPct: number;
-  commissionPct: number;
   status: MarketPartnerStatus;
   affiliateCode?: string;
   profileId?: string;
 };
 
-export type PartnerLeadConversionInput = {
-  customerDiscountPct: number;
-  commissionPct: number;
+export type PartnerLeadConversionInput = MarketPartnerCommercialPolicyInput & {
   status: MarketPartnerStatus;
   affiliateCode?: string;
 };
@@ -94,6 +117,11 @@ function normalizePercent(value: number) {
   return Math.min(100, Math.max(0, Math.round(value * 100) / 100));
 }
 
+function normalizeAmount(value: number) {
+  if (!Number.isFinite(value)) return 0;
+  return Math.max(0, Math.round(value * 100) / 100);
+}
+
 function normalizeIso2(value?: string) {
   const normalized = String(value || '').trim().toUpperCase();
   return /^[A-Z]{2}$/.test(normalized) ? normalized : null;
@@ -106,6 +134,10 @@ function normalizeCode(value?: string) {
     .replace(/[^A-Z0-9_-]+/g, '')
     .slice(0, 32);
   return normalized || null;
+}
+
+function normalizeBasisCurrency(value: string): CommissionBasisCurrency {
+  return String(value || '').trim().toUpperCase() === 'USD' ? 'USD' : 'VND';
 }
 
 function asPartner(value: unknown): MarketPartnerRow {
@@ -143,6 +175,32 @@ function isPhaseOneRpcUnavailable(error: { code?: string; message?: string } | n
       (message.includes('not found') || message.includes('does not exist'));
 }
 
+async function updateCommercialPolicy(
+  partnerId: string,
+  input: MarketPartnerCommercialPolicyInput,
+): Promise<MarketPartnerRow> {
+  const tier1Max = normalizeAmount(input.commissionTier1Max);
+  const tier2Max = normalizeAmount(input.commissionTier2Max);
+  if (tier2Max <= tier1Max) {
+    throw new Error('Mốc doanh thu thứ hai phải lớn hơn mốc thứ nhất.');
+  }
+  const { data, error } = await supabase.rpc(
+    'd68_admin_update_market_partner_commercial_policy',
+    {
+      p_partner_id: partnerId,
+      p_customer_discount_pct: normalizePercent(input.customerDiscountPct),
+      p_commission_basis_currency: normalizeBasisCurrency(input.commissionBasisCurrency),
+      p_commission_tier_1_max: tier1Max,
+      p_commission_tier_2_max: tier2Max,
+      p_commission_tier_1_pct: normalizePercent(input.commissionPct),
+      p_commission_tier_2_pct: normalizePercent(input.commissionTier2Pct),
+      p_commission_tier_3_pct: normalizePercent(input.commissionTier3Pct),
+    },
+  );
+  if (error) throwRpcError(error, 'Could not update Market Partner commercial policy.');
+  return asPartner(data);
+}
+
 export async function listAdminMarketPartners(): Promise<MarketPartnerRow[]> {
   const { data, error } = await supabase.rpc('d68_admin_list_market_partners');
   // Keep existing Admin modules usable before the additive migration is applied.
@@ -168,7 +226,8 @@ export async function createMarketPartner(input: MarketPartnerInput): Promise<Ma
     p_source_lead_id: null,
   });
   if (error) throwRpcError(error, 'Could not create Market Partner.');
-  return asPartner(data);
+  const partner = asPartner(data);
+  return updateCommercialPolicy(partner.id, input);
 }
 
 export async function convertPartnerLead(
@@ -183,7 +242,8 @@ export async function convertPartnerLead(
     p_affiliate_code: normalizeCode(input.affiliateCode),
   });
   if (error) throwRpcError(error, 'Could not convert Market Partner lead.');
-  return asPartner(data);
+  const partner = asPartner(data);
+  return updateCommercialPolicy(partner.id, input);
 }
 
 export async function updateMarketPartner(
@@ -202,12 +262,12 @@ export async function updateMarketPartner(
     status: input.status,
     suspension_reason: input.suspensionReason?.trim() || null,
   };
-  const { data, error } = await supabase.rpc('d68_admin_update_market_partner', {
+  const { error } = await supabase.rpc('d68_admin_update_market_partner', {
     p_partner_id: partnerId,
     p_patch: patch,
   });
   if (error) throwRpcError(error, 'Could not update Market Partner.');
-  return asPartner(data);
+  return updateCommercialPolicy(partnerId, input);
 }
 
 export async function regenerateMarketPartnerCode(
