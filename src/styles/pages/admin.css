@@ -522,3 +522,22 @@
 .d68-admin-investor-plan-actions .d68-admin-subtle{flex:1}
 @media(max-width:1100px){.d68-admin-investor-plan-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:700px){.d68-admin-investor-plan-grid{grid-template-columns:1fr}.d68-admin-investor-plan-head{flex-direction:column}.d68-admin-investor-plan-stats{justify-content:flex-start}}
+/* Market Partner / Affiliate v1 — Phase 1 Admin ownership. */
+.d68-admin-market-partners{display:grid;gap:18px}
+.d68-admin-market-partner-form,.d68-admin-market-partner-card,.d68-admin-market-partner-lead{display:grid;gap:14px}
+.d68-admin-market-partner-form-grid,.d68-admin-market-partner-config-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.d68-admin-market-partner-form-grid label,.d68-admin-market-partner-config-grid label,.d68-admin-affiliate-code-row label{display:grid;gap:6px;font-weight:700;color:#0F2A4A}
+.d68-admin-market-partner-list,.d68-admin-market-partner-leads{display:grid;gap:14px;margin-top:14px}
+.d68-admin-market-partner-card,.d68-admin-market-partner-lead{padding:16px;border:1px solid #E7EDF3;border-radius:14px;background:#F8FBFD}
+.d68-admin-affiliate-code-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto;gap:12px;align-items:end}
+@media(max-width:900px){.d68-admin-market-partner-form-grid,.d68-admin-market-partner-config-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.d68-admin-affiliate-code-row{grid-template-columns:1fr 1fr}.d68-admin-affiliate-code-row .d68-admin-btn{grid-column:1/-1}}
+@media(max-width:620px){.d68-admin-market-partner-form-grid,.d68-admin-market-partner-config-grid,.d68-admin-affiliate-code-row{grid-template-columns:1fr}.d68-admin-market-partner-form-grid .d68-admin-span2{grid-column:auto}}
+
+/* Market Partner Phase 5 finance */
+.d68-admin-market-partner-finance{display:grid;gap:14px;margin-top:14px}
+.d68-admin-market-partner-finance>.d68-admin-card{margin-top:0}
+.d68-admin-payout-groups{display:grid;gap:10px}
+.d68-admin-payout-group{display:flex;justify-content:space-between;align-items:center;gap:16px;border:1px solid #E2E8F0;background:#F8FAFC;border-radius:12px;padding:14px}
+.d68-admin-payout-group p{margin:5px 0 0;color:#64748B;font-size:13px}
+.d68-admin-market-partner-finance code{font-size:11px;word-break:break-all}
+@media(max-width:700px){.d68-admin-payout-group{align-items:flex-start;flex-direction:column}.d68-admin-payout-group .d68-admin-btn{width:100%}}

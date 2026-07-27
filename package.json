@@ -22,7 +22,7 @@
     "test:e2e:auth": "D68_TEST_MODE=auth playwright test tests/e2e/02-register-business.spec.ts tests/e2e/03-register-investor.spec.ts tests/e2e/05-dashboard-admin-workflows.spec.ts --config=playwright.config.ts",
     "test:all": "npm run build && npm run test:e2e",
     "test:report": "node scripts/deals68-print-latest-report.mjs",
-    "qa:release": "npm run build && node scripts/deals68-release-qa-check.mjs && npm run qa:packages",
+    "qa:release": "npm run build && node scripts/deals68-release-qa-check.mjs && npm run qa:packages && npm run qa:public-login-roles && npm run qa:market-partner-dollar-quotes && npm run qa:market-partner-v1 && npm run qa:market-partner-phase4 && npm run qa:market-partner-phase5",
     "qa:release:full": "npm run qa:release && npm run test:e2e:public",
     "postbuild": "node scripts/generate-sitemap.mjs dist",
     "qa:packages": "node scripts/deals68-package-checks.mjs",
@@ -44,7 +44,12 @@
     "qa:financial-workflow-phase-d": "node scripts/deals68-business-financial-workflow-phase-d-check.mjs",
     "qa:financial-release-phase-e": "node scripts/deals68-business-financial-release-phase-e-check.mjs",
     "qa:investor-premium-price-v2": "node scripts/deals68-investor-premium-price-v2-check.mjs",
-    "qa:public-business-view": "node scripts/deals68-public-business-view-helper-acl-check.mjs"
+    "qa:public-business-view": "node scripts/deals68-public-business-view-helper-acl-check.mjs",
+    "qa:public-login-roles": "node scripts/deals68-public-login-role-contract-check.mjs",
+    "qa:market-partner-dollar-quotes": "node scripts/deals68-market-partner-dollar-quote-check.mjs",
+    "qa:market-partner-v1": "node scripts/qa-market-partner-v1.mjs",
+    "qa:market-partner-phase4": "node scripts/qa-market-partner-phase4.mjs",
+    "qa:market-partner-phase5": "node scripts/qa-market-partner-phase5.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.45.4",

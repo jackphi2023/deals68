@@ -146,4 +146,4 @@ installPostgrestCatchCompat();
 
 export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey && !supabaseUrl.includes('YOUR_PROJECT'));
 
-export type Role = 'business' | 'investor' | 'advisor' | 'affiliate' | 'admin';
+export type Role = 'business' | 'investor' | 'advisor' | 'affiliate' | 'market_partner' | 'admin';

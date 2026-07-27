@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { supabase, type Role } from '../lib/supabase';
+import { getAffiliateReferralForSignup } from '../lib/affiliate';
 import type { User } from '@supabase/supabase-js';
 
 type Profile = {
@@ -83,6 +84,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   async function signUp(role: Role, email: string, password: string, meta: SignupMeta = {}): Promise<AuthResult> {
+    const referral = await getAffiliateReferralForSignup().catch(() => null);
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -94,7 +96,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           country_iso2: meta.country_iso2 || 'VN',
           language_code: meta.language_code || (role === 'investor' ? 'en' : 'vi'),
           timezone: meta.timezone || 'Asia/Ho_Chi_Minh',
-          signup_nonce: meta.signup_nonce
+          signup_nonce: meta.signup_nonce,
+          affiliate_code: referral?.code,
+          affiliate_click_id: referral?.clickId || undefined,
+          affiliate_captured_at: referral?.capturedAt,
         }
       }
     });
