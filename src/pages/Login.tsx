@@ -8,13 +8,12 @@ import type { Lang } from '../lib/i18n';
 
 const T = (lang: Lang, vi: string, en: string) => lang === 'en' ? en : vi;
 
-type LoginRole = 'business' | 'investor' | 'affiliate' | 'admin';
+type LoginRole = 'business' | 'investor' | 'admin';
 type LoginRoleDef = { key: LoginRole; vi: string; en: string; register?: string };
 
 const publicRoleDefs: LoginRoleDef[] = [
   { key: 'business', vi: 'Doanh nghiệp', en: 'Business', register: '/register/business' },
   { key: 'investor', vi: 'Nhà đầu tư', en: 'Investor', register: '/register/investor' },
-  { key: 'affiliate', vi: 'Đối tác thị trường', en: 'Market Partner', register: '/market-partner' }
 ];
 const adminRole: LoginRoleDef = { key: 'admin', vi: 'Admin', en: 'Admin' };
 
@@ -22,7 +21,6 @@ function dashboardForRole(role?: string) {
   if (role === 'admin') return '/admin';
   if (role === 'business') return '/dashboard/business';
   if (role === 'investor') return '/dashboard/investor';
-  if (role === 'affiliate') return '/dashboard/market-partner';
   return '/';
 }
 function isEmailNotConfirmed(error: { error?: string; code?: string; status?: number }) {
@@ -41,12 +39,17 @@ export default function Login({ lang = 'vi' }: { lang?: Lang }) {
 
   const isAdminLogin = location.pathname.includes('/admin/login');
   const roleDefs = useMemo<LoginRoleDef[]>(() => isAdminLogin ? [adminRole] : publicRoleDefs, [isAdminLogin]);
-  const initialRole = (isAdminLogin ? 'admin' : (params.get('role') || 'business')) as LoginRole;
+  const requestedRole = params.get('role');
+  const initialRole: LoginRole = isAdminLogin
+    ? 'admin'
+    : requestedRole === 'investor'
+      ? 'investor'
+      : 'business';
   const initialEmail = params.get('email') || '';
   const signupOtp = params.get('otp') === '1' || params.get('verify') === 'signup';
   const fromSignup = params.get('signup') === '1';
 
-  const [role, setRole] = useState<LoginRole>(roleDefs.some((r) => r.key === initialRole) ? initialRole : roleDefs[0].key);
+  const [role, setRole] = useState<LoginRole>(initialRole);
   const [email, setEmail] = useState(initialEmail);
   const [password, setPassword] = useState('');
   const [otp, setOtp] = useState('');
@@ -180,7 +183,7 @@ export default function Login({ lang = 'vi' }: { lang?: Lang }) {
               ? 'Admin truy cập qua URL riêng.'
               : otpMode
                 ? T(lang, 'Hãy nhập mã OTP đã gửi đến Email của Anh/Chị dưới đây. Hãy kiểm tra cả hòm thư Spam/Quảng cáo nếu email OTP không vào trực tiếp Inbox.', 'Enter the OTP code sent to your email below. Please also check your Spam/Promotions folder if the OTP email does not arrive in your Inbox.')
-                : T(lang, 'Đăng nhập vào tài khoản Doanh nghiệp, Nhà đầu tư hoặc Đối tác thị trường.', 'Sign in to your Business, Investor or Market Partner account.')}
+                : T(lang, 'Đăng nhập vào tài khoản Doanh nghiệp hoặc Nhà đầu tư.', 'Sign in to your Business or Investor account.')}
           </p>
         </div>
 
