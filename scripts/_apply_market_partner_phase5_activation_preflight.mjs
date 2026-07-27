@@ -104,19 +104,23 @@ replaceOnce(
 
 replaceOnce(
   'scripts/qa-market-partner-phase5.mjs',
-  `  'd68_claim_market_partner_signup',
+  `  'policy_snapshot jsonb',
+  'd68_claim_market_partner_signup',
 `,
-  `  'd68_can_claim_market_partner_account',
+  `  'policy_snapshot jsonb',
+  'd68_can_claim_market_partner_account',
   'd68_claim_market_partner_signup',
 `,
 );
 
 replaceOnce(
   'scripts/qa-market-partner-phase5.mjs',
-  `  'd68_claim_market_partner_signup',
+  `  'market_partner_affiliate_code',
+  'd68_claim_market_partner_signup',
   "type: 'signup'",
 `,
-  `  'd68_can_claim_market_partner_account',
+  `  'market_partner_affiliate_code',
+  'd68_can_claim_market_partner_account',
   'd68_claim_market_partner_signup',
   "type: 'signup'",
 `,
