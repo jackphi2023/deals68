@@ -4,8 +4,8 @@ import fs from 'node:fs';
 const path = 'supabase/migrations/20260727084802_market_partner_affiliate_phase1_v1.sql';
 let source = fs.readFileSync(path, 'utf8');
 const dollarQuote = String.fromCharCode(36).repeat(2);
-const openPattern = /^do \$$/gm;
-const closePattern = /^\$;$/gm;
+const openPattern = /^do \$\r?$/gm;
+const closePattern = /^\$;\r?$/gm;
 const openMatches = source.match(openPattern) || [];
 const closeMatches = source.match(closePattern) || [];
 
