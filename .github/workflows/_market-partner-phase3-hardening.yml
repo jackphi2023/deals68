@@ -1,0 +1,48 @@
+name: Market Partner Phase 3 Hardening
+
+on:
+  pull_request:
+    branches: [building]
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    if: github.head_ref == 'feature/market-partner-affiliate-v1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/market-partner-affiliate-v1
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Apply Phase 3 hardening QA
+        run: python3 scripts/_harden_market_partner_phase3.py
+      - run: npm ci
+      - name: Required QA
+        run: |
+          npm run build
+          npm run qa:release
+          npm run qa:css
+          npm run qa:migrations
+          node scripts/qa-market-partner-v1.mjs
+      - name: Remove temporary verifier
+        run: |
+          rm -f scripts/_harden_market_partner_phase3.py
+          rm -f scripts/_market_partner_phase3_hardening_trigger.txt
+          rm -f .github/workflows/_market-partner-phase3-hardening.yml
+      - name: Commit verified hardening
+        run: |
+          git diff --check
+          git status --short
+          git config user.name "Deals68 QA Bot"
+          git config user.email "actions@github.com"
+          git add -A
+          git commit -m "test(market-partner): lock validated-click attribution" || exit 0
+          git push origin HEAD:feature/market-partner-affiliate-v1
