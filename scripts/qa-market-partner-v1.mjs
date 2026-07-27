@@ -97,6 +97,8 @@ assert.match(phase3, /from auth\.users u/i);
 assert.match(phase3, /new\.role::text not in \('business', 'investor'\)/i);
 assert.match(phase3, /mp\.status = 'active'/i);
 assert.match(phase3, /clicked_at >= now\(\) - interval '30 days'/i);
+assert.match(phase3, /if v_requested_click_id is null then[\s\S]*return new;/i);
+assert.match(phase3, /if v_click_id is null then[\s\S]*return new;/i);
 assert.match(phase3, /on conflict \(subject_profile_id\) do nothing/i);
 assert.match(phase3, /create trigger d68_profiles_attach_affiliate_attribution/i);
 assert.doesNotMatch(phase3, /insert into public\.affiliate_commissions/i);
@@ -137,6 +139,8 @@ assert.ok(affiliate.includes("supabase.rpc('d68_record_affiliate_click'"));
 assert.ok(affiliate.includes('window.localStorage'));
 assert.ok(affiliate.includes('document.cookie'));
 assert.ok(affiliate.includes("url.searchParams.delete('ref')"));
+assert.ok(affiliate.includes('writeReferralCookie(record)'));
+assert.ok(affiliate.includes('`${record.code}|${record.clickId}`'));
 assert.doesNotMatch(affiliate, /supabase\.from\(|affiliate_commissions|payment_orders/i);
 assert.ok(authContext.includes('getAffiliateReferralForSignup'));
 assert.ok(authContext.includes('affiliate_code: referral?.code'));
@@ -247,6 +251,7 @@ try {
   const customerId = '00000000-0000-0000-0000-000000000002';
   const partnerProfileId = '00000000-0000-0000-0000-000000000003';
   const invalidCustomerId = '00000000-0000-0000-0000-000000000004';
+  const noClickCustomerId = '00000000-0000-0000-0000-000000000005';
   await db.exec(`insert into public.profiles(id,role,email) values ('${adminId}','admin','admin@example.com'),('${partnerProfileId}','market_partner','partner@example.com');`);
   await db.exec(`select set_config('request.jwt.claim.sub','${adminId}',false);`);
   const lead = await db.query(`insert into public.partner_leads(full_name,email,country,status) values ('QA Partner','qa.partner@example.com','Vietnam','new') returning id;`);
@@ -283,6 +288,8 @@ try {
   assert.equal((await db.query(`select count(*)::int as count from public.affiliate_attributions where subject_profile_id='${customerId}';`)).rows[0].count, 1);
   await db.exec(`insert into auth.users(id,created_at,raw_user_meta_data) values ('${invalidCustomerId}',now(),'{"affiliate_code":"UNKNOWN"}'::jsonb);`);
   await db.exec(`insert into public.profiles(id,role,email) values ('${invalidCustomerId}','investor','invalid@example.com');`);
+  await db.exec(`insert into auth.users(id,created_at,raw_user_meta_data) values ('${noClickCustomerId}',now(),'{"affiliate_code":"QA-PARTNER"}'::jsonb);`);
+  await db.exec(`insert into public.profiles(id,role,email) values ('${noClickCustomerId}','business','noclick@example.com');`);
   assert.equal((await db.query(`select count(*)::int as count from public.affiliate_attributions;`)).rows[0].count, 1);
   assert.equal((await db.query(`select count(*)::int as count from public.affiliate_commissions;`)).rows[0].count, 0);
 
