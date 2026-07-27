@@ -45,8 +45,10 @@ assert.equal(confirmed.reduce((sum, row) => sum + row.commission, 0), 5_544_000)
 assert.equal(pending.netPaid, 2_040_000);
 assert.equal(pending.commission, 816_000);
 
-assert.ok(dashboardSource.includes('Trang quản trị demo của Đối tác thị trường'));
-assert.equal((dashboardSource.match(/Trang quản trị demo của Đối tác thị trường/g) || []).length, 1);
+// Requested Market Partner demo wording must remain exact and legacy wording must not return.
+assert.ok(dashboardSource.includes('Quản trị doanh thu Đối tác thị trường'));
+assert.equal((dashboardSource.match(/Quản trị doanh thu Đối tác thị trường/g) || []).length, 1);
+assert.ok(dashboardSource.includes('<h1>Đối tác Thị trường</h1>'));
 assert.doesNotMatch(dashboardSource, /d68-mp-alert/);
 assert.doesNotMatch(dataSource, /from ['"]\.\/supabase['"]/);
 assert.doesNotMatch(dashboardSource, /from ['"]\.\.\/lib\/supabase['"]/);
@@ -54,6 +56,24 @@ assert.doesNotMatch(dashboardSource, /supabase\.(from|rpc|auth)/i);
 assert.ok(dashboardSource.includes('Chuyển khoản thành công'));
 assert.ok(dashboardSource.includes('Chờ xác nhận'));
 assert.ok(dashboardSource.includes('Chưa duyệt thanh toán'));
+for (const wording of [
+  "label: 'Giao dịch'",
+  "label: 'Thu nhập'",
+  'Chờ thanh toán',
+  'Thu nhập/Hoa hồng chỉ được chi trả sau khi Admin deals68 duyệt và hoàn tất đối soát.',
+  'Đơn vị: VNĐ. Thu nhập/Hoa hồng theo Chính sách Đối tác thị trường của Deals68.com.',
+  'Quản trị doanh thu Đối tác thị trường',
+  '<h1>Đối tác Thị trường</h1>',
+]) assert.ok(dashboardSource.includes(wording), `Missing requested demo wording: ${wording}`);
+for (const legacyWording of [
+  "label: 'Lead & chuyển đổi'",
+  "label: 'Hoa hồng & thanh toán'",
+  'Khả dụng để lập payout',
+  'Commission chỉ được chi trả sau khi Admin duyệt và hoàn tất đối soát.',
+  'Đồng tiền cơ sở: VND. Commission lịch sử dùng snapshot X/Y tại thời điểm payment.',
+  'Trang quản trị demo của Đối tác thị trường',
+  '<h1>{partner.display_name}</h1>',
+]) assert.ok(!dashboardSource.includes(legacyWording), `Legacy demo wording still present: ${legacyWording}`);
 
 for (const token of [
   'isMarketPartnerDemoCredentials',
