@@ -6,6 +6,7 @@ import Footer from './components/Footer';
 import Home from './pages/Home';
 import { useAuth } from './contexts/AuthContext';
 import { langFromPath, stripLangPrefix, toLocalizedPath } from './lib/i18nRoutes';
+import { captureAffiliateReferralFromCurrentPage } from './lib/affiliate';
 
 type RouteLoader = () => Promise<unknown>;
 type IdleCapableWindow = Window & {
@@ -82,6 +83,14 @@ function ScrollToTop() {
   const location = useLocation();
   useEffect(() => {
     if (typeof window !== 'undefined') window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+  }, [location.pathname, location.search]);
+  return null;
+}
+
+function AffiliateReferralRuntime() {
+  const location = useLocation();
+  useEffect(() => {
+    void captureAffiliateReferralFromCurrentPage().catch(() => undefined);
   }, [location.pathname, location.search]);
   return null;
 }
@@ -207,6 +216,7 @@ export default function App(){
 
   return <div data-lang={lang}>
     <ScrollToTop />
+    <AffiliateReferralRuntime />
     <RoutePrefetch />
     <LanguageMemory />
     <SeoManager />

@@ -196,9 +196,9 @@ export default function MarketPartnerDashboard() {
             </>
           ) : null}
 
-          {tab === 'leads' ? <ReadOnlyPanel title="Lead & chuyển đổi" text="Phase 2 chỉ hiển thị tổng số đăng ký. Danh sách chi tiết sẽ được mở sau khi Phase 3 kích hoạt attribution an toàn." /> : null}
+          {tab === 'leads' ? <ReadOnlyPanel title="Lead & chuyển đổi" text="Phase 3 đã kích hoạt click và signup attribution. Dashboard chỉ hiển thị số tổng hợp, không công khai danh tính khách hàng." /> : null}
           {tab === 'commissions' ? <ReadOnlyPanel title="Hoa hồng & thanh toán" text="Phase 2 không tự tính hoặc tạo hoa hồng. Số liệu chỉ đọc từ commission ledger do server/Admin ghi nhận." /> : null}
-          {tab === 'campaigns' ? <ReadOnlyPanel title="Mã & chiến dịch" text={`Mã affiliate hiện tại: ${partner.affiliate_code}. Tracking ?ref=CODE sẽ được kích hoạt trong Phase 3.`} /> : null}
+          {tab === 'campaigns' ? <ReadOnlyPanel title="Mã & chiến dịch" text={`Mã affiliate hiện tại: ${partner.affiliate_code}. Tracking ?ref=CODE đang hoạt động trên các trang public và đăng ký.`} /> : null}
           {tab === 'settings' ? <BankAccountForm bank={bank} setBank={setBank} saving={saving} onSubmit={saveBank} /> : null}
         </section>
       </div>
@@ -211,13 +211,13 @@ function Metric({ label, value, note, positive, gold }: { label: string; value: 
 }
 
 function ReadOnlyPanel({ title, text }: { title: string; text: string }) {
-  return <article className="d68-mp-readonly-panel"><h2>{title}</h2><p>{text}</p><span>READ-ONLY · PHASE 2</span></article>;
+  return <article className="d68-mp-readonly-panel"><h2>{title}</h2><p>{text}</p><span>READ-ONLY · PHASE 3</span></article>;
 }
 
 function BankAccountForm({ bank, setBank, saving, onSubmit }: { bank: MarketPartnerBankAccount; setBank: React.Dispatch<React.SetStateAction<MarketPartnerBankAccount>>; saving: boolean; onSubmit: (event: FormEvent) => Promise<void> }) {
   return (
     <form className="d68-mp-bank-card" onSubmit={onSubmit}>
-      <div><h2>Tài khoản nhận hoa hồng</h2><p>Thông tin này chỉ Partner và Admin được xem. Phase 2 chưa phát sinh thanh toán tự động.</p></div>
+      <div><h2>Tài khoản nhận hoa hồng</h2><p>Thông tin này chỉ Partner và Admin được xem. Phase 3 chưa phát sinh thanh toán tự động.</p></div>
       <div className="d68-mp-bank-grid">
         <label>Tên ngân hàng<input required value={bank.bank_name} onChange={(e) => setBank((v) => ({ ...v, bank_name: e.target.value }))} /></label>
         <label>Chủ tài khoản<input required value={bank.account_holder} onChange={(e) => setBank((v) => ({ ...v, account_holder: e.target.value }))} /></label>

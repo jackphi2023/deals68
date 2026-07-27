@@ -9,16 +9,23 @@ const phase1Names = fs.readdirSync(migrationDir)
   .filter((name) => /_market_partner_affiliate_phase1_v1\.sql$/.test(name));
 const phase2Names = fs.readdirSync(migrationDir)
   .filter((name) => /_market_partner_affiliate_phase2_dashboard_v1\.sql$/.test(name));
+const phase3Names = fs.readdirSync(migrationDir)
+  .filter((name) => /_market_partner_affiliate_phase3_referral_v1\.sql$/.test(name));
 assert.equal(phase1Names.length, 1, `Expected exactly one Phase 1 migration, found ${phase1Names.length}`);
 assert.equal(phase2Names.length, 1, `Expected exactly one Phase 2 migration, found ${phase2Names.length}`);
+assert.equal(phase3Names.length, 1, `Expected exactly one Phase 3 migration, found ${phase3Names.length}`);
 const phase1Path = path.join(migrationDir, phase1Names[0]);
 const phase2Path = path.join(migrationDir, phase2Names[0]);
+const phase3Path = path.join(migrationDir, phase3Names[0]);
 const phase1 = fs.readFileSync(phase1Path, 'utf8');
 const phase2 = fs.readFileSync(phase2Path, 'utf8');
+const phase3 = fs.readFileSync(phase3Path, 'utf8');
 const app = fs.readFileSync('src/App.tsx', 'utf8');
 const admin = fs.readFileSync('src/pages/Admin.tsx', 'utf8');
 const nav = fs.readFileSync('src/config/adminNavigation.ts', 'utf8');
 const marketPartners = fs.readFileSync('src/lib/marketPartners.ts', 'utf8');
+const affiliate = fs.readFileSync('src/lib/affiliate.ts', 'utf8');
+const authContext = fs.readFileSync('src/contexts/AuthContext.tsx', 'utf8');
 const partnerLogin = fs.readFileSync('src/pages/MarketPartnerLogin.tsx', 'utf8');
 const partnerDashboard = fs.readFileSync('src/pages/MarketPartnerDashboard.tsx', 'utf8');
 const staticPages = fs.readFileSync('src/pages/StaticPages.tsx', 'utf8');
@@ -85,10 +92,23 @@ assert.doesNotMatch(phase2, /grant execute on function public\.d68_get_my_market
 assert.doesNotMatch(phase2, /create\s+(or replace\s+)?trigger[\s\S]{0,200}(payment|commission)/i);
 assert.doesNotMatch(phase2, /subject_profile_id|payment_order_id|payload\s*[,)]|raw_payload|customer_email/i);
 
+assert.match(phase3, /create or replace function public\.d68_attach_affiliate_attribution_from_profile\(\)/i);
+assert.match(phase3, /from auth\.users u/i);
+assert.match(phase3, /new\.role::text not in \('business', 'investor'\)/i);
+assert.match(phase3, /mp\.status = 'active'/i);
+assert.match(phase3, /clicked_at >= now\(\) - interval '30 days'/i);
+assert.match(phase3, /on conflict \(subject_profile_id\) do nothing/i);
+assert.match(phase3, /create trigger d68_profiles_attach_affiliate_attribution/i);
+assert.doesNotMatch(phase3, /insert into public\.affiliate_commissions/i);
+assert.doesNotMatch(phase3, /update public\.payment_orders/i);
+assert.doesNotMatch(phase3, /create\s+(or replace\s+)?trigger[\s\S]{0,160}(payment|commission)/i);
+
 assert.match(app, /path="\/admin\/market-partners" element=\{<Admin\/>\}/);
 assert.match(app, /path="\/market-partner\/login" element=\{<MarketPartnerLogin\/>\}/);
 assert.match(app, /path="\/market-partner\/dashboard" element=\{<MarketPartnerGate><MarketPartnerDashboard\/><\/MarketPartnerGate>\}/);
 assert.match(app, /function MarketPartnerGate/);
+assert.match(app, /function AffiliateReferralRuntime/);
+assert.match(app, /captureAffiliateReferralFromCurrentPage/);
 assert.match(app, /\['market_partner', 'admin'\]\.includes\(String\(profile\.role\)\)/);
 assert.match(nav, /\| 'market_partners'/);
 assert.match(nav, /id: 'market_partners'[\s\S]*href: '\/admin\/market-partners'[\s\S]*aliases: \['market-partners'\]/);
@@ -113,6 +133,14 @@ assert.ok(marketPartners.includes("supabase.rpc('d68_admin_update_market_partner
 assert.ok(marketPartners.includes("supabase.rpc('d68_admin_regenerate_market_partner_code'"));
 assert.ok(marketPartners.includes("supabase.rpc('d68_get_my_market_partner_dashboard'"));
 assert.ok(marketPartners.includes("supabase.rpc('d68_update_my_market_partner_bank_account'"));
+assert.ok(affiliate.includes("supabase.rpc('d68_record_affiliate_click'"));
+assert.ok(affiliate.includes('window.localStorage'));
+assert.ok(affiliate.includes('document.cookie'));
+assert.ok(affiliate.includes("url.searchParams.delete('ref')"));
+assert.doesNotMatch(affiliate, /supabase\.from\(|affiliate_commissions|payment_orders/i);
+assert.ok(authContext.includes('getAffiliateReferralForSignup'));
+assert.ok(authContext.includes('affiliate_code: referral?.code'));
+assert.ok(authContext.includes('affiliate_click_id: referral?.clickId'));
 assert.ok(staticPages.includes("supabase.from('partner_leads').insert"), 'Existing /partners lead form must remain active');
 assert.equal(pkg.scripts['qa:market-partner-v1'], 'node scripts/qa-market-partner-v1.mjs');
 assert.ok(pkg.scripts['qa:release'].includes('qa:market-partner-v1'), 'qa:release must include Market Partner contract');
@@ -129,13 +157,15 @@ assert.match(partnerDashboard, /Hoa hồng & thanh toán/);
 assert.match(partnerDashboard, /Mã & chiến dịch/);
 assert.match(partnerDashboard, /Tài khoản nhận hoa hồng/);
 assert.match(partnerDashboard, /Phase 2 không tự tính hoặc tạo hoa hồng/);
+assert.match(partnerDashboard, /Phase 3 đã kích hoạt click và signup attribution/);
+assert.match(partnerDashboard, /Tracking \?ref=CODE đang hoạt động/);
 assert.doesNotMatch(partnerDashboard, /supabase\.(from|rpc)|from\(['"]affiliate_|insert\(|update\(/i);
 assert.ok(partnerCss.includes('.d68-mp-dashboard-layout'));
 assert.ok(partnerCss.includes('.d68-mp-balance-card'));
 assert.ok(partnerCss.includes('.d68-mp-referral-card'));
 assert.ok(partnerCss.includes('@media(max-width:760px)'));
 
-// Execute both migrations against a minimal PostgreSQL fixture in PGlite.
+// Execute all three migrations against a minimal PostgreSQL fixture in PGlite.
 const db = new PGlite();
 const fixture = `
 create role anon;
@@ -143,6 +173,11 @@ create role authenticated;
 create role service_role;
 create schema auth;
 create schema extensions;
+create table auth.users (
+  id uuid primary key,
+  created_at timestamptz not null default now(),
+  raw_user_meta_data jsonb not null default '{}'::jsonb
+);
 create type public.user_role as enum ('business','investor','advisor','affiliate','admin');
 create table public.profiles (
   id uuid primary key,
@@ -207,10 +242,12 @@ try {
   await db.exec(fixture);
   await db.exec(phase1);
   await db.exec(phase2);
+  await db.exec(phase3);
   const adminId = '00000000-0000-0000-0000-000000000001';
   const customerId = '00000000-0000-0000-0000-000000000002';
   const partnerProfileId = '00000000-0000-0000-0000-000000000003';
-  await db.exec(`insert into public.profiles(id,role,email) values ('${adminId}','admin','admin@example.com'),('${customerId}','business','customer@example.com'),('${partnerProfileId}','market_partner','partner@example.com');`);
+  const invalidCustomerId = '00000000-0000-0000-0000-000000000004';
+  await db.exec(`insert into public.profiles(id,role,email) values ('${adminId}','admin','admin@example.com'),('${partnerProfileId}','market_partner','partner@example.com');`);
   await db.exec(`select set_config('request.jwt.claim.sub','${adminId}',false);`);
   const lead = await db.query(`insert into public.partner_leads(full_name,email,country,status) values ('QA Partner','qa.partner@example.com','Vietnam','new') returning id;`);
   const leadId = lead.rows[0].id;
@@ -224,17 +261,31 @@ try {
 
   await db.exec(`update public.market_partners set profile_id='${partnerProfileId}' where id='${partner.id}';`);
   await db.exec(`select set_config('request.jwt.claim.sub','',false);`);
-  const click = await db.query(`select public.d68_record_affiliate_click('qa-partner','/register/business?x=1','example.com','campaign','partner','phase1','visitor-token-1234567890') as id;`);
+  const click = await db.query(`select public.d68_record_affiliate_click('qa-partner','/register/business?x=1','example.com','campaign','partner','phase3','visitor-token-1234567890') as id;`);
   assert.ok(click.rows[0].id);
   const storedClick = await db.query(`select landing_path,referrer_host,visitor_hash from public.affiliate_clicks;`);
   assert.equal(storedClick.rows[0].landing_path, '/register/business');
   assert.equal(storedClick.rows[0].referrer_host, 'example.com');
   assert.equal(String(storedClick.rows[0].visitor_hash).length, 64);
+
+  await db.exec(`insert into auth.users(id,created_at,raw_user_meta_data) values ('${customerId}',now(),jsonb_build_object('affiliate_code','QA-PARTNER','affiliate_click_id','${click.rows[0].id}'));`);
+  await db.exec(`insert into public.profiles(id,role,email) values ('${customerId}','business','customer@example.com');`);
+  const attribution = await db.query(`select id,partner_id,click_id,affiliate_code,subject_profile_id,subject_role,status from public.affiliate_attributions where subject_profile_id='${customerId}';`);
+  assert.equal(attribution.rows.length, 1);
+  assert.equal(attribution.rows[0].partner_id, partner.id);
+  assert.equal(attribution.rows[0].click_id, click.rows[0].id);
+  assert.equal(attribution.rows[0].affiliate_code, 'QA-PARTNER');
+  assert.equal(attribution.rows[0].subject_role, 'business');
+  assert.equal(attribution.rows[0].status, 'registered');
+  const attributionId = attribution.rows[0].id;
+
+  await db.exec(`update public.profiles set role='business' where id='${customerId}';`);
+  assert.equal((await db.query(`select count(*)::int as count from public.affiliate_attributions where subject_profile_id='${customerId}';`)).rows[0].count, 1);
+  await db.exec(`insert into auth.users(id,created_at,raw_user_meta_data) values ('${invalidCustomerId}',now(),'{"affiliate_code":"UNKNOWN"}'::jsonb);`);
+  await db.exec(`insert into public.profiles(id,role,email) values ('${invalidCustomerId}','investor','invalid@example.com');`);
+  assert.equal((await db.query(`select count(*)::int as count from public.affiliate_attributions;`)).rows[0].count, 1);
   assert.equal((await db.query(`select count(*)::int as count from public.affiliate_commissions;`)).rows[0].count, 0);
 
-  const partnerId = partner.id;
-  const attribution = await db.query(`insert into public.affiliate_attributions(partner_id,affiliate_code,subject_profile_id,subject_role) values ('${partnerId}','QA-PARTNER','${customerId}','business') returning id;`);
-  const attributionId = attribution.rows[0].id;
   const payment = await db.query(`insert into public.payment_orders(profile_id,status,confirmed_at,payload) values ('${customerId}','confirmed',now(),'{"price":{"total":"1000","currency":"USD"}}') returning id;`);
   const paymentId = payment.rows[0].id;
   await db.exec(`select set_config('request.jwt.claim.sub','${adminId}',false);`);
@@ -258,12 +309,12 @@ try {
   const bank = await db.query(`select public.d68_update_my_market_partner_bank_account('{"bank_name":"QA Bank","account_holder":"QA Partner","account_number":"001-234","currency":"USD","swift_code":"QABKUS33"}'::jsonb) as result;`);
   assert.equal(bank.rows[0].result.bank_account_json.bank_name, 'QA Bank');
   assert.equal(bank.rows[0].result.bank_account_json.currency, 'USD');
-  const storedBank = await db.query(`select bank_account_json from public.market_partners where id='${partnerId}';`);
+  const storedBank = await db.query(`select bank_account_json from public.market_partners where id='${partner.id}';`);
   assert.equal(storedBank.rows[0].bank_account_json.account_holder, 'QA Partner');
 } finally {
   await db.close();
 }
 
-console.log('✓ Market Partner / Affiliate v1 Phase 1–2 QA: PASS');
-console.log('✓ Schema, RLS, ACL, Admin RPCs, dedicated login, owner-only dashboard and bank settings verified.');
-console.log('✓ Existing partner_leads form remains intact; no Business/Investor Dashboard or automatic payment/commission change.');
+console.log('✓ Market Partner / Affiliate v1 Phase 1–3 QA: PASS');
+console.log('✓ Schema, RLS, ACL, Admin RPCs, dedicated login, referral capture, server-side signup attribution, owner-only dashboard and bank settings verified.');
+console.log('✓ Existing partner_leads form remains intact; no Business/Investor Dashboard, affiliate discount or automatic payment/commission change.');
