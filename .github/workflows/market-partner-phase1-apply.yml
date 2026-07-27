@@ -1,9 +1,10 @@
 name: Apply Market Partner Phase 1
 
 on:
-  push:
+  pull_request:
     branches:
-      - feature/market-partner-affiliate-v1
+      - building
+    types: [opened, synchronize, reopened]
   workflow_dispatch:
 
 permissions:
@@ -78,7 +79,7 @@ jobs:
       - name: Commit verified Phase 1
         run: |
           git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config user.email "418982982+github-actions[bot]@users.noreply.github.com"
           git add -A
           git commit -m "feat(market-partner): add secure affiliate Phase 1 foundation"
           git push origin HEAD:feature/market-partner-affiliate-v1
