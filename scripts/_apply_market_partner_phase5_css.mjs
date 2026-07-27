@@ -10,7 +10,6 @@ if (source.includes(marker)) {
 }
 
 const css = `
-
 ${marker}
 .d68-admin-market-partner-finance{display:grid;gap:14px;margin-top:14px}
 .d68-admin-market-partner-finance>.d68-admin-card{margin-top:0}
@@ -20,5 +19,5 @@ ${marker}
 .d68-admin-market-partner-finance code{font-size:11px;word-break:break-all}
 @media(max-width:700px){.d68-admin-payout-group{align-items:flex-start;flex-direction:column}.d68-admin-payout-group .d68-admin-btn{width:100%}}
 `;
-fs.writeFileSync(path, source.trimEnd() + css + '\n');
+fs.writeFileSync(path, `${source.trimEnd()}\n\n${css.trim()}\n`);
 console.log('✓ Phase 5 Admin CSS applied.');
