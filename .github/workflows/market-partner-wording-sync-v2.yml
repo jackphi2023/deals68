@@ -26,14 +26,18 @@ jobs:
         run: node scripts/_apply_market_partner_wording_sync_v2.mjs
       - name: Install dependencies
         run: npm ci
-      - name: Build and full QA
-        run: |
-          npm run build
-          npm run qa:release
-          npm run qa:css
-          npm run qa:migrations
-          npm run qa:market-partner-demo
-          git diff --check
+      - name: Production build
+        run: npm run build
+      - name: Release QA
+        run: npm run qa:release
+      - name: CSS architecture QA
+        run: npm run qa:css
+      - name: Migration registry QA
+        run: npm run qa:migrations
+      - name: Market Partner demo and wording contract
+        run: npm run qa:market-partner-demo
+      - name: Diff integrity
+        run: git diff --check
       - name: Remove temporary files
         run: |
           rm -f scripts/_apply_market_partner_wording_sync_v2.mjs
