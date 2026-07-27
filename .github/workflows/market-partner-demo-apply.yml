@@ -31,9 +31,19 @@ jobs:
         run: node scripts/_apply_market_partner_demo_routes.mjs
       - name: Install dependencies
         run: npm ci
-      - name: Build and full release QA
+      - name: Production build
         run: |
-          npm run build
+          set -o pipefail
+          npm run build 2>&1 | tee market-partner-demo-build.log
+      - name: Upload build diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: market-partner-demo-build-log
+          path: market-partner-demo-build.log
+          retention-days: 7
+      - name: Full release QA
+        run: |
           npm run qa:release
           npm run qa:css
           npm run qa:migrations
@@ -44,6 +54,7 @@ jobs:
           rm -f scripts/_apply_market_partner_demo_routes.mjs
           rm -f .github/workflows/market-partner-demo-apply.yml
           rm -f docs/release/.market-partner-demo-trigger
+          rm -f market-partner-demo-build.log
       - name: Commit verified implementation
         run: |
           git config user.name 'deals68-market-partner-demo-bot'
