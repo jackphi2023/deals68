@@ -250,6 +250,7 @@ export default function App(){
         <Route path="/admin/promos" element={<Admin/>}/>
         <Route path="/admin/banners" element={<Admin/>}/>
         <Route path="/admin/banner" element={<Admin/>}/>
+        <Route path="/admin/market-partners" element={<Admin/>}/>
         <Route path="/admin" element={<Admin/>}/>
         <Route path="/admin/*" element={<Admin/>}/>
 
