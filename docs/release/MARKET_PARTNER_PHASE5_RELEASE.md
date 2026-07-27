@@ -13,6 +13,13 @@ Status: source complete and all five migrations applied and verified on producti
 7. Admin groups approved, unassigned commission records for one Partner and currency into a payout draft.
 8. Payout moves through approved/processing/paid. Marking paid atomically marks its commission and attribution records paid.
 
+## Login contract
+
+- The shared `/login` page shows only Business and Investor.
+- Market Partner is intentionally absent from the shared Login role tabs.
+- Market Partner account activation and login remain available only through `/market-partner/login`.
+- Admin login remains isolated at `/admin/login`.
+
 ## Production schema collision handling
 
 Production contained empty generic placeholder tables named `affiliate_clicks` and `affiliate_payouts` with an incompatible Business/Investor payload schema. Phase 1 preserves them unchanged in the locked `d68_legacy` schema before creating the Market Partner tables. No rows are deleted and the archive schema is not granted to public, anon or authenticated roles.
@@ -43,6 +50,9 @@ Workflow `30268239599` passed on the complete Phase 1–5 tree:
 - Phase 5 Partner account claim, immutable snapshot, automatic commission, non-blocking reconciliation failure, commission approval and payout-to-paid lifecycle;
 - `git diff --check`.
 
+Final SQL repair workflow `30275745790` passed build, public Login contract, dollar-quote contract, release/package QA, CSS/migration QA and all Phase 1–5 PostgreSQL tests before committing the repaired tree.
+
+Production ledger reconciliation workflow `30276643232` passed build, release QA, migration registry, CSS, Login, dollar-quote and all Market Partner Phase 1–5 gates before committing the reconciled filenames.
 
 ## Production verification — 27 July 2026
 
