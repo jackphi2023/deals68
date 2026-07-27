@@ -85,8 +85,8 @@ jobs:
           git config user.name 'deals68-phase4-bot'
           git config user.email 'actions@users.noreply.github.com'
           git add -A
-          if git diff --cached --name-only | grep -E '(^scripts/_(fix|apply)_market_partner_phase4_|^docs/release/\.market-partner-phase4-trigger$|^\.github/workflows/market-partner-phase4-verify\.yml$)'; then
-            echo 'Temporary Phase 4 files remain in staged tree'
+          if git diff --cached --diff-filter=ACMR --name-only | grep -E '(^scripts/_(fix|apply)_market_partner_phase4_|^docs/release/\.market-partner-phase4-trigger$|^\.github/workflows/market-partner-phase4-verify\.yml$)'; then
+            echo 'Temporary Phase 4 files remain in final staged tree'
             exit 1
           fi
           git diff --cached --check
