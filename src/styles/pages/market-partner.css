@@ -1,4 +1,4 @@
-/* Deals68 Market Partner / Affiliate v1 — Phase 2 */
+/* Deals68 Market Partner / Affiliate v1 — Phase 2–5 */
 .d68-mp-login-page,.d68-mp-dashboard-page{min-height:calc(100vh - 140px);background:#F7FAFC;color:#0F2A4A}
 .d68-mp-login-page{display:grid;place-items:center;padding:56px 20px}
 .d68-mp-login-card{width:min(100%,480px);background:#fff;border:1px solid #E2E8F0;border-radius:20px;padding:34px;box-shadow:0 18px 60px rgba(15,42,74,.08)}
@@ -6,14 +6,18 @@
 .d68-mp-eyebrow{display:block;font-size:12px;letter-spacing:.08em;font-weight:800;color:#8AA0B9}
 .d68-mp-login-card h1{font-size:30px;margin:8px 0 10px}
 .d68-mp-login-card>p{color:#60748D;line-height:1.6}
+.d68-mp-login-tabs{display:grid;grid-template-columns:1fr 1fr;background:#F1F5F9;border-radius:12px;padding:4px;margin-top:20px}
+.d68-mp-login-tabs button{border:0;background:transparent;border-radius:9px;padding:10px;font-weight:800;color:#60748D;cursor:pointer}
+.d68-mp-login-tabs button.active{background:#fff;color:#0F2A4A;box-shadow:0 3px 12px rgba(15,42,74,.08)}
 .d68-mp-login-form{display:grid;gap:16px;margin-top:24px}
 .d68-mp-login-form label,.d68-mp-bank-grid label{display:grid;gap:7px;font-weight:700;font-size:14px}
 .d68-mp-login-form input,.d68-mp-bank-grid input,.d68-mp-bank-grid textarea{width:100%;border:1px solid #D7E1EB;border-radius:11px;padding:12px 14px;font:inherit;background:#fff;color:#0F2A4A}
 .d68-mp-login-form input:focus,.d68-mp-bank-grid input:focus,.d68-mp-bank-grid textarea:focus{outline:3px solid rgba(27,173,234,.13);border-color:#1BADEA}
-.d68-mp-primary-btn{border:0;border-radius:11px;background:#0F2A4A;color:#fff;font-weight:800;padding:13px 18px;cursor:pointer;display:inline-flex;justify-content:center;align-items:center;gap:8px}
-.d68-mp-primary-btn:disabled{opacity:.55;cursor:not-allowed}
+.d68-mp-primary-btn,.d68-mp-secondary-btn{border:0;border-radius:11px;font-weight:800;padding:13px 18px;cursor:pointer;display:inline-flex;justify-content:center;align-items:center;gap:8px}
+.d68-mp-primary-btn{background:#0F2A4A;color:#fff}.d68-mp-secondary-btn{background:#EEF4F8;color:#0F2A4A}
+.d68-mp-primary-btn:disabled,.d68-mp-secondary-btn:disabled{opacity:.55;cursor:not-allowed}
 .d68-mp-login-links{display:flex;justify-content:space-between;gap:16px;margin-top:20px;font-size:14px}
-.d68-mp-login-links a{color:#1596CC;font-weight:700}
+.d68-mp-login-links a,.d68-mp-login-links button{color:#1596CC;font-weight:700;border:0;background:transparent;padding:0;cursor:pointer;font:inherit}
 .d68-mp-alert{border-radius:12px;padding:12px 15px;margin:14px 0;font-weight:700}
 .d68-mp-alert--error{background:#FFF1F2;color:#B42318;border:1px solid #FECDD3}
 .d68-mp-alert--success{background:#ECFDF3;color:#166534;border:1px solid #BBF7D0}
@@ -41,9 +45,9 @@
 .d68-mp-metric strong.positive{color:#16A34A}.d68-mp-metric strong.gold,.d68-mp-balance-card .gold{color:#E2A900}
 .d68-mp-metric small{color:#6B7F97}
 .d68-mp-overview-grid{display:grid;grid-template-columns:1fr 1.08fr;gap:18px}
-.d68-mp-balance-card,.d68-mp-progress-card,.d68-mp-referral-card,.d68-mp-readonly-panel,.d68-mp-bank-card,.d68-mp-state-card{border-radius:16px;border:1px solid #DDE6EE;background:#fff;padding:22px}
+.d68-mp-balance-card,.d68-mp-progress-card,.d68-mp-referral-card,.d68-mp-readonly-panel,.d68-mp-bank-card,.d68-mp-state-card,.d68-mp-history-card{border-radius:16px;border:1px solid #DDE6EE;background:#fff;padding:22px}
 .d68-mp-balance-card{background:#0F2F55;color:#fff;border-color:#0F2F55}
-.d68-mp-balance-card h2,.d68-mp-progress-card h2,.d68-mp-referral-card h2,.d68-mp-bank-card h2{font-size:13px;letter-spacing:.03em;margin:0 0 14px}
+.d68-mp-balance-card h2,.d68-mp-progress-card h2,.d68-mp-referral-card h2,.d68-mp-bank-card h2,.d68-mp-history-card h2{font-size:13px;letter-spacing:.03em;margin:0 0 14px}
 .d68-mp-balance-card>div{display:flex;justify-content:space-between;gap:16px;padding:5px 0}
 .d68-mp-balance-card span,.d68-mp-balance-card p{color:#C4D2E3}.d68-mp-balance-card hr{border:0;border-top:1px solid rgba(255,255,255,.25);margin:8px 0}
 .d68-mp-balance-card .available{align-items:center}.d68-mp-balance-card .available span{font-weight:800;color:#fff}.d68-mp-balance-card .available strong{font-size:23px;color:#F2B51D}
@@ -57,9 +61,12 @@
 .d68-mp-referral-card h2{margin-bottom:6px}.d68-mp-referral-card a{font-weight:800;color:#1596CC;word-break:break-all}.d68-mp-referral-card p{margin:5px 0 0;color:#5A6F88;font-size:13px}
 .d68-mp-referral-card button{border:0;background:#0F2A4A;color:#fff;border-radius:10px;padding:12px 18px;font-weight:800;display:flex;align-items:center;gap:7px;white-space:nowrap;cursor:pointer}
 .d68-mp-readonly-panel{min-height:260px;display:grid;place-content:center;text-align:center}.d68-mp-readonly-panel h2{font-size:24px;margin:0 0 10px}.d68-mp-readonly-panel p{max-width:620px;color:#6B7F97;line-height:1.7}.d68-mp-readonly-panel span{justify-self:center;background:#EEF4F8;color:#6B7F97;border-radius:999px;padding:7px 10px;font-size:11px;font-weight:900}
-.d68-mp-bank-card{display:grid;gap:20px}.d68-mp-bank-card>div>p{color:#6B7F97;margin:0}.d68-mp-bank-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.d68-mp-bank-grid .wide{grid-column:1/-1}.d68-mp-bank-grid textarea{min-height:96px;resize:vertical}
+.d68-mp-bank-card{display:grid;gap:20px}.d68-mp-bank-card>div>p,.d68-mp-history-card>div>p{color:#6B7F97;margin:0}.d68-mp-bank-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.d68-mp-bank-grid .wide{grid-column:1/-1}.d68-mp-bank-grid textarea{min-height:96px;resize:vertical}
 .d68-mp-bank-card>.d68-mp-primary-btn{justify-self:start}
 .d68-mp-state-card{max-width:760px;margin:60px auto;text-align:center}.d68-mp-state-card--error{border-color:#FECDD3}
+.d68-mp-finance-history{display:grid;gap:18px}.d68-mp-history-card{min-width:0}.d68-mp-table-wrap{overflow-x:auto;margin-top:18px}
+.d68-mp-table{width:100%;border-collapse:collapse;min-width:680px}.d68-mp-table th,.d68-mp-table td{text-align:left;padding:12px 10px;border-bottom:1px solid #E8EEF4;vertical-align:top}.d68-mp-table th{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:#8AA0B9}.d68-mp-table td{font-size:13px;color:#42566E}.d68-mp-table code{font-size:11px}
+.d68-mp-status{display:inline-flex;border-radius:999px;padding:5px 9px;font-size:11px;font-weight:900;background:#FFF4D6;color:#A36B00}.d68-mp-status--approved,.d68-mp-status--paid{background:#DCFCE7;color:#166534}.d68-mp-status--rejected,.d68-mp-status--reversed,.d68-mp-status--cancelled{background:#FFE4E6;color:#B42318}.d68-mp-status--processing{background:#E6F6FD;color:#0C79A8}.d68-mp-empty{color:#6B7F97;margin:18px 0 0}
 
 @media(max-width:1050px){.d68-mp-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.d68-mp-overview-grid{grid-template-columns:1fr}}
 @media(max-width:760px){.d68-mp-dashboard-page{padding:24px 14px 48px}.d68-mp-dashboard-head{align-items:flex-start}.d68-mp-dashboard-layout{grid-template-columns:1fr}.d68-mp-sidebar{position:static;overflow-x:auto}.d68-mp-sidebar nav{display:flex;min-width:max-content}.d68-mp-tier-card{display:none}.d68-mp-title-row h1{font-size:23px}.d68-mp-signout{padding:9px;font-size:0}.d68-mp-metrics{grid-template-columns:1fr 1fr}.d68-mp-referral-card{align-items:flex-start;flex-direction:column}.d68-mp-bank-grid{grid-template-columns:1fr}.d68-mp-bank-grid .wide{grid-column:auto}}
