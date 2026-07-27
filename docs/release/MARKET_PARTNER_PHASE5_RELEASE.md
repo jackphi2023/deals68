@@ -1,6 +1,6 @@
 # Market Partner / Affiliate v1 — Phase 5 release review
 
-Status: source implementation on `feature/market-partner-affiliate-v1`; production migration and branch merges remain gated by exact-tree QA.
+Status: source complete on `feature/market-partner-affiliate-v1`; production migration and branch merges remain gated by production verification.
 
 ## Lifecycle
 
@@ -25,3 +25,16 @@ Status: source implementation on `feature/market-partner-affiliate-v1`; producti
 ## Phase 4 inheritance
 
 Commission uses the payment-time snapshot, not the current Partner policy. A later Admin change to X/Y affects only later payment quotes and does not recalculate historical commission.
+
+## Exact-tree verification
+
+Workflow `30268239599` passed on the complete Phase 1–5 tree:
+
+- production TypeScript/Vite build;
+- release and package QA;
+- CSS architecture QA;
+- migration registry QA;
+- Phase 1–3 PostgreSQL/RLS contracts;
+- Phase 4 server pricing and X/Y boundary tests;
+- Phase 5 Partner account claim, immutable snapshot, automatic commission, non-blocking reconciliation failure, commission approval and payout-to-paid lifecycle;
+- `git diff --check`.
