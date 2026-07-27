@@ -7,7 +7,7 @@ const ATTRIBUTION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 
 export type StoredAffiliateReferral = {
   code: string;
-  clickId?: string | null;
+  clickId: string;
   capturedAt: string;
   expiresAt: string;
 };
@@ -21,6 +21,13 @@ function normalizeCode(value: unknown) {
     .replace(/[^A-Z0-9_-]+/g, '')
     .slice(0, 32);
   return /^[A-Z0-9][A-Z0-9_-]{3,31}$/.test(normalized) ? normalized : '';
+}
+
+function normalizeClickId(value: unknown) {
+  const normalized = String(value || '').trim().toLowerCase();
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(normalized)
+    ? normalized
+    : '';
 }
 
 function storageGet(key: string) {
@@ -49,19 +56,26 @@ function randomVisitorToken() {
   return token;
 }
 
-function cookieCode() {
-  if (typeof document === 'undefined') return '';
+function cookieReferral(): Pick<StoredAffiliateReferral, 'code' | 'clickId'> | null {
+  if (typeof document === 'undefined') return null;
   const value = document.cookie
     .split(';')
     .map((item) => item.trim())
     .find((item) => item.startsWith(`${REFERRAL_COOKIE}=`));
-  return normalizeCode(value ? decodeURIComponent(value.slice(REFERRAL_COOKIE.length + 1)) : '');
+  if (!value) return null;
+  const [rawCode, rawClickId] = decodeURIComponent(
+    value.slice(REFERRAL_COOKIE.length + 1),
+  ).split('|');
+  const code = normalizeCode(rawCode);
+  const clickId = normalizeClickId(rawClickId);
+  return code && clickId ? { code, clickId } : null;
 }
 
-function writeReferralCookie(code: string) {
+function writeReferralCookie(record: StoredAffiliateReferral) {
   if (typeof document === 'undefined') return;
   const secure = window.location.protocol === 'https:' ? '; Secure' : '';
-  document.cookie = `${REFERRAL_COOKIE}=${encodeURIComponent(code)}; Max-Age=${Math.floor(
+  const value = encodeURIComponent(`${record.code}|${record.clickId}`);
+  document.cookie = `${REFERRAL_COOKIE}=${value}; Max-Age=${Math.floor(
     ATTRIBUTION_TTL_MS / 1000,
   )}; Path=/; SameSite=Lax${secure}`;
 }
@@ -101,26 +115,26 @@ export function getStoredAffiliateReferral(): StoredAffiliateReferral | null {
     try {
       const parsed = JSON.parse(raw) as StoredAffiliateReferral;
       const code = normalizeCode(parsed.code);
+      const clickId = normalizeClickId(parsed.clickId);
       const expiresAt = Date.parse(String(parsed.expiresAt || ''));
-      if (code && Number.isFinite(expiresAt) && expiresAt > Date.now()) {
+      if (code && clickId && Number.isFinite(expiresAt) && expiresAt > Date.now()) {
         return {
           code,
-          clickId: parsed.clickId || null,
+          clickId,
           capturedAt: parsed.capturedAt,
           expiresAt: parsed.expiresAt,
         };
       }
     } catch {
-      // Fall through to the cookie-only record.
+      // Fall through to the cookie record.
     }
   }
 
-  const code = cookieCode();
-  if (!code) return null;
+  const cookie = cookieReferral();
+  if (!cookie) return null;
   const capturedAt = new Date().toISOString();
   return {
-    code,
-    clickId: null,
+    ...cookie,
     capturedAt,
     expiresAt: new Date(Date.now() + ATTRIBUTION_TTL_MS).toISOString(),
   };
@@ -147,17 +161,18 @@ export async function captureAffiliateReferralFromCurrentPage(): Promise<StoredA
     });
 
     removeRefFromAddressBar(url);
-    if (error || !data) return getStoredAffiliateReferral();
+    const clickId = normalizeClickId(data);
+    if (error || !clickId) return getStoredAffiliateReferral();
 
     const capturedAt = new Date().toISOString();
     const record: StoredAffiliateReferral = {
       code,
-      clickId: String(data),
+      clickId,
       capturedAt,
       expiresAt: new Date(Date.now() + ATTRIBUTION_TTL_MS).toISOString(),
     };
     storageSet(REFERRAL_STORAGE_KEY, JSON.stringify(record));
-    writeReferralCookie(code);
+    writeReferralCookie(record);
     return record;
   })().finally(() => {
     capturePromise = null;
