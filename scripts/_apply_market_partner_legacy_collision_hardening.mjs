@@ -127,12 +127,12 @@ replaceOnce(
 
 replaceOnce(
   'scripts/deals68-migration-state-check.mjs',
-  `      "add value if not exists 'market_partner'",
+  `      "alter type public.user_role add value if not exists 'market_partner'",
 `,
   `      'create schema if not exists d68_legacy',
-      "alter table public.affiliate_clicks set schema d68_legacy",
-      "alter table public.affiliate_payouts set schema d68_legacy",
-      "add value if not exists 'market_partner'",
+      'alter table public.affiliate_clicks set schema d68_legacy',
+      'alter table public.affiliate_payouts set schema d68_legacy',
+      "alter type public.user_role add value if not exists 'market_partner'",
 `,
 );
 
