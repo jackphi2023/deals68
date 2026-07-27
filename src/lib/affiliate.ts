@@ -12,6 +12,33 @@ export type StoredAffiliateReferral = {
   expiresAt: string;
 };
 
+export type AffiliateCheckoutQuoteInput = {
+  role: 'business' | 'investor';
+  countryIso2: string;
+  businessPlan?: 'standard' | 'featured';
+  termUnits: number;
+  investorPlan?: 'standard' | 'premium';
+};
+
+export type AffiliateCheckoutQuote = {
+  valid: boolean;
+  payable?: boolean;
+  reason?: string;
+  affiliate?: {
+    partner_id: string;
+    affiliate_code: string;
+    click_id: string;
+    customer_discount_pct: number;
+    discount_amount: number;
+    eligible_amount: number;
+    net_paid_amount: number;
+    currency: string;
+    commission_policy: Record<string, unknown>;
+    policy_version: string;
+  };
+  price?: Record<string, any>;
+};
+
 let capturePromise: Promise<StoredAffiliateReferral | null> | null = null;
 
 function normalizeCode(value: unknown) {
@@ -108,6 +135,40 @@ function removeRefFromAddressBar(url: URL) {
   window.history.replaceState(window.history.state, '', `${url.pathname}${url.search}${url.hash}`);
 }
 
+function storeReferral(code: string, clickId: string) {
+  const capturedAt = new Date().toISOString();
+  const record: StoredAffiliateReferral = {
+    code,
+    clickId,
+    capturedAt,
+    expiresAt: new Date(Date.now() + ATTRIBUTION_TTL_MS).toISOString(),
+  };
+  storageSet(REFERRAL_STORAGE_KEY, JSON.stringify(record));
+  writeReferralCookie(record);
+  return record;
+}
+
+async function recordAffiliateClick(code: string, source: 'ref_link' | 'manual_code') {
+  if (typeof window === 'undefined') return null;
+  const url = new URL(window.location.href);
+  const normalizedCode = normalizeCode(code);
+  if (!normalizedCode) return null;
+
+  const { data, error } = await supabase.rpc('d68_record_affiliate_click', {
+    p_affiliate_code: normalizedCode,
+    p_landing_path: url.pathname || '/',
+    p_referrer_host: referrerHost(),
+    p_utm_source: url.searchParams.get('utm_source') || (source === 'manual_code' ? 'registration' : null),
+    p_utm_medium: url.searchParams.get('utm_medium') || source,
+    p_utm_campaign: url.searchParams.get('utm_campaign'),
+    p_visitor_token: randomVisitorToken(),
+  });
+
+  const clickId = normalizeClickId(data);
+  if (error || !clickId) return null;
+  return storeReferral(normalizedCode, clickId);
+}
+
 export function getStoredAffiliateReferral(): StoredAffiliateReferral | null {
   if (typeof window === 'undefined') return null;
   const raw = storageGet(REFERRAL_STORAGE_KEY);
@@ -149,36 +210,44 @@ export async function captureAffiliateReferralFromCurrentPage(): Promise<StoredA
   if (!code) return getStoredAffiliateReferral();
   if (capturePromise) return capturePromise;
 
-  capturePromise = (async () => {
-    const { data, error } = await supabase.rpc('d68_record_affiliate_click', {
-      p_affiliate_code: code,
-      p_landing_path: url.pathname || '/',
-      p_referrer_host: referrerHost(),
-      p_utm_source: url.searchParams.get('utm_source'),
-      p_utm_medium: url.searchParams.get('utm_medium'),
-      p_utm_campaign: url.searchParams.get('utm_campaign'),
-      p_visitor_token: randomVisitorToken(),
+  capturePromise = recordAffiliateClick(code, 'ref_link')
+    .then((record) => {
+      removeRefFromAddressBar(url);
+      return record || getStoredAffiliateReferral();
+    })
+    .finally(() => {
+      capturePromise = null;
     });
 
-    removeRefFromAddressBar(url);
-    const clickId = normalizeClickId(data);
-    if (error || !clickId) return getStoredAffiliateReferral();
+  return capturePromise;
+}
 
-    const capturedAt = new Date().toISOString();
-    const record: StoredAffiliateReferral = {
-      code,
-      clickId,
-      capturedAt,
-      expiresAt: new Date(Date.now() + ATTRIBUTION_TTL_MS).toISOString(),
-    };
-    storageSet(REFERRAL_STORAGE_KEY, JSON.stringify(record));
-    writeReferralCookie(record);
-    return record;
-  })().finally(() => {
+export async function applyAffiliateCodeForCheckout(code: string) {
+  if (capturePromise) await capturePromise.catch(() => null);
+  capturePromise = recordAffiliateClick(code, 'manual_code').finally(() => {
     capturePromise = null;
   });
-
   return capturePromise;
+}
+
+export async function getAffiliateCheckoutQuote(
+  referral: StoredAffiliateReferral,
+  input: AffiliateCheckoutQuoteInput,
+): Promise<AffiliateCheckoutQuote> {
+  const { data, error } = await supabase.rpc('d68_get_affiliate_checkout_quote', {
+    p_affiliate_code: referral.code,
+    p_click_id: referral.clickId,
+    p_role: input.role,
+    p_country_iso2: input.countryIso2,
+    p_business_plan: input.businessPlan || null,
+    p_term_units: input.termUnits,
+    p_investor_plan: input.investorPlan || null,
+  });
+  if (error) throw new Error(error.message || 'Could not load affiliate quote.');
+  if (!data || typeof data !== 'object' || Array.isArray(data)) {
+    return { valid: false, reason: 'invalid_quote' };
+  }
+  return data as AffiliateCheckoutQuote;
 }
 
 export async function getAffiliateReferralForSignup() {
