@@ -53,6 +53,15 @@ import {
 import { makePaymentOrderCode } from '../lib/paymentOrders';
 import type { InvestorPlan } from '../lib/investorPlans';
 import {
+  applyAffiliateCodeForCheckout,
+  clearStoredAffiliateReferral,
+  getAffiliateCheckoutQuote,
+  getAffiliateReferralForSignup,
+  getStoredAffiliateReferral,
+  type AffiliateCheckoutQuote,
+  type StoredAffiliateReferral,
+} from '../lib/affiliate';
+import {
   IndustryTagPicker,
   InvestorDealTypeTagPicker,
 } from '../components/investor/IndustryTagPicker';
@@ -328,6 +337,11 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
   const [promoPct, setPromoPct] = useState<number>(0);
   const [promoMsg, setPromoMsg] = useState('');
   const [promoLoading, setPromoLoading] = useState(false);
+  const [affiliateReferral, setAffiliateReferral] = useState<StoredAffiliateReferral | null>(() =>
+    typeof window === 'undefined' ? null : getStoredAffiliateReferral(),
+  );
+  const [affiliateQuote, setAffiliateQuote] = useState<AffiliateCheckoutQuote | null>(null);
+  const [affiliateLoading, setAffiliateLoading] = useState(false);
   const [paymentAck, setPaymentAck] = useState(false);
   const [msgType, setMsgType] = useState<'ok' | 'err' | ''>('');
   const [email, setEmail] = useState('');
@@ -383,6 +397,20 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
       .catch(() => setValuationConfig(DEFAULT_VALUATION_CONFIG));
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+    void getAffiliateReferralForSignup().then((referral) => {
+      if (cancelled || !referral) return;
+      setAffiliateReferral(referral);
+      setPromoCode(referral.code);
+      setPromoPct(0);
+      setPromoMsg(
+        T(lang, 'Đã nhận mã Đối tác. Đang xác thực mức giảm giá.', 'Partner code received. Validating discount.'),
+      );
+    });
+    return () => { cancelled = true; };
+  }, [lang]);
+
   const isBusiness = normalized === 'business';
   const isInvestor = normalized === 'investor';
   const investorPremiumSelected = isInvestor && investorPlan === 'premium';
@@ -422,16 +450,79 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
     }
   }, [countryCode, isBusiness, city]);
 
-  const price = calculatePricing(
+  const basePrice = calculatePricing(
     {
       role: pricingRole,
       country: countryCode,
       termWeeks: effectiveWeeks,
       businessPlan: selectedBusinessPlan,
-      promoCode,
+      promoCode: affiliateReferral ? '' : promoCode,
     },
-    promoPct,
+    affiliateReferral ? 0 : promoPct,
   );
+  const affiliateActive = Boolean(
+    affiliateReferral && affiliateQuote?.valid && affiliateQuote.affiliate && affiliateQuote.price,
+  );
+  const price = affiliateActive
+    ? { ...basePrice, ...(affiliateQuote?.price || {}), promoCode: undefined }
+    : basePrice;
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!affiliateReferral || !hasSelectedPackage || (!isBusiness && !investorPremiumSelected)) {
+      setAffiliateQuote(null);
+      setAffiliateLoading(false);
+      return () => { cancelled = true; };
+    }
+
+    setAffiliateLoading(true);
+    void getAffiliateCheckoutQuote(affiliateReferral, {
+      role: isInvestor ? 'investor' : 'business',
+      countryIso2: countryCode,
+      businessPlan: selectedBusinessPlan,
+      termUnits: Number(isInvestor ? investorMonths : serviceWeeks),
+      investorPlan,
+    })
+      .then((quote) => {
+        if (cancelled) return;
+        setAffiliateQuote(quote);
+        if (quote.valid && quote.affiliate) {
+          setPromoPct(0);
+          setPromoMsg(
+            T(
+              lang,
+              `Mã Đối tác hợp lệ · giảm ${Number(quote.affiliate.customer_discount_pct || 0)}% · không cộng dồn mã khuyến mãi khác.`,
+              `Valid Partner code · ${Number(quote.affiliate.customer_discount_pct || 0)}% discount · cannot be combined with another promo code.`,
+            ),
+          );
+        } else {
+          setPromoMsg(T(lang, 'Mã Đối tác không còn hợp lệ cho gói đã chọn.', 'Partner code is not valid for the selected package.'));
+        }
+      })
+      .catch((quoteError: any) => {
+        if (cancelled) return;
+        setAffiliateQuote({ valid: false, reason: quoteError?.message || 'quote_failed' });
+        setPromoMsg(T(lang, 'Không thể xác thực giảm giá Đối tác.', 'Could not validate Partner discount.'));
+      })
+      .finally(() => {
+        if (!cancelled) setAffiliateLoading(false);
+      });
+
+    return () => { cancelled = true; };
+  }, [
+    affiliateReferral?.code,
+    affiliateReferral?.clickId,
+    countryCode,
+    hasSelectedPackage,
+    investorMonths,
+    investorPlan,
+    investorPremiumSelected,
+    isBusiness,
+    isInvestor,
+    lang,
+    selectedBusinessPlan,
+    serviceWeeks,
+  ]);
   const pricingSummary = isInvestor && investorPlan === 'standard'
     ? T(lang, 'Miễn phí · Nhà đầu tư Tiêu chuẩn', 'Free · Standard Investor')
     : hasSelectedPackage
@@ -610,6 +701,53 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
     setter((current) => current.filter((asset) => asset.id !== id));
   }
 
+  async function applyRegistrationCode() {
+    const code = promoCode.trim().toUpperCase();
+    if (!code) {
+      setPromoPct(0);
+      setPromoMsg(T(lang, 'Vui lòng nhập mã.', 'Please enter a code.'));
+      return;
+    }
+
+    setPromoLoading(true);
+    setPaymentAck(false);
+    try {
+      const referral = await applyAffiliateCodeForCheckout(code);
+      if (referral) {
+        setAffiliateReferral(referral);
+        setAffiliateQuote(null);
+        setPromoCode(referral.code);
+        setPromoPct(0);
+        setPromoMsg(T(lang, 'Đã nhận mã Đối tác. Đang xác thực mức giảm giá.', 'Partner code received. Validating discount.'));
+        return;
+      }
+
+      const result = await lookupPromo(code, pricingRole);
+      setPromoPct(Number(result.discountPct || 0));
+      setPromoMsg(
+        result.discountPct
+          ? T(lang, 'Mã khuyến mãi hợp lệ, đã cập nhật số tiền.', 'Valid promo code, amount updated.')
+          : result.message || T(lang, 'Mã không hợp lệ.', 'Invalid code.'),
+      );
+    } catch (codeError: any) {
+      setPromoPct(0);
+      setPromoMsg(codeError?.message || T(lang, 'Không thể kiểm tra mã.', 'Could not check code.'));
+    } finally {
+      setPromoLoading(false);
+    }
+  }
+
+  function removeAffiliateCode() {
+    clearStoredAffiliateReferral();
+    setAffiliateReferral(null);
+    setAffiliateQuote(null);
+    setAffiliateLoading(false);
+    setPromoCode('');
+    setPromoPct(0);
+    setPromoMsg(T(lang, 'Đã bỏ mã Đối tác.', 'Partner code removed.'));
+    setPaymentAck(false);
+  }
+
   async function submit(event: FormEvent) {
     event.preventDefault();
     setMsgType('');
@@ -759,6 +897,27 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
           `Missing/invalid fields: ${missing.join(', ')}. Please check again.`,
         ),
       );
+      return;
+    }
+
+    if (
+      affiliateReferral &&
+      hasSelectedPackage &&
+      (!affiliateQuote?.valid || !affiliateQuote.affiliate || affiliateLoading)
+    ) {
+      setMsgType('err');
+      setMsg(
+        T(
+          lang,
+          'Mã Đối tác chưa được hệ thống xác thực cho gói đã chọn. Vui lòng thử lại hoặc bỏ mã.',
+          'The Partner code has not been validated for the selected package. Please retry or remove it.',
+        ),
+      );
+      return;
+    }
+    if (affiliateActive && promoPct > 0) {
+      setMsgType('err');
+      setMsg(T(lang, 'Không thể cộng dồn mã Đối tác và mã khuyến mãi.', 'Partner and promo codes cannot be combined.'));
       return;
     }
 
@@ -1039,6 +1198,13 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
               : 'investor_registration'
             : undefined,
           checkout_intent: intent,
+          affiliate: affiliateActive ? affiliateQuote?.affiliate : undefined,
+          affiliate_code: affiliateActive ? affiliateQuote?.affiliate?.affiliate_code : undefined,
+          partner_id: affiliateActive ? affiliateQuote?.affiliate?.partner_id : undefined,
+          affiliate_discount_pct: affiliateActive ? affiliateQuote?.affiliate?.customer_discount_pct : undefined,
+          affiliate_discount_amount: affiliateActive ? affiliateQuote?.affiliate?.discount_amount : undefined,
+          net_paid_amount: affiliateActive ? affiliateQuote?.affiliate?.net_paid_amount : undefined,
+          affiliate_policy_version: affiliateActive ? affiliateQuote?.affiliate?.policy_version : undefined,
           price: isInvestor && investorPlan === 'standard'
             ? {
                 ...price,
@@ -1321,9 +1487,9 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
                       country: countryCode,
                       termWeeks,
                       businessPlan: selectedBusinessPlan,
-                      promoCode,
+                      promoCode: affiliateReferral ? '' : promoCode,
                     },
-                    promoPct,
+                    affiliateReferral ? 0 : promoPct,
                   );
                   return (
                     <button
@@ -1350,42 +1516,30 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
               <div className="d68-bizreg-promo">
                 <input
                   value={promoCode}
-                  onChange={(event) =>
-                    setPromoCode(event.target.value.toUpperCase())
-                  }
-                  placeholder={T(lang, 'Nhập mã (nếu có)', 'Enter code (optional)')}
+                  disabled={Boolean(affiliateReferral)}
+                  onChange={(event) => {
+                    setPromoCode(event.target.value.toUpperCase());
+                    setPromoPct(0);
+                    setPromoMsg('');
+                  }}
+                  placeholder={T(lang, 'Nhập mã khuyến mãi hoặc mã Đối tác', 'Enter a promo or Partner code')}
                 />
                 <button
                   type="button"
-                  disabled={promoLoading}
-                  onClick={async () => {
-                    setPromoLoading(true);
-                    const result = await lookupPromo(promoCode, pricingRole).catch(
-                      (promoError: any) => ({
-                        discountPct: 0,
-                        message: promoError?.message || 'Could not check promo.',
-                      }),
-                    );
-                    setPromoLoading(false);
-                    setPromoPct(Number(result.discountPct || 0));
-                    setPromoMsg(
-                      result.discountPct
-                        ? T(
-                            lang,
-                            'Mã hợp lệ, đã cập nhật số tiền giảm giá',
-                            'Valid code, discount amount updated',
-                          )
-                        : result.message || T(lang, 'Mã không hợp lệ.', 'Invalid code.'),
-                    );
-                  }}
+                  disabled={promoLoading || affiliateLoading}
+                  onClick={affiliateReferral ? removeAffiliateCode : applyRegistrationCode}
                 >
-                  {promoLoading ? '...' : T(lang, 'Áp dụng', 'Apply')}
+                  {promoLoading || affiliateLoading
+                    ? '...'
+                    : affiliateReferral
+                      ? T(lang, 'Bỏ mã', 'Remove')
+                      : T(lang, 'Áp dụng', 'Apply')}
                 </button>
               </div>
               {promoMsg ? (
                 <p
                   className={
-                    promoPct
+                    affiliateActive || promoPct
                       ? 'd68-bizreg-promo-ok'
                       : 'd68-bizreg-promo-warn'
                   }
@@ -1429,19 +1583,27 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
                 good={hasSelectedPackage && !!price.termDiscountPct}
               />
               <RowMini
-                a={T(lang, 'Giảm giá', 'Promo discount')}
+                a={affiliateActive
+                  ? T(lang, 'Giảm giá Đối tác', 'Partner discount')
+                  : T(lang, 'Giảm giá khuyến mãi', 'Promo discount')}
                 b={
                   hasSelectedPackage
-                    ? price.promoDiscountPct
+                    ? affiliateActive && affiliateQuote?.affiliate
                       ? '-' +
-                        money(price.promoDiscount, price.currency) +
+                        money(affiliateQuote.affiliate.discount_amount, price.currency) +
                         ' (' +
-                        price.promoDiscountPct +
+                        Number(affiliateQuote.affiliate.customer_discount_pct || 0) +
                         '%)'
-                      : T(lang, 'Không', 'None')
+                      : price.promoDiscountPct
+                        ? '-' +
+                          money(price.promoDiscount, price.currency) +
+                          ' (' +
+                          price.promoDiscountPct +
+                          '%)'
+                        : T(lang, 'Không', 'None')
                     : '-'
                 }
-                good={hasSelectedPackage && !!price.promoDiscountPct}
+                good={hasSelectedPackage && (affiliateActive || !!price.promoDiscountPct)}
               />
               <strong>
                 {T(lang, 'Tổng thanh toán', 'Total due')}
@@ -1476,6 +1638,7 @@ export default function Register({ lang = 'vi' }: { lang?: Lang }) {
                 <input
                   type="checkbox"
                   checked={paymentAck}
+                  disabled={affiliateLoading || Boolean(affiliateReferral && !affiliateActive)}
                   onChange={(event) => setPaymentAck(event.target.checked)}
                 />{' '}
                 {T(

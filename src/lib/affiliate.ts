@@ -73,6 +73,14 @@ function storageSet(key: string, value: string) {
   }
 }
 
+function storageRemove(key: string) {
+  try {
+    window.localStorage.removeItem(key);
+  } catch {
+    // Cookie cleanup remains available when localStorage is blocked.
+  }
+}
+
 function randomVisitorToken() {
   const existing = storageGet(VISITOR_STORAGE_KEY);
   if (existing && existing.length >= 16 && existing.length <= 200) return existing;
@@ -199,6 +207,15 @@ export function getStoredAffiliateReferral(): StoredAffiliateReferral | null {
     capturedAt,
     expiresAt: new Date(Date.now() + ATTRIBUTION_TTL_MS).toISOString(),
   };
+}
+
+export function clearStoredAffiliateReferral() {
+  if (typeof window === 'undefined') return;
+  storageRemove(REFERRAL_STORAGE_KEY);
+  if (typeof document !== 'undefined') {
+    const secure = window.location.protocol === 'https:' ? '; Secure' : '';
+    document.cookie = `${REFERRAL_COOKIE}=; Max-Age=0; Path=/; SameSite=Lax${secure}`;
+  }
 }
 
 export async function captureAffiliateReferralFromCurrentPage(): Promise<StoredAffiliateReferral | null> {

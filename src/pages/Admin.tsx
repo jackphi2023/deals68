@@ -45,6 +45,7 @@ import {
   type AdminQueueCounts,
 } from '../lib/adminOperations';
 import {
+  DEFAULT_MARKET_PARTNER_COMMERCIAL_POLICY,
   convertPartnerLead,
   createMarketPartner,
   listAdminMarketPartners,
@@ -1501,8 +1502,7 @@ const EMPTY_MARKET_PARTNER_INPUT: MarketPartnerInput = {
   country: 'Vietnam',
   countryIso2: 'VN',
   intro: '',
-  customerDiscountPct: 0,
-  commissionPct: 0,
+  ...DEFAULT_MARKET_PARTNER_COMMERCIAL_POLICY,
   status: 'active',
   affiliateCode: '',
 };
@@ -1557,7 +1557,7 @@ function MarketPartnersAdmin({
         <div>
           <h3>Danh sách Market Partner</h3>
           <p className="d68-admin-subtle">
-            Mã affiliate, giảm giá khách hàng và tỷ lệ hoa hồng được quản trị riêng; không dùng admin_priority hoặc dữ liệu Investor.
+            Admin cấu hình X và biểu Y riêng cho từng Partner. X giảm trên phí sau chiết khấu kỳ hạn; Y tính trên tiền khách thực thanh toán. Không cộng dồn promo và không dùng dữ liệu Investor.
           </p>
         </div>
         <span className="d68-admin-badge ok">{partners.length} partner</span>
@@ -1611,8 +1611,13 @@ function PartnerLeadConversionCard({
 }) {
   const converted = String(lead.status || '').toLowerCase() === 'converted';
   const rejected = String(lead.status || '').toLowerCase() === 'rejected';
-  const [customerDiscountPct, setCustomerDiscountPct] = useState(0);
-  const [commissionPct, setCommissionPct] = useState(0);
+  const [customerDiscountPct, setCustomerDiscountPct] = useState(DEFAULT_MARKET_PARTNER_COMMERCIAL_POLICY.customerDiscountPct);
+  const [commissionPct, setCommissionPct] = useState(DEFAULT_MARKET_PARTNER_COMMERCIAL_POLICY.commissionPct);
+  const [commissionBasisCurrency, setCommissionBasisCurrency] = useState<'VND' | 'USD'>(DEFAULT_MARKET_PARTNER_COMMERCIAL_POLICY.commissionBasisCurrency);
+  const [commissionTier1Max, setCommissionTier1Max] = useState(DEFAULT_MARKET_PARTNER_COMMERCIAL_POLICY.commissionTier1Max);
+  const [commissionTier2Max, setCommissionTier2Max] = useState(DEFAULT_MARKET_PARTNER_COMMERCIAL_POLICY.commissionTier2Max);
+  const [commissionTier2Pct, setCommissionTier2Pct] = useState(DEFAULT_MARKET_PARTNER_COMMERCIAL_POLICY.commissionTier2Pct);
+  const [commissionTier3Pct, setCommissionTier3Pct] = useState(DEFAULT_MARKET_PARTNER_COMMERCIAL_POLICY.commissionTier3Pct);
   const [status, setStatus] = useState<MarketPartnerStatus>('active');
   const [affiliateCode, setAffiliateCode] = useState('');
 
@@ -1628,7 +1633,12 @@ function PartnerLeadConversionCard({
     <div className="d68-admin-market-partner-config-grid">
       <label>Mã mong muốn (tùy chọn)<input className="d68-admin-input" value={affiliateCode} onChange={(event) => setAffiliateCode(event.target.value.toUpperCase())} placeholder="Server tự sinh nếu để trống" /></label>
       <label>Giảm giá khách hàng (%)<input className="d68-admin-input" type="number" min="0" max="100" step="0.01" value={customerDiscountPct} onChange={(event) => setCustomerDiscountPct(Number(event.target.value || 0))} /></label>
-      <label>Hoa hồng partner (%)<input className="d68-admin-input" type="number" min="0" max="100" step="0.01" value={commissionPct} onChange={(event) => setCommissionPct(Number(event.target.value || 0))} /></label>
+      <label>Y1 · Hoa hồng dưới mốc 1 (%)<input className="d68-admin-input" type="number" min="0" max="100" step="0.01" value={commissionPct} onChange={(event) => setCommissionPct(Number(event.target.value || 0))} /></label>
+      <label>Đồng tiền mốc Y<select className="d68-admin-input" value={commissionBasisCurrency} onChange={(event) => setCommissionBasisCurrency(event.target.value as 'VND' | 'USD')}><option value="VND">VND</option><option value="USD">USD</option></select></label>
+      <label>Mốc doanh thu 1<input className="d68-admin-input" type="number" min="0" step="1" value={commissionTier1Max} onChange={(event) => setCommissionTier1Max(Number(event.target.value || 0))} /></label>
+      <label>Mốc doanh thu 2<input className="d68-admin-input" type="number" min="0" step="1" value={commissionTier2Max} onChange={(event) => setCommissionTier2Max(Number(event.target.value || 0))} /></label>
+      <label>Y2 · Hoa hồng mốc 1–2 (%)<input className="d68-admin-input" type="number" min="0" max="100" step="0.01" value={commissionTier2Pct} onChange={(event) => setCommissionTier2Pct(Number(event.target.value || 0))} /></label>
+      <label>Y3 · Hoa hồng trên mốc 2 (%)<input className="d68-admin-input" type="number" min="0" max="100" step="0.01" value={commissionTier3Pct} onChange={(event) => setCommissionTier3Pct(Number(event.target.value || 0))} /></label>
       <label>Trạng thái<select className="d68-admin-input" value={status} onChange={(event) => setStatus(event.target.value as MarketPartnerStatus)}><option value="active">Active</option><option value="suspended">Suspended</option></select></label>
     </div>
     <div className="d68-admin-actions">
@@ -1636,7 +1646,17 @@ function PartnerLeadConversionCard({
         type="button"
         className="d68-admin-btn green"
         disabled={busy || converted || rejected}
-        onClick={() => onConvert(lead, { customerDiscountPct, commissionPct, status, affiliateCode })}
+        onClick={() => onConvert(lead, {
+          customerDiscountPct,
+          commissionPct,
+          commissionBasisCurrency,
+          commissionTier1Max,
+          commissionTier2Max,
+          commissionTier2Pct,
+          commissionTier3Pct,
+          status,
+          affiliateCode,
+        })}
       >
         {converted ? 'Đã chuyển đổi' : 'Convert lead → Market Partner'}
       </button>
@@ -1663,7 +1683,12 @@ function MarketPartnerEditor({
     countryIso2: partner.country_iso2 || '',
     intro: partner.intro || '',
     customerDiscountPct: Number(partner.customer_discount_pct || 0),
-    commissionPct: Number(partner.commission_pct || 0),
+    commissionPct: Number(partner.commission_tier_1_pct ?? partner.commission_pct ?? DEFAULT_MARKET_PARTNER_COMMERCIAL_POLICY.commissionPct),
+    commissionBasisCurrency: String(partner.commission_basis_currency || DEFAULT_MARKET_PARTNER_COMMERCIAL_POLICY.commissionBasisCurrency) === 'USD' ? 'USD' : 'VND',
+    commissionTier1Max: Number(partner.commission_tier_1_max ?? DEFAULT_MARKET_PARTNER_COMMERCIAL_POLICY.commissionTier1Max),
+    commissionTier2Max: Number(partner.commission_tier_2_max ?? DEFAULT_MARKET_PARTNER_COMMERCIAL_POLICY.commissionTier2Max),
+    commissionTier2Pct: Number(partner.commission_tier_2_pct ?? DEFAULT_MARKET_PARTNER_COMMERCIAL_POLICY.commissionTier2Pct),
+    commissionTier3Pct: Number(partner.commission_tier_3_pct ?? DEFAULT_MARKET_PARTNER_COMMERCIAL_POLICY.commissionTier3Pct),
     status: partner.status,
     affiliateCode: partner.affiliate_code,
   });
@@ -1707,8 +1732,13 @@ function MarketPartnerFields({
     <label>Quốc gia<input className="d68-admin-input" value={draft.country || ''} onChange={(event) => setDraft((current) => ({ ...current, country: event.target.value }))} /></label>
     <label>ISO2<input className="d68-admin-input" maxLength={2} value={draft.countryIso2 || ''} onChange={(event) => setDraft((current) => ({ ...current, countryIso2: event.target.value.toUpperCase() }))} /></label>
     {includeAffiliateCode ? <label>Mã affiliate (tùy chọn)<input className="d68-admin-input" value={draft.affiliateCode || ''} onChange={(event) => setDraft((current) => ({ ...current, affiliateCode: event.target.value.toUpperCase() }))} placeholder="Server tự sinh" /></label> : null}
-    <label>Giảm giá khách hàng (%)<input className="d68-admin-input" type="number" min="0" max="100" step="0.01" value={draft.customerDiscountPct} onChange={(event) => setDraft((current) => ({ ...current, customerDiscountPct: Number(event.target.value || 0) }))} /></label>
-    <label>Hoa hồng partner (%)<input className="d68-admin-input" type="number" min="0" max="100" step="0.01" value={draft.commissionPct} onChange={(event) => setDraft((current) => ({ ...current, commissionPct: Number(event.target.value || 0) }))} /></label>
+    <label>X · Giảm giá khách hàng (%)<input className="d68-admin-input" type="number" min="0" max="100" step="0.01" value={draft.customerDiscountPct} onChange={(event) => setDraft((current) => ({ ...current, customerDiscountPct: Number(event.target.value || 0) }))} /></label>
+    <label>Đồng tiền mốc Y<select className="d68-admin-input" value={draft.commissionBasisCurrency} onChange={(event) => setDraft((current) => ({ ...current, commissionBasisCurrency: event.target.value as 'VND' | 'USD' }))}><option value="VND">VND</option><option value="USD">USD</option></select></label>
+    <label>Mốc doanh thu 1<input className="d68-admin-input" type="number" min="0" step="1" value={draft.commissionTier1Max} onChange={(event) => setDraft((current) => ({ ...current, commissionTier1Max: Number(event.target.value || 0) }))} /></label>
+    <label>Y1 · Dưới mốc 1 (%)<input className="d68-admin-input" type="number" min="0" max="100" step="0.01" value={draft.commissionPct} onChange={(event) => setDraft((current) => ({ ...current, commissionPct: Number(event.target.value || 0) }))} /></label>
+    <label>Mốc doanh thu 2<input className="d68-admin-input" type="number" min="0" step="1" value={draft.commissionTier2Max} onChange={(event) => setDraft((current) => ({ ...current, commissionTier2Max: Number(event.target.value || 0) }))} /></label>
+    <label>Y2 · Từ mốc 1 đến mốc 2 (%)<input className="d68-admin-input" type="number" min="0" max="100" step="0.01" value={draft.commissionTier2Pct} onChange={(event) => setDraft((current) => ({ ...current, commissionTier2Pct: Number(event.target.value || 0) }))} /></label>
+    <label>Y3 · Trên mốc 2 (%)<input className="d68-admin-input" type="number" min="0" max="100" step="0.01" value={draft.commissionTier3Pct} onChange={(event) => setDraft((current) => ({ ...current, commissionTier3Pct: Number(event.target.value || 0) }))} /></label>
     <label>Trạng thái<select className="d68-admin-input" value={draft.status} onChange={(event) => setDraft((current) => ({ ...current, status: event.target.value as MarketPartnerStatus }))}><option value="active">Active</option><option value="suspended">Suspended</option></select></label>
     <label className="d68-admin-span2">Giới thiệu<textarea className="d68-admin-input textarea" value={draft.intro || ''} onChange={(event) => setDraft((current) => ({ ...current, intro: event.target.value }))} /></label>
   </div>;

@@ -36,6 +36,7 @@ const required = [
   '20260727084802_market_partner_affiliate_phase1_v1.sql',
   '20260727103000_market_partner_affiliate_phase2_dashboard_v1.sql',
   '20260727110000_market_partner_affiliate_phase3_referral_v1.sql',
+  '20260727113000_market_partner_affiliate_phase4_checkout_v1.sql',
 ];
 const forbidden = [
   '20260711103000_normalize_investor_taxonomy_on_write_v1.sql',
@@ -274,6 +275,23 @@ const migrationContracts = [
       'on conflict (subject_profile_id) do nothing',
       'create trigger d68_profiles_attach_affiliate_attribution',
       'never creates commission or changes payment',
+    ],
+  },
+  {
+    name: '20260727113000_market_partner_affiliate_phase4_checkout_v1.sql',
+    snippets: [
+      "commission_basis_currency text not null default 'VND'",
+      'commission_tier_1_max numeric(20,2) not null default 20000000',
+      'commission_tier_2_max numeric(20,2) not null default 50000000',
+      'commission_tier_1_pct numeric(5,2) not null default 40',
+      'commission_tier_2_pct numeric(5,2) not null default 50',
+      'commission_tier_3_pct numeric(5,2) not null default 60',
+      'create or replace function public.d68_admin_update_market_partner_commercial_policy',
+      'create or replace function public.d68_get_affiliate_checkout_quote',
+      'create or replace function public.d68_affiliate_commission_pct_for_net_paid',
+      'Promo code cannot be combined with a Market Partner code',
+      "'calculation_basis', 'net_paid_amount'",
+      'No automatic commission trigger is installed in Phase 4',
     ],
   },
 ];
