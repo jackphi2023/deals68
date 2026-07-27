@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 import fs from 'node:fs';
 
-const path = 'src/App.tsx';
-let source = fs.readFileSync(path, 'utf8');
+const appPath = 'src/App.tsx';
+let source = fs.readFileSync(appPath, 'utf8');
 
 function replaceOnce(before, after, label) {
   const count = source.split(before).length - 1;
@@ -48,6 +48,15 @@ for (const token of [
 ]) {
   if (!source.includes(token)) throw new Error(`App route token missing after patch: ${token}`);
 }
+fs.writeFileSync(appPath, source);
 
-fs.writeFileSync(path, source);
-console.log('✓ Market Partner static demo routes applied.');
+const dataPath = 'src/lib/marketPartnerDemo.ts';
+let dataSource = fs.readFileSync(dataPath, 'utf8');
+const oldType = "export type MarketPartnerDemoDashboardData = MarketPartnerDashboardData & {\n  transactions: DemoPartnerTransaction[];";
+const newType = "export type MarketPartnerDemoDashboardData = Omit<MarketPartnerDashboardData, 'commissions'> & {\n  transactions: DemoPartnerTransaction[];";
+const typeCount = dataSource.split(oldType).length - 1;
+if (typeCount !== 1) throw new Error(`demo commission type: expected one match, found ${typeCount}`);
+dataSource = dataSource.replace(oldType, newType);
+fs.writeFileSync(dataPath, dataSource);
+
+console.log('✓ Market Partner static demo routes and extended commission type applied.');
