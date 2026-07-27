@@ -2,10 +2,12 @@ import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { Copy, LayoutDashboard, Link2, LogOut, Settings, Users, WalletCards } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import {
+  DEFAULT_MARKET_PARTNER_COMMERCIAL_POLICY,
   getMyMarketPartnerDashboard,
   updateMyMarketPartnerBankAccount,
   type MarketPartnerBankAccount,
   type MarketPartnerDashboardData,
+  type MarketPartnerRow,
 } from '../lib/marketPartners';
 import '../styles/pages/market-partner.css';
 
@@ -33,6 +35,42 @@ function money(value: unknown, currency = 'VND') {
     currency: /^[A-Z]{3}$/.test(currency) ? currency : 'VND',
     maximumFractionDigits: currency === 'VND' ? 0 : 2,
   }).format(number(value));
+}
+
+function compactAmount(value: unknown, currency = 'VND') {
+  const amount = number(value);
+  if (currency === 'VND') return `${amount.toLocaleString('vi-VN')} ₫`;
+  return `${amount.toLocaleString('en-US')} ${currency}`;
+}
+
+function commercialPolicy(partner: MarketPartnerRow) {
+  return {
+    basisCurrency: String(
+      partner.commission_basis_currency ||
+        DEFAULT_MARKET_PARTNER_COMMERCIAL_POLICY.commissionBasisCurrency,
+    ),
+    tier1Max: number(
+      partner.commission_tier_1_max ??
+        DEFAULT_MARKET_PARTNER_COMMERCIAL_POLICY.commissionTier1Max,
+    ),
+    tier2Max: number(
+      partner.commission_tier_2_max ??
+        DEFAULT_MARKET_PARTNER_COMMERCIAL_POLICY.commissionTier2Max,
+    ),
+    tier1Pct: number(
+      partner.commission_tier_1_pct ??
+        partner.commission_pct ??
+        DEFAULT_MARKET_PARTNER_COMMERCIAL_POLICY.commissionPct,
+    ),
+    tier2Pct: number(
+      partner.commission_tier_2_pct ??
+        DEFAULT_MARKET_PARTNER_COMMERCIAL_POLICY.commissionTier2Pct,
+    ),
+    tier3Pct: number(
+      partner.commission_tier_3_pct ??
+        DEFAULT_MARKET_PARTNER_COMMERCIAL_POLICY.commissionTier3Pct,
+    ),
+  };
 }
 
 function bankFrom(value: Record<string, unknown> | undefined): MarketPartnerBankAccount {
@@ -108,6 +146,7 @@ export default function MarketPartnerDashboard() {
 
   const { partner, metrics } = data;
   const currency = metrics.currency || 'VND';
+  const policy = commercialPolicy(partner);
   const conversionRate = metrics.signup_count > 0
     ? Math.round((metrics.paid_transaction_count / metrics.signup_count) * 100)
     : 0;
@@ -152,8 +191,8 @@ export default function MarketPartnerDashboard() {
             ))}
           </nav>
           <div className="d68-mp-tier-card">
-            <small>BẬC HIỆN TẠI</small>
-            <strong>Đối tác giới thiệu · {number(partner.commission_pct)}%</strong>
+            <small>CHÍNH SÁCH HIỆN TẠI</small>
+            <strong>Hoa hồng {policy.tier1Pct}%–{policy.tier3Pct}% theo doanh thu</strong>
           </div>
         </aside>
 
@@ -179,26 +218,25 @@ export default function MarketPartnerDashboard() {
                 </article>
 
                 <article className="d68-mp-progress-card">
-                  <h2>TIẾN ĐỘ LÊN BẬC</h2>
-                  <div className="d68-mp-progress-title"><strong>{number(partner.commission_pct)}%</strong><span>hoa hồng / giao dịch trả phí</span></div>
-                  <div className="d68-mp-progress-track"><span style={{ width: `${Math.min(100, number(metrics.paid_transaction_count) * 20)}%` }} /></div>
-                  <p>{number(metrics.paid_transaction_count) >= 5 ? 'Đã đủ điều kiện xem xét bậc tiếp theo.' : `Còn ${Math.max(0, 5 - number(metrics.paid_transaction_count))} giao dịch trả phí để được xem xét bậc tiếp theo.`}</p>
-                  <div className="d68-mp-tier-row active"><b>Đối tác giới thiệu</b><span>&lt; 5 giao dịch</span><strong>{number(partner.commission_pct)}%</strong></div>
-                  <div className="d68-mp-tier-row"><b>Đối tác thị trường</b><span>5–14 giao dịch</span><strong>18%</strong></div>
-                  <div className="d68-mp-tier-row"><b>Đối tác thị trường cấp cao</b><span>15+ giao dịch</span><strong>22%</strong></div>
+                  <h2>CƠ CẤU HOA HỒNG THEO DOANH THU</h2>
+                  <div className="d68-mp-progress-title"><strong>{policy.tier1Pct}%–{policy.tier3Pct}%</strong><span>trên số tiền khách thực thanh toán</span></div>
+                  <p>Đồng tiền cơ sở: {policy.basisCurrency}. Không tính trên giá niêm yết trước giảm giá.</p>
+                  <div className="d68-mp-tier-row active"><b>Dưới mốc 1</b><span>&lt; {compactAmount(policy.tier1Max, policy.basisCurrency)}</span><strong>{policy.tier1Pct}%</strong></div>
+                  <div className="d68-mp-tier-row"><b>Từ mốc 1 đến mốc 2</b><span>{compactAmount(policy.tier1Max, policy.basisCurrency)} – {compactAmount(policy.tier2Max, policy.basisCurrency)}</span><strong>{policy.tier2Pct}%</strong></div>
+                  <div className="d68-mp-tier-row"><b>Trên mốc 2</b><span>&gt; {compactAmount(policy.tier2Max, policy.basisCurrency)}</span><strong>{policy.tier3Pct}%</strong></div>
                 </article>
               </div>
 
               <article className="d68-mp-referral-card">
-                <div><h2>Link giới thiệu của bạn</h2><a href={referralLink} target="_blank" rel="noreferrer">{referralLink}</a><p>Khách được giảm {number(partner.customer_discount_pct)}% khi đăng ký qua link này.</p></div>
+                <div><h2>Link giới thiệu của bạn</h2><a href={referralLink} target="_blank" rel="noreferrer">{referralLink}</a><p>Khách được giảm {number(partner.customer_discount_pct)}% trên phí đủ điều kiện. Không cộng dồn mã khuyến mãi khác.</p></div>
                 <button onClick={copyLink}><Copy size={17} /> Copy link</button>
               </article>
             </>
           ) : null}
 
           {tab === 'leads' ? <ReadOnlyPanel title="Lead & chuyển đổi" text="Phase 3 đã kích hoạt click và signup attribution. Dashboard chỉ hiển thị số tổng hợp, không công khai danh tính khách hàng." /> : null}
-          {tab === 'commissions' ? <ReadOnlyPanel title="Hoa hồng & thanh toán" text="Phase 2 không tự tính hoặc tạo hoa hồng. Số liệu chỉ đọc từ commission ledger do server/Admin ghi nhận." /> : null}
-          {tab === 'campaigns' ? <ReadOnlyPanel title="Mã & chiến dịch" text={`Mã affiliate hiện tại: ${partner.affiliate_code}. Tracking ?ref=CODE đang hoạt động trên các trang public và đăng ký.`} /> : null}
+          {tab === 'commissions' ? <ReadOnlyPanel title="Hoa hồng & thanh toán" text="Phase 4 lưu chính sách Y theo số tiền khách thực thanh toán và đóng dấu vào payment payload. Commission vẫn chưa được tạo tự động; Phase 5 mới xử lý sau payment confirmed." /> : null}
+          {tab === 'campaigns' ? <ReadOnlyPanel title="Mã & chiến dịch" text={`Mã affiliate hiện tại: ${partner.affiliate_code}. Giảm giá X = ${number(partner.customer_discount_pct)}%; promo code khác không được cộng dồn.`} /> : null}
           {tab === 'settings' ? <BankAccountForm bank={bank} setBank={setBank} saving={saving} onSubmit={saveBank} /> : null}
         </section>
       </div>
@@ -211,13 +249,13 @@ function Metric({ label, value, note, positive, gold }: { label: string; value: 
 }
 
 function ReadOnlyPanel({ title, text }: { title: string; text: string }) {
-  return <article className="d68-mp-readonly-panel"><h2>{title}</h2><p>{text}</p><span>READ-ONLY · PHASE 3</span></article>;
+  return <article className="d68-mp-readonly-panel"><h2>{title}</h2><p>{text}</p><span>READ-ONLY · PHASE 4</span></article>;
 }
 
 function BankAccountForm({ bank, setBank, saving, onSubmit }: { bank: MarketPartnerBankAccount; setBank: React.Dispatch<React.SetStateAction<MarketPartnerBankAccount>>; saving: boolean; onSubmit: (event: FormEvent) => Promise<void> }) {
   return (
     <form className="d68-mp-bank-card" onSubmit={onSubmit}>
-      <div><h2>Tài khoản nhận hoa hồng</h2><p>Thông tin này chỉ Partner và Admin được xem. Phase 3 chưa phát sinh thanh toán tự động.</p></div>
+      <div><h2>Tài khoản nhận hoa hồng</h2><p>Thông tin này chỉ Partner và Admin được xem. Phase 4 chưa phát sinh thanh toán hoa hồng tự động.</p></div>
       <div className="d68-mp-bank-grid">
         <label>Tên ngân hàng<input required value={bank.bank_name} onChange={(e) => setBank((v) => ({ ...v, bank_name: e.target.value }))} /></label>
         <label>Chủ tài khoản<input required value={bank.account_holder} onChange={(e) => setBank((v) => ({ ...v, account_holder: e.target.value }))} /></label>
