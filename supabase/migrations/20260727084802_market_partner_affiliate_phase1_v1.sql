@@ -9,7 +9,7 @@ grant usage on schema d68_legacy to service_role;
 comment on schema d68_legacy is
   'Locked archive for incompatible pre-Market-Partner placeholder tables. Not exposed to public/anon/authenticated.';
 
-do $
+do $$
 begin
   if to_regclass('public.affiliate_clicks') is not null
      and not exists (
@@ -39,7 +39,7 @@ begin
     alter table d68_legacy.affiliate_payouts rename to affiliate_payouts_pre_market_partner;
   end if;
 end;
-$;
+$$;
 
 alter type public.user_role add value if not exists 'market_partner';
 

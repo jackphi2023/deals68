@@ -27,7 +27,7 @@ language plpgsql
 stable
 security definer
 set search_path = public, auth, pg_temp
-as $
+as $$
 declare
   v_email text := lower(btrim(coalesce(p_email, '')));
   v_code text := public.d68_normalize_affiliate_code(p_affiliate_code);
@@ -51,7 +51,7 @@ begin
     select 1 from auth.users u where lower(coalesce(u.email, '')) = v_email
   );
 end;
-$;
+$$;
 
 create or replace function public.d68_claim_market_partner_signup(
   user_uuid uuid,
