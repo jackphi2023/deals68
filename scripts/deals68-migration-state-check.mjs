@@ -33,11 +33,11 @@ const required = [
   '20260724130910_investor_premium_price_v2.sql',
   '20260724140213_public_business_view_band_helper_acl_fix_v1.sql',
   '20260724142506_homepage_business_ids_safe_view_v1.sql',
-  '20260727084802_market_partner_affiliate_phase1_v1.sql',
-  '20260727103000_market_partner_affiliate_phase2_dashboard_v1.sql',
-  '20260727110000_market_partner_affiliate_phase3_referral_v1.sql',
-  '20260727113000_market_partner_affiliate_phase4_checkout_v1.sql',
-  '20260727124500_market_partner_affiliate_phase5_commission_payout_v1.sql',
+  '20260727143814_market_partner_affiliate_phase1_v1.sql',
+  '20260727143921_market_partner_affiliate_phase2_dashboard_v1.sql',
+  '20260727143956_market_partner_affiliate_phase3_referral_v1.sql',
+  '20260727144031_market_partner_affiliate_phase4_checkout_v1.sql',
+  '20260727144122_market_partner_affiliate_phase5_commission_payout_v1.sql',
 ];
 const forbidden = [
   '20260711103000_normalize_investor_taxonomy_on_write_v1.sql',
@@ -54,6 +54,11 @@ const forbidden = [
   '20260724130029_investor_premium_price_v2.sql',
   '20260724163000_public_business_view_band_helper_acl_fix_v1.sql',
   '20260724153000_homepage_business_ids_safe_view_v1.sql',
+  '20260727084802_market_partner_affiliate_phase1_v1.sql',
+  '20260727103000_market_partner_affiliate_phase2_dashboard_v1.sql',
+  '20260727110000_market_partner_affiliate_phase3_referral_v1.sql',
+  '20260727113000_market_partner_affiliate_phase4_checkout_v1.sql',
+  '20260727124500_market_partner_affiliate_phase5_commission_payout_v1.sql',
 ];
 
 for (const name of required) {
@@ -243,7 +248,7 @@ const migrationContracts = [
     ],
   },
   {
-    name: '20260727084802_market_partner_affiliate_phase1_v1.sql',
+    name: '20260727143814_market_partner_affiliate_phase1_v1.sql',
     snippets: [
       'create schema if not exists d68_legacy',
       'alter table public.affiliate_clicks set schema d68_legacy',
@@ -259,7 +264,7 @@ const migrationContracts = [
     ],
   },
   {
-    name: '20260727103000_market_partner_affiliate_phase2_dashboard_v1.sql',
+    name: '20260727143921_market_partner_affiliate_phase2_dashboard_v1.sql',
     snippets: [
       'create or replace function public.d68_get_my_market_partner_dashboard',
       'create or replace function public.d68_update_my_market_partner_bank_account',
@@ -268,7 +273,7 @@ const migrationContracts = [
     ],
   },
   {
-    name: '20260727110000_market_partner_affiliate_phase3_referral_v1.sql',
+    name: '20260727143956_market_partner_affiliate_phase3_referral_v1.sql',
     snippets: [
       'create or replace function public.d68_attach_affiliate_attribution_from_profile',
       "new.role::text not in ('business', 'investor')",
@@ -282,7 +287,7 @@ const migrationContracts = [
     ],
   },
   {
-    name: '20260727113000_market_partner_affiliate_phase4_checkout_v1.sql',
+    name: '20260727144031_market_partner_affiliate_phase4_checkout_v1.sql',
     snippets: [
       "commission_basis_currency text not null default 'VND'",
       'commission_tier_1_max numeric(20,2) not null default 20000000',
@@ -299,7 +304,7 @@ const migrationContracts = [
     ],
   },
   {
-    name: '20260727124500_market_partner_affiliate_phase5_commission_payout_v1.sql',
+    name: '20260727144122_market_partner_affiliate_phase5_commission_payout_v1.sql',
     snippets: [
       'create or replace function public.d68_can_claim_market_partner_account',
       'create or replace function public.d68_claim_market_partner_signup',

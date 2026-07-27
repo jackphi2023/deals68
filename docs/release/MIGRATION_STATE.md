@@ -27,6 +27,11 @@ This file reconciles the migration filenames in Git with the migration versions 
 | 20260724140213 | `20260724140213_public_business_view_band_helper_acl_fix_v1.sql` — applied to production |
 | 20260724142506 | `20260724142506_homepage_business_ids_safe_view_v1.sql` — applied to production |
 | 20260724150019 | `20260724150019_business_public_ebitda_visibility_v1.sql` — applied to production |
+| 20260727143814 | `20260727143814_market_partner_affiliate_phase1_v1.sql` — applied to production |
+| 20260727143921 | `20260727143921_market_partner_affiliate_phase2_dashboard_v1.sql` — applied to production |
+| 20260727143956 | `20260727143956_market_partner_affiliate_phase3_referral_v1.sql` — applied to production |
+| 20260727144031 | `20260727144031_market_partner_affiliate_phase4_checkout_v1.sql` — applied to production |
+| 20260727144122 | `20260727144122_market_partner_affiliate_phase5_commission_payout_v1.sql` — applied to production |
 
 The new Release Candidate migration is:
 
@@ -52,11 +57,11 @@ The new Release Candidate migration is:
 - `20260724140213_public_business_view_band_helper_acl_fix_v1.sql` — public Business availability fix applied to production. It restores EXECUTE for anon/authenticated on four immutable, table-free coarse-band helpers required by `public_businesses_safe`; it does not reopen `businesses`, alter RLS, or expose exact financial values.
 - `20260724142506_homepage_business_ids_safe_view_v1.sql` — Homepage selector fix applied to production. It replaces the anonymous base-table read in `get_homepage_business_ids` with `public_businesses_safe`, keeps explicit app-role EXECUTE only, and returns public Business IDs without financial values.
 - `20260724150019_business_public_ebitda_visibility_v1.sql` — applied to production. It keeps exact Revenue redacted, restores approved EBITDA margin on the public safe view, leaves exact Revenue/other sensitive values outside the public snapshot, and records the presentation-policy change in `audit_logs`.
-- `20260727084802_market_partner_affiliate_phase1_v1.sql` — Market Partner/Affiliate Phase 1 source only; creates the account domain, click/attribution/commission/payout ledgers, RLS/ACL, Admin RPCs and confirmed-payment commission guard. **Not applied to production.**
-- `20260727103000_market_partner_affiliate_phase2_dashboard_v1.sql` — Market Partner/Affiliate Phase 2 source only; adds owner-only Dashboard aggregates and bank-account self-service RPC. **Not applied to production.**
-- `20260727110000_market_partner_affiliate_phase3_referral_v1.sql` — Market Partner/Affiliate Phase 3 source only; creates server-side Business/Investor signup attribution only when a matching active Partner click exists within 30 days. It does not change payment, discount or commission. **Not applied to production.**
-- `20260727113000_market_partner_affiliate_phase4_checkout_v1.sql` — Market Partner/Affiliate Phase 4 source only; adds per-Partner X discount and three-tier Y policy, server-side package/term/affiliate repricing, private affiliate payment snapshots and explicit promo non-stacking. It installs no automatic payment/commission trigger. **Not applied to production.**
-- `20260727124500_market_partner_affiliate_phase5_commission_payout_v1.sql` — Market Partner/Affiliate Phase 5 source only; adds secure Partner account claiming, automatic idempotent commission creation from the immutable Phase 4 payment snapshot, Admin approval/rejection, payout lifecycle and safe Partner history. Affiliate reconciliation errors never roll back payment confirmation. **Not applied to production.**
+- `20260727143814_market_partner_affiliate_phase1_v1.sql` — Market Partner/Affiliate Phase 1 applied to production; creates the account domain, click/attribution/commission/payout ledgers, RLS/ACL, Admin RPCs and confirmed-payment commission guard. **Applied and verified on production.**
+- `20260727143921_market_partner_affiliate_phase2_dashboard_v1.sql` — Market Partner/Affiliate Phase 2 applied to production; adds owner-only Dashboard aggregates and bank-account self-service RPC. **Applied and verified on production.**
+- `20260727143956_market_partner_affiliate_phase3_referral_v1.sql` — Market Partner/Affiliate Phase 3 applied to production; creates server-side Business/Investor signup attribution only when a matching active Partner click exists within 30 days. It does not change payment, discount or commission. **Applied and verified on production.**
+- `20260727144031_market_partner_affiliate_phase4_checkout_v1.sql` — Market Partner/Affiliate Phase 4 applied to production; adds per-Partner X discount and three-tier Y policy, server-side package/term/affiliate repricing, private affiliate payment snapshots and explicit promo non-stacking. It installs no automatic payment/commission trigger. **Applied and verified on production.**
+- `20260727144122_market_partner_affiliate_phase5_commission_payout_v1.sql` — Market Partner/Affiliate Phase 5 applied to production; adds secure Partner account claiming, automatic idempotent commission creation from the immutable Phase 4 payment snapshot, Admin approval/rejection, payout lifecycle and safe Partner history. Affiliate reconciliation errors never roll back payment confirmation. **Applied and verified on production.**
 
 Rules:
 

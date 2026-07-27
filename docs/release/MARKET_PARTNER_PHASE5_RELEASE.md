@@ -1,6 +1,6 @@
 # Market Partner / Affiliate v1 — Phase 5 release review
 
-Status: source complete on `feature/market-partner-affiliate-v1`; production migration and branch merges remain gated by production verification.
+Status: source complete and all five migrations applied and verified on production; branch merges remain gated by post-reconciliation QA.
 
 ## Lifecycle
 
@@ -42,3 +42,23 @@ Workflow `30268239599` passed on the complete Phase 1–5 tree:
 - Phase 4 server pricing and X/Y boundary tests;
 - Phase 5 Partner account claim, immutable snapshot, automatic commission, non-blocking reconciliation failure, commission approval and payout-to-paid lifecycle;
 - `git diff --check`.
+
+
+## Production verification — 27 July 2026
+
+Applied ledger versions:
+
+- `20260727143814` — Phase 1 foundation and collision-safe legacy archive;
+- `20260727143921` — Phase 2 Partner Dashboard;
+- `20260727143956` — Phase 3 referral attribution;
+- `20260727144031` — Phase 4 server-side X/Y checkout;
+- `20260727144122` — Phase 5 activation, commission and payout.
+
+Verified after apply:
+
+- the five Market Partner tables, enum role, functions and confirmed-payment trigger exist;
+- the two incompatible empty placeholder tables are preserved in locked `d68_legacy`;
+- all new ledgers contain zero rows at cutover;
+- RLS is enabled on all five tables and anon cannot select them;
+- anon/authenticated cannot use the legacy archive schema;
+- public activation RPCs return only generic true/false or perform nonce-bound claim; Admin/financial RPCs are not executable by anon.
