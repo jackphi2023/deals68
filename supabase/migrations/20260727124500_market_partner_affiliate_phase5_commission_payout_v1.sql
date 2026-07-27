@@ -18,6 +18,41 @@ alter table public.affiliate_payouts
   add constraint affiliate_payouts_metadata_object_check
     check (jsonb_typeof(metadata) = 'object');
 
+create or replace function public.d68_can_claim_market_partner_account(
+  p_email text,
+  p_affiliate_code text
+)
+returns boolean
+language plpgsql
+stable
+security definer
+set search_path = public, auth, pg_temp
+as $
+declare
+  v_email text := lower(btrim(coalesce(p_email, '')));
+  v_code text := public.d68_normalize_affiliate_code(p_affiliate_code);
+begin
+  if v_email = '' or position('@' in v_email) <= 1 or v_code is null then
+    return false;
+  end if;
+
+  return exists (
+    select 1
+    from public.market_partners mp
+    where lower(mp.contact_email) = v_email
+      and mp.affiliate_code = v_code
+      and mp.status = 'active'
+      and mp.profile_id is null
+  )
+  and not exists (
+    select 1 from public.profiles p where lower(coalesce(p.email, '')) = v_email
+  )
+  and not exists (
+    select 1 from auth.users u where lower(coalesce(u.email, '')) = v_email
+  );
+end;
+$;
+
 create or replace function public.d68_claim_market_partner_signup(
   user_uuid uuid,
   user_email text,
@@ -966,6 +1001,7 @@ begin
 end;
 $$;
 
+revoke all on function public.d68_can_claim_market_partner_account(text, text) from public, anon, authenticated;
 revoke all on function public.d68_claim_market_partner_signup(uuid, text, text, text) from public, anon, authenticated;
 revoke all on function public.d68_create_affiliate_commission_for_payment(uuid, uuid) from public, anon, authenticated;
 revoke all on function public.d68_payment_confirmed_affiliate_commission_trigger() from public, anon, authenticated;
@@ -978,6 +1014,7 @@ revoke all on function public.d68_admin_list_affiliate_commissions(uuid, text) f
 revoke all on function public.d68_admin_list_affiliate_payouts(uuid, text) from public, anon, authenticated;
 revoke all on function public.d68_get_my_market_partner_dashboard() from public, anon, authenticated;
 
+grant execute on function public.d68_can_claim_market_partner_account(text, text) to anon, authenticated, service_role;
 grant execute on function public.d68_claim_market_partner_signup(uuid, text, text, text) to anon, authenticated, service_role;
 grant execute on function public.d68_create_affiliate_commission_for_payment(uuid, uuid) to service_role;
 grant execute on function public.d68_payment_confirmed_affiliate_commission_trigger() to service_role;
@@ -990,6 +1027,8 @@ grant execute on function public.d68_admin_list_affiliate_commissions(uuid, text
 grant execute on function public.d68_admin_list_affiliate_payouts(uuid, text) to authenticated, service_role;
 grant execute on function public.d68_get_my_market_partner_dashboard() to authenticated, service_role;
 
+comment on function public.d68_can_claim_market_partner_account(text, text) is
+  'Generic Partner activation preflight. Returns only true/false for an exact active unclaimed email/code pair and prevents creating an orphan Auth account.';
 comment on function public.d68_claim_market_partner_signup(uuid, text, text, text) is
   'Claims an Admin-approved active Market Partner using a recent Auth signup, exact email and affiliate code. It cannot upgrade an existing Business/Investor profile.';
 comment on function public.d68_create_affiliate_commission_for_payment(uuid, uuid) is

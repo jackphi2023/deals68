@@ -5,7 +5,7 @@ Status: source complete on `feature/market-partner-affiliate-v1`; production mig
 ## Lifecycle
 
 1. Admin creates or converts an active Market Partner and configures X/Y.
-2. Partner claims the account with the exact approved email and affiliate code, then verifies email OTP.
+2. A generic preflight validates the exact active, unclaimed email/code pair before Auth signup; Partner then claims the account and verifies email OTP.
 3. Phase 4 stores an immutable server-side X/Y snapshot in the payment order.
 4. When the payment becomes confirmed, Phase 5 creates exactly one pending commission using that snapshot.
 5. Affiliate reconciliation failures are audited and never roll back Business/Investor service activation.

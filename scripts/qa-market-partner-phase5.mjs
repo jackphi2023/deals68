@@ -26,6 +26,7 @@ const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
 
 for (const token of [
   'policy_snapshot jsonb',
+  'd68_can_claim_market_partner_account',
   'd68_claim_market_partner_signup',
   'd68_create_affiliate_commission_for_payment',
   'd68_payment_confirmed_affiliate_commission_trigger',
@@ -56,6 +57,7 @@ for (const token of [
   'Kích hoạt tài khoản Partner',
   'market_partner_activation_nonce',
   'market_partner_affiliate_code',
+  'd68_can_claim_market_partner_account',
   'd68_claim_market_partner_signup',
   "type: 'signup'",
   'Email hoặc mã affiliate không khớp',
@@ -312,8 +314,12 @@ try {
 
   await db.exec(`select set_config('request.jwt.claim.sub','${adminId}',false);`);
   const claimPartner = (await db.query(`select public.d68_admin_create_market_partner('Claim Partner','claim@example.com',null,'Vietnam','VN',null,40,40,'active',null,'CLAIM-P5',null) as partner;`)).rows[0].partner;
+  const preflight = await db.query(`select public.d68_can_claim_market_partner_account('claim@example.com','CLAIM-P5') as allowed;`);
+  assert.equal(preflight.rows[0].allowed, true);
+  assert.equal((await db.query(`select public.d68_can_claim_market_partner_account('claim@example.com','WRONG-P5') as allowed;`)).rows[0].allowed, false);
   const activationNonce = 'phase5-activation-nonce-123456789012345678';
   await db.exec(`insert into auth.users(id,email,created_at,raw_user_meta_data) values ('${claimUserId}','claim@example.com',now(),jsonb_build_object('role','market_partner','market_partner_activation_nonce','${activationNonce}','market_partner_affiliate_code','CLAIM-P5'));`);
+  assert.equal((await db.query(`select public.d68_can_claim_market_partner_account('claim@example.com','CLAIM-P5') as allowed;`)).rows[0].allowed, false);
   await db.exec(`select set_config('request.jwt.claim.sub','',false);`);
   const claimed = await db.query(`select public.d68_claim_market_partner_signup('${claimUserId}','claim@example.com','CLAIM-P5','${activationNonce}') as row;`);
   assert.equal(claimed.rows[0].row.partner_id, claimPartner.id);

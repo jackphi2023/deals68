@@ -298,6 +298,7 @@ const migrationContracts = [
   {
     name: '20260727124500_market_partner_affiliate_phase5_commission_payout_v1.sql',
     snippets: [
+      'create or replace function public.d68_can_claim_market_partner_account',
       'create or replace function public.d68_claim_market_partner_signup',
       'create or replace function public.d68_create_affiliate_commission_for_payment',
       'create trigger d68_payment_confirmed_affiliate_commission',

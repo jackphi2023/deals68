@@ -102,6 +102,14 @@ export default function MarketPartnerLogin() {
     if (cleanCode.length < 4) throw new Error('Vui lòng nhập mã affiliate do Admin cấp.');
     if (password.length < 8) throw new Error('Mật khẩu cần tối thiểu 8 ký tự.');
 
+    const { data: canClaim, error: preflightError } = await supabase.rpc(
+      'd68_can_claim_market_partner_account',
+      { p_email: cleanEmail, p_affiliate_code: cleanCode },
+    );
+    if (preflightError || canClaim !== true) {
+      throw new Error('Email hoặc mã affiliate không khớp hồ sơ Partner đang hoạt động, hoặc tài khoản đã được kích hoạt.');
+    }
+
     const nonce = activationNonce();
     const { data, error: signupError } = await supabase.auth.signUp({
       email: cleanEmail,
