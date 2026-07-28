@@ -5,22 +5,26 @@ import { toLocalizedPath } from '../lib/i18nRoutes';
 import type { Lang } from '../lib/i18n';
 
 const T = (lang: Lang, vi: string, en: string) => lang === 'en' ? en : vi;
-type Role = 'business' | 'investor' | 'advisor' | 'affiliate';
+type Role = 'business' | 'investor' | 'advisor' | 'market_partner';
 function roleLabel(lang: Lang, role: Role) {
-  const map: Record<Role, [string, string]> = { business: ['Doanh nghiệp', 'Business'], investor: ['Nhà đầu tư', 'Investor'], advisor: ['Cố vấn', 'Advisor'], affiliate: ['Đối tác thị trường', 'Market Partner'] };
+  const map: Record<Role, [string, string]> = { business: ['Doanh nghiệp', 'Business'], investor: ['Nhà đầu tư', 'Investor'], advisor: ['Cố vấn', 'Advisor'], market_partner: ['Đối tác thị trường', 'Market Partner'] };
   return T(lang, ...(map[role] || map.business));
 }
 
 export default function ForgotPassword({ lang = 'vi' }: { lang?: Lang }) {
   const [params] = useSearchParams();
   const navigate = useNavigate();
-  const initialRole = (params.get('role') || 'business') as Role;
-  const role: Role = ['business', 'investor', 'advisor', 'affiliate'].includes(initialRole) ? initialRole : 'business';
+  const requestedRole = params.get('role') || 'business';
+  const normalizedRole = requestedRole === 'affiliate' ? 'market_partner' : requestedRole;
+  const role: Role = ['business', 'investor', 'advisor', 'market_partner'].includes(normalizedRole) ? normalizedRole as Role : 'business';
   const [email, setEmail] = useState('');
   const [sent, setSent] = useState(false);
   const [err, setErr] = useState('');
   const [loading, setLoading] = useState(false);
-  const loginHref = useMemo(() => toLocalizedPath(`/login?role=${role}`, lang), [role, lang]);
+  const loginHref = useMemo(
+    () => toLocalizedPath(role === 'market_partner' ? '/market-partner/login' : `/login?role=${role}`, lang),
+    [role, lang],
+  );
   const resetHref = useMemo(() => toLocalizedPath(`/reset-password?role=${role}&email=${encodeURIComponent(email.trim())}`, lang), [role, email, lang]);
 
   async function submit(e: FormEvent) {
