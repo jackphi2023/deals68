@@ -1,3 +1,5 @@
+import { useEffect, useRef, useState } from 'react';
+import { supabase } from '../../lib/supabase';
 import type {
   AffiliateCommissionRow,
   AffiliatePayoutRow,
@@ -35,6 +37,11 @@ type PayoutGroup = {
   amount: number;
 };
 
+type ActivationEmailState = {
+  status: 'sending' | 'sent' | 'skipped' | 'error';
+  message: string;
+};
+
 function amount(value: unknown) {
   const parsed = Number(value || 0);
   return Number.isFinite(parsed) ? parsed : 0;
@@ -63,6 +70,8 @@ export default function AdminMarketPartnerFinance({
   onCreatePayout,
   onPayoutStatus,
 }: Props) {
+  const [activationEmailState, setActivationEmailState] = useState<Record<string, ActivationEmailState>>({});
+  const autoRequested = useRef(new Set<string>());
   const partnerNames = new Map(partners.map((partner) => [partner.id, partner.display_name]));
   const groups = Array.from(
     commissions
@@ -83,6 +92,48 @@ export default function AdminMarketPartnerFinance({
       }, new Map<string, PayoutGroup>())
       .values(),
   );
+
+  async function sendActivationEmail(partner: MarketPartnerRow, force: boolean) {
+    setActivationEmailState((current) => ({
+      ...current,
+      [partner.id]: { status: 'sending', message: 'Đang gửi email kích hoạt...' },
+    }));
+    try {
+      const { data, error } = await supabase.functions.invoke('market-partner-activation-email', {
+        body: { partner_id: partner.id, force },
+      });
+      if (error) throw error;
+      if (!data?.ok) throw new Error(data?.message || 'Không thể gửi email kích hoạt.');
+      const skipped = data?.skipped === true;
+      setActivationEmailState((current) => ({
+        ...current,
+        [partner.id]: {
+          status: skipped ? 'skipped' : 'sent',
+          message: skipped
+            ? 'Email kích hoạt đã được gửi trước đó.'
+            : `Đã gửi email kích hoạt tới ${partner.contact_email}.`,
+        },
+      }));
+    } catch (error: any) {
+      setActivationEmailState((current) => ({
+        ...current,
+        [partner.id]: {
+          status: 'error',
+          message: error?.message || 'Không thể gửi email kích hoạt.',
+        },
+      }));
+    }
+  }
+
+  useEffect(() => {
+    partners
+      .filter((partner) => partner.status === 'active' && !partner.profile_id)
+      .forEach((partner) => {
+        if (autoRequested.current.has(partner.id)) return;
+        autoRequested.current.add(partner.id);
+        void sendActivationEmail(partner, false);
+      });
+  }, [partners]);
 
   async function rejectCommission(row: AffiliateCommissionRow) {
     const reason = window.prompt('Lý do từ chối commission:')?.trim();
@@ -117,6 +168,54 @@ export default function AdminMarketPartnerFinance({
 
   return (
     <div className="d68-admin-market-partner-finance">
+      <section className="d68-admin-card">
+        <div className="d68-admin-row-head">
+          <div>
+            <h3>Email kích hoạt Đối tác thị trường</h3>
+            <p className="d68-admin-subtle">
+              Partner active chưa liên kết tài khoản sẽ được tự động gửi email kích hoạt một lần. Admin có thể gửi lại khi cần; email không chứa mật khẩu.
+            </p>
+          </div>
+          <span className="d68-admin-badge blue">
+            {partners.filter((partner) => partner.status === 'active' && !partner.profile_id).length} chờ kích hoạt
+          </span>
+        </div>
+        {partners.length ? (
+          <div className="d68-admin-table-wrap">
+            <table className="d68-admin-table">
+              <thead><tr><th>Partner</th><th>Email</th><th>Mã kích hoạt</th><th>Trạng thái</th><th>Action</th></tr></thead>
+              <tbody>
+                {partners.map((partner) => {
+                  const emailState = activationEmailState[partner.id];
+                  const activated = !!partner.profile_id;
+                  return (
+                    <tr key={`activation:${partner.id}`}>
+                      <td><b>{partner.display_name}</b><br /><small>{partner.status}</small></td>
+                      <td>{partner.contact_email}</td>
+                      <td><code>{partner.affiliate_code}</code></td>
+                      <td>
+                        {activated ? <span className="d68-admin-badge ok">Đã kích hoạt</span> : <span className="d68-admin-badge warn">Chờ kích hoạt</span>}
+                        {emailState ? <><br /><small>{emailState.message}</small></> : null}
+                      </td>
+                      <td>
+                        <button
+                          type="button"
+                          className="d68-admin-btn blue"
+                          disabled={busy || activated || emailState?.status === 'sending' || partner.status !== 'active'}
+                          onClick={() => sendActivationEmail(partner, true)}
+                        >
+                          {emailState?.status === 'sending' ? 'Đang gửi...' : 'Gửi email kích hoạt'}
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        ) : <div className="d68-admin-empty">Chưa có Market Partner.</div>}
+      </section>
+
       <section className="d68-admin-card">
         <div className="d68-admin-row-head">
           <div>

@@ -212,13 +212,13 @@ export default function MarketPartnerLogin() {
       <section className="d68-mp-login-card">
         <div className="d68-mp-login-brand">Deals68</div>
         <span className="d68-mp-eyebrow">ĐỐI TÁC THỊ TRƯỜNG</span>
-        <h1>{mode === 'activate' ? 'Kích hoạt tài khoản Partner' : mode === 'otp' ? 'Xác thực email Partner' : 'Đăng nhập Market Partner'}</h1>
+        <h1>{mode === 'activate' ? 'Kích hoạt tài khoản Partner' : mode === 'otp' ? 'Xác thực email Partner' : 'Đăng nhập Đối tác thị trường'}</h1>
         <p>
           {mode === 'activate'
             ? 'Chỉ kích hoạt được khi email và mã affiliate trùng hồ sơ Partner đã được Admin phê duyệt.'
             : mode === 'otp'
               ? 'Nhập OTP trong email để hoàn tất kích hoạt tài khoản.'
-              : 'Truy cập Dashboard, mã giới thiệu, commission và thông tin thanh toán của riêng Anh/Chị.'}
+              : 'Truy cập Quản trị mã giới thiệu, thu nhập và thông tin thanh toán của Anh/Chị'}
         </p>
 
         {mode !== 'otp' ? (
