@@ -1,4 +1,4 @@
-import { FormEvent, useState } from 'react';
+import { FormEvent, useMemo, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { toLocalizedPath } from '../lib/i18nRoutes';
@@ -9,7 +9,7 @@ function dashboardForRole(role?: string) {
   if (role === 'admin') return '/admin';
   if (role === 'business') return '/dashboard/business';
   if (role === 'investor') return '/dashboard/investor';
-  if (role === 'affiliate') return '/dashboard/market-partner';
+  if (role === 'market_partner' || role === 'affiliate') return '/market-partner/dashboard';
   return '/login';
 }
 function normalizeOtp(value: string) { return value.replace(/\D/g, '').slice(0, 6); }
@@ -17,6 +17,12 @@ function normalizeOtp(value: string) { return value.replace(/\D/g, '').slice(0, 
 export default function ResetPassword({ lang = 'vi' }: { lang?: Lang }) {
   const navigate = useNavigate();
   const [params] = useSearchParams();
+  const requestedRole = params.get('role') || '';
+  const partnerReset = requestedRole === 'market_partner' || requestedRole === 'affiliate';
+  const loginHref = useMemo(
+    () => toLocalizedPath(partnerReset ? '/market-partner/login' : '/login', lang),
+    [partnerReset, lang],
+  );
   const [email, setEmail] = useState(params.get('email') || '');
   const [token, setToken] = useState('');
   const [password, setPassword] = useState('');
@@ -46,5 +52,5 @@ export default function ResetPassword({ lang = 'vi' }: { lang?: Lang }) {
     setTimeout(() => navigate(toLocalizedPath(dashboardForRole(prof?.role), lang), { replace: true }), 900);
   }
 
-  return <main className="d68-auth-page"><section className="d68-auth-card"><div className="d68-auth-head"><span>Deals68</span><h1>{T(lang, 'Đặt lại mật khẩu', 'Reset password')}</h1><p>{T(lang, 'Nhập email, mã OTP trong email và mật khẩu mới. Hãy kiểm tra cả hòm thư Spam/Quảng cáo nếu email không vào trực tiếp Inbox.', 'Enter your email, the OTP from your email and a new password. Please also check your Spam/Promotions folder if the email does not arrive in your Inbox.')}</p></div><form onSubmit={submit} className="d68-auth-form"><label><span>Email</span><input required type="email" value={email} onChange={e => setEmail(e.target.value)} autoComplete="email" /></label><label><span>{T(lang, 'Mã OTP đặt lại', 'Reset OTP code')}</span><input required inputMode="numeric" pattern="[0-9]*" maxLength={6} value={token} onChange={e => setToken(normalizeOtp(e.target.value))} placeholder="123456" autoComplete="one-time-code" /></label><label><span>{T(lang, 'Mật khẩu mới', 'New password')}</span><input required type="password" value={password} onChange={e => setPassword(e.target.value)} /></label><label><span>{T(lang, 'Xác nhận mật khẩu', 'Confirm password')}</span><input required type="password" value={confirm} onChange={e => setConfirm(e.target.value)} /></label><button className="d68-auth-submit" disabled={loading}>{loading ? T(lang, 'Đang cập nhật...', 'Updating...') : T(lang, 'Đặt lại mật khẩu', 'Reset password')}</button>{msg && <div className="d68-auth-success">{msg}</div>}{err && <div className="d68-auth-error">{err}</div>}</form><p className="d68-auth-bottom"><Link to={toLocalizedPath('/login', lang)}>{T(lang, 'Đăng nhập', 'Log in')}</Link></p></section></main>;
+  return <main className="d68-auth-page"><section className="d68-auth-card"><div className="d68-auth-head"><span>Deals68</span><h1>{T(lang, 'Đặt lại mật khẩu', 'Reset password')}</h1><p>{T(lang, 'Nhập email, mã OTP trong email và mật khẩu mới. Hãy kiểm tra cả hòm thư Spam/Quảng cáo nếu email không vào trực tiếp Inbox.', 'Enter your email, the OTP from your email and a new password. Please also check your Spam/Promotions folder if the email does not arrive in your Inbox.')}</p></div><form onSubmit={submit} className="d68-auth-form"><label><span>Email</span><input required type="email" value={email} onChange={e => setEmail(e.target.value)} autoComplete="email" /></label><label><span>{T(lang, 'Mã OTP đặt lại', 'Reset OTP code')}</span><input required inputMode="numeric" pattern="[0-9]*" maxLength={6} value={token} onChange={e => setToken(normalizeOtp(e.target.value))} placeholder="123456" autoComplete="one-time-code" /></label><label><span>{T(lang, 'Mật khẩu mới', 'New password')}</span><input required type="password" value={password} onChange={e => setPassword(e.target.value)} /></label><label><span>{T(lang, 'Xác nhận mật khẩu', 'Confirm password')}</span><input required type="password" value={confirm} onChange={e => setConfirm(e.target.value)} /></label><button className="d68-auth-submit" disabled={loading}>{loading ? T(lang, 'Đang cập nhật...', 'Updating...') : T(lang, 'Đặt lại mật khẩu', 'Reset password')}</button>{msg && <div className="d68-auth-success">{msg}</div>}{err && <div className="d68-auth-error">{err}</div>}</form><p className="d68-auth-bottom"><Link to={loginHref}>{T(lang, 'Đăng nhập', 'Log in')}</Link></p></section></main>;
 }

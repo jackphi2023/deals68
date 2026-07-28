@@ -15,7 +15,8 @@ assert.doesNotMatch(login, /Đối tác thị trường/);
 assert.doesNotMatch(login, /Market Partner/);
 assert.doesNotMatch(login, /dashboard\/market-partner/);
 
-assert.match(partnerLogin, /Đăng nhập Market Partner/);
+assert.match(partnerLogin, /Đăng nhập Đối tác thị trường/);
+assert.match(partnerLogin, /Truy cập Quản trị mã giới thiệu, thu nhập và thông tin thanh toán của Anh\/Chị/);
 assert.match(partnerLogin, /\/market-partner\/dashboard/);
 assert.match(app, /path="\/market-partner\/login" element=\{<MarketPartnerLogin\/>\}/);
 
