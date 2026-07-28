@@ -221,6 +221,19 @@ Deno.serve(async (req: Request) => {
       return json(req, 422, { ok: false, error: 'PARTNER_ACTIVATION_DATA_INVALID' });
     }
 
+    const { data: canClaim, error: claimCheckError } = await serviceClient.rpc(
+      'd68_can_claim_market_partner_account',
+      { p_email: email, p_affiliate_code: affiliateCode },
+    );
+    if (claimCheckError) throw claimCheckError;
+    if (canClaim !== true) {
+      return json(req, 409, {
+        ok: false,
+        error: 'PARTNER_ACCOUNT_NOT_CLAIMABLE',
+        message: 'Email này đã có tài khoản Deals68 hoặc hồ sơ Partner không còn đủ điều kiện kích hoạt. Vui lòng dùng một email Partner chưa đăng ký tài khoản khác.',
+      });
+    }
+
     const content = emailContent(email, affiliateCode);
     const delivery = await sendEmail(email, content.subject, content.plain, content.html);
 
