@@ -1,48 +1,46 @@
-@layer d68-components {
-  .d68-app[data-investor-access="locked"] .d68-home-investor-band {
-    display: none !important;
-  }
+.d68-app[data-investor-access="locked"] .d68-home-investor-band {
+  display: none !important;
+}
 
-  .d68-app[data-investor-access="locked"] .d68-nav a[href="/investors"],
-  .d68-app[data-investor-access="locked"] .d68-nav a[href="/en/investors"] {
-    position: relative;
-    cursor: not-allowed;
-  }
+.d68-app[data-investor-access="locked"] .d68-nav a[href="/investors"],
+.d68-app[data-investor-access="locked"] .d68-nav a[href="/en/investors"] {
+  position: relative;
+  cursor: not-allowed;
+}
 
-  .d68-app[data-investor-access="locked"] .d68-nav a[href="/investors"]::after,
-  .d68-app[data-investor-access="locked"] .d68-nav a[href="/en/investors"]::after {
-    content: "Chỉ doanh nghiệp hoặc nhà đầu tư đã đăng nhập mới được xem";
-    position: absolute;
-    z-index: 160;
-    top: calc(100% + 12px);
-    left: 50%;
-    width: max-content;
-    max-width: min(320px, calc(100vw - 32px));
-    padding: 9px 12px;
-    border-radius: 8px;
-    background: #0f2a4a;
-    color: #fff;
-    box-shadow: 0 12px 28px rgba(15, 42, 74, 0.22);
-    font-size: 12.5px;
-    font-weight: 650;
-    line-height: 1.45;
-    white-space: normal;
-    opacity: 0;
-    pointer-events: none;
-    transform: translate(-50%, -4px);
-    transition: opacity 150ms ease, transform 150ms ease;
-  }
+.d68-app[data-investor-access="locked"] .d68-nav a[href="/investors"]::after,
+.d68-app[data-investor-access="locked"] .d68-nav a[href="/en/investors"]::after {
+  content: "Chỉ doanh nghiệp hoặc nhà đầu tư đã đăng nhập mới được xem";
+  position: absolute;
+  z-index: 160;
+  top: calc(100% + 12px);
+  left: 50%;
+  width: max-content;
+  max-width: min(320px, calc(100vw - 32px));
+  padding: 9px 12px;
+  border-radius: 8px;
+  background: #0f2a4a;
+  color: #fff;
+  box-shadow: 0 12px 28px rgba(15, 42, 74, 0.22);
+  font-size: 12.5px;
+  font-weight: 650;
+  line-height: 1.45;
+  white-space: normal;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, -4px);
+  transition: opacity 150ms ease, transform 150ms ease;
+}
 
-  .d68-app[data-investor-access="locked"] .d68-nav a[href="/investors"]:hover::after,
-  .d68-app[data-investor-access="locked"] .d68-nav a[href="/investors"]:focus-visible::after,
-  .d68-app[data-investor-access="locked"] .d68-nav a[href="/en/investors"]:hover::after,
-  .d68-app[data-investor-access="locked"] .d68-nav a[href="/en/investors"]:focus-visible::after {
-    opacity: 1;
-    transform: translate(-50%, 0);
-  }
+.d68-app[data-investor-access="locked"] .d68-nav a[href="/investors"]:hover::after,
+.d68-app[data-investor-access="locked"] .d68-nav a[href="/investors"]:focus-visible::after,
+.d68-app[data-investor-access="locked"] .d68-nav a[href="/en/investors"]:hover::after,
+.d68-app[data-investor-access="locked"] .d68-nav a[href="/en/investors"]:focus-visible::after {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
 
-  .d68-app[data-investor-access="locked"] .d68-mdrawer a[href="/investors"]::after,
-  .d68-app[data-investor-access="locked"] .d68-mdrawer a[href="/en/investors"]::after {
-    content: "  🔒";
-  }
+.d68-app[data-investor-access="locked"] .d68-mdrawer a[href="/investors"]::after,
+.d68-app[data-investor-access="locked"] .d68-mdrawer a[href="/en/investors"]::after {
+  content: "  🔒";
 }
