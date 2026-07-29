@@ -1,0 +1,92 @@
+.d68-business-profile-form .d68-business-financial-fields {
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+}
+
+.d68-business-profile-form .d68-business-financial-span2 {
+  grid-column: 1 / -1 !important;
+}
+
+.d68-business-revenue-public-slot {
+  min-width: 0;
+}
+
+.d68-business-revenue-public-field {
+  height: 100%;
+  min-width: 0;
+}
+
+.d68-business-revenue-public-check {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid #dbe5ee;
+  border-radius: 10px;
+  background: #f8fafc;
+  color: #0f2a4a;
+  cursor: pointer;
+}
+
+.d68-business-revenue-public-check input {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: #1badea;
+  flex: 0 0 auto;
+}
+
+.d68-business-revenue-public-check strong {
+  font-size: 14px;
+  line-height: 1.35;
+}
+
+.d68-business-revenue-public-check:has(input:checked) {
+  border-color: #1badea;
+  background: #e7f6fd;
+}
+
+.d68-business-revenue-public-field > small {
+  display: block;
+  margin-top: 6px;
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.d68-business-revenue-public-field > em {
+  display: block;
+  margin-top: 5px;
+  font-size: 12px;
+  font-style: normal;
+  line-height: 1.4;
+}
+
+.d68-business-revenue-public-field > em.is-success {
+  color: #15803d;
+}
+
+.d68-business-revenue-public-field > em.is-error {
+  color: #b91c1c;
+}
+
+@media (max-width: 900px) {
+  .d68-business-profile-form .d68-business-financial-fields {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .d68-business-revenue-public-slot {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 640px) {
+  .d68-business-profile-form .d68-business-financial-fields {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .d68-business-revenue-public-slot,
+  .d68-business-profile-form .d68-business-financial-span2 {
+    grid-column: auto !important;
+  }
+}

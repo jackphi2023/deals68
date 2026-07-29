@@ -5,6 +5,7 @@ import { AuthProvider } from './contexts/AuthContext';
 import App from './App';
 import InvestorAccessBoundary from './components/InvestorAccessBoundary';
 import AdminReportsPortal from './features/adminReports/AdminReportsPortal';
+import BusinessPublicRevenueControls from './features/businessRevenueVisibility/BusinessPublicRevenueControls';
 import DashboardProfileReviewNoticePortal from './features/dashboardReview/DashboardProfileReviewNoticePortal';
 import './styles/index.css';
 
@@ -15,6 +16,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
         <InvestorAccessBoundary>
           <App />
           <AdminReportsPortal />
+          <BusinessPublicRevenueControls />
           <DashboardProfileReviewNoticePortal />
         </InvestorAccessBoundary>
       </AuthProvider>
