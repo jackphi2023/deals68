@@ -13,6 +13,7 @@
 @import './reference/d68-components.css';
 @import './reference/d68-utilities.css';
 @import './components/sensitive-financial-value.css' layer(d68-components);
+@import './components/header.css' layer(d68-components);
 @import './overrides.css';
 @import './pages/businesses.css' layer(d68-overrides);
 @import './pages/home.css' layer(d68-overrides);
