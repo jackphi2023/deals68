@@ -12,5 +12,7 @@ Disallow: /login
 Disallow: /forgot-password
 Disallow: /reset-password
 Disallow: /register
+Disallow: /investors
+Disallow: /en/investors
 
 Sitemap: https://deals68.com/sitemap.xml

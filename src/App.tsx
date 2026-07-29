@@ -7,6 +7,7 @@ import Home from './pages/Home';
 import { useAuth } from './contexts/AuthContext';
 import { langFromPath, stripLangPrefix, toLocalizedPath } from './lib/i18nRoutes';
 import { captureAffiliateReferralFromCurrentPage } from './lib/affiliate';
+import { canViewInvestorMarketplace } from './lib/investorAccess';
 
 type RouteLoader = () => Promise<unknown>;
 type IdleCapableWindow = Window & {
@@ -198,6 +199,23 @@ function DashboardGate({ role, children }: { role: 'business' | 'investor'; chil
   return <>{children}</>;
 }
 
+function InvestorMarketplaceGate({ children }: { children: ReactNode }) {
+  const { profile, loading } = useAuth();
+  const location = useLocation();
+  const lang = langFromPath(location.pathname);
+
+  if (loading) return <RouteFallback />;
+  if (!profile) {
+    const loginPath = toLocalizedPath('/login', lang);
+    const next = encodeURIComponent(location.pathname + location.search);
+    return <Navigate to={`${loginPath}?next=${next}`} replace />;
+  }
+  if (!canViewInvestorMarketplace(profile.role)) {
+    return <section style={{ maxWidth: 760, margin: '0 auto', padding: '56px 24px' }}><div style={{ background: '#fff', border: '1px solid #E7EDF3', borderRadius: 16, padding: 24 }}><h2>{lang === 'en' ? 'Access restricted' : 'Quyền truy cập bị giới hạn'}</h2><p>{lang === 'en' ? 'Only signed-in Business, Investor or Admin accounts can view Investor profiles.' : 'Chỉ tài khoản Doanh nghiệp, Nhà đầu tư hoặc Admin đã đăng nhập mới được xem hồ sơ Nhà đầu tư.'}</p></div></section>;
+  }
+  return <>{children}</>;
+}
+
 function MarketPartnerGate({ children }: { children: ReactNode }) {
   const { profile, loading } = useAuth();
   const location = useLocation();
@@ -215,8 +233,11 @@ function MarketPartnerGate({ children }: { children: ReactNode }) {
 export default function App(){
   const location = useLocation();
   const lang = langFromPath(location.pathname);
+  const { profile, loading: authLoading } = useAuth();
+  const investorAccess = !authLoading && canViewInvestorMarketplace(profile?.role);
+  const routeSessionKey = `${authLoading ? 'loading' : profile?.id || 'guest'}:${profile?.role || 'guest'}`;
 
-  return <div data-lang={lang}>
+  return <div className="d68-app" data-lang={lang} data-investor-access={investorAccess ? 'allowed' : 'locked'}>
     <ScrollToTop />
     <AffiliateReferralRuntime />
     <RoutePrefetch />
@@ -224,12 +245,12 @@ export default function App(){
     <SeoManager />
     <Header lang={lang}/>
     <Suspense fallback={<RouteFallback/>}>
-      <Routes>
+      <Routes key={routeSessionKey}>
         <Route path="/" element={<Home lang="vi"/>}/>
         <Route path="/businesses" element={<Businesses lang="vi"/>}/>
         <Route path="/businesses/:slug" element={<BusinessDetail lang="vi"/>}/>
-        <Route path="/investors" element={<Investors lang="vi"/>}/>
-        <Route path="/investors/:code" element={<InvestorDetail lang="vi"/>}/>
+        <Route path="/investors" element={<InvestorMarketplaceGate><Investors lang="vi"/></InvestorMarketplaceGate>}/>
+        <Route path="/investors/:code" element={<InvestorMarketplaceGate><InvestorDetail lang="vi"/></InvestorMarketplaceGate>}/>
         <Route path="/pricing" element={<Pricing lang="vi"/>}/>
         <Route path="/valuation" element={<Valuation lang="vi"/>}/>
         <Route path="/login" element={<Login lang="vi"/>}/>
@@ -250,8 +271,8 @@ export default function App(){
         <Route path="/en" element={<Home lang="en"/>}/>
         <Route path="/en/businesses" element={<Businesses lang="en"/>}/>
         <Route path="/en/businesses/:slug" element={<BusinessDetail lang="en"/>}/>
-        <Route path="/en/investors" element={<Investors lang="en"/>}/>
-        <Route path="/en/investors/:code" element={<InvestorDetail lang="en"/>}/>
+        <Route path="/en/investors" element={<InvestorMarketplaceGate><Investors lang="en"/></InvestorMarketplaceGate>}/>
+        <Route path="/en/investors/:code" element={<InvestorMarketplaceGate><InvestorDetail lang="en"/></InvestorMarketplaceGate>}/>
         <Route path="/en/pricing" element={<Pricing lang="en"/>}/>
         <Route path="/en/valuation" element={<Valuation lang="en"/>}/>
         <Route path="/en/login" element={<Login lang="en"/>}/>
@@ -297,9 +318,9 @@ export default function App(){
         <Route path="/businesses/fundraising" element={<ModuleScreen/>}/>
         <Route path="/businesses/sale" element={<ModuleScreen/>}/>
         <Route path="/businesses/debt" element={<ModuleScreen/>}/>
-        <Route path="/investors/active" element={<ModuleScreen/>}/>
-        <Route path="/investors/funds" element={<ModuleScreen/>}/>
-        <Route path="/investors/strategic" element={<ModuleScreen/>}/>
+        <Route path="/investors/active" element={<InvestorMarketplaceGate><ModuleScreen/></InvestorMarketplaceGate>}/>
+        <Route path="/investors/funds" element={<InvestorMarketplaceGate><ModuleScreen/></InvestorMarketplaceGate>}/>
+        <Route path="/investors/strategic" element={<InvestorMarketplaceGate><ModuleScreen/></InvestorMarketplaceGate>}/>
         <Route path="/pricing/business" element={<ModuleScreen/>}/>
         <Route path="/pricing/investor" element={<ModuleScreen/>}/>
         <Route path="/valuation/rules" element={<ModuleScreen/>}/>

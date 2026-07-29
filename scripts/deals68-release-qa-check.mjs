@@ -169,8 +169,8 @@ ok(
     && pkg.scripts?.postbuild === 'node scripts/generate-sitemap.mjs dist'
     && /<urlset/.test(sitemap)
     && /https:\/\/deals68\.com\/businesses/.test(sitemap)
-    && /https:\/\/deals68\.com\/investors/.test(sitemap),
-  'public URLs are listed; private URLs are blocked/noindex'
+    && !/https:\/\/deals68\.com\/investors/.test(sitemap),
+  'public Business URLs are listed; authenticated Investor URLs are omitted'
 );
 
 ok(

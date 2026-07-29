@@ -1,22 +1,24 @@
 {
-  "version": "Deals68 Spec v1.3 + session updates 2026-07-05",
+  "version": "Deals68 Spec v1.3 + Investor marketplace access update 2026-07-29",
   "baseUrlEnv": "D68_BASE_URL",
   "previewDefault": "https://beta-reference-deals68.netlify.app",
   "publicDataGuard": {
     "businesses": "visible=true AND status=active AND public_snapshot_json IS NOT NULL",
-    "investors": "visible=true AND status=active",
+    "investors": "aggregate count is public; Investor rows require authenticated Business, Investor or Admin role",
     "userEdits": "Dashboard edits go to pending changes until Admin approval"
   },
   "roles": {
     "guest": {
       "canView": [
         "public business teaser",
-        "public investor teaser",
+        "aggregate active Investor count",
         "valuation",
         "pricing",
         "static pages"
       ],
       "cannotView": [
+        "Investor list",
+        "Investor detail",
         "business contact",
         "investor contact",
         "locked documents",
@@ -27,6 +29,7 @@
       "can": [
         "register with OTP",
         "login dashboard after OTP",
+        "view Investor list and detail",
         "edit dashboard pending",
         "send proposal to investor",
         "view investor contact after approved connection"
@@ -39,6 +42,7 @@
       "can": [
         "register with OTP",
         "login dashboard after OTP",
+        "view Investor list and detail",
         "express interest",
         "request data",
         "view Business Quality Score details when logged in"
@@ -49,6 +53,7 @@
     },
     "admin": {
       "can": [
+        "view Investor list and detail",
         "edit/approve business public snapshot",
         "edit/approve investor public profile",
         "edit valuation config",
@@ -62,8 +67,6 @@
       "/en",
       "/businesses",
       "/en/businesses",
-      "/investors",
-      "/en/investors",
       "/valuation",
       "/en/valuation",
       "/pricing",
@@ -80,6 +83,8 @@
       "/market-partner"
     ],
     "private": [
+      "/investors",
+      "/en/investors",
       "/dashboard/business",
       "/dashboard/investor",
       "/admin",

@@ -7,7 +7,6 @@ const PUBLIC_REST_CACHE_TTL_MS = 15_000;
 const PUBLIC_REST_CACHE_MAX_ENTRIES = 120;
 const PUBLIC_REST_PATHS = new Set([
   '/rest/v1/public_businesses_safe',
-  '/rest/v1/public_investors_safe',
 ]);
 
 type PublicRestCacheEntry = {

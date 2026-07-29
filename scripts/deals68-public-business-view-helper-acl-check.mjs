@@ -59,8 +59,11 @@ if (!data.includes(".from('public_businesses_safe')")) {
   failures.push('Homepage data loader must hydrate selected IDs from public_businesses_safe');
 }
 
-for (const safeView of ["'public_businesses_safe'", "'public_investors_safe'"]) {
-  if (!sitemap.includes(safeView)) failures.push(`Sitemap missing safe view ${safeView}`);
+if (!sitemap.includes("'public_businesses_safe'")) {
+  failures.push("Sitemap missing safe Business view 'public_businesses_safe'");
+}
+if (sitemap.includes("'public_investors_safe'")) {
+  failures.push('Sitemap must not fetch authenticated Investor rows with the anon key');
 }
 for (const unsafeTable of ["'businesses'", "'investors'"]) {
   if (sitemap.includes(`fetchRows(\n    ${unsafeTable},`)) {

@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { applySeo } from '../lib/seo';
+import { stripLangPrefix } from '../lib/i18nRoutes';
 import {
   localizedSeoPath,
   seoForPath,
@@ -13,6 +14,8 @@ export default function SeoManager() {
   useEffect(() => {
     const lang = seoLanguageFromPath(location.pathname);
     const definition = seoForPath(location.pathname);
+    const route = stripLangPrefix(location.pathname);
+    const privateInvestorRoute = route === '/investors' || route.startsWith('/investors/');
 
     applySeo({
       lang,
@@ -26,7 +29,7 @@ export default function SeoManager() {
           : definition.descriptionVi,
       canonicalPath: localizedSeoPath(location.pathname, lang),
       type: definition.type || 'website',
-      noindex: definition.noindex,
+      noindex: privateInvestorRoute || definition.noindex,
     });
   }, [location.pathname]);
 

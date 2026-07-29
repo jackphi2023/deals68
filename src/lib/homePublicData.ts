@@ -1,6 +1,5 @@
 import {
   countBusinesses,
-  countInvestors,
   listHomepageBusinesses,
   listInvestors,
 } from './data';
@@ -9,8 +8,10 @@ import {
   type PublicDealValueSummary,
 } from './publicMetrics';
 import { cachedPublicQuery, invalidatePublicQueryCache } from './publicQueryCache';
+import { supabase } from './supabase';
+import { canViewInvestorMarketplace } from './investorAccess';
 
-const HOME_PUBLIC_DATA_CACHE_KEY = 'public:home:payload:v1';
+const HOME_PUBLIC_DATA_CACHE_KEY = 'public:home:payload:v2';
 const HOME_PUBLIC_DATA_CACHE_TTL_MS = 30_000;
 
 export type HomePublicData = {
@@ -21,13 +22,42 @@ export type HomePublicData = {
   investors: any[];
 };
 
-async function fetchHomePublicData(): Promise<HomePublicData> {
+type InvestorViewer = {
+  cacheKey: string;
+  canView: boolean;
+};
+
+async function resolveInvestorViewer(): Promise<InvestorViewer> {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const userId = sessionData.session?.user?.id;
+  if (!userId) return { cacheKey: 'guest', canView: false };
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', userId)
+    .maybeSingle();
+
+  return {
+    cacheKey: `viewer:${userId}`,
+    canView: canViewInvestorMarketplace(profile?.role),
+  };
+}
+
+async function getPublicInvestorCount(): Promise<number | null> {
+  const { data, error } = await supabase.rpc('d68_get_public_investor_count');
+  if (error) throw error;
+  const count = Number(data);
+  return Number.isFinite(count) ? count : null;
+}
+
+async function fetchHomePublicData(canViewInvestors: boolean): Promise<HomePublicData> {
   const [businessCount, investorCount, dealValue, businesses, investors] = await Promise.all([
     countBusinesses().catch(() => null),
-    countInvestors().catch(() => null),
+    getPublicInvestorCount().catch(() => null),
     getPublicDealValueSummary().catch(() => null),
     listHomepageBusinesses(6).catch(() => []),
-    listInvestors({ limit: 80 }).catch(() => []),
+    canViewInvestors ? listInvestors({ limit: 80 }).catch(() => []) : Promise.resolve([]),
   ]);
 
   return {
@@ -39,10 +69,11 @@ async function fetchHomePublicData(): Promise<HomePublicData> {
   };
 }
 
-export function loadHomePublicData(): Promise<HomePublicData> {
+export async function loadHomePublicData(): Promise<HomePublicData> {
+  const viewer = await resolveInvestorViewer().catch(() => ({ cacheKey: 'guest', canView: false }));
   return cachedPublicQuery(
-    HOME_PUBLIC_DATA_CACHE_KEY,
-    fetchHomePublicData,
+    `${HOME_PUBLIC_DATA_CACHE_KEY}:${viewer.cacheKey}`,
+    () => fetchHomePublicData(viewer.canView),
     HOME_PUBLIC_DATA_CACHE_TTL_MS,
   );
 }
