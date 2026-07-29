@@ -4,6 +4,7 @@ import { useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { getMyBusiness } from '../../lib/data';
 import { stripLangPrefix } from '../../lib/i18nRoutes';
+import { invalidatePublicQueryCache } from '../../lib/publicQueryCache';
 import { supabase } from '../../lib/supabase';
 import './business-public-revenue-controls.css';
 
@@ -172,6 +173,7 @@ export default function BusinessPublicRevenueControls() {
       const saved = data?.revenue_public_visible === true;
       setChecked(saved);
       setBusiness((current: any) => ({ ...current, revenue_public_visible: saved }));
+      invalidatePublicQueryCache();
       setMessage(
         saved
           ? T(
