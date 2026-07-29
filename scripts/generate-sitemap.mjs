@@ -13,10 +13,6 @@ const staticViPaths = [
   '/businesses/fundraising',
   '/businesses/sale',
   '/businesses/debt',
-  '/investors',
-  '/investors/active',
-  '/investors/funds',
-  '/investors/strategic',
   '/pricing',
   '/pricing/business',
   '/pricing/investor',
@@ -37,7 +33,6 @@ const staticViPaths = [
 const staticEnPaths = [
   '/en',
   '/en/businesses',
-  '/en/investors',
   '/en/pricing',
   '/en/valuation',
   '/en/about',
@@ -97,8 +92,9 @@ async function main() {
     urls.set(item, '');
   }
 
-  // Build-time sitemap generation uses only the same redacted public views as
-  // the browser and SEO edge function. It must never depend on base-table ACLs.
+  // Build-time sitemap generation uses only the same redacted public Business
+  // view as the browser. Investor list/detail pages require authentication and
+  // must never be indexed or fetched with the anon key.
   const businesses = await fetchRows(
     'public_businesses_safe',
     'slug,updated_at',
@@ -111,20 +107,6 @@ async function main() {
     const encoded = encodeURIComponent(slug);
     urls.set(`/businesses/${encoded}`, row.updated_at || '');
     urls.set(`/en/businesses/${encoded}`, row.updated_at || '');
-  }
-
-  const investors = await fetchRows(
-    'public_investors_safe',
-    'code,updated_at',
-    '&visible=eq.true&code=not.is.null',
-  ).catch(() => []);
-
-  for (const row of investors) {
-    const code = String(row.code || '').trim();
-    if (!code) continue;
-    const encoded = encodeURIComponent(code);
-    urls.set(`/investors/${encoded}`, row.updated_at || '');
-    urls.set(`/en/investors/${encoded}`, row.updated_at || '');
   }
 
   fs.mkdirSync(outputDir, { recursive: true });
