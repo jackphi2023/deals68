@@ -1,0 +1,17 @@
+.d68-home-business-card__metrics strong.d68-has-public-revenue > .d68-sensitive-financial {
+  display: none !important;
+}
+
+.d68-home-public-revenue-slot {
+  display: inline-block;
+  color: #0f2a4a;
+  font: inherit;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.d68-business-card__metrics .d68-sensitive-financial.is-authorized,
+.d68-business-card__metrics .d68-sensitive-financial.is-authorized .d68-sensitive-financial__value {
+  color: #0f2a4a !important;
+  font-weight: 800;
+}
