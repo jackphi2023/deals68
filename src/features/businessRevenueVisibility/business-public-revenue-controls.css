@@ -1,5 +1,6 @@
 .d68-business-profile-form .d68-business-financial-fields {
-  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  align-items: start;
 }
 
 .d68-business-profile-form .d68-business-financial-span2 {
@@ -7,15 +8,43 @@
 }
 
 .d68-business-revenue-public-slot {
+  grid-column: 1 / -1;
   min-width: 0;
 }
 
 .d68-business-revenue-public-field {
-  height: 100%;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: center;
+  column-gap: 16px;
+  row-gap: 6px;
+  height: auto;
   min-width: 0;
 }
 
+/* UI wording requested for Business Profile. Keep the underlying component
+   logic unchanged while presenting the label on the same row as the checkbox. */
+.d68-business-revenue-public-field > span {
+  grid-column: 1;
+  grid-row: 1;
+  font-size: 0;
+}
+
+.d68-business-revenue-public-field > span::after {
+  content: "Hiển thị số liệu";
+  color: #334155;
+  font-size: 12.5px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+[data-lang="en"] .d68-business-revenue-public-field > span::after {
+  content: "Data visibility";
+}
+
 .d68-business-revenue-public-check {
+  grid-column: 2;
+  grid-row: 1;
   min-height: 44px;
   display: flex;
   align-items: center;
@@ -46,9 +75,14 @@
   background: #e7f6fd;
 }
 
+.d68-business-revenue-public-field > small,
+.d68-business-revenue-public-field > em {
+  grid-column: 2;
+}
+
 .d68-business-revenue-public-field > small {
   display: block;
-  margin-top: 6px;
+  margin-top: 0;
   color: #64748b;
   font-size: 12px;
   line-height: 1.4;
@@ -56,7 +90,7 @@
 
 .d68-business-revenue-public-field > em {
   display: block;
-  margin-top: 5px;
+  margin-top: 0;
   font-size: 12px;
   font-style: normal;
   line-height: 1.4;
@@ -70,13 +104,19 @@
   color: #b91c1c;
 }
 
-@media (max-width: 900px) {
-  .d68-business-profile-form .d68-business-financial-fields {
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+/* Desktop-only spacing requested between the asset helper text and the next
+   labels. nth-of-type is scoped to the three direct label rows in this block. */
+@media (min-width: 901px) {
+  .d68-business-profile-form
+    .d68-business-transaction-fields
+    > label:nth-of-type(2) {
+    padding-top: 160px;
   }
 
-  .d68-business-revenue-public-slot {
-    grid-column: 1 / -1;
+  .d68-business-profile-form
+    .d68-business-transaction-fields
+    > label:nth-of-type(3) {
+    padding-top: 16px;
   }
 }
 
@@ -88,5 +128,16 @@
   .d68-business-revenue-public-slot,
   .d68-business-profile-form .d68-business-financial-span2 {
     grid-column: auto !important;
+  }
+
+  .d68-business-revenue-public-field {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+  }
+
+  .d68-business-revenue-public-check {
+    width: 100%;
   }
 }
