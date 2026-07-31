@@ -6,6 +6,7 @@ import App from './App';
 import InvestorAccessBoundary from './components/InvestorAccessBoundary';
 import AdminReportsPortal from './features/adminReports/AdminReportsPortal';
 import BusinessPublicRevenueControls from './features/businessRevenueVisibility/BusinessPublicRevenueControls';
+import PublicBusinessRevenuePresentation from './features/businessRevenueVisibility/PublicBusinessRevenuePresentation';
 import DashboardProfileReviewNoticePortal from './features/dashboardReview/DashboardProfileReviewNoticePortal';
 import './styles/index.css';
 
@@ -17,6 +18,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
           <App />
           <AdminReportsPortal />
           <BusinessPublicRevenueControls />
+          <PublicBusinessRevenuePresentation />
           <DashboardProfileReviewNoticePortal />
         </InvestorAccessBoundary>
       </AuthProvider>
