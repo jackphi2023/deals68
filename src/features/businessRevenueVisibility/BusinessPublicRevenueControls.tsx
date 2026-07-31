@@ -102,8 +102,7 @@ export default function BusinessPublicRevenueControls() {
       const host = document.createElement('div');
       host.className = 'd68-business-revenue-public-slot';
       host.dataset.businessRevenuePublicControl = 'true';
-      const nextField = grid.children.item(5);
-      grid.insertBefore(host, nextField || null);
+      grid.appendChild(host);
       dashboardHostRef.current = host;
       setDashboardHost(host);
     }
@@ -197,7 +196,7 @@ export default function BusinessPublicRevenueControls() {
       {dashboardHost
         ? createPortal(
             <div className="d68-dashboard-field d68-business-revenue-public-field">
-              <span>{T(lang, 'Quyền hiển thị', 'Visibility')}</span>
+              <span>{T(lang, 'Hiển thị số liệu doanh thu năm', 'Annual revenue visibility')}</span>
               <label className="d68-business-revenue-public-check">
                 <input
                   type="checkbox"
