@@ -8,10 +8,12 @@ import {
   getMyAdvisorPortfolio,
   type AdvisorAccountRow,
   type AdvisorBusinessContext,
+  type AdvisorBusinessIntakeResult,
   type AdvisorPortfolioItem,
 } from '../lib/advisorAuth';
 import { toLocalizedPath } from '../lib/i18nRoutes';
 import type { Lang } from '../lib/i18n';
+import AdvisorBusinessCreate from './AdvisorBusinessCreate';
 
 const T = (lang: Lang, vi: string, en: string) => lang === 'en' ? en : vi;
 
@@ -20,7 +22,8 @@ function labelStatus(value: string | undefined, lang: Lang) {
     pending: ['Chờ chấp nhận', 'Pending'], active: ['Đang hoạt động', 'Active'],
     verified: ['Đã xác minh', 'Verified'], suspended: ['Tạm ngưng', 'Suspended'],
     revoked: ['Đã thu hồi', 'Revoked'], expired: ['Đã hết hạn', 'Expired'],
-    rejected: ['Không được chấp thuận', 'Rejected'],
+    rejected: ['Không được chấp thuận', 'Rejected'], draft: ['Bản nháp', 'Draft'],
+    pending_review: ['Chờ xác minh authority', 'Authority review pending'],
     pending_admin_review: ['Chờ Admin kiểm tra', 'Pending Admin review'],
   };
   const pair = labels[value || ''] || [value || '—', value || '—'];
@@ -146,6 +149,15 @@ export default function AdvisorAccount({ lang = 'vi' }: { lang?: Lang }) {
     }
   }
 
+  async function afterBusinessIntake(result: AdvisorBusinessIntakeResult) {
+    await loadPortfolio();
+    setNotice(T(
+      lang,
+      `Đã tạo Business draft ${result.business_id}. Authority và assignment đang chờ Admin xác minh; chưa có quyền chỉnh sửa.`,
+      `Business draft ${result.business_id} was created. Authority and assignment await Admin verification; no edit access is granted.`,
+    ));
+  }
+
   const counts = useMemo(() => ({
     total: portfolio.length,
     active: portfolio.filter((item) => item.status === 'active').length,
@@ -160,7 +172,7 @@ export default function AdvisorAccount({ lang = 'vi' }: { lang?: Lang }) {
     <main className="d68-advisor-account-page">
       <section className="d68-advisor-account-shell">
         <header className="d68-advisor-account-header">
-          <div><span>Deals68 Advisor</span><h1>{T(lang, 'Danh mục khách hàng được phân công', 'Assigned client portfolio')}</h1><p>{T(lang, 'Phiên 3 mở danh mục và ngữ cảnh doanh nghiệp chỉ đọc. Mọi quyền đều phụ thuộc assignment và authority hợp lệ.', 'Session 3 opens a read-only portfolio and Business context. Every permission remains assignment and authority gated.')}</p></div>
+          <div><span>Deals68 Advisor</span><h1>{T(lang, 'Danh mục khách hàng và Business intake', 'Client portfolio and Business intake')}</h1><p>{T(lang, 'Phiên 4 cho phép gửi một Business mới vào quy trình thẩm định nguyên tử. Ngữ cảnh Business hiện hữu vẫn chỉ đọc và mọi quyền tiếp tục phụ thuộc assignment cùng authority hợp lệ.', 'Session 4 adds atomic submission of a new Business for review. Existing Business contexts remain read only and every permission stays assignment and authority gated.')}</p></div>
           <button type="button" onClick={logout}>{T(lang, 'Đăng xuất', 'Log out')}</button>
         </header>
 
@@ -171,7 +183,7 @@ export default function AdvisorAccount({ lang = 'vi' }: { lang?: Lang }) {
         {!loading && advisor ? <>
           <div className={`d68-advisor-account-banner ${approved ? 'approved' : advisor.status === 'rejected' || advisor.status === 'suspended' ? 'blocked' : 'pending'}`}>
             <b>{approved ? T(lang, 'Hồ sơ Advisor đã được xác minh', 'Advisor profile verified') : T(lang, 'Hồ sơ chưa sẵn sàng nhận phân công', 'Profile is not ready for assignments')}</b>
-            <span>{approved ? T(lang, 'Bạn chỉ thấy các doanh nghiệp do Admin phân công. Assignment đang chờ phải được bạn chấp nhận trước khi mở ngữ cảnh.', 'You only see Admin-assigned Businesses. Pending assignments must be accepted before context can open.') : T(lang, 'Email đã xác thực nhưng Admin vẫn cần kích hoạt và xác minh hồ sơ.', 'Email is verified, but Admin activation and verification are still required.')}</span>
+            <span>{approved ? T(lang, 'Bạn có thể gửi Business mới để Admin thẩm định và chỉ thấy các Business có assignment của mình. Hồ sơ intake chưa tạo quyền sở hữu hoặc quyền chỉnh sửa.', 'You may submit a new Business for Admin review and only see Businesses linked to your assignments. Intake submission creates no ownership or edit access.') : T(lang, 'Email đã xác thực nhưng Admin vẫn cần kích hoạt và xác minh hồ sơ.', 'Email is verified, but Admin activation and verification are still required.')}</span>
           </div>
 
           <div className="d68-advisor-status-grid">
@@ -184,9 +196,15 @@ export default function AdvisorAccount({ lang = 'vi' }: { lang?: Lang }) {
           {approved ? <>
             <div className="d68-advisor-portfolio-stats">
               <span>{T(lang, 'Đang hoạt động', 'Active')} <b>{counts.active}</b></span>
-              <span>{T(lang, 'Chờ chấp nhận', 'Pending')} <b>{counts.pending}</b></span>
+              <span>{T(lang, 'Chờ xử lý', 'Pending')} <b>{counts.pending}</b></span>
               <span>{T(lang, 'Bị giới hạn', 'Restricted')} <b>{counts.blocked}</b></span>
             </div>
+
+            <AdvisorBusinessCreate
+              lang={lang}
+              advisorName={advisor.company_name || advisor.title || undefined}
+              onCreated={afterBusinessIntake}
+            />
 
             <section className="d68-advisor-workspace">
               <aside className="d68-advisor-portfolio-list">
@@ -199,15 +217,15 @@ export default function AdvisorAccount({ lang = 'vi' }: { lang?: Lang }) {
                     <small>{[item.business.industry, item.business.city].filter(Boolean).join(' · ') || item.business.public_code || '—'}</small>
                   </button>
                   <div className="d68-advisor-scope-list">{item.permissions.map((scope) => <span key={scope}>{scope}</span>)}</div>
-                  <div className="d68-advisor-assignment-meta"><span>{T(lang, 'Hết hạn', 'Expires')}: {formatDate(item.expires_at, lang)}</span><span>{item.authority.verification_status}</span></div>
-                  {item.status === 'pending' ? <button className="d68-advisor-accept" type="button" disabled={!item.can_accept || Boolean(actionId)} onClick={() => void accept(item)}>{actionId === item.assignment_id ? T(lang, 'Đang xử lý...', 'Processing...') : T(lang, 'Chấp nhận phân công', 'Accept assignment')}</button> : null}
+                  <div className="d68-advisor-assignment-meta"><span>{T(lang, 'Hết hạn', 'Expires')}: {formatDate(item.expires_at, lang)}</span><span>{labelStatus(item.authority.verification_status, lang)}</span></div>
+                  {item.status === 'pending' ? <button className="d68-advisor-accept" type="button" disabled={!item.can_accept || Boolean(actionId)} onClick={() => void accept(item)}>{actionId === item.assignment_id ? T(lang, 'Đang xử lý...', 'Processing...') : item.can_accept ? T(lang, 'Chấp nhận phân công', 'Accept assignment') : T(lang, 'Chờ Admin xác minh authority', 'Awaiting authority review')}</button> : null}
                   {item.status === 'active' && !item.can_open_context ? <p className="d68-advisor-warning">{T(lang, 'Assignment chưa có scope Hồ sơ nên chưa thể mở ngữ cảnh.', 'No Profile scope; context cannot open.')}</p> : null}
                 </article>)}
               </aside>
 
               <section className="d68-advisor-context-panel">
                 {!selected ? <div className="d68-advisor-context-empty"><h2>{T(lang, 'Chọn một doanh nghiệp', 'Select a Business')}</h2><p>{T(lang, 'Chỉ assignment đang hoạt động, đã chấp nhận và có scope Hồ sơ mới mở được ngữ cảnh.', 'Only active, accepted assignments with Profile scope can open context.')}</p></div> : null}
-                {selected && !selected.can_open_context ? <div className="d68-advisor-context-empty"><h2>{T(lang, 'Ngữ cảnh chưa khả dụng', 'Context unavailable')}</h2><p>{T(lang, 'Kiểm tra trạng thái, thời hạn, authority và scope của assignment.', 'Review assignment status, expiry, authority and scope.')}</p></div> : null}
+                {selected && !selected.can_open_context ? <div className="d68-advisor-context-empty"><h2>{T(lang, 'Ngữ cảnh chưa khả dụng', 'Context unavailable')}</h2><p>{T(lang, 'Business intake và assignment chờ duyệt không mở ngữ cảnh. Admin phải xác minh authority trước.', 'Business intakes and pending assignments cannot open context. Admin must verify authority first.')}</p></div> : null}
                 {contextLoading ? <div className="d68-advisor-context-empty">{T(lang, 'Đang mở ngữ cảnh...', 'Opening context...')}</div> : null}
                 {!contextLoading && context ? <>
                   <header className="d68-advisor-context-header"><div><span>{context.business.public_code || 'Deals68 Business'}</span><h2>{context.business.company_name || (lang === 'en' ? context.business.title_en : context.business.title_vi)}</h2><p>{lang === 'en' ? context.business.title_en : context.business.title_vi}</p></div><b>{T(lang, 'Chỉ đọc', 'Read only')}</b></header>
@@ -217,7 +235,7 @@ export default function AdvisorAccount({ lang = 'vi' }: { lang?: Lang }) {
                     <article><span>{T(lang, 'Loại giao dịch', 'Deal type')}</span><b>{context.business.deal_type || '—'}</b></article>
                     <article><span>{T(lang, 'Trạng thái', 'Status')}</span><b>{labelStatus(context.business.status || context.business.moderation_status, lang)}</b></article>
                   </div>
-                  <section className="d68-advisor-context-access"><h3>{T(lang, 'Phạm vi đang mở', 'Current access')}</h3><div>{context.assignment.permissions.map((scope) => <span key={scope}>{scope}</span>)}</div><p>{T(lang, 'Phiên 3 chỉ trả về nhận diện và trạng thái cơ bản. Không có dữ liệu tài chính, file riêng tư, proposal, yêu cầu dữ liệu, thanh toán hoặc báo cáo.', 'Session 3 returns basic identity and status only. Financials, private files, proposals, data requests, payments and reports remain unavailable.')}</p></section>
+                  <section className="d68-advisor-context-access"><h3>{T(lang, 'Phạm vi đang mở', 'Current access')}</h3><div>{context.assignment.permissions.map((scope) => <span key={scope}>{scope}</span>)}</div><p>{T(lang, 'Phiên 4 vẫn chỉ trả về nhận diện và trạng thái cơ bản. Không có dữ liệu tài chính, file riêng tư, proposal, yêu cầu dữ liệu, thanh toán, báo cáo hoặc mutation.', 'Session 4 still returns basic identity and status only. Financials, private files, proposals, data requests, payments, reports and mutations remain unavailable.')}</p></section>
                 </> : null}
               </section>
             </section>
@@ -225,7 +243,7 @@ export default function AdvisorAccount({ lang = 'vi' }: { lang?: Lang }) {
 
           <section className="d68-advisor-account-panel"><h2>{advisor.title || T(lang, 'Hồ sơ nghề nghiệp', 'Professional profile')}</h2><dl><div><dt>{T(lang, 'Công ty / Tổ chức', 'Company / Organization')}</dt><dd>{advisor.company_name || '—'}</dd></div><div><dt>Website</dt><dd>{advisor.website ? <a href={advisor.website} target="_blank" rel="noreferrer">{advisor.website}</a> : '—'}</dd></div><div><dt>{T(lang, 'Lĩnh vực chuyên môn', 'Expertise')}</dt><dd>{expertise.join(' · ') || '—'}</dd></div><div className="wide"><dt>{T(lang, 'Giới thiệu', 'Introduction')}</dt><dd>{introduction || '—'}</dd></div></dl></section>
 
-          <section className="d68-advisor-account-panel d68-advisor-session-boundary"><h2>{T(lang, 'Ranh giới Phiên 3', 'Session 3 boundary')}</h2><ul><li>{T(lang, 'Không có quyền sửa hồ sơ doanh nghiệp hoặc dữ liệu giao dịch.', 'No permission to edit Business profiles or transaction data.')}</li><li>{T(lang, 'Không đọc trực tiếp bảng Business; dữ liệu chỉ qua RPC giới hạn trường và kiểm tra assignment.', 'No direct Business table reads; data only comes through field-restricted, assignment-checked RPCs.')}</li><li>{T(lang, 'Không thể tự tạo assignment, tăng scope hoặc tự cấp quyền.', 'No self-created assignments, scope escalation or self-granted access.')}</li></ul><p>{T(lang, 'Cần hỗ trợ?', 'Need support?')} <Link to={toLocalizedPath('/contact', lang)}>{T(lang, 'Liên hệ Deals68', 'Contact Deals68')}</Link>.</p></section>
+          <section className="d68-advisor-account-panel d68-advisor-session-boundary"><h2>{T(lang, 'Ranh giới Phiên 4', 'Session 4 boundary')}</h2><ul><li>{T(lang, 'Business intake chỉ tạo bản nháp ownerless, không tạo quyền sở hữu hoặc payment order.', 'Business intake creates only an ownerless draft, with no ownership or payment order.')}</li><li>{T(lang, 'Không có quyền sửa Business mới hoặc Business hiện hữu; dữ liệu Business chỉ qua RPC giới hạn trường.', 'No edit access to new or existing Businesses; Business data only comes through field-restricted RPCs.')}</li><li>{T(lang, 'Authority và assignment đều chờ Admin xác minh; Advisor không thể tự kích hoạt, tăng scope hoặc tự cấp quyền.', 'Authority and assignment await Admin verification; the Advisor cannot self-activate, escalate scope or self-grant access.')}</li></ul><p>{T(lang, 'Cần hỗ trợ?', 'Need support?')} <Link to={toLocalizedPath('/contact', lang)}>{T(lang, 'Liên hệ Deals68', 'Contact Deals68')}</Link>.</p></section>
         </> : null}
       </section>
     </main>

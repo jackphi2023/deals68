@@ -133,6 +133,41 @@ export type AdvisorBusinessContext = {
   };
 };
 
+export type AdvisorBusinessIntakePayload = {
+  intakeKey: string;
+  business: {
+    company_name: string;
+    title_vi: string;
+    title_en: string;
+    description_vi: string;
+    description_en: string;
+    country_iso2: string;
+    city: string;
+    city_key?: string;
+    industry: string;
+    industry_key?: string;
+    deal_type: string;
+  };
+  authority: {
+    declared_owner_name: string;
+    declared_principal_name?: string;
+    declared_agent_name?: string;
+    declared_asset_name?: string;
+    declared_asset_address?: string;
+  };
+};
+
+export type AdvisorBusinessIntakeResult = {
+  business_id: string;
+  authority_id: string;
+  assignment_id: string;
+  business_status: 'draft';
+  moderation_status: 'pending_admin_review';
+  authority_status: 'pending_review';
+  assignment_status: 'pending';
+  idempotent_replay: boolean;
+};
+
 export function normalizeAdvisorOtp(value: string) {
   return value.replace(/\D/g, '').slice(0, 6);
 }
@@ -217,6 +252,24 @@ export async function acceptAdvisorAssignment(assignmentId: string) {
   });
   if (error) throw error;
   return data as { id: string; business_id: string; status: 'active'; accepted_at: string };
+}
+
+export async function createAdvisorBusinessIntake(payload: AdvisorBusinessIntakePayload) {
+  const { data, error } = await supabase.rpc('d68_create_advisor_business_intake_v1', {
+    p_intake_key: payload.intakeKey,
+    p_business_payload: payload.business,
+    p_authority_payload: payload.authority,
+  });
+  if (error) throw error;
+  return data as AdvisorBusinessIntakeResult;
+}
+
+export function createAdvisorIntakeKey() {
+  if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
+  const bytes = new Uint8Array(24);
+  globalThis.crypto?.getRandomValues?.(bytes);
+  const token = Array.from(bytes, (value) => value.toString(16).padStart(2, '0')).join('');
+  return token || `advisor-intake-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
 export function safeAdvisorNext(raw: string | null, lang: Lang) {
