@@ -2,6 +2,7 @@ import { supabase } from './supabase';
 import type { Lang } from './i18n';
 
 export type AdvisorType = 'advisor' | 'broker' | 'advisor_broker';
+export type AdvisorAssignmentStatus = 'pending' | 'active' | 'suspended' | 'revoked' | 'expired';
 
 export type AdvisorSignupPayload = {
   userId: string;
@@ -40,6 +41,96 @@ export type AdvisorAccountRow = {
   suspension_reason?: string | null;
   created_at?: string | null;
   updated_at?: string | null;
+};
+
+export type AdvisorPortfolioItem = {
+  assignment_id: string;
+  business_id: string;
+  assignment_title?: string | null;
+  status: AdvisorAssignmentStatus;
+  permissions: string[];
+  granted_at: string;
+  accepted_at?: string | null;
+  expires_at?: string | null;
+  suspension_reason?: string | null;
+  revoke_reason?: string | null;
+  can_accept: boolean;
+  can_open_context: boolean;
+  authority: {
+    id: string;
+    party_type: string;
+    verification_status: string;
+    expires_at?: string | null;
+  };
+  business: {
+    public_code?: string | null;
+    slug: string;
+    title_vi: string;
+    title_en: string;
+    company_name?: string | null;
+    industry?: string | null;
+    country_iso2?: string | null;
+    city?: string | null;
+    deal_type?: string | null;
+    status?: string | null;
+    moderation_status?: string | null;
+    image_url?: string | null;
+    hero_image_url?: string | null;
+  };
+};
+
+export type AdvisorPortfolioResponse = {
+  advisor_profile_id: string;
+  generated_at: string;
+  items: AdvisorPortfolioItem[];
+};
+
+export type AdvisorBusinessContext = {
+  assignment: {
+    assignment_id: string;
+    business_id: string;
+    assignment_title?: string | null;
+    status: 'active';
+    permissions: string[];
+    granted_at: string;
+    accepted_at: string;
+    expires_at?: string | null;
+    authority_id: string;
+    authority_party_type: string;
+    authority_verification_status: string;
+    authority_expires_at?: string | null;
+  };
+  business: {
+    id: string;
+    public_code?: string | null;
+    slug: string;
+    company_name?: string | null;
+    title_vi: string;
+    title_en: string;
+    industry?: string | null;
+    industry_key?: string | null;
+    country_iso2?: string | null;
+    city?: string | null;
+    city_key?: string | null;
+    deal_type?: string | null;
+    status?: string | null;
+    moderation_status?: string | null;
+    visible?: boolean | null;
+    image_url?: string | null;
+    hero_image_url?: string | null;
+    updated_at?: string | null;
+  };
+  access: {
+    mode: 'read_only';
+    scope: 'profile';
+    mutations_enabled: false;
+    files_enabled: false;
+    images_enabled: false;
+    proposals_enabled: false;
+    data_requests_enabled: false;
+    payments_enabled: false;
+    reports_enabled: false;
+  };
 };
 
 export function normalizeAdvisorOtp(value: string) {
@@ -99,6 +190,33 @@ export async function getMyAdvisorAccount(profileId: string) {
     .maybeSingle();
   if (error) throw error;
   return data as AdvisorAccountRow | null;
+}
+
+export async function getMyAdvisorPortfolio() {
+  const { data, error } = await supabase.rpc('d68_get_my_advisor_portfolio_v1');
+  if (error) throw error;
+  const response = data as AdvisorPortfolioResponse | null;
+  return {
+    advisor_profile_id: response?.advisor_profile_id || '',
+    generated_at: response?.generated_at || new Date().toISOString(),
+    items: Array.isArray(response?.items) ? response.items : [],
+  } as AdvisorPortfolioResponse;
+}
+
+export async function getMyAdvisorBusinessContext(businessId: string) {
+  const { data, error } = await supabase.rpc('d68_get_my_advisor_business_context_v1', {
+    p_business_id: businessId,
+  });
+  if (error) throw error;
+  return data as AdvisorBusinessContext;
+}
+
+export async function acceptAdvisorAssignment(assignmentId: string) {
+  const { data, error } = await supabase.rpc('d68_accept_advisor_assignment', {
+    p_assignment_id: assignmentId,
+  });
+  if (error) throw error;
+  return data as { id: string; business_id: string; status: 'active'; accepted_at: string };
 }
 
 export function safeAdvisorNext(raw: string | null, lang: Lang) {

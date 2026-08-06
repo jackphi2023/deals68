@@ -1,0 +1,56 @@
+name: Advisor Session 3 - Read-only Portfolio
+
+on:
+  push:
+    branches: [building, agent/advisor-session3-readonly]
+    paths:
+      - 'src/pages/AdvisorAccount.tsx'
+      - 'src/lib/advisorAuth.ts'
+      - 'src/styles/pages/advisor-auth.css'
+      - 'supabase/migrations/20260806111000_advisor_readonly_portfolio_phase3_v1.sql'
+      - 'scripts/deals68-advisor-session2-auth-check.mjs'
+      - 'scripts/deals68-advisor-session3-readonly-check.mjs'
+      - 'scripts/deals68-advisor-session3-postgres-test.mjs'
+      - 'docs/advisor/ADVISOR_SESSION3_READONLY_PORTFOLIO.md'
+      - 'package.json'
+  pull_request:
+    branches: [building, main]
+    paths:
+      - 'src/pages/AdvisorAccount.tsx'
+      - 'src/lib/advisorAuth.ts'
+      - 'src/styles/pages/advisor-auth.css'
+      - 'supabase/migrations/20260806111000_advisor_readonly_portfolio_phase3_v1.sql'
+      - 'scripts/deals68-advisor-session2-auth-check.mjs'
+      - 'scripts/deals68-advisor-session3-readonly-check.mjs'
+      - 'scripts/deals68-advisor-session3-postgres-test.mjs'
+      - 'docs/advisor/ADVISOR_SESSION3_READONLY_PORTFOLIO.md'
+      - 'package.json'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: advisor-session3-readonly-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  advisor-readonly-portfolio:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Run Advisor Session 3 read-only contract
+        run: npm run qa:advisor-session3
+      - name: Re-run Session 0 Business baseline
+        run: npm run qa:advisor-session0
+      - name: Re-run Session 1 assignment security
+        run: npm run qa:advisor-session1
+      - name: Re-run Session 2 authentication
+        run: npm run qa:advisor-session2
+      - name: Run existing release QA
+        run: npm run qa:release
