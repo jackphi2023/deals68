@@ -214,14 +214,14 @@ try {
   assert.equal(outsiderBlocked, true, 'Non-Advisor accounts must not read Advisor portfolio');
 
   await setActor(adminId);
-  const created = await asRole('authenticated', () => db.query(`select public.d68_admin_create_advisor_assignment(
-    $1::uuid,$2::uuid,$3::uuid,array['profile']::text[],now()+interval '6 months','Lead advisor','{}'::jsonb) as row`,
+  const created = await asRole('authenticated', () => db.query(`select (public.d68_admin_create_advisor_assignment(
+    $1::uuid,$2::uuid,$3::uuid,array['profile']::text[],now()+interval '6 months','Lead advisor','{}'::jsonb)).id as id`,
     [advisorId, businessId, authorityId]));
-  const assignmentId = created.rows[0].row.id;
-  const filesOnlyCreated = await asRole('authenticated', () => db.query(`select public.d68_admin_create_advisor_assignment(
-    $1::uuid,$2::uuid,$3::uuid,array['files']::text[],now()+interval '6 months','Files advisor','{}'::jsonb) as row`,
+  const assignmentId = created.rows[0].id;
+  const filesOnlyCreated = await asRole('authenticated', () => db.query(`select (public.d68_admin_create_advisor_assignment(
+    $1::uuid,$2::uuid,$3::uuid,array['files']::text[],now()+interval '6 months','Files advisor','{}'::jsonb)).id as id`,
     [advisorId, filesOnlyBusinessId, filesOnlyAuthorityId]));
-  const filesOnlyAssignmentId = filesOnlyCreated.rows[0].row.id;
+  const filesOnlyAssignmentId = filesOnlyCreated.rows[0].id;
 
   await setActor(advisorId);
   const directRows = await asRole('authenticated', () => db.query(`select count(*)::int as count from public.businesses`));
