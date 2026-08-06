@@ -27,6 +27,9 @@ const loadLogin = () => import('./pages/Login');
 const loadForgotPassword = () => import('./pages/ForgotPassword');
 const loadResetPassword = () => import('./pages/ResetPassword');
 const loadRegister = () => import('./pages/Register');
+const loadAdvisorRegister = () => import('./pages/AdvisorRegister');
+const loadAdvisorLogin = () => import('./pages/AdvisorLogin');
+const loadAdvisorAccount = () => import('./pages/AdvisorAccount');
 const loadValuation = () => import('./pages/Valuation');
 const loadModuleScreen = () => import('./pages/ModuleScreen');
 const loadNotFound = () => import('./pages/NotFound');
@@ -48,6 +51,9 @@ const Login = lazy(loadLogin);
 const ForgotPassword = lazy(loadForgotPassword);
 const ResetPassword = lazy(loadResetPassword);
 const Register = lazy(loadRegister);
+const AdvisorRegister = lazy(loadAdvisorRegister);
+const AdvisorLogin = lazy(loadAdvisorLogin);
+const AdvisorAccount = lazy(loadAdvisorAccount);
 const Valuation = lazy(loadValuation);
 const ModuleScreen = lazy(loadModuleScreen);
 const NotFound = lazy(loadNotFound);
@@ -73,6 +79,8 @@ function likelyNextRouteLoaders(pathname: string): RouteLoader[] {
   if (path.startsWith('/investors/')) return [loadBusinesses];
   if (path === '/pricing') return [loadRegister];
   if (path === '/login') return [loadForgotPassword];
+  if (path === '/advisor/register') return [loadAdvisorLogin];
+  if (path === '/advisor/login') return [loadAdvisorAccount];
   if (path === '/market-partner') return [loadMarketPartnerLogin];
   if (path === '/market-partner/login') return [loadMarketPartnerDashboard, loadMarketPartnerDemoDashboard];
   return [];
@@ -199,6 +207,27 @@ function DashboardGate({ role, children }: { role: 'business' | 'investor'; chil
   return <>{children}</>;
 }
 
+function AdvisorGate({ children }: { children: ReactNode }) {
+  const { profile, loading } = useAuth();
+  const location = useLocation();
+  const lang = langFromPath(location.pathname);
+  if (loading) return <RouteFallback />;
+  if (!profile) {
+    const loginPath = toLocalizedPath('/advisor/login', lang);
+    const next = encodeURIComponent(location.pathname + location.search);
+    return <Navigate to={`${loginPath}?next=${next}`} replace />;
+  }
+  if (profile.role !== 'advisor') {
+    return <section style={{ maxWidth: 760, margin: '0 auto', padding: '56px 24px' }}><div style={{ background: '#fff', border: '1px solid #E7EDF3', borderRadius: 16, padding: 24 }}><h2>{lang === 'en' ? 'Access restricted' : 'Quyền truy cập bị giới hạn'}</h2><p>{lang === 'en' ? 'This area is only for Advisor or Broker accounts.' : 'Khu vực này chỉ dành cho tài khoản Cố vấn hoặc Môi giới.'}</p></div></section>;
+  }
+  if (!profile.dashboard_login_enabled) {
+    const loginPath = toLocalizedPath('/advisor/login', lang);
+    const next = encodeURIComponent(location.pathname + location.search);
+    return <Navigate to={`${loginPath}?verify=signup&next=${next}`} replace />;
+  }
+  return <>{children}</>;
+}
+
 function InvestorMarketplaceGate({ children }: { children: ReactNode }) {
   const { profile, loading } = useAuth();
   const location = useLocation();
@@ -254,8 +283,11 @@ export default function App(){
         <Route path="/pricing" element={<Pricing lang="vi"/>}/>
         <Route path="/valuation" element={<Valuation lang="vi"/>}/>
         <Route path="/login" element={<Login lang="vi"/>}/>
+        <Route path="/advisor/register" element={<AdvisorRegister lang="vi"/>}/>
+        <Route path="/advisor/login" element={<AdvisorLogin lang="vi"/>}/>
         <Route path="/forgot-password" element={<ForgotPassword lang="vi"/>}/>
         <Route path="/reset-password" element={<ResetPassword lang="vi"/>}/>
+        <Route path="/register/advisor" element={<Navigate to="/advisor/register" replace/>}/>
         <Route path="/register/:role" element={<Register lang="vi"/>}/>
         <Route path="/register" element={<Navigate to="/pricing" replace/>}/>
         <Route path="/about" element={<About lang="vi"/>}/>
@@ -276,8 +308,11 @@ export default function App(){
         <Route path="/en/pricing" element={<Pricing lang="en"/>}/>
         <Route path="/en/valuation" element={<Valuation lang="en"/>}/>
         <Route path="/en/login" element={<Login lang="en"/>}/>
+        <Route path="/en/advisor/register" element={<AdvisorRegister lang="en"/>}/>
+        <Route path="/en/advisor/login" element={<AdvisorLogin lang="en"/>}/>
         <Route path="/en/forgot-password" element={<ForgotPassword lang="en"/>}/>
         <Route path="/en/reset-password" element={<ResetPassword lang="en"/>}/>
+        <Route path="/en/register/advisor" element={<Navigate to="/en/advisor/register" replace/>}/>
         <Route path="/en/register/:role" element={<Register lang="en"/>}/>
         <Route path="/en/register" element={<Navigate to="/en/pricing" replace/>}/>
         <Route path="/en/about" element={<About lang="en"/>}/>
@@ -293,6 +328,8 @@ export default function App(){
         <Route path="/en/dashboard/business/*" element={<DashboardGate role="business"><BusinessDashboard/></DashboardGate>}/>
         <Route path="/en/dashboard/investor" element={<DashboardGate role="investor"><InvestorDashboard/></DashboardGate>}/>
         <Route path="/en/dashboard/investor/*" element={<DashboardGate role="investor"><InvestorDashboard/></DashboardGate>}/>
+        <Route path="/en/dashboard/advisor" element={<AdvisorGate><AdvisorAccount lang="en"/></AdvisorGate>}/>
+        <Route path="/en/dashboard/advisor/*" element={<AdvisorGate><AdvisorAccount lang="en"/></AdvisorGate>}/>
 
         <Route path="/vi" element={<Navigate to="/" replace/>}/>
         <Route path="/vi/*" element={<LegacyViRedirect/>}/>
@@ -302,6 +339,8 @@ export default function App(){
         <Route path="/dashboard/business/*" element={<DashboardGate role="business"><BusinessDashboard/></DashboardGate>}/>
         <Route path="/dashboard/investor" element={<DashboardGate role="investor"><InvestorDashboard/></DashboardGate>}/>
         <Route path="/dashboard/investor/*" element={<DashboardGate role="investor"><InvestorDashboard/></DashboardGate>}/>
+        <Route path="/dashboard/advisor" element={<AdvisorGate><AdvisorAccount lang="vi"/></AdvisorGate>}/>
+        <Route path="/dashboard/advisor/*" element={<AdvisorGate><AdvisorAccount lang="vi"/></AdvisorGate>}/>
         <Route path="/admin/valuation" element={<AdminValuation/>}/>
         <Route path="/admin/valuation-config" element={<AdminValuation/>}/>
         <Route path="/admin/proposals" element={<Admin/>}/>
@@ -327,10 +366,6 @@ export default function App(){
         <Route path="/faq" element={<ModuleScreen/>}/>
         <Route path="/localization" element={<ModuleScreen/>}/>
         <Route path="/market-intelligence" element={<ModuleScreen/>}/>
-        <Route path="/dashboard/advisor/profile" element={<ModuleScreen/>}/>
-        <Route path="/dashboard/advisor/clients" element={<ModuleScreen/>}/>
-        <Route path="/dashboard/advisor/opportunities" element={<ModuleScreen/>}/>
-        <Route path="/dashboard/advisor/settings" element={<ModuleScreen/>}/>
         <Route path="/dashboard/market-partner" element={<Navigate to="/market-partner/dashboard" replace/>}/>
         <Route path="/dashboard/market-partner/register" element={<Navigate to="/market-partner" replace/>}/>
         <Route path="/dashboard/market-partner/links" element={<Navigate to="/market-partner/dashboard" replace/>}/>

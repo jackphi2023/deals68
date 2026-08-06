@@ -1,0 +1,60 @@
+name: Advisor Session 2 - Authentication
+
+on:
+  push:
+    branches: [building]
+    paths:
+      - 'src/App.tsx'
+      - 'src/pages/AdvisorRegister.tsx'
+      - 'src/pages/AdvisorLogin.tsx'
+      - 'src/pages/AdvisorAccount.tsx'
+      - 'src/lib/advisorAuth.ts'
+      - 'src/styles/index.css'
+      - 'src/styles/pages/advisor-auth.css'
+      - 'supabase/migrations/20260806102000_advisor_auth_phase2_v1.sql'
+      - 'scripts/deals68-advisor-session2-auth-check.mjs'
+      - 'scripts/deals68-advisor-session2-postgres-test.mjs'
+      - 'docs/advisor/ADVISOR_SESSION2_AUTHENTICATION.md'
+      - 'package.json'
+  pull_request:
+    branches: [building, main]
+    paths:
+      - 'src/App.tsx'
+      - 'src/pages/AdvisorRegister.tsx'
+      - 'src/pages/AdvisorLogin.tsx'
+      - 'src/pages/AdvisorAccount.tsx'
+      - 'src/lib/advisorAuth.ts'
+      - 'src/styles/index.css'
+      - 'src/styles/pages/advisor-auth.css'
+      - 'supabase/migrations/20260806102000_advisor_auth_phase2_v1.sql'
+      - 'scripts/deals68-advisor-session2-auth-check.mjs'
+      - 'scripts/deals68-advisor-session2-postgres-test.mjs'
+      - 'docs/advisor/ADVISOR_SESSION2_AUTHENTICATION.md'
+      - 'package.json'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: advisor-session2-authentication-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  advisor-authentication:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Run Advisor Session 2 authentication contract
+        run: npm run qa:advisor-session2
+      - name: Re-run Session 0 Business baseline
+        run: npm run qa:advisor-session0
+      - name: Re-run Session 1 assignment security
+        run: npm run qa:advisor-session1
+      - name: Run existing release QA
+        run: npm run qa:release
