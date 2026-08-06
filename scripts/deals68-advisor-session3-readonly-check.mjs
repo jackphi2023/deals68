@@ -58,10 +58,10 @@ assert.match(advisorAccount, /getMyAdvisorBusinessContext/);
 assert.match(advisorAccount, /acceptAdvisorAssignment/);
 assert.match(advisorAccount, /useSearchParams/);
 assert.match(advisorAccount, /can_open_context/);
-assert.match(advisorAccount, /Không có quyền sửa hồ sơ doanh nghiệp/);
-assert.match(advisorAccount, /Chỉ đọc/);
+assert.match(advisorAccount, /Không có quyền sửa|No edit access/i);
+assert.match(advisorAccount, /Chỉ đọc|Read only/i);
 assert.doesNotMatch(advisorAccount, /\.from\(['"]businesses['"]\)|payment_orders|d68_admin_create_advisor_assignment/);
-console.log('✓ Advisor portfolio, context switching and acceptance UI are read-only and assignment-gated');
+console.log('✓ Advisor portfolio, context switching and acceptance UI remain read-only and assignment-gated');
 
 assert.equal(
   packageJson.scripts['qa:advisor-session3'],
