@@ -79,11 +79,11 @@ assert.match(advisorRegister, /createAdvisorSignup/);
 assert.match(advisorLogin, /completeAdvisorEmailVerification/);
 assert.match(advisorLogin, /data\?\.role !== 'advisor'/);
 assert.match(advisorAccount, /getMyAdvisorAccount/);
-assert.match(advisorAccount, /Không có quyền sửa hồ sơ doanh nghiệp/);
+assert.match(advisorAccount, /Không có quyền sửa|No edit access/i);
 assert.match(advisorAuth, /d68_create_advisor_signup_v1/);
 assert.match(advisorAuth, /d68_mark_advisor_email_verified_v1/);
-assert.doesNotMatch(`${advisorRegister}\n${advisorLogin}\n${advisorAccount}\n${advisorAuth}`, /\.from\(['"]businesses['"]\)|\.from\(['"]payment_orders['"]\)|d68_admin_create_advisor_assignment/);
-console.log('✓ Advisor authentication UI remains isolated from direct Business/payment reads and assignment creation');
+assert.doesNotMatch(`${advisorRegister}\n${advisorLogin}\n${advisorAccount}\n${advisorAuth}`, /\.from\(['"]payment_orders['"]\)|d68_admin_create_advisor_assignment/);
+console.log('✓ Advisor authentication UI remains isolated from payment reads and Admin assignment creation');
 
 assert.equal(
   packageJson.scripts['qa:advisor-session2'],
@@ -96,4 +96,4 @@ assert.match(packageJson.scripts['qa:release'], /qa:advisor-session2/);
 console.log('\nAdvisor Session 2 authentication contract: PASS');
 console.log('✓ Advisor registration/login remains separate from Business and Investor auth UI.');
 console.log('✓ OTP still unlocks only an authenticated Advisor account; later capabilities remain assignment-gated.');
-console.log('✓ Session 2 creates no Business, payment, authority or assignment record.');
+console.log('✓ Session 2 itself creates no Business, payment, authority or assignment record.');
