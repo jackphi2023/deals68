@@ -159,14 +159,14 @@ try {
   await db.exec(fs.readFileSync('supabase/migrations/20260806102000_advisor_auth_phase2_v1.sql', 'utf8'));
 
   await db.query(`insert into auth.users(id,email,created_at,raw_user_meta_data) values
-    ($1,'advisor@example.com',now(),jsonb_build_object('role','advisor','signup_nonce',$2)),
-    ($3,'other@example.com',now(),jsonb_build_object('role','business','signup_nonce',$2))`, [advisorId, nonce, otherId]);
+    ($1::uuid,'advisor@example.com',now(),jsonb_build_object('role','advisor','signup_nonce',$2::text)),
+    ($3::uuid,'other@example.com',now(),jsonb_build_object('role','business','signup_nonce',$2::text))`, [advisorId, nonce, otherId]);
 
   await setActor('');
   await db.exec('set role anon;');
   const created = await db.query(`
     select public.d68_create_advisor_signup_v1(
-      $1,$2,$3,
+      $1::uuid,$2::text,$3::text,
       jsonb_build_object(
         'username','advisor.test','display_name','Advisor Test','country_iso2','VN',
         'language_code','vi','timezone','Asia/Ho_Chi_Minh',
@@ -184,12 +184,12 @@ try {
   assert.equal(created.rows[0].result.advisor_status, 'pending');
   assert.equal(created.rows[0].result.verification_status, 'pending');
 
-  const profile = await db.query(`select role,status,dashboard_login_enabled from public.profiles where id=$1`, [advisorId]);
+  const profile = await db.query(`select role,status,dashboard_login_enabled from public.profiles where id=$1::uuid`, [advisorId]);
   assert.equal(profile.rows[0].role, 'advisor');
   assert.equal(profile.rows[0].status, 'pending_admin_review');
   assert.equal(profile.rows[0].dashboard_login_enabled, false);
 
-  const advisor = await db.query(`select status,verification_status,advisor_type,visibility from public.advisor_profiles where profile_id=$1`, [advisorId]);
+  const advisor = await db.query(`select status,verification_status,advisor_type,visibility from public.advisor_profiles where profile_id=$1::uuid`, [advisorId]);
   assert.deepEqual(advisor.rows[0], {
     status: 'pending',
     verification_status: 'pending',
@@ -225,7 +225,7 @@ try {
   }
   assert.equal(unverifiedBlocked, true, 'OTP completion must require confirmed email');
 
-  await db.query(`update auth.users set email_confirmed_at=now() where id=$1`, [advisorId]);
+  await db.query(`update auth.users set email_confirmed_at=now() where id=$1::uuid`, [advisorId]);
   await db.exec('set role authenticated;');
   const verified = await db.query(`select public.d68_mark_advisor_email_verified_v1() as result`);
   await db.exec('reset role;');
@@ -233,14 +233,14 @@ try {
   assert.equal(verified.rows[0].result.advisor_status, 'pending');
   assert.equal(verified.rows[0].result.verification_status, 'pending');
 
-  const afterOtp = await db.query(`select status,dashboard_login_enabled from public.profiles where id=$1`, [advisorId]);
+  const afterOtp = await db.query(`select status,dashboard_login_enabled from public.profiles where id=$1::uuid`, [advisorId]);
   assert.equal(afterOtp.rows[0].status, 'pending_admin_review');
   assert.equal(afterOtp.rows[0].dashboard_login_enabled, true);
 
   let wrongRoleBlocked = false;
   try {
     await db.exec('set role anon;');
-    await db.query(`select public.d68_create_advisor_signup_v1($1,'other@example.com',$2,'{}'::jsonb,'{}'::jsonb)`, [otherId, nonce]);
+    await db.query(`select public.d68_create_advisor_signup_v1($1::uuid,'other@example.com',$2::text,'{}'::jsonb,'{}'::jsonb)`, [otherId, nonce]);
     await db.exec('reset role;');
   } catch {
     wrongRoleBlocked = true;
@@ -254,7 +254,7 @@ try {
     has_function_privilege('authenticated','public.d68_mark_advisor_email_verified_v1()','execute') as auth_verify`);
   assert.deepEqual(grants.rows[0], { anon_create: true, anon_verify: false, auth_verify: true });
 
-  const audit = await db.query(`select action from public.audit_logs where actor_id=$1 order by action`, [advisorId]);
+  const audit = await db.query(`select action from public.audit_logs where actor_id=$1::uuid order by action`, [advisorId]);
   assert.deepEqual(audit.rows.map((row) => row.action), [
     'advisor.email.verified',
     'advisor.registration.submitted',
