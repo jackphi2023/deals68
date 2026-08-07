@@ -54,18 +54,21 @@ for (const [name, pattern] of forbidden) {
   console.log(`✓ ${name}`);
 }
 
-assert.match(adminLib, /d68_admin_list_advisor_business_intakes_v1/);
+// Later sessions may enrich the Admin intake queue by wrapping Session 5 v1 in a
+// versioned read RPC. The Session 5 decision path itself must remain v1 and the
+// underlying Session 5 migration contract above remains locked.
+assert.match(adminLib, /d68_admin_list_advisor_business_intakes_v[12]/);
 assert.match(adminLib, /d68_admin_review_advisor_business_intake_v1/);
 assert.match(adminPage, /AdminAdvisorIntakes/);
 assert.match(adminPage, /approveAdminAdvisorIntake|reviewAdminAdvisorIntake/);
 assert.match(adminCard, /Từ chối|Reject/i);
-assert.match(adminPage, /Hồ sơ doanh nghiệp|Business profile/i);
+assert.match(`${adminPage}\n${adminCard}`, /Hồ sơ doanh nghiệp|Business profile/i);
 assert.match(adminPage, /180/);
 assert.match(main, /AdminAdvisorIntakes/);
 assert.match(main, /\/admin\/advisor-intakes/);
 assert.match(navigation, /advisor_intakes/);
 assert.match(navigation, /Duyệt Advisor intake/);
-console.log('✓ Admin queue, navigation and exact route are wired');
+console.log('✓ Admin queue may use a later read-only wrapper; Session 5 decision RPC, navigation and exact route remain wired');
 
 assert.equal(
   packageJson.scripts['qa:advisor-session5'],
