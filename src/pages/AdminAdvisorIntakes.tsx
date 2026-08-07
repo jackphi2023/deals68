@@ -5,9 +5,14 @@ import { ADMIN_NAV_SECTIONS } from '../config/adminNavigation';
 import {
   listAdminAdvisorIntakes,
   requestAdminAdvisorAuthorityEvidence,
+  reviewAdminAdvisorAuthorityRereview,
   reviewAdminAdvisorIntake,
+  startAdminAdvisorAuthorityRereview,
+  validateAdminAdvisorAuthorityEvidence,
   type AdminAdvisorIntake,
   type AdminAdvisorIntakeReviewStatus,
+  type AdminAuthorityEvidence,
+  type AdminEvidenceValidationStatus,
 } from '../lib/adminAdvisorIntakes';
 import AdminAdvisorIntakeCard, { titleOf } from '../components/AdminAdvisorIntakeCard';
 import '../styles/pages/admin-advisor-intakes.css';
@@ -36,7 +41,7 @@ export default function AdminAdvisorIntakes() {
       setRows(queue.items);
       setExpiries((current) => {
         const next = { ...current };
-        queue.items.forEach((row) => { next[row.assignment_id] ||= row.assignment.expires_at?.slice(0, 10) || defaultExpiryDate(); });
+        queue.items.forEach((row) => { next[row.assignment_id] ||= row.assignment.expires_at?.slice(0, 10) || row.authority.expires_at?.slice(0, 10) || defaultExpiryDate(); });
         return next;
       });
     } catch (loadError: any) {
@@ -94,12 +99,89 @@ export default function AdminAdvisorIntakes() {
     setError('');
     try {
       await requestAdminAdvisorAuthorityEvidence({ assignmentId: row.assignment_id, note });
-      setMessage(`Đã ghi yêu cầu bổ sung bằng chứng cho ${titleOf(row)}. Authority và Business vẫn giữ nguyên trạng thái chờ duyệt.`);
+      setMessage(`Đã ghi yêu cầu bổ sung bằng chứng cho ${titleOf(row)}. Authority và Business vẫn giữ nguyên trạng thái an toàn.`);
       setNotes((current) => ({ ...current, [row.assignment_id]: '' }));
       await load();
-      setFilter('pending_review');
     } catch (requestError: any) {
       setError(requestError?.message || 'Không thể gửi yêu cầu bổ sung bằng chứng.');
+    } finally {
+      setBusyId('');
+    }
+  }
+
+  async function validateEvidence(row: AdminAdvisorIntake, item: AdminAuthorityEvidence, validationStatus: Exclude<AdminEvidenceValidationStatus, 'unreviewed'>, note: string, requestReplacement: boolean) {
+    if (['insufficient', 'invalid'].includes(validationStatus) && note.trim().length < 5) {
+      setError('Evidence chưa đủ/không hợp lệ cần ghi chú căn cứ tối thiểu 5 ký tự.');
+      return;
+    }
+    setBusyId(row.assignment_id);
+    setMessage('');
+    setError('');
+    try {
+      await validateAdminAdvisorAuthorityEvidence({
+        evidenceId: item.evidence_id,
+        validationStatus,
+        note,
+        requestReplacement,
+      });
+      setMessage(requestReplacement
+        ? `Đã đánh dấu ${item.original_name} là ${validationStatus} và yêu cầu Advisor nộp file thay thế.`
+        : `Đã cập nhật kết quả thẩm định ${item.original_name}: ${validationStatus}.`);
+      await load();
+    } catch (validationError: any) {
+      setError(validationError?.message || 'Không thể cập nhật kết quả thẩm định evidence.');
+    } finally {
+      setBusyId('');
+    }
+  }
+
+  async function startRereview(row: AdminAdvisorIntake) {
+    const note = (notes[row.assignment_id] || '').trim();
+    if (note.length < 5) {
+      setError('Vui lòng nhập lý do tái thẩm định tối thiểu 5 ký tự.');
+      return;
+    }
+    setBusyId(row.assignment_id);
+    setMessage('');
+    setError('');
+    try {
+      const result = await startAdminAdvisorAuthorityRereview({ assignmentId: row.assignment_id, note });
+      setMessage(`Đã mở tái thẩm định vòng ${result.cycle_no} cho ${titleOf(row)}. Business context của Advisor hiện bị khóa bởi authority pending_review.`);
+      setNotes((current) => ({ ...current, [row.assignment_id]: '' }));
+      await load();
+    } catch (rereviewError: any) {
+      setError(rereviewError?.message || 'Không thể mở tái thẩm định authority.');
+    } finally {
+      setBusyId('');
+    }
+  }
+
+  async function reviewRereview(row: AdminAdvisorIntake, decision: 'approve' | 'reject') {
+    const rereviewId = row.current_rereview?.rereview_id;
+    if (!rereviewId) {
+      setError('Không tìm thấy vòng tái thẩm định đang chờ.');
+      return;
+    }
+    const note = (notes[row.assignment_id] || '').trim();
+    if (decision === 'reject' && note.length < 5) {
+      setError('Vui lòng nhập lý do từ chối re-review tối thiểu 5 ký tự.');
+      return;
+    }
+    const expiryDate = expiries[row.assignment_id] || defaultExpiryDate();
+    const expiresAt = decision === 'approve' ? new Date(`${expiryDate}T23:59:59+07:00`).toISOString() : null;
+    setBusyId(row.assignment_id);
+    setMessage('');
+    setError('');
+    try {
+      const result = await reviewAdminAdvisorAuthorityRereview({ rereviewId, decision, expiresAt, note });
+      setMessage(decision === 'approve'
+        ? `Đã tái xác minh authority cho ${titleOf(row)} đến ${expiryDate}. Assignment giữ nguyên scope profile và Business context chỉ mở lại nếu assignment hợp lệ.`
+        : `Đã từ chối re-review của ${titleOf(row)}; assignment đã bị thu hồi.`);
+      setNotes((current) => ({ ...current, [row.assignment_id]: '' }));
+      await load();
+      if (result.assignment_status === 'revoked') setFilter('rejected');
+    } catch (rereviewError: any) {
+      setError(rereviewError?.message || 'Không thể quyết định tái thẩm định authority.');
     } finally {
       setBusyId('');
     }
@@ -132,18 +214,18 @@ export default function AdminAdvisorIntakes() {
         <section className="d68-admin-intakes__content">
           <header className="d68-admin-intakes__header">
             <div>
-              <span className="d68-admin-intakes__eyebrow">Advisor/Broker · Phiên 6</span>
-              <h1>Duyệt authority & bằng chứng Business intake</h1>
-              <p>Xem tài liệu authority riêng tư, yêu cầu bổ sung, theo dõi lịch sử review và xác minh/từ chối quyền đại diện. Business vẫn không được public hoặc chuyển ownership.</p>
+              <span className="d68-admin-intakes__eyebrow">Advisor/Broker · Phiên 7</span>
+              <h1>Thẩm định evidence & tái xác minh authority</h1>
+              <p>Phân loại từng bằng chứng, yêu cầu file thay thế, quản lý authority sắp hết hạn/hết hạn và tái thẩm định. Business vẫn không được public, chuyển ownership hoặc mở quyền edit.</p>
             </div>
             <button type="button" onClick={() => void load()} disabled={refreshing}>{refreshing ? 'Đang tải…' : 'Làm mới'}</button>
           </header>
 
           <div className="d68-admin-intakes__boundary">
-            <strong>Ranh giới Phiên 6</strong>
-            <span>Business vẫn ownerless · draft · visible=false.</span>
-            <span>Bằng chứng nằm trong bucket private, tối đa 8 file, 10 MB/file, bất biến sau khi nộp.</span>
-            <span>Admin có thể yêu cầu bổ sung; scope duyệt vẫn chỉ là Hồ sơ doanh nghiệp / Business profile.</span>
+            <strong>Ranh giới Phiên 7</strong>
+            <span>Business vẫn ownerless · draft · visible=false; không có Business mutation.</span>
+            <span>File evidence đã nộp bất biến; Admin chỉ ghi validation metadata và replacement linkage.</span>
+            <span>Re-review chuyển authority về pending_review để đóng context; tái duyệt vẫn chỉ scope profile.</span>
           </div>
           {message && <div className="d68-admin-intakes__notice is-success">{message}</div>}
           {error && <div className="d68-admin-intakes__notice is-error">{error}</div>}
@@ -165,6 +247,9 @@ export default function AdminAdvisorIntakes() {
                   onExpiry={(value) => setExpiries((current) => ({ ...current, [row.assignment_id]: value }))}
                   onDecision={(decision) => void decide(row, decision)}
                   onRequestEvidence={() => void requestEvidence(row)}
+                  onValidateEvidence={(item, status, evidenceNote, requestReplacement) => void validateEvidence(row, item, status, evidenceNote, requestReplacement)}
+                  onStartRereview={() => void startRereview(row)}
+                  onReviewRereview={(decision) => void reviewRereview(row, decision)}
                 />
               ))}
             </div>
