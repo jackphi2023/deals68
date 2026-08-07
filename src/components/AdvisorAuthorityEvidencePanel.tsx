@@ -4,6 +4,7 @@ import {
   downloadAuthorityEvidenceFile,
   getMyAuthorityReview,
   uploadAdvisorAuthorityEvidence,
+  type AdvisorAuthorityEvidence,
   type AdvisorAuthorityEvidenceType,
   type AdvisorAuthorityReview,
 } from '../lib/advisorAuthorityEvidence';
@@ -39,10 +40,39 @@ function eventLabel(type: string, lang: Lang) {
     intake_created: ['Đã tạo Business intake', 'Business intake created'],
     evidence_submitted: ['Advisor đã nộp bằng chứng', 'Advisor submitted evidence'],
     evidence_requested: ['Admin yêu cầu bổ sung', 'Admin requested more evidence'],
+    evidence_validated: ['Admin đã thẩm định một tài liệu', 'Admin validated an evidence file'],
+    evidence_replacement_requested: ['Admin yêu cầu thay thế tài liệu', 'Admin requested replacement evidence'],
     authority_approved: ['Authority đã được xác minh', 'Authority verified'],
     authority_rejected: ['Authority bị từ chối', 'Authority rejected'],
+    authority_rereview_started: ['Authority được mở tái thẩm định', 'Authority re-review started'],
+    authority_rereview_approved: ['Tái thẩm định authority được duyệt', 'Authority re-review approved'],
+    authority_rereview_rejected: ['Tái thẩm định authority bị từ chối', 'Authority re-review rejected'],
   };
   const pair = labels[type] || [type, type];
+  return T(lang, pair[0], pair[1]);
+}
+
+function validationLabel(value: string, lang: Lang) {
+  const labels: Record<string, [string, string]> = {
+    unreviewed: ['Chưa thẩm định', 'Unreviewed'],
+    valid: ['Hợp lệ', 'Valid'],
+    insufficient: ['Chưa đủ', 'Insufficient'],
+    invalid: ['Không hợp lệ', 'Invalid'],
+  };
+  const pair = labels[value] || [value, value];
+  return T(lang, pair[0], pair[1]);
+}
+
+function lifecycleLabel(value: string, lang: Lang) {
+  const labels: Record<string, [string, string]> = {
+    initial_pending: ['Đang thẩm định lần đầu', 'Initial review pending'],
+    rereview_pending: ['Đang tái thẩm định', 'Re-review pending'],
+    verified_current: ['Authority còn hiệu lực', 'Authority current'],
+    expiring_soon: ['Authority sắp hết hạn', 'Authority expiring soon'],
+    expired: ['Authority đã hết hạn', 'Authority expired'],
+    rejected: ['Authority bị từ chối', 'Authority rejected'],
+  };
+  const pair = labels[value] || [value, value];
   return T(lang, pair[0], pair[1]);
 }
 
@@ -51,6 +81,7 @@ export default function AdvisorAuthorityEvidencePanel({ assignmentId, lang }: { 
   const [documentType, setDocumentType] = useState<AdvisorAuthorityEvidenceType>('authorization_letter');
   const [file, setFile] = useState<File | null>(null);
   const [note, setNote] = useState('');
+  const [replacementTarget, setReplacementTarget] = useState<AdvisorAuthorityEvidence | null>(null);
   const [busy, setBusy] = useState(false);
   const [downloading, setDownloading] = useState('');
   const [error, setError] = useState('');
@@ -79,6 +110,28 @@ export default function AdvisorAuthorityEvidencePanel({ assignmentId, lang }: { 
     return [...review.review_history].reverse().find((event) => event.event_type === 'evidence_requested') || null;
   }, [review]);
 
+  const replacementRequests = useMemo(() => {
+    const map = new Map<string, string>();
+    if (!review) return map;
+    review.review_history.forEach((event) => {
+      if (event.event_type === 'evidence_replacement_requested' && event.evidence_id && event.note) {
+        map.set(event.evidence_id, event.note);
+      }
+    });
+    return map;
+  }, [review]);
+
+  function chooseReplacement(item: AdvisorAuthorityEvidence) {
+    if (!review?.can_upload || item.superseded_at || !['insufficient', 'invalid'].includes(item.validation_status)) return;
+    setReplacementTarget(item);
+    setDocumentType(item.document_type);
+    setFile(null);
+    setNote('');
+    setError('');
+    setNotice(T(lang, `Đang chuẩn bị file thay thế cho ${item.original_name}.`, `Preparing replacement for ${item.original_name}.`));
+    window.setTimeout(() => document.getElementById(`d68-authority-file-${assignmentId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 20);
+  }
+
   async function submit() {
     if (!file || !review?.can_upload || busy) return;
     setError('');
@@ -93,13 +146,23 @@ export default function AdvisorAuthorityEvidencePanel({ assignmentId, lang }: { 
     }
     setBusy(true);
     try {
-      await uploadAdvisorAuthorityEvidence({ assignmentId, documentType, file, note });
+      await uploadAdvisorAuthorityEvidence({
+        assignmentId,
+        documentType,
+        file,
+        note,
+        replacesEvidenceId: replacementTarget?.evidence_id || null,
+      });
+      const replacedName = replacementTarget?.original_name;
       setFile(null);
       setNote('');
+      setReplacementTarget(null);
       const input = document.getElementById(`d68-authority-file-${assignmentId}`) as HTMLInputElement | null;
       if (input) input.value = '';
       await load();
-      setNotice(T(lang, 'Đã nộp bằng chứng. File được khóa bất biến và đang chờ Admin thẩm định.', 'Evidence submitted. The file is immutable and awaiting Admin review.'));
+      setNotice(replacedName
+        ? T(lang, `Đã nộp file thay thế cho ${replacedName}. File cũ vẫn được giữ trong audit trail nhưng không còn là bằng chứng hiện hành.`, `Replacement submitted for ${replacedName}. The prior file stays in the audit trail but is no longer current evidence.`)
+        : T(lang, 'Đã nộp bằng chứng. File được khóa bất biến và đang chờ Admin thẩm định.', 'Evidence submitted. The file is immutable and awaiting Admin review.'));
     } catch (uploadError: any) {
       setError(uploadError?.message || T(lang, 'Không thể nộp bằng chứng.', 'Could not submit evidence.'));
     } finally {
@@ -107,11 +170,11 @@ export default function AdvisorAuthorityEvidencePanel({ assignmentId, lang }: { 
     }
   }
 
-  async function download(evidenceId: string, bucket: string, path: string, fileName: string) {
-    setDownloading(evidenceId);
+  async function download(item: AdvisorAuthorityEvidence) {
+    setDownloading(item.evidence_id);
     setError('');
     try {
-      await downloadAuthorityEvidenceFile({ bucket, path, fileName });
+      await downloadAuthorityEvidenceFile({ bucket: item.storage_bucket, path: item.storage_path, fileName: item.original_name });
     } catch (downloadError: any) {
       setError(downloadError?.message || T(lang, 'Không thể tải file.', 'Could not download file.'));
     } finally {
@@ -121,33 +184,53 @@ export default function AdvisorAuthorityEvidencePanel({ assignmentId, lang }: { 
 
   if (!available || !review) return null;
 
+  const lifecycle = review.authority_lifecycle_status || review.authority_status;
+  const rereviewPending = review.current_rereview?.status === 'pending';
+
   return (
     <section className="d68-authority-evidence">
       <div className="d68-authority-evidence__head">
         <div>
-          <b>{T(lang, 'Bằng chứng authority · Phiên 6', 'Authority evidence · Session 6')}</b>
-          <span>{T(lang, 'Tài liệu riêng tư, chỉ bạn và Admin có quyền tải xuống.', 'Private evidence, downloadable only by you and Admin.')}</span>
+          <b>{T(lang, 'Bằng chứng & tái thẩm định authority · Phiên 7', 'Authority evidence & re-review · Session 7')}</b>
+          <span>{T(lang, 'Tài liệu riêng tư; file đã nộp không bị sửa/xóa và chỉ bạn cùng Admin được tải xuống.', 'Private evidence; submitted files are immutable and downloadable only by you and Admin.')}</span>
         </div>
-        <span className={`d68-authority-evidence__state is-${review.authority_status}`}>{review.authority_status}</span>
+        <span className={`d68-authority-evidence__state is-${review.authority_status}`}>{lifecycleLabel(lifecycle, lang)}</span>
       </div>
 
+      {rereviewPending ? <div className="d68-authority-evidence__rereview"><strong>{T(lang, `Tái thẩm định vòng ${review.current_rereview?.cycle_no}`, `Re-review cycle ${review.current_rereview?.cycle_no}`)}</strong><span>{review.current_rereview?.reason}</span><small>{T(lang, 'Quyền mở Business context tạm đóng cho đến khi Admin duyệt lại authority.', 'Business context access is suspended until Admin re-approves authority.')}</small></div> : null}
+      {review.authority_expires_at ? <div className="d68-authority-evidence__expiry">{T(lang, 'Authority hết hạn', 'Authority expires')}: <b>{formatDate(review.authority_expires_at, lang)}</b></div> : null}
       {latestRequest?.note ? <div className="d68-authority-evidence__request"><strong>{T(lang, 'Admin yêu cầu bổ sung:', 'Admin request:')}</strong> {latestRequest.note}</div> : null}
       {notice ? <div className="d68-authority-evidence__notice is-success">{notice}</div> : null}
       {error ? <div className="d68-authority-evidence__notice is-error">{error}</div> : null}
 
       {review.evidence.length ? <div className="d68-authority-evidence__files">
-        {review.evidence.map((item) => <div key={item.evidence_id} className="d68-authority-evidence__file">
-          <div><b>{item.original_name}</b><span>{item.document_type} · {formatSize(item.file_size_bytes)} · {formatDate(item.submitted_at, lang)}</span>{item.note ? <small>{item.note}</small> : null}</div>
-          <button type="button" disabled={downloading === item.evidence_id} onClick={() => void download(item.evidence_id, item.storage_bucket, item.storage_path, item.original_name)}>{downloading === item.evidence_id ? '…' : T(lang, 'Tải xuống', 'Download')}</button>
-        </div>)}
+        {review.evidence.map((item) => {
+          const replaceable = review.can_upload && !item.superseded_at && ['insufficient', 'invalid'].includes(item.validation_status);
+          return <div key={item.evidence_id} className={`d68-authority-evidence__file ${item.superseded_at ? 'is-superseded' : ''}`}>
+            <div>
+              <b>{item.original_name}</b>
+              <span>{item.document_type} · {formatSize(item.file_size_bytes)} · {formatDate(item.submitted_at, lang)}</span>
+              <span className={`d68-authority-evidence__validation is-${item.validation_status}`}>{validationLabel(item.validation_status, lang)}</span>
+              {item.note ? <small>{item.note}</small> : null}
+              {replacementRequests.get(item.evidence_id) ? <small className="is-request">{T(lang, 'Yêu cầu thay thế:', 'Replacement request:')} {replacementRequests.get(item.evidence_id)}</small> : null}
+              {item.superseded_at ? <small className="is-superseded">{T(lang, `Đã được thay thế ${formatDate(item.superseded_at, lang)}`, `Superseded ${formatDate(item.superseded_at, lang)}`)}</small> : null}
+              {item.replaces_evidence_id ? <small>{T(lang, 'Đây là file thay thế cho bằng chứng trước.', 'This file replaces prior evidence.')}</small> : null}
+            </div>
+            <div className="d68-authority-evidence__file-actions">
+              <button type="button" disabled={downloading === item.evidence_id} onClick={() => void download(item)}>{downloading === item.evidence_id ? '…' : T(lang, 'Tải xuống', 'Download')}</button>
+              {replaceable ? <button className="is-replace" type="button" onClick={() => chooseReplacement(item)}>{T(lang, 'Nộp file thay thế', 'Replace file')}</button> : null}
+            </div>
+          </div>;
+        })}
       </div> : <p className="d68-authority-evidence__empty">{T(lang, 'Chưa có bằng chứng authority đã nộp.', 'No authority evidence has been submitted yet.')}</p>}
 
       {review.can_upload ? <div className="d68-authority-evidence__form">
+        {replacementTarget ? <div className="d68-authority-evidence__replacement-target"><span>{T(lang, 'Đang thay thế', 'Replacing')}</span><b>{replacementTarget.original_name}</b><button type="button" onClick={() => setReplacementTarget(null)}>{T(lang, 'Hủy', 'Cancel')}</button></div> : null}
         <label><span>{T(lang, 'Loại tài liệu', 'Evidence type')}</span><select value={documentType} onChange={(event) => setDocumentType(event.target.value as AdvisorAuthorityEvidenceType)}>{DOCUMENT_TYPES.map((item) => <option key={item.value} value={item.value}>{T(lang, item.vi, item.en)}</option>)}</select></label>
         <label><span>{T(lang, 'File bằng chứng', 'Evidence file')}</span><input id={`d68-authority-file-${assignmentId}`} type="file" accept="application/pdf,image/jpeg,image/png,image/webp" onChange={(event) => setFile(event.target.files?.[0] || null)} /></label>
         <label className="wide"><span>{T(lang, 'Ghi chú tùy chọn', 'Optional note')}</span><textarea rows={2} maxLength={500} value={note} onChange={(event) => setNote(event.target.value)} placeholder={T(lang, 'Mô tả ngắn tài liệu và căn cứ authority', 'Briefly describe this evidence')} /></label>
-        <div className="d68-authority-evidence__form-foot"><span>{T(lang, 'Tối đa 8 file · 10 MB/file · PDF/JPEG/PNG/WebP · không thể sửa/xóa sau khi nộp.', 'Up to 8 files · 10 MB/file · PDF/JPEG/PNG/WebP · immutable after submission.')}</span><button type="button" disabled={!file || busy} onClick={() => void submit()}>{busy ? T(lang, 'Đang tải…', 'Uploading…') : T(lang, 'Nộp bằng chứng', 'Submit evidence')}</button></div>
-      </div> : <div className="d68-authority-evidence__closed">{T(lang, 'Kênh nộp bằng chứng đã đóng vì authority không còn ở trạng thái chờ Admin duyệt.', 'Evidence submission is closed because authority is no longer pending Admin review.')}</div>}
+        <div className="d68-authority-evidence__form-foot"><span>{T(lang, 'Tối đa 8 bằng chứng hiện hành · 10 MB/file · PDF/JPEG/PNG/WebP · file bất biến sau khi nộp.', 'Up to 8 current evidence files · 10 MB/file · PDF/JPEG/PNG/WebP · immutable after submission.')}</span><button type="button" disabled={!file || busy} onClick={() => void submit()}>{busy ? T(lang, 'Đang tải…', 'Uploading…') : replacementTarget ? T(lang, 'Nộp file thay thế', 'Submit replacement') : T(lang, 'Nộp bằng chứng', 'Submit evidence')}</button></div>
+      </div> : <div className="d68-authority-evidence__closed">{T(lang, 'Kênh nộp bằng chứng hiện đóng. Chỉ mở trong lần thẩm định đầu hoặc một vòng tái thẩm định đang chờ xử lý.', 'Evidence submission is closed. It opens only during initial review or a pending re-review cycle.')}</div>}
 
       {review.review_history.length ? <details className="d68-authority-evidence__history"><summary>{T(lang, 'Lịch sử thẩm định', 'Review history')} ({review.review_history.length})</summary><ol>{review.review_history.map((event) => <li key={event.event_id}><div><b>{eventLabel(event.event_type, lang)}</b><span>{formatDate(event.created_at, lang)}</span></div>{event.note ? <p>{event.note}</p> : null}</li>)}</ol></details> : null}
     </section>
