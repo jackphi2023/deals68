@@ -1,10 +1,35 @@
 import { supabase } from './supabase';
+import { downloadAuthorityEvidenceFile } from './advisorAuthorityEvidence';
 
 export type AdminAdvisorIntakeReviewStatus =
   | 'pending_review'
   | 'approved_awaiting_acceptance'
   | 'accepted'
   | 'rejected';
+
+export type AdminAuthorityEvidence = {
+  evidence_id: string;
+  document_type: string;
+  original_name: string;
+  mime_type: string;
+  file_size_bytes: number;
+  storage_bucket: string;
+  storage_path: string;
+  note?: string | null;
+  submitted_at?: string | null;
+};
+
+export type AdminAuthorityReviewEvent = {
+  event_id: string;
+  event_type: string;
+  actor_role: string;
+  actor_profile_id?: string | null;
+  evidence_id?: string | null;
+  note?: string | null;
+  note_visible_to_advisor?: boolean;
+  event_data?: Record<string, unknown>;
+  created_at: string;
+};
 
 export type AdminAdvisorIntake = {
   assignment_id: string;
@@ -14,6 +39,10 @@ export type AdminAdvisorIntake = {
   submitted_at: string;
   review_status: AdminAdvisorIntakeReviewStatus;
   can_review: boolean;
+  can_request_evidence?: boolean;
+  evidence_count?: number;
+  evidence?: AdminAuthorityEvidence[];
+  review_history?: AdminAuthorityReviewEvent[];
   business: {
     public_code?: string;
     company_name?: string;
@@ -74,6 +103,9 @@ export type AdminAdvisorIntakeQueue = {
     allowed_permissions: string[];
     business_mutations_enabled: boolean;
     publication_enabled: boolean;
+    authority_evidence_enabled?: boolean;
+    evidence_download_enabled?: boolean;
+    evidence_request_enabled?: boolean;
   };
 };
 
@@ -94,16 +126,24 @@ export type AdminAdvisorIntakeReviewResult = {
 };
 
 export async function listAdminAdvisorIntakes(): Promise<AdminAdvisorIntakeQueue> {
-  const { data, error } = await supabase.rpc('d68_admin_list_advisor_business_intakes_v1');
+  const { data, error } = await supabase.rpc('d68_admin_list_advisor_business_intakes_v2');
   if (error) throw error;
   const result = (data || {}) as Partial<AdminAdvisorIntakeQueue>;
   return {
-    items: Array.isArray(result.items) ? result.items : [],
+    items: Array.isArray(result.items) ? result.items.map((item) => ({
+      ...item,
+      evidence: Array.isArray(item.evidence) ? item.evidence : [],
+      review_history: Array.isArray(item.review_history) ? item.review_history : [],
+      evidence_count: Number(item.evidence_count || 0),
+    })) : [],
     access: {
       mode: 'admin_review',
       allowed_permissions: result.access?.allowed_permissions || ['profile'],
       business_mutations_enabled: false,
       publication_enabled: false,
+      authority_evidence_enabled: true,
+      evidence_download_enabled: true,
+      evidence_request_enabled: true,
     },
   };
 }
@@ -126,6 +166,34 @@ export async function reviewAdminAdvisorIntake(input: {
   );
   if (error) throw error;
   return data as AdminAdvisorIntakeReviewResult;
+}
+
+export async function requestAdminAdvisorAuthorityEvidence(input: {
+  assignmentId: string;
+  note: string;
+}) {
+  const { data, error } = await supabase.rpc('d68_admin_request_advisor_authority_evidence_v1', {
+    p_assignment_id: input.assignmentId,
+    p_note: input.note.trim(),
+  });
+  if (error) throw error;
+  return data as {
+    review_event_id: string;
+    assignment_id: string;
+    authority_id: string;
+    status: 'evidence_requested';
+    business_status: string;
+    business_visible: boolean;
+    business_mutations_enabled: false;
+  };
+}
+
+export async function downloadAdminAuthorityEvidence(item: AdminAuthorityEvidence) {
+  return downloadAuthorityEvidenceFile({
+    bucket: item.storage_bucket,
+    path: item.storage_path,
+    fileName: item.original_name,
+  });
 }
 
 export const approveAdminAdvisorIntake = reviewAdminAdvisorIntake;
