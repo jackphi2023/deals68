@@ -14,6 +14,7 @@ import {
 import { toLocalizedPath } from '../lib/i18nRoutes';
 import type { Lang } from '../lib/i18n';
 import AdvisorBusinessCreate from './AdvisorBusinessCreate';
+import AdvisorAuthorityEvidencePanel from '../components/AdvisorAuthorityEvidencePanel';
 
 const T = (lang: Lang, vi: string, en: string) => lang === 'en' ? en : vi;
 
@@ -153,8 +154,8 @@ export default function AdvisorAccount({ lang = 'vi' }: { lang?: Lang }) {
     await loadPortfolio();
     setNotice(T(
       lang,
-      `Đã tạo Business draft ${result.business_id}. Authority và assignment đang chờ Admin xác minh; chưa có quyền chỉnh sửa.`,
-      `Business draft ${result.business_id} was created. Authority and assignment await Admin verification; no edit access is granted.`,
+      `Đã tạo Business draft ${result.business_id}. Bạn có thể nộp bằng chứng authority trong hồ sơ assignment; chưa có quyền chỉnh sửa Business.`,
+      `Business draft ${result.business_id} was created. You may submit authority evidence from the assignment; no Business edit access is granted.`,
     ));
   }
 
@@ -172,7 +173,7 @@ export default function AdvisorAccount({ lang = 'vi' }: { lang?: Lang }) {
     <main className="d68-advisor-account-page">
       <section className="d68-advisor-account-shell">
         <header className="d68-advisor-account-header">
-          <div><span>Deals68 Advisor</span><h1>{T(lang, 'Danh mục khách hàng và Business intake', 'Client portfolio and Business intake')}</h1><p>{T(lang, 'Phiên 4 cho phép gửi một Business mới vào quy trình thẩm định nguyên tử. Ngữ cảnh Business hiện hữu vẫn chỉ đọc và mọi quyền tiếp tục phụ thuộc assignment cùng authority hợp lệ.', 'Session 4 adds atomic submission of a new Business for review. Existing Business contexts remain read only and every permission stays assignment and authority gated.')}</p></div>
+          <div><span>Deals68 Advisor</span><h1>{T(lang, 'Danh mục khách hàng và Business intake', 'Client portfolio and Business intake')}</h1><p>{T(lang, 'Phiên 6 bổ sung bằng chứng authority riêng tư và lịch sử thẩm định cho Business intake. Ngữ cảnh Business hiện hữu vẫn chỉ đọc và mọi quyền tiếp tục phụ thuộc assignment cùng authority hợp lệ.', 'Session 6 adds private authority evidence and review history for Business intakes. Existing Business contexts remain read only and every permission stays assignment and authority gated.')}</p></div>
           <button type="button" onClick={logout}>{T(lang, 'Đăng xuất', 'Log out')}</button>
         </header>
 
@@ -183,7 +184,7 @@ export default function AdvisorAccount({ lang = 'vi' }: { lang?: Lang }) {
         {!loading && advisor ? <>
           <div className={`d68-advisor-account-banner ${approved ? 'approved' : advisor.status === 'rejected' || advisor.status === 'suspended' ? 'blocked' : 'pending'}`}>
             <b>{approved ? T(lang, 'Hồ sơ Advisor đã được xác minh', 'Advisor profile verified') : T(lang, 'Hồ sơ chưa sẵn sàng nhận phân công', 'Profile is not ready for assignments')}</b>
-            <span>{approved ? T(lang, 'Bạn có thể gửi Business mới để Admin thẩm định và chỉ thấy các Business có assignment của mình. Hồ sơ intake chưa tạo quyền sở hữu hoặc quyền chỉnh sửa.', 'You may submit a new Business for Admin review and only see Businesses linked to your assignments. Intake submission creates no ownership or edit access.') : T(lang, 'Email đã xác thực nhưng Admin vẫn cần kích hoạt và xác minh hồ sơ.', 'Email is verified, but Admin activation and verification are still required.')}</span>
+            <span>{approved ? T(lang, 'Bạn có thể gửi Business mới, nộp bằng chứng authority và chỉ thấy các Business có assignment của mình. Tài liệu authority không tạo ownership hoặc quyền chỉnh sửa.', 'You may submit new Businesses, provide authority evidence and only see Businesses linked to your assignments. Authority evidence creates no ownership or edit access.') : T(lang, 'Email đã xác thực nhưng Admin vẫn cần kích hoạt và xác minh hồ sơ.', 'Email is verified, but Admin activation and verification are still required.')}</span>
           </div>
 
           <div className="d68-advisor-status-grid">
@@ -219,6 +220,7 @@ export default function AdvisorAccount({ lang = 'vi' }: { lang?: Lang }) {
                   <div className="d68-advisor-scope-list">{item.permissions.map((scope) => <span key={scope}>{scope}</span>)}</div>
                   <div className="d68-advisor-assignment-meta"><span>{T(lang, 'Hết hạn', 'Expires')}: {formatDate(item.expires_at, lang)}</span><span>{labelStatus(item.authority.verification_status, lang)}</span></div>
                   {item.status === 'pending' ? <button className="d68-advisor-accept" type="button" disabled={!item.can_accept || Boolean(actionId)} onClick={() => void accept(item)}>{actionId === item.assignment_id ? T(lang, 'Đang xử lý...', 'Processing...') : item.can_accept ? T(lang, 'Chấp nhận phân công', 'Accept assignment') : T(lang, 'Chờ Admin xác minh authority', 'Awaiting authority review')}</button> : null}
+                  {item.business.status === 'draft' && item.business.moderation_status === 'pending_admin_review' ? <AdvisorAuthorityEvidencePanel assignmentId={item.assignment_id} lang={lang} /> : null}
                   {item.status === 'active' && !item.can_open_context ? <p className="d68-advisor-warning">{T(lang, 'Assignment chưa có scope Hồ sơ nên chưa thể mở ngữ cảnh.', 'No Profile scope; context cannot open.')}</p> : null}
                 </article>)}
               </aside>
@@ -235,7 +237,7 @@ export default function AdvisorAccount({ lang = 'vi' }: { lang?: Lang }) {
                     <article><span>{T(lang, 'Loại giao dịch', 'Deal type')}</span><b>{context.business.deal_type || '—'}</b></article>
                     <article><span>{T(lang, 'Trạng thái', 'Status')}</span><b>{labelStatus(context.business.status || context.business.moderation_status, lang)}</b></article>
                   </div>
-                  <section className="d68-advisor-context-access"><h3>{T(lang, 'Phạm vi đang mở', 'Current access')}</h3><div>{context.assignment.permissions.map((scope) => <span key={scope}>{scope}</span>)}</div><p>{T(lang, 'Phiên 4 vẫn chỉ trả về nhận diện và trạng thái cơ bản. Không có dữ liệu tài chính, file riêng tư, proposal, yêu cầu dữ liệu, thanh toán, báo cáo hoặc mutation.', 'Session 4 still returns basic identity and status only. Financials, private files, proposals, data requests, payments, reports and mutations remain unavailable.')}</p></section>
+                  <section className="d68-advisor-context-access"><h3>{T(lang, 'Phạm vi đang mở', 'Current access')}</h3><div>{context.assignment.permissions.map((scope) => <span key={scope}>{scope}</span>)}</div><p>{T(lang, 'Phiên 6 vẫn chỉ trả về nhận diện và trạng thái Business cơ bản trong context. Bằng chứng authority nằm ở kho riêng; không có dữ liệu tài chính, file Business riêng tư, proposal, yêu cầu dữ liệu, thanh toán, báo cáo hoặc mutation.', 'Session 6 still returns only basic Business identity and status in context. Authority evidence is isolated in a private store; financials, private Business files, proposals, data requests, payments, reports and mutations remain unavailable.')}</p></section>
                 </> : null}
               </section>
             </section>
@@ -243,7 +245,7 @@ export default function AdvisorAccount({ lang = 'vi' }: { lang?: Lang }) {
 
           <section className="d68-advisor-account-panel"><h2>{advisor.title || T(lang, 'Hồ sơ nghề nghiệp', 'Professional profile')}</h2><dl><div><dt>{T(lang, 'Công ty / Tổ chức', 'Company / Organization')}</dt><dd>{advisor.company_name || '—'}</dd></div><div><dt>Website</dt><dd>{advisor.website ? <a href={advisor.website} target="_blank" rel="noreferrer">{advisor.website}</a> : '—'}</dd></div><div><dt>{T(lang, 'Lĩnh vực chuyên môn', 'Expertise')}</dt><dd>{expertise.join(' · ') || '—'}</dd></div><div className="wide"><dt>{T(lang, 'Giới thiệu', 'Introduction')}</dt><dd>{introduction || '—'}</dd></div></dl></section>
 
-          <section className="d68-advisor-account-panel d68-advisor-session-boundary"><h2>{T(lang, 'Ranh giới Phiên 4', 'Session 4 boundary')}</h2><ul><li>{T(lang, 'Business intake chỉ tạo bản nháp ownerless, không tạo quyền sở hữu hoặc payment order.', 'Business intake creates only an ownerless draft, with no ownership or payment order.')}</li><li>{T(lang, 'Không có quyền sửa Business mới hoặc Business hiện hữu; dữ liệu Business chỉ qua RPC giới hạn trường.', 'No edit access to new or existing Businesses; Business data only comes through field-restricted RPCs.')}</li><li>{T(lang, 'Authority và assignment đều chờ Admin xác minh; Advisor không thể tự kích hoạt, tăng scope hoặc tự cấp quyền.', 'Authority and assignment await Admin verification; the Advisor cannot self-activate, escalate scope or self-grant access.')}</li></ul><p>{T(lang, 'Cần hỗ trợ?', 'Need support?')} <Link to={toLocalizedPath('/contact', lang)}>{T(lang, 'Liên hệ Deals68', 'Contact Deals68')}</Link>.</p></section>
+          <section className="d68-advisor-account-panel d68-advisor-session-boundary"><h2>{T(lang, 'Ranh giới Phiên 6', 'Session 6 boundary')}</h2><ul><li>{T(lang, 'Bằng chứng authority được lưu ở bucket riêng tư, tối đa 8 file, 10 MB/file và bất biến sau khi nộp.', 'Authority evidence is stored in a private bucket, up to 8 files at 10 MB each, and immutable after submission.')}</li><li>{T(lang, 'Admin có thể yêu cầu bổ sung bằng chứng; lịch sử review được ghi append-only. Việc nộp tài liệu không tự xác minh authority.', 'Admin may request additional evidence and review history is append-only. Submitting evidence never self-verifies authority.')}</li><li>{T(lang, 'Business vẫn ownerless/draft/non-public trong intake; không có quyền sửa Business, payment, file Business, proposal, data request hoặc report.', 'The intake Business remains ownerless/draft/non-public; no Business editing, payments, Business files, proposals, data requests or reports are enabled.')}</li></ul><p>{T(lang, 'Cần hỗ trợ?', 'Need support?')} <Link to={toLocalizedPath('/contact', lang)}>{T(lang, 'Liên hệ Deals68', 'Contact Deals68')}</Link>.</p></section>
         </> : null}
       </section>
     </main>
