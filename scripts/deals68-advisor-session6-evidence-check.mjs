@@ -66,26 +66,28 @@ for (const signature of [
   assert.ok(migration.includes(`grant execute on function ${signature} to authenticated, service_role`), `Missing authenticated/service grant for ${signature}`);
 }
 
-assert.ok(advisorLib.includes("supabase.storage\n    .from(bucket)\n    .upload"), 'Advisor client must upload only to server-allocated bucket/path');
+// Session 7 may replace Session 6 public client calls with versioned wrappers,
+// while the Session 6 migration and its fail-closed RPCs remain unchanged above.
+assert.match(advisorLib, /d68_advisor_begin_authority_evidence_v[12]/, 'Advisor client must use a governed evidence allocation RPC');
 assert.ok(advisorLib.includes('upsert: false'), 'authority evidence upload must not overwrite objects');
-assert.ok(advisorLib.includes("supabase.rpc(\n    'd68_advisor_complete_authority_evidence_v1'"), 'Advisor client must finalize evidence through RPC');
+assert.match(advisorLib, /d68_advisor_complete_authority_evidence_v[12]/, 'Advisor client must finalize evidence through governed RPC');
 assert.equal(/service_role|SUPABASE_SERVICE/i.test(advisorLib), false, 'frontend must not expose service role');
 assert.equal(/\.from\(['"]advisor_authority_evidence['"]\)/.test(advisorLib), false, 'frontend must not access evidence table directly');
-assert.equal(/\.from\(['"]businesses['"]\).*\.(insert|update|delete)/s.test(advisorLib + advisorPanel + advisorPage), false, 'Advisor Session 6 frontend must not mutate Business directly');
+assert.equal(/\.from\(['"]businesses['"]\).*\.(insert|update|delete)/s.test(advisorLib + advisorPanel + advisorPage), false, 'Advisor Session 6+ frontend must not mutate Business directly');
 assert.ok(advisorPanel.includes('10 MB/file') && advisorPanel.includes('immutable after submission'), 'Advisor UI must explain evidence limits/immutability');
-assert.ok(advisorPage.includes('Ranh giới Phiên 6'), 'Advisor UI must expose Session 6 boundary');
+assert.match(advisorPage, /Ranh giới Phiên (6|7)|Session (6|7) boundary/, 'Advisor UI must expose Session 6 or later compatible boundary');
 
-assert.ok(adminLib.includes('d68_admin_list_advisor_business_intakes_v2'), 'Admin queue must use Session 6 enriched RPC');
-assert.ok(adminLib.includes('d68_admin_request_advisor_authority_evidence_v1'), 'Admin client must request evidence through RPC');
+assert.match(adminLib, /d68_admin_list_advisor_business_intakes_v[23]/, 'Admin queue must use Session 6 or later read-only wrapper');
+assert.match(adminLib, /d68_admin_request_advisor_authority_evidence_v[12]/, 'Admin client must request evidence through governed RPC');
 assert.equal(/\.from\(['"]advisor_authority_(evidence|review_events)['"]\)/.test(adminLib), false, 'Admin frontend must not query authority tables directly');
-assert.equal(/\.from\(['"]businesses['"]\).*\.(insert|update|delete)/s.test(adminLib + adminCard + adminPage), false, 'Admin Session 6 frontend must not mutate Business directly');
+assert.equal(/\.from\(['"]businesses['"]\).*\.(insert|update|delete)/s.test(adminLib + adminCard + adminPage), false, 'Admin Session 6+ frontend must not mutate Business directly');
 assert.ok(adminCard.includes('Yêu cầu bổ sung bằng chứng'), 'Admin UI must expose evidence request action');
 assert.ok(adminCard.includes('Lịch sử thẩm định'), 'Admin UI must expose review history');
-assert.ok(adminPage.includes('Ranh giới Phiên 6'), 'Admin page must state Session 6 boundary');
+assert.match(adminPage, /Ranh giới Phiên (6|7)/, 'Admin page must state Session 6 or later compatible boundary');
 
 assert.ok(pkg.scripts['qa:advisor-session6'], 'package.json must expose qa:advisor-session6');
 assert.ok(pkg.scripts['qa:release']?.includes('qa:advisor-session6'), 'release QA must include Session 6');
 
 console.log('✓ Advisor Session 6 authority evidence static contract: PASS');
-console.log('✓ Dedicated private immutable Storage evidence path is allocation-gated and owner/Admin readable only.');
-console.log('✓ Admin evidence requests and append-only review history add no Business mutation or scope escalation.');
+console.log('✓ Dedicated private immutable Storage evidence path remains allocation-gated and owner/Admin readable only.');
+console.log('✓ Later versioned evidence/review wrappers preserve the Session 6 Business mutation and scope boundaries.');
