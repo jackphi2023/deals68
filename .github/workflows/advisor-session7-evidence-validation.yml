@@ -1,0 +1,56 @@
+name: Advisor Session 7 - Evidence Validation & Re-review
+
+on:
+  push:
+    branches:
+      - building
+      - 'agent/advisor-session7-*'
+  pull_request:
+    branches:
+      - building
+    paths:
+      - 'src/pages/AdvisorAccount.tsx'
+      - 'src/pages/AdminAdvisorIntakes.tsx'
+      - 'src/components/AdvisorAuthorityEvidencePanel.tsx'
+      - 'src/components/AdminAdvisorIntakeCard.tsx'
+      - 'src/lib/advisorAuthorityEvidence.ts'
+      - 'src/lib/adminAdvisorIntakes.ts'
+      - 'src/styles/pages/advisor-authority-evidence.css'
+      - 'src/styles/pages/admin-advisor-authority-evidence.css'
+      - 'supabase/migrations/20260807163*_advisor_authority_*phase7_v1.sql'
+      - 'scripts/deals68-advisor-session7-*.mjs'
+      - 'scripts/deals68-advisor-session4-intake-check.mjs'
+      - 'scripts/deals68-advisor-session5-review-check.mjs'
+      - 'scripts/deals68-advisor-session6-evidence-check.mjs'
+      - 'package.json'
+      - '.github/workflows/advisor-session7-evidence-validation.yml'
+
+jobs:
+  advisor-evidence-validation-rereview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Run Advisor Session 7 validation and re-review contract
+        run: npm run qa:advisor-session7
+      - name: Re-run Session 0 Business baseline
+        run: npm run qa:advisor-session0
+      - name: Re-run Session 1 assignment security
+        run: npm run qa:advisor-session1
+      - name: Re-run Session 2 authentication
+        run: npm run qa:advisor-session2
+      - name: Re-run Session 3 read-only portfolio
+        run: npm run qa:advisor-session3
+      - name: Re-run Session 4 atomic intake
+        run: npm run qa:advisor-session4
+      - name: Re-run Session 5 Admin authority review
+        run: npm run qa:advisor-session5
+      - name: Re-run Session 6 authority evidence
+        run: npm run qa:advisor-session6
+      - name: Run existing release QA
+        run: npm run qa:release
