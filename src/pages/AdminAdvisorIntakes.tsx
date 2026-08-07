@@ -2,7 +2,13 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { ADMIN_NAV_SECTIONS } from '../config/adminNavigation';
-import { listAdminAdvisorIntakes, reviewAdminAdvisorIntake, type AdminAdvisorIntake, type AdminAdvisorIntakeReviewStatus } from '../lib/adminAdvisorIntakes';
+import {
+  listAdminAdvisorIntakes,
+  requestAdminAdvisorAuthorityEvidence,
+  reviewAdminAdvisorIntake,
+  type AdminAdvisorIntake,
+  type AdminAdvisorIntakeReviewStatus,
+} from '../lib/adminAdvisorIntakes';
 import AdminAdvisorIntakeCard, { titleOf } from '../components/AdminAdvisorIntakeCard';
 import '../styles/pages/admin-advisor-intakes.css';
 
@@ -77,6 +83,28 @@ export default function AdminAdvisorIntakes() {
     }
   }
 
+  async function requestEvidence(row: AdminAdvisorIntake) {
+    const note = (notes[row.assignment_id] || '').trim();
+    if (note.length < 5) {
+      setError('Vui lòng mô tả tài liệu/bằng chứng cần bổ sung tối thiểu 5 ký tự.');
+      return;
+    }
+    setBusyId(row.assignment_id);
+    setMessage('');
+    setError('');
+    try {
+      await requestAdminAdvisorAuthorityEvidence({ assignmentId: row.assignment_id, note });
+      setMessage(`Đã ghi yêu cầu bổ sung bằng chứng cho ${titleOf(row)}. Authority và Business vẫn giữ nguyên trạng thái chờ duyệt.`);
+      setNotes((current) => ({ ...current, [row.assignment_id]: '' }));
+      await load();
+      setFilter('pending_review');
+    } catch (requestError: any) {
+      setError(requestError?.message || 'Không thể gửi yêu cầu bổ sung bằng chứng.');
+    } finally {
+      setBusyId('');
+    }
+  }
+
   if (loading) return <main className="d68-admin-intakes"><div className="d68-admin-intakes__loading">Loading Admin...</div></main>;
   if (profile?.role !== 'admin') return <Navigate to="/admin/login?next=/admin/advisor-intakes" replace />;
 
@@ -104,18 +132,18 @@ export default function AdminAdvisorIntakes() {
         <section className="d68-admin-intakes__content">
           <header className="d68-admin-intakes__header">
             <div>
-              <span className="d68-admin-intakes__eyebrow">Advisor/Broker · Phiên 5</span>
-              <h1>Duyệt authority của Business intake</h1>
-              <p>Xác minh hoặc từ chối quyền đại diện. Việc duyệt chỉ mở scope <code>profile</code>; không công khai, không chuyển ownership và không cho sửa Business.</p>
+              <span className="d68-admin-intakes__eyebrow">Advisor/Broker · Phiên 6</span>
+              <h1>Duyệt authority & bằng chứng Business intake</h1>
+              <p>Xem tài liệu authority riêng tư, yêu cầu bổ sung, theo dõi lịch sử review và xác minh/từ chối quyền đại diện. Business vẫn không được public hoặc chuyển ownership.</p>
             </div>
             <button type="button" onClick={() => void load()} disabled={refreshing}>{refreshing ? 'Đang tải…' : 'Làm mới'}</button>
           </header>
 
           <div className="d68-admin-intakes__boundary">
-            <strong>Ranh giới Phiên 5</strong>
+            <strong>Ranh giới Phiên 6</strong>
             <span>Business vẫn ownerless · draft · visible=false.</span>
-            <span>Scope duy nhất: Hồ sơ doanh nghiệp / Business profile.</span>
-            <span>Advisor chỉ truy cập sau khi tự chấp nhận assignment; mặc định 180 ngày.</span>
+            <span>Bằng chứng nằm trong bucket private, tối đa 8 file, 10 MB/file, bất biến sau khi nộp.</span>
+            <span>Admin có thể yêu cầu bổ sung; scope duyệt vẫn chỉ là Hồ sơ doanh nghiệp / Business profile.</span>
           </div>
           {message && <div className="d68-admin-intakes__notice is-success">{message}</div>}
           {error && <div className="d68-admin-intakes__notice is-error">{error}</div>}
@@ -136,6 +164,7 @@ export default function AdminAdvisorIntakes() {
                   onNote={(value) => setNotes((current) => ({ ...current, [row.assignment_id]: value }))}
                   onExpiry={(value) => setExpiries((current) => ({ ...current, [row.assignment_id]: value }))}
                   onDecision={(decision) => void decide(row, decision)}
+                  onRequestEvidence={() => void requestEvidence(row)}
                 />
               ))}
             </div>
