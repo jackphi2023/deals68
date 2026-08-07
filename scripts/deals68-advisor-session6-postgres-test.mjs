@@ -185,12 +185,14 @@ try {
   assert.equal(own.evidence[0].original_name, 'signed-mandate.pdf');
   assert.equal(own.review_history.some((event) => event.event_type === 'evidence_submitted'), true);
 
-  await assert.rejects(() => asRole('authenticated', () => db.query(
+  const blockedUpdate = await asRole('authenticated', () => db.query(
     `update storage.objects set metadata='{}'::jsonb where bucket_id='advisor-authority-evidence-private' and name=$1`, [allocation.storage_path],
-  )));
-  await assert.rejects(() => asRole('authenticated', () => db.query(
+  ));
+  assert.equal(blockedUpdate.affectedRows, 0, 'Storage RLS must expose no row for Advisor UPDATE');
+  const blockedDelete = await asRole('authenticated', () => db.query(
     `delete from storage.objects where bucket_id='advisor-authority-evidence-private' and name=$1`, [allocation.storage_path],
-  )));
+  ));
+  assert.equal(blockedDelete.affectedRows, 0, 'Storage RLS must expose no row for Advisor DELETE');
   await assert.rejects(() => asRole('authenticated', () => db.query(`select * from public.advisor_authority_evidence`)));
 
   await setActor(adminId);
