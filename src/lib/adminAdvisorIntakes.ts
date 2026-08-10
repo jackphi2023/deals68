@@ -72,6 +72,18 @@ export type AdminAuthorityAttention = {
   recommended_action?: 'review_rereview' | 'start_rereview' | 'monitor' | 'none' | string;
 };
 
+export type AdminAuthorityNotificationDelivery = {
+  job_id: string;
+  alert_code: string;
+  severity: string;
+  status: 'pending' | 'processing' | 'sent' | 'failed' | 'exhausted' | string;
+  attempt_count: number;
+  next_attempt_at?: string | null;
+  last_attempt_at?: string | null;
+  sent_at?: string | null;
+  provider?: string | null;
+};
+
 export type AdminAdvisorIntake = {
   assignment_id: string;
   business_id: string;
@@ -92,6 +104,10 @@ export type AdminAdvisorIntake = {
   current_rereview?: AdminAuthorityRereview | null;
   authority_lifecycle_status?: string;
   attention?: AdminAuthorityAttention;
+  notification?: {
+    email_enabled: boolean;
+    latest_delivery?: AdminAuthorityNotificationDelivery | null;
+  };
   business: {
     public_code?: string;
     company_name?: string;
@@ -154,6 +170,12 @@ export type AdminAdvisorIntakeQueue = {
     medium: number;
     notice: number;
   };
+  notification_summary?: {
+    pending: number;
+    failed: number;
+    exhausted: number;
+    sent: number;
+  };
   access: {
     mode: 'admin_review';
     allowed_permissions: string[];
@@ -168,6 +190,8 @@ export type AdminAdvisorIntakeQueue = {
     admin_rereview_queue_enabled?: boolean;
     authority_expiry_alerts_enabled?: boolean;
     external_notification_delivery_enabled?: boolean;
+    email_notification_delivery_enabled?: boolean;
+    notification_delivery_monitoring_enabled?: boolean;
   };
 };
 
@@ -188,7 +212,7 @@ export type AdminAdvisorIntakeReviewResult = {
 };
 
 export async function listAdminAdvisorIntakes(): Promise<AdminAdvisorIntakeQueue> {
-  const { data, error } = await supabase.rpc('d68_admin_list_advisor_business_intakes_v4');
+  const { data, error } = await supabase.rpc('d68_admin_list_advisor_business_intakes_v5');
   if (error) throw error;
   const result = (data || {}) as Partial<AdminAdvisorIntakeQueue>;
   return {
@@ -204,6 +228,7 @@ export async function listAdminAdvisorIntakes(): Promise<AdminAdvisorIntakeQueue
       evidence_validation_summary: item.evidence_validation_summary || { unreviewed: 0, valid: 0, insufficient: 0, invalid: 0 },
       current_rereview: item.current_rereview || null,
       attention: item.attention || { code: 'none', rank: 99, severity: 'none', needs_attention: false, recommended_action: 'none' },
+      notification: item.notification || { email_enabled: true, latest_delivery: null },
     })) : [],
     attention_summary: {
       total: Number(result.attention_summary?.total || 0),
@@ -211,6 +236,12 @@ export async function listAdminAdvisorIntakes(): Promise<AdminAdvisorIntakeQueue
       high: Number(result.attention_summary?.high || 0),
       medium: Number(result.attention_summary?.medium || 0),
       notice: Number(result.attention_summary?.notice || 0),
+    },
+    notification_summary: {
+      pending: Number(result.notification_summary?.pending || 0),
+      failed: Number(result.notification_summary?.failed || 0),
+      exhausted: Number(result.notification_summary?.exhausted || 0),
+      sent: Number(result.notification_summary?.sent || 0),
     },
     access: {
       mode: 'admin_review',
@@ -225,7 +256,9 @@ export async function listAdminAdvisorIntakes(): Promise<AdminAdvisorIntakeQueue
       authority_rereview_enabled: true,
       admin_rereview_queue_enabled: true,
       authority_expiry_alerts_enabled: true,
-      external_notification_delivery_enabled: false,
+      external_notification_delivery_enabled: true,
+      email_notification_delivery_enabled: true,
+      notification_delivery_monitoring_enabled: true,
     },
   };
 }
@@ -236,38 +269,26 @@ export async function reviewAdminAdvisorIntake(input: {
   expiresAt?: string | null;
   note?: string | null;
 }): Promise<AdminAdvisorIntakeReviewResult> {
-  const { data, error } = await supabase.rpc(
-    'd68_admin_review_advisor_business_intake_v1',
-    {
-      p_assignment_id: input.assignmentId,
-      p_decision: input.decision,
-      p_expires_at: input.decision === 'approve' ? input.expiresAt || null : null,
-      p_permissions: ['profile'],
-      p_note: input.note?.trim() || null,
-    },
-  );
+  const { data, error } = await supabase.rpc('d68_admin_review_advisor_business_intake_v1', {
+    p_assignment_id: input.assignmentId,
+    p_decision: input.decision,
+    p_expires_at: input.decision === 'approve' ? input.expiresAt || null : null,
+    p_permissions: ['profile'],
+    p_note: input.note?.trim() || null,
+  });
   if (error) throw error;
   return data as AdminAdvisorIntakeReviewResult;
 }
 
-export async function requestAdminAdvisorAuthorityEvidence(input: {
-  assignmentId: string;
-  note: string;
-}) {
+export async function requestAdminAdvisorAuthorityEvidence(input: { assignmentId: string; note: string }) {
   const { data, error } = await supabase.rpc('d68_admin_request_advisor_authority_evidence_v2', {
     p_assignment_id: input.assignmentId,
     p_note: input.note.trim(),
   });
   if (error) throw error;
   return data as {
-    review_event_id: string;
-    rereview_id?: string | null;
-    assignment_id: string;
-    authority_id: string;
-    status: 'evidence_requested';
-    business_status: string;
-    business_visible: boolean;
-    business_mutations_enabled: false;
+    review_event_id: string; rereview_id?: string | null; assignment_id: string; authority_id: string;
+    status: 'evidence_requested'; business_status: string; business_visible: boolean; business_mutations_enabled: false;
   };
 }
 
@@ -285,39 +306,22 @@ export async function validateAdminAdvisorAuthorityEvidence(input: {
   });
   if (error) throw error;
   return data as {
-    evidence_id: string;
-    validation_status: Exclude<AdminEvidenceValidationStatus, 'unreviewed'>;
-    validated_at: string;
-    request_replacement: boolean;
-    review_event_id: string;
-    replacement_event_id?: string | null;
-    business_status: string;
-    business_visible: boolean;
-    business_mutations_enabled: false;
+    evidence_id: string; validation_status: Exclude<AdminEvidenceValidationStatus, 'unreviewed'>;
+    validated_at: string; request_replacement: boolean; review_event_id: string; replacement_event_id?: string | null;
+    business_status: string; business_visible: boolean; business_mutations_enabled: false;
   };
 }
 
-export async function startAdminAdvisorAuthorityRereview(input: {
-  assignmentId: string;
-  note: string;
-}) {
+export async function startAdminAdvisorAuthorityRereview(input: { assignmentId: string; note: string }) {
   const { data, error } = await supabase.rpc('d68_admin_start_advisor_authority_rereview_v1', {
     p_assignment_id: input.assignmentId,
     p_note: input.note.trim(),
   });
   if (error) throw error;
   return data as {
-    rereview_id: string;
-    assignment_id: string;
-    authority_id: string;
-    cycle_no: number;
-    authority_status: 'pending_review';
-    assignment_status: string;
-    can_upload_evidence: true;
-    business_status: string;
-    business_visible: boolean;
-    business_mutations_enabled: false;
-    context_access_suspended_by_authority: true;
+    rereview_id: string; assignment_id: string; authority_id: string; cycle_no: number;
+    authority_status: 'pending_review'; assignment_status: string; can_upload_evidence: true;
+    business_status: string; business_visible: boolean; business_mutations_enabled: false; context_access_suspended_by_authority: true;
   };
 }
 
@@ -335,27 +339,14 @@ export async function reviewAdminAdvisorAuthorityRereview(input: {
   });
   if (error) throw error;
   return data as {
-    rereview_id: string;
-    assignment_id: string;
-    authority_id: string;
-    decision: AdminAdvisorIntakeDecision;
-    authority_status: string;
-    assignment_status: string;
-    permissions: ['profile'];
-    expires_at?: string | null;
-    business_status: string;
-    business_visible: boolean;
-    business_mutations_enabled: false;
-    publication_enabled: false;
+    rereview_id: string; assignment_id: string; authority_id: string; decision: AdminAdvisorIntakeDecision;
+    authority_status: string; assignment_status: string; permissions: ['profile']; expires_at?: string | null;
+    business_status: string; business_visible: boolean; business_mutations_enabled: false; publication_enabled: false;
   };
 }
 
 export async function downloadAdminAuthorityEvidence(item: AdminAuthorityEvidence) {
-  return downloadAuthorityEvidenceFile({
-    bucket: item.storage_bucket,
-    path: item.storage_path,
-    fileName: item.original_name,
-  });
+  return downloadAuthorityEvidenceFile({ bucket: item.storage_bucket, path: item.storage_path, fileName: item.original_name });
 }
 
 export const approveAdminAdvisorIntake = reviewAdminAdvisorIntake;
