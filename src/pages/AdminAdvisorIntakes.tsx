@@ -21,10 +21,12 @@ function defaultExpiryDate() {
   return new Date(Date.now() + 180 * 86400000).toISOString().slice(0, 10);
 }
 
+type QueueFilter = 'attention' | 'all' | AdminAdvisorIntakeReviewStatus;
+
 export default function AdminAdvisorIntakes() {
   const { profile, loading } = useAuth();
   const [rows, setRows] = useState<AdminAdvisorIntake[]>([]);
-  const [filter, setFilter] = useState<'all' | AdminAdvisorIntakeReviewStatus>('pending_review');
+  const [filter, setFilter] = useState<QueueFilter>('pending_review');
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [expiries, setExpiries] = useState<Record<string, string>>({});
   const [busyId, setBusyId] = useState('');
@@ -53,8 +55,14 @@ export default function AdminAdvisorIntakes() {
 
   useEffect(() => { if (profile?.role === 'admin') void load(); }, [profile?.role]);
 
-  const filteredRows = useMemo(() => rows.filter((row) => filter === 'all' || row.review_status === filter), [rows, filter]);
+  const filteredRows = useMemo(() => rows.filter((row) => {
+    if (filter === 'all') return true;
+    if (filter === 'attention') return Boolean(row.attention?.needs_attention);
+    return row.review_status === filter;
+  }), [rows, filter]);
+
   const counts = useMemo(() => ({
+    attention: rows.filter((row) => row.attention?.needs_attention).length,
     all: rows.length,
     pending_review: rows.filter((row) => row.review_status === 'pending_review').length,
     approved_awaiting_acceptance: rows.filter((row) => row.review_status === 'approved_awaiting_acceptance').length,
@@ -149,6 +157,7 @@ export default function AdminAdvisorIntakes() {
       setMessage(`Đã mở tái thẩm định vòng ${result.cycle_no} cho ${titleOf(row)}. Business context của Advisor hiện bị khóa bởi authority pending_review.`);
       setNotes((current) => ({ ...current, [row.assignment_id]: '' }));
       await load();
+      setFilter('attention');
     } catch (rereviewError: any) {
       setError(rereviewError?.message || 'Không thể mở tái thẩm định authority.');
     } finally {
@@ -190,13 +199,14 @@ export default function AdminAdvisorIntakes() {
   if (loading) return <main className="d68-admin-intakes"><div className="d68-admin-intakes__loading">Loading Admin...</div></main>;
   if (profile?.role !== 'admin') return <Navigate to="/admin/login?next=/admin/advisor-intakes" replace />;
 
-  const filterOptions = [
+  const filterOptions: Array<[QueueFilter, string]> = [
+    ['attention', 'Cần tái thẩm định'],
     ['pending_review', 'Chờ duyệt'],
     ['approved_awaiting_acceptance', 'Chờ Advisor'],
     ['accepted', 'Đã chấp nhận'],
     ['rejected', 'Từ chối'],
     ['all', 'Tất cả'],
-  ] as const;
+  ];
 
   return (
     <main className="d68-admin-intakes">
@@ -214,18 +224,18 @@ export default function AdminAdvisorIntakes() {
         <section className="d68-admin-intakes__content">
           <header className="d68-admin-intakes__header">
             <div>
-              <span className="d68-admin-intakes__eyebrow">Advisor/Broker · Phiên 7</span>
-              <h1>Thẩm định evidence & tái xác minh authority</h1>
-              <p>Phân loại từng bằng chứng, yêu cầu file thay thế, quản lý authority sắp hết hạn/hết hạn và tái thẩm định. Business vẫn không được public, chuyển ownership hoặc mở quyền edit.</p>
+              <span className="d68-admin-intakes__eyebrow">Advisor/Broker · Phiên 8</span>
+              <h1>Authority expiry alerts & re-review queue</h1>
+              <p>Ưu tiên authority đang re-review, đã hết hạn hoặc còn 7/14/30 ngày. Admin vẫn dùng workflow re-review Phiên 7; Business không được public, chuyển ownership hoặc mở quyền edit.</p>
             </div>
             <button type="button" onClick={() => void load()} disabled={refreshing}>{refreshing ? 'Đang tải…' : 'Làm mới'}</button>
           </header>
 
           <div className="d68-admin-intakes__boundary">
-            <strong>Ranh giới Phiên 7</strong>
-            <span>Business vẫn ownerless · draft · visible=false; không có Business mutation.</span>
-            <span>File evidence đã nộp bất biến; Admin chỉ ghi validation metadata và replacement linkage.</span>
-            <span>Re-review chuyển authority về pending_review để đóng context; tái duyệt vẫn chỉ scope profile.</span>
+            <strong>Ranh giới Phiên 8</strong>
+            <span>Cảnh báo được tính theo thời gian thực; không chạy cron và chưa gửi email/SMS/push.</span>
+            <span>Queue chỉ ưu tiên hồ sơ cần xử lý; thao tác re-review vẫn qua RPC Phiên 7 và scope duy nhất là profile.</span>
+            <span>Business vẫn ownerless · draft · visible=false; không có Business mutation hay quyền mới.</span>
           </div>
           {message && <div className="d68-admin-intakes__notice is-success">{message}</div>}
           {error && <div className="d68-admin-intakes__notice is-error">{error}</div>}
