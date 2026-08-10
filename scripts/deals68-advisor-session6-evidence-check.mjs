@@ -66,7 +66,7 @@ for (const signature of [
   assert.ok(migration.includes(`grant execute on function ${signature} to authenticated, service_role`), `Missing authenticated/service grant for ${signature}`);
 }
 
-// Session 7 may replace Session 6 public client calls with versioned wrappers,
+// Later sessions may replace Session 6 public client calls with versioned wrappers,
 // while the Session 6 migration and its fail-closed RPCs remain unchanged above.
 assert.match(advisorLib, /d68_advisor_begin_authority_evidence_v[12]/, 'Advisor client must use a governed evidence allocation RPC');
 assert.ok(advisorLib.includes('upsert: false'), 'authority evidence upload must not overwrite objects');
@@ -75,15 +75,15 @@ assert.equal(/service_role|SUPABASE_SERVICE/i.test(advisorLib), false, 'frontend
 assert.equal(/\.from\(['"]advisor_authority_evidence['"]\)/.test(advisorLib), false, 'frontend must not access evidence table directly');
 assert.equal(/\.from\(['"]businesses['"]\).*\.(insert|update|delete)/s.test(advisorLib + advisorPanel + advisorPage), false, 'Advisor Session 6+ frontend must not mutate Business directly');
 assert.ok(advisorPanel.includes('10 MB/file') && advisorPanel.includes('immutable after submission'), 'Advisor UI must explain evidence limits/immutability');
-assert.match(advisorPage, /Ranh giới Phiên (6|7)|Session (6|7) boundary/, 'Advisor UI must expose Session 6 or later compatible boundary');
+assert.match(advisorPage, /Ranh giới Phiên (6|7|8)|Session (6|7|8) boundary/, 'Advisor UI must expose Session 6 or later compatible boundary');
 
-assert.match(adminLib, /d68_admin_list_advisor_business_intakes_v[23]/, 'Admin queue must use Session 6 or later read-only wrapper');
+assert.match(adminLib, /d68_admin_list_advisor_business_intakes_v[234]/, 'Admin queue must use Session 6 or later read-only wrapper');
 assert.match(adminLib, /d68_admin_request_advisor_authority_evidence_v[12]/, 'Admin client must request evidence through governed RPC');
 assert.equal(/\.from\(['"]advisor_authority_(evidence|review_events)['"]\)/.test(adminLib), false, 'Admin frontend must not query authority tables directly');
 assert.equal(/\.from\(['"]businesses['"]\).*\.(insert|update|delete)/s.test(adminLib + adminCard + adminPage), false, 'Admin Session 6+ frontend must not mutate Business directly');
 assert.ok(adminCard.includes('Yêu cầu bổ sung bằng chứng'), 'Admin UI must expose evidence request action');
 assert.ok(adminCard.includes('Lịch sử thẩm định'), 'Admin UI must expose review history');
-assert.match(adminPage, /Ranh giới Phiên (6|7)/, 'Admin page must state Session 6 or later compatible boundary');
+assert.match(adminPage, /Ranh giới Phiên (6|7|8)/, 'Admin page must state Session 6 or later compatible boundary');
 
 assert.ok(pkg.scripts['qa:advisor-session6'], 'package.json must expose qa:advisor-session6');
 assert.ok(pkg.scripts['qa:release']?.includes('qa:advisor-session6'), 'release QA must include Session 6');
