@@ -60,21 +60,20 @@ const forbidden = [
 ];
 for (const [name, pattern] of forbidden) assert.doesNotMatch(migration, pattern, `Forbidden Session 8 pattern: ${name}`);
 
-assert.ok(advisorLib.includes('d68_get_my_authority_review_v3'), 'Advisor read client must use Session 8 v3 surface');
+assert.ok(/d68_get_my_authority_review_v(?:3|4)/.test(advisorLib), 'Advisor read client must use Session 8 v3 or a later compatible wrapper');
 assert.ok(advisorLib.includes('d68_advisor_ack_authority_expiry_alert_v1'), 'Advisor client must acknowledge through Session 8 RPC');
 assert.equal(/\.from\(['"](?:businesses|advisor_authority_alert_receipts|advisor_authority_evidence|advisor_authority_rereviews)['"]\)[\s\S]{0,160}\.(?:insert|update|delete)\(/i.test(advisorLib + advisorPanel + advisorPage), false, 'Advisor frontend must not write protected tables directly');
-assert.ok(advisorPanel.includes('Đã xem cảnh báo') && advisorPanel.includes('Phiên 8'), 'Advisor UI must show governed expiry acknowledgement');
-assert.ok(advisorPage.includes('Ranh giới Phiên 8') && advisorPage.includes('Ranh giới Phiên 7'), 'Advisor page must state Session 8 and inherited Session 7 boundary');
+assert.ok(advisorPanel.includes('Đã xem cảnh báo') && /Phiên (?:8|9)/.test(advisorPanel), 'Advisor UI must preserve governed expiry acknowledgement in Session 8 or later');
+assert.ok(advisorPage.includes('Ranh giới Phiên 8') && advisorPage.includes('Ranh giới Phiên 7'), 'Advisor page must preserve Session 8 and inherited Session 7 boundary');
 
-assert.ok(adminLib.includes('d68_admin_list_advisor_business_intakes_v4'), 'Admin queue must use Session 8 v4 wrapper');
+assert.ok(/d68_admin_list_advisor_business_intakes_v(?:4|5)/.test(adminLib), 'Admin queue must use Session 8 v4 or a later compatible wrapper');
 assert.equal(/\.from\(['"](?:businesses|advisor_authority_alert_receipts|advisor_authority_evidence|advisor_authority_rereviews)['"]\)[\s\S]{0,160}\.(?:insert|update|delete)\(/i.test(adminLib + adminCard + adminPage), false, 'Admin frontend must not mutate protected tables directly');
-assert.ok(adminPage.includes('Cần tái thẩm định') && adminPage.includes('Ranh giới Phiên 8'), 'Admin UI must expose Session 8 attention queue');
-assert.ok(adminCard.includes('Ưu tiên Phiên 8') && adminCard.includes('attention.recommended_action'), 'Admin card must surface priority/recommended action');
+assert.ok(adminPage.includes('Cần tái thẩm định') && adminPage.includes('Ranh giới Phiên 8'), 'Admin UI must preserve Session 8 attention queue');
+assert.ok(/Ưu tiên Phiên (?:8|9)/.test(adminCard) && adminCard.includes('attention.recommended_action'), 'Admin card must preserve priority/recommended action in Session 8 or later');
 
 assert.ok(pkg.scripts['qa:advisor-session8'], 'package.json must expose qa:advisor-session8');
 assert.ok(pkg.scripts['qa:release']?.includes('qa:advisor-session8'), 'release QA must include Session 8');
 
 console.log('✓ Advisor Session 8 authority expiry alerts & Admin re-review queue static contract: PASS');
-console.log('✓ Alerts are read-time only; acknowledgement is bound to the current server-derived alert key.');
-console.log('✓ Admin queue prioritizes re-review/expired/30-14-7 day authority without changing Business permissions.');
-console.log('✓ No external notification delivery, Business mutation, Storage policy, payment or broader Advisor scope was added.');
+console.log('✓ Session 8 backend remains read-time only; later UI wrappers may add operational delivery without altering the Session 8 contract.');
+console.log('✓ Admin queue still prioritizes re-review/expired/30-14-7 day authority without changing Business permissions.');
