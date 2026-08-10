@@ -1,0 +1,60 @@
+name: Advisor Session 9 - Authority Email Notifications
+
+on:
+  push:
+    branches:
+      - building
+      - 'agent/advisor-session9-*'
+  pull_request:
+    branches:
+      - building
+    paths:
+      - 'src/pages/AdvisorAccount.tsx'
+      - 'src/pages/AdminAdvisorIntakes.tsx'
+      - 'src/components/AdvisorAuthorityEvidencePanel.tsx'
+      - 'src/components/AdminAdvisorIntakeCard.tsx'
+      - 'src/lib/advisorAuthorityEvidence.ts'
+      - 'src/lib/adminAdvisorIntakes.ts'
+      - 'src/styles/pages/advisor-authority-evidence.css'
+      - 'supabase/migrations/20260810174500_advisor_authority_email_notifications_phase9_v1.sql'
+      - 'supabase/migrations/20260810174600_advisor_authority_email_scheduler_phase9_v1.sql'
+      - 'supabase/functions/advisor-authority-notification-email/**'
+      - 'scripts/deals68-advisor-session9-*.mjs'
+      - 'scripts/deals68-advisor-session8-alerts-check.mjs'
+      - 'docs/advisor/ADVISOR_SESSION9_AUTHORITY_EMAIL_NOTIFICATIONS.md'
+      - 'package.json'
+      - '.github/workflows/advisor-session9-authority-email-notifications.yml'
+
+jobs:
+  advisor-authority-email-notifications:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Run Advisor Session 9 controlled email contract
+        run: npm run qa:advisor-session9
+      - name: Re-run Session 0 Business baseline
+        run: npm run qa:advisor-session0
+      - name: Re-run Session 1 assignment security
+        run: npm run qa:advisor-session1
+      - name: Re-run Session 2 authentication
+        run: npm run qa:advisor-session2
+      - name: Re-run Session 3 read-only portfolio
+        run: npm run qa:advisor-session3
+      - name: Re-run Session 4 atomic intake
+        run: npm run qa:advisor-session4
+      - name: Re-run Session 5 Admin authority review
+        run: npm run qa:advisor-session5
+      - name: Re-run Session 6 authority evidence
+        run: npm run qa:advisor-session6
+      - name: Re-run Session 7 evidence validation and re-review
+        run: npm run qa:advisor-session7
+      - name: Re-run Session 8 authority expiry alerts
+        run: npm run qa:advisor-session8
+      - name: Run existing release QA
+        run: npm run qa:release
