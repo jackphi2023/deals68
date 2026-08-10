@@ -62,6 +62,16 @@ export type AdminEvidenceValidationSummary = {
   invalid: number;
 };
 
+export type AdminAuthorityAttention = {
+  code: 'rereview_pending' | 'expired' | 'expiry_7d' | 'expiry_14d' | 'expiry_30d' | 'none' | string;
+  rank: number;
+  severity: 'critical' | 'high' | 'medium' | 'notice' | 'none' | string;
+  needs_attention: boolean;
+  authority_expires_at?: string | null;
+  days_remaining?: number | null;
+  recommended_action?: 'review_rereview' | 'start_rereview' | 'monitor' | 'none' | string;
+};
+
 export type AdminAdvisorIntake = {
   assignment_id: string;
   business_id: string;
@@ -81,6 +91,7 @@ export type AdminAdvisorIntake = {
   review_history?: AdminAuthorityReviewEvent[];
   current_rereview?: AdminAuthorityRereview | null;
   authority_lifecycle_status?: string;
+  attention?: AdminAuthorityAttention;
   business: {
     public_code?: string;
     company_name?: string;
@@ -136,6 +147,13 @@ export type AdminAdvisorIntake = {
 
 export type AdminAdvisorIntakeQueue = {
   items: AdminAdvisorIntake[];
+  attention_summary?: {
+    total: number;
+    critical: number;
+    high: number;
+    medium: number;
+    notice: number;
+  };
   access: {
     mode: 'admin_review';
     allowed_permissions: string[];
@@ -147,6 +165,9 @@ export type AdminAdvisorIntakeQueue = {
     evidence_validation_enabled?: boolean;
     replacement_evidence_enabled?: boolean;
     authority_rereview_enabled?: boolean;
+    admin_rereview_queue_enabled?: boolean;
+    authority_expiry_alerts_enabled?: boolean;
+    external_notification_delivery_enabled?: boolean;
   };
 };
 
@@ -167,7 +188,7 @@ export type AdminAdvisorIntakeReviewResult = {
 };
 
 export async function listAdminAdvisorIntakes(): Promise<AdminAdvisorIntakeQueue> {
-  const { data, error } = await supabase.rpc('d68_admin_list_advisor_business_intakes_v3');
+  const { data, error } = await supabase.rpc('d68_admin_list_advisor_business_intakes_v4');
   if (error) throw error;
   const result = (data || {}) as Partial<AdminAdvisorIntakeQueue>;
   return {
@@ -182,7 +203,15 @@ export async function listAdminAdvisorIntakes(): Promise<AdminAdvisorIntakeQueue
       total_evidence_count: Number(item.total_evidence_count || item.evidence_count || 0),
       evidence_validation_summary: item.evidence_validation_summary || { unreviewed: 0, valid: 0, insufficient: 0, invalid: 0 },
       current_rereview: item.current_rereview || null,
+      attention: item.attention || { code: 'none', rank: 99, severity: 'none', needs_attention: false, recommended_action: 'none' },
     })) : [],
+    attention_summary: {
+      total: Number(result.attention_summary?.total || 0),
+      critical: Number(result.attention_summary?.critical || 0),
+      high: Number(result.attention_summary?.high || 0),
+      medium: Number(result.attention_summary?.medium || 0),
+      notice: Number(result.attention_summary?.notice || 0),
+    },
     access: {
       mode: 'admin_review',
       allowed_permissions: result.access?.allowed_permissions || ['profile'],
@@ -194,6 +223,9 @@ export async function listAdminAdvisorIntakes(): Promise<AdminAdvisorIntakeQueue
       evidence_validation_enabled: true,
       replacement_evidence_enabled: true,
       authority_rereview_enabled: true,
+      admin_rereview_queue_enabled: true,
+      authority_expiry_alerts_enabled: true,
+      external_notification_delivery_enabled: false,
     },
   };
 }
