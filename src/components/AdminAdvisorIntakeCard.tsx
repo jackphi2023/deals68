@@ -74,6 +74,17 @@ function lifecycleLabel(value?: string) {
   return labels[value || ''] || value || '—';
 }
 
+function attentionLabel(value?: string) {
+  const labels: Record<string, string> = {
+    rereview_pending: 'Re-review đang chờ quyết định',
+    expired: 'Authority đã hết hạn',
+    expiry_7d: 'Authority hết hạn trong ≤ 7 ngày',
+    expiry_14d: 'Authority hết hạn trong ≤ 14 ngày',
+    expiry_30d: 'Authority hết hạn trong ≤ 30 ngày',
+  };
+  return labels[value || ''] || value || '';
+}
+
 export default function AdminAdvisorIntakeCard({
   row,
   note,
@@ -106,6 +117,7 @@ export default function AdminAdvisorIntakeCard({
   const history = row.review_history || [];
   const summary = row.evidence_validation_summary || { unreviewed: 0, valid: 0, insufficient: 0, invalid: 0 };
   const rereviewPending = row.current_rereview?.status === 'pending';
+  const attention = row.attention;
 
   async function download(item: AdminAuthorityEvidence) {
     setDownloadingId(item.evidence_id);
@@ -137,6 +149,14 @@ export default function AdminAdvisorIntakeCard({
         </div>
         <div className="d68-admin-intakes__submitted">Gửi: {dateLabel(row.submitted_at)}</div>
       </div>
+
+      {attention?.needs_attention ? <section className={`d68-admin-authority-evidence__rereview is-${attention.severity}`}>
+        <div>
+          <strong>{attentionLabel(attention.code)}</strong>
+          <span>{attention.authority_expires_at ? `Hết hạn ${dateLabel(attention.authority_expires_at)}` : 'Authority đang chờ tái thẩm định'}</span>
+        </div>
+        <small>Ưu tiên Phiên 8 · {attention.days_remaining == null ? '' : `Còn ${attention.days_remaining} ngày · `}Khuyến nghị: {attention.recommended_action === 'start_rereview' ? 'mở tái thẩm định' : attention.recommended_action === 'review_rereview' ? 'hoàn tất re-review' : 'theo dõi'} · cảnh báo read-time, chưa gửi email/SMS.</small>
+      </section> : null}
 
       <div className="d68-admin-intakes__grid">
         <section>
