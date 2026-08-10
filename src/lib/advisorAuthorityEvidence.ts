@@ -22,6 +22,20 @@ export type AdvisorAuthorityLifecycleStatus =
   | 'rejected'
   | string;
 
+export type AdvisorAuthorityExpiryAlert = {
+  key: string;
+  code: 'rereview_pending' | 'expired' | 'expiry_7d' | 'expiry_14d' | 'expiry_30d' | string;
+  severity: 'critical' | 'high' | 'medium' | 'notice' | string;
+  authority_expires_at?: string | null;
+  days_remaining?: number | null;
+  acknowledged: boolean;
+  acknowledged_at?: string | null;
+  title_vi: string;
+  title_en: string;
+  message_vi: string;
+  message_en: string;
+};
+
 export type AdvisorAuthorityEvidence = {
   evidence_id: string;
   document_type: AdvisorAuthorityEvidenceType;
@@ -82,6 +96,7 @@ export type AdvisorAuthorityReview = {
   evidence: AdvisorAuthorityEvidence[];
   review_history: AdvisorAuthorityReviewEvent[];
   current_rereview?: AdvisorAuthorityRereview | null;
+  expiry_alert?: AdvisorAuthorityExpiryAlert | null;
   access: {
     bucket: string;
     max_current_files: number;
@@ -89,12 +104,15 @@ export type AdvisorAuthorityReview = {
     allowed_mime_types: string[];
     immutable_after_submit: boolean;
     replacement_upload_enabled: boolean;
+    expiry_alerts_enabled?: boolean;
+    alert_acknowledgement_enabled?: boolean;
+    external_notification_delivery_enabled?: boolean;
     business_mutations_enabled: false;
   };
 };
 
 export async function getMyAuthorityReview(assignmentId: string): Promise<AdvisorAuthorityReview> {
-  const { data, error } = await supabase.rpc('d68_get_my_authority_review_v2', {
+  const { data, error } = await supabase.rpc('d68_get_my_authority_review_v3', {
     p_assignment_id: assignmentId,
   });
   if (error) throw error;
@@ -107,6 +125,27 @@ export async function getMyAuthorityReview(assignmentId: string): Promise<Adviso
     })) : [],
     review_history: Array.isArray(result?.review_history) ? result.review_history : [],
     current_rereview: result?.current_rereview || null,
+    expiry_alert: result?.expiry_alert || null,
+  };
+}
+
+export async function acknowledgeAdvisorAuthorityAlert(input: {
+  assignmentId: string;
+  alertKey: string;
+}) {
+  const { data, error } = await supabase.rpc('d68_advisor_ack_authority_expiry_alert_v1', {
+    p_assignment_id: input.assignmentId,
+    p_alert_key: input.alertKey,
+  });
+  if (error) throw error;
+  return data as {
+    assignment_id: string;
+    alert_key: string;
+    alert_code: string;
+    acknowledged: true;
+    acknowledged_at: string;
+    business_mutations_enabled: false;
+    external_notification_delivery_enabled: false;
   };
 }
 
