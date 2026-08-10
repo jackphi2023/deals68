@@ -53,7 +53,7 @@ assert.match(advisorCreate, /createAdvisorBusinessIntake/);
 assert.match(advisorCreate, /authorityConfirmed/);
 assert.match(advisorCreate, /không tự dịch|no automatic translation/i);
 assert.match(advisorAccount, /<AdvisorBusinessCreate/);
-assert.match(advisorAccount, /Ranh giới Phiên (4|5|6|7)|Session (4|5|6|7) boundary/);
+assert.match(advisorAccount, /Ranh giới Phiên (4|5|6|7|8)|Session (4|5|6|7|8) boundary/);
 assert.match(advisorAccount, /chưa có quyền chỉnh sửa|no edit access|no Business edit access|không có quyền sửa Business|không có quyền chỉnh sửa/i);
 assert.doesNotMatch(`${advisorAuth}\n${advisorCreate}\n${advisorAccount}`, /\.from\(['"]businesses['"]\)|\.insert\(|\.update\(/);
 console.log('✓ Advisor UI uses only the isolated intake RPC and retains no direct Business mutations');
