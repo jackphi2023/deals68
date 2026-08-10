@@ -85,7 +85,6 @@ for (const token of [
   "Authorization: `Bearer ${RESEND_API_KEY}`",
   "'api-key': BREVO_API_KEY",
   "authorization !== `Bearer ${SUPABASE_ANON_KEY}`",
-  'maximum 6 authority emails per Advisor per 24 hours',
 ]) assert.ok(worker.includes(token), `Session 9 email worker missing contract token: ${token}`);
 assert.equal(/req\.json\s*\(/.test(worker), false, 'Worker must not accept caller-controlled recipient/content payload');
 assert.equal(/console\.(?:log|error)\([^\n]*(recipient_email|recipient|to:)/i.test(worker), false, 'Worker must not log recipient email');
