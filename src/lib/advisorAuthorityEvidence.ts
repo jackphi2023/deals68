@@ -36,6 +36,28 @@ export type AdvisorAuthorityExpiryAlert = {
   message_en: string;
 };
 
+export type AdvisorAuthorityNotificationPreferences = {
+  email_enabled: boolean;
+  email_expiry_30d: boolean;
+  email_expiry_14d: boolean;
+  email_expiry_7d: boolean;
+  email_expired: boolean;
+  email_rereview_pending: boolean;
+  updated_at?: string | null;
+};
+
+export type AdvisorAuthorityNotificationDelivery = {
+  job_id: string;
+  channel: 'email' | string;
+  status: 'pending' | 'processing' | 'sent' | 'failed' | 'exhausted' | string;
+  attempt_count: number;
+  last_attempt_at?: string | null;
+  next_attempt_at?: string | null;
+  sent_at?: string | null;
+  provider?: string | null;
+  provider_message_id?: string | null;
+};
+
 export type AdvisorAuthorityEvidence = {
   evidence_id: string;
   document_type: AdvisorAuthorityEvidenceType;
@@ -97,6 +119,8 @@ export type AdvisorAuthorityReview = {
   review_history: AdvisorAuthorityReviewEvent[];
   current_rereview?: AdvisorAuthorityRereview | null;
   expiry_alert?: AdvisorAuthorityExpiryAlert | null;
+  notification_preferences: AdvisorAuthorityNotificationPreferences;
+  current_notification_delivery?: AdvisorAuthorityNotificationDelivery | null;
   access: {
     bucket: string;
     max_current_files: number;
@@ -107,12 +131,18 @@ export type AdvisorAuthorityReview = {
     expiry_alerts_enabled?: boolean;
     alert_acknowledgement_enabled?: boolean;
     external_notification_delivery_enabled?: boolean;
+    email_notification_delivery_enabled?: boolean;
+    sms_notification_delivery_enabled?: boolean;
+    push_notification_delivery_enabled?: boolean;
+    notification_preferences_enabled?: boolean;
+    notification_dedupe_enabled?: boolean;
+    max_authority_emails_per_profile_24h?: number;
     business_mutations_enabled: false;
   };
 };
 
 export async function getMyAuthorityReview(assignmentId: string): Promise<AdvisorAuthorityReview> {
-  const { data, error } = await supabase.rpc('d68_get_my_authority_review_v3', {
+  const { data, error } = await supabase.rpc('d68_get_my_authority_review_v4', {
     p_assignment_id: assignmentId,
   });
   if (error) throw error;
@@ -126,6 +156,35 @@ export async function getMyAuthorityReview(assignmentId: string): Promise<Adviso
     review_history: Array.isArray(result?.review_history) ? result.review_history : [],
     current_rereview: result?.current_rereview || null,
     expiry_alert: result?.expiry_alert || null,
+    notification_preferences: result?.notification_preferences || {
+      email_enabled: true,
+      email_expiry_30d: true,
+      email_expiry_14d: true,
+      email_expiry_7d: true,
+      email_expired: true,
+      email_rereview_pending: true,
+      updated_at: null,
+    },
+    current_notification_delivery: result?.current_notification_delivery || null,
+  };
+}
+
+export async function updateAdvisorAuthorityNotificationPreferences(
+  preferences: AdvisorAuthorityNotificationPreferences,
+) {
+  const { data, error } = await supabase.rpc('d68_advisor_update_authority_notification_preferences_v1', {
+    p_email_enabled: preferences.email_enabled,
+    p_email_expiry_30d: preferences.email_expiry_30d,
+    p_email_expiry_14d: preferences.email_expiry_14d,
+    p_email_expiry_7d: preferences.email_expiry_7d,
+    p_email_expired: preferences.email_expired,
+    p_email_rereview_pending: preferences.email_rereview_pending,
+  });
+  if (error) throw error;
+  return data as AdvisorAuthorityNotificationPreferences & {
+    profile_id: string;
+    business_mutations_enabled: false;
+    authority_mutations_enabled: false;
   };
 }
 
