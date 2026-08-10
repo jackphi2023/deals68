@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { Lang } from '../lib/i18n';
 import {
+  acknowledgeAdvisorAuthorityAlert,
   downloadAuthorityEvidenceFile,
   getMyAuthorityReview,
   uploadAdvisorAuthorityEvidence,
@@ -83,6 +84,7 @@ export default function AdvisorAuthorityEvidencePanel({ assignmentId, lang }: { 
   const [note, setNote] = useState('');
   const [replacementTarget, setReplacementTarget] = useState<AdvisorAuthorityEvidence | null>(null);
   const [busy, setBusy] = useState(false);
+  const [alertBusy, setAlertBusy] = useState(false);
   const [downloading, setDownloading] = useState('');
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
@@ -130,6 +132,21 @@ export default function AdvisorAuthorityEvidencePanel({ assignmentId, lang }: { 
     setError('');
     setNotice(T(lang, `Đang chuẩn bị file thay thế cho ${item.original_name}.`, `Preparing replacement for ${item.original_name}.`));
     window.setTimeout(() => document.getElementById(`d68-authority-file-${assignmentId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 20);
+  }
+
+  async function acknowledgeAlert() {
+    if (!review?.expiry_alert || review.expiry_alert.acknowledged || alertBusy) return;
+    setAlertBusy(true);
+    setError('');
+    try {
+      await acknowledgeAdvisorAuthorityAlert({ assignmentId, alertKey: review.expiry_alert.key });
+      await load();
+      setNotice(T(lang, 'Đã ghi nhận bạn đã xem cảnh báo authority. Việc xác nhận này không gia hạn authority hoặc thay đổi quyền truy cập.', 'Authority alert acknowledged. This does not renew authority or change access.'));
+    } catch (ackError: any) {
+      setError(ackError?.message || T(lang, 'Không thể xác nhận cảnh báo authority.', 'Could not acknowledge authority alert.'));
+    } finally {
+      setAlertBusy(false);
+    }
   }
 
   async function submit() {
@@ -186,17 +203,24 @@ export default function AdvisorAuthorityEvidencePanel({ assignmentId, lang }: { 
 
   const lifecycle = review.authority_lifecycle_status || review.authority_status;
   const rereviewPending = review.current_rereview?.status === 'pending';
+  const alert = review.expiry_alert;
 
   return (
     <section className="d68-authority-evidence">
       <div className="d68-authority-evidence__head">
         <div>
-          <b>{T(lang, 'Bằng chứng & tái thẩm định authority · Phiên 7', 'Authority evidence & re-review · Session 7')}</b>
-          <span>{T(lang, 'Tài liệu riêng tư; file đã nộp không bị sửa/xóa và chỉ bạn cùng Admin được tải xuống.', 'Private evidence; submitted files are immutable and downloadable only by you and Admin.')}</span>
+          <b>{T(lang, 'Authority evidence, cảnh báo hết hạn & tái thẩm định · Phiên 8', 'Authority evidence, expiry alerts & re-review · Session 8')}</b>
+          <span>{T(lang, 'Cảnh báo được tính theo thời gian thực; không có email/SMS tự động. Tài liệu riêng tư và file đã nộp vẫn bất biến.', 'Alerts are computed at read time; no automated email/SMS is sent. Evidence remains private and immutable after submission.')}</span>
         </div>
         <span className={`d68-authority-evidence__state is-${review.authority_status}`}>{lifecycleLabel(lifecycle, lang)}</span>
       </div>
 
+      {alert ? <div className={`d68-authority-evidence__request is-${alert.severity}`}>
+        <strong>{lang === 'en' ? alert.title_en : alert.title_vi}</strong>
+        <span> {lang === 'en' ? alert.message_en : alert.message_vi}</span>
+        {alert.authority_expires_at ? <small> · {T(lang, 'Hết hạn', 'Expires')}: {formatDate(alert.authority_expires_at, lang)}</small> : null}
+        {alert.acknowledged ? <small> · {T(lang, 'Đã xem', 'Acknowledged')} {formatDate(alert.acknowledged_at, lang)}</small> : <button type="button" disabled={alertBusy} onClick={() => void acknowledgeAlert()}>{alertBusy ? '…' : T(lang, 'Đã xem cảnh báo', 'Acknowledge alert')}</button>}
+      </div> : null}
       {rereviewPending ? <div className="d68-authority-evidence__rereview"><strong>{T(lang, `Tái thẩm định vòng ${review.current_rereview?.cycle_no}`, `Re-review cycle ${review.current_rereview?.cycle_no}`)}</strong><span>{review.current_rereview?.reason}</span><small>{T(lang, 'Quyền mở Business context tạm đóng cho đến khi Admin duyệt lại authority.', 'Business context access is suspended until Admin re-approves authority.')}</small></div> : null}
       {review.authority_expires_at ? <div className="d68-authority-evidence__expiry">{T(lang, 'Authority hết hạn', 'Authority expires')}: <b>{formatDate(review.authority_expires_at, lang)}</b></div> : null}
       {latestRequest?.note ? <div className="d68-authority-evidence__request"><strong>{T(lang, 'Admin yêu cầu bổ sung:', 'Admin request:')}</strong> {latestRequest.note}</div> : null}
