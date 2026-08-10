@@ -38,7 +38,7 @@
     "qa:advisor-session6": "node scripts/deals68-advisor-session6-evidence-check.mjs && node scripts/deals68-advisor-session6-postgres-test.mjs",
     "qa:advisor-session7": "node scripts/deals68-advisor-session7-validation-check.mjs && node scripts/deals68-advisor-session7-postgres-test.mjs",
     "qa:advisor-session8": "node scripts/deals68-advisor-session8-alerts-check.mjs && node scripts/deals68-advisor-session8-postgres-test.mjs",
-    "qa:advisor-session9": "node scripts/deals68-advisor-session9-notifications-check.mjs && node scripts/deals68-advisor-session9-postgres-test.mjs",
+    "qa:advisor-session9": "node scripts/deals68-advisor-session9-notifications-check.mjs && node scripts/deals68-advisor-session9-postgres-test.mjs && node scripts/deals68-advisor-session9-live-schema-check.mjs && node scripts/deals68-advisor-session9-live-schema-postgres-test.mjs",
     "qa:asset-valuation": "node scripts/deals68-asset-valuation-v1-check.mjs",
     "qa:business-report-ui": "node scripts/deals68-business-report-ui-check.mjs",
     "qa:admin-reports": "node scripts/deals68-admin-reports-phase4-check.mjs",
