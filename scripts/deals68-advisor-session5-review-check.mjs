@@ -57,7 +57,7 @@ for (const [name, pattern] of forbidden) {
 // Later sessions may enrich the Admin intake queue by wrapping Session 5 v1 in a
 // versioned read RPC. The Session 5 decision path itself must remain v1 and the
 // underlying Session 5 migration contract above remains locked.
-assert.match(adminLib, /d68_admin_list_advisor_business_intakes_v[123]/);
+assert.match(adminLib, /d68_admin_list_advisor_business_intakes_v[1234]/);
 assert.match(adminLib, /d68_admin_review_advisor_business_intake_v1/);
 assert.match(adminPage, /AdminAdvisorIntakes/);
 assert.match(adminPage, /approveAdminAdvisorIntake|reviewAdminAdvisorIntake/);
