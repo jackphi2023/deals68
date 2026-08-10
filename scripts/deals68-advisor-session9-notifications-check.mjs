@@ -5,7 +5,8 @@ import fs from 'node:fs';
 const core = fs.readFileSync('supabase/migrations/20260810174500_advisor_authority_email_notifications_phase9_v1.sql', 'utf8');
 const scheduler = fs.readFileSync('supabase/migrations/20260810174600_advisor_authority_email_scheduler_phase9_v1.sql', 'utf8');
 const schedulerAuth = fs.readFileSync('supabase/migrations/20260810174800_advisor_authority_email_scheduler_auth_phase9_v1.sql', 'utf8');
-const worker = fs.readFileSync('supabase/functions/advisor-authority-notification-email/index.ts', 'utf8');
+const workerRouting = fs.readFileSync('supabase/migrations/20260810174900_advisor_authority_email_worker_v2_phase9_v1.sql', 'utf8');
+const worker = fs.readFileSync('supabase/functions/advisor-authority-notification-email-v2/index.ts', 'utf8');
 const advisorLib = fs.readFileSync('src/lib/advisorAuthorityEvidence.ts', 'utf8');
 const advisorPanel = fs.readFileSync('src/components/AdvisorAuthorityEvidencePanel.tsx', 'utf8');
 const adminLib = fs.readFileSync('src/lib/adminAdvisorIntakes.ts', 'utf8');
@@ -88,6 +89,16 @@ for (const token of [
 assert.doesNotMatch(schedulerAuth, /grant execute on function public\.d68_notification_scheduler_authorize_v1\(text\) to authenticated/i, 'Scheduler token authorization RPC must remain service-role only');
 
 for (const token of [
+  "'/functions/v1/advisor-authority-notification-email-v2'",
+  "'worker_slug', 'advisor-authority-notification-email-v2'",
+  "'x-d68-scheduler-token', v_scheduler_token",
+  'd68_private.enqueue_advisor_authority_notifications_v1',
+  "'business_mutations_enabled', false",
+  "'authority_mutations_enabled', false",
+]) assert.ok(workerRouting.includes(token), `Session 9 worker-v2 routing missing: ${token}`);
+assert.ok(workerRouting.includes('revoke all on function d68_private.dispatch_advisor_authority_notifications_v1() from public, anon, authenticated'), 'Worker-v2 dispatcher must remain private');
+
+for (const token of [
   "Deno.env.get('RESEND_API_KEY')",
   "Deno.env.get('BREVO_API_KEY')",
   "Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')",
@@ -99,17 +110,18 @@ for (const token of [
   "'api-key': BREVO_API_KEY",
   "SCHEDULER_TOKEN_REQUIRED",
   "SCHEDULER_TOKEN_INVALID",
-]) assert.ok(worker.includes(token), `Session 9 email worker missing contract token: ${token}`);
+]) assert.ok(worker.includes(token), `Session 9 email worker v2 missing contract token: ${token}`);
 assert.equal(worker.includes("authorization !== `Bearer ${SUPABASE_ANON_KEY}`"), false, 'Worker must not rely on Edge runtime anon-key string equality');
 assert.equal(/req\.json\s*\(/.test(worker), false, 'Worker must not accept caller-controlled recipient/content payload');
 assert.equal(/console\.(?:log|error)\([^\n]*(recipient_email|recipient|to:)/i.test(worker), false, 'Worker must not log recipient email');
 assert.doesNotMatch(worker, /(?:re_|xkeysib-|sk_live_|sk_test_)[A-Za-z0-9_-]{16,}/, 'No provider secret may be hardcoded');
 
+const allSql = core + scheduler + schedulerAuth + workerRouting;
 const protectedWrite = /(?:insert\s+into|update|delete\s+from)\s+public\.(businesses|business_files|business_images|payment_orders|proposals|request_data|business_financial_access_grants)/i;
-assert.doesNotMatch(core + scheduler + schedulerAuth, protectedWrite, 'Session 9 must not write Business/payment/data-room/proposal scopes');
-assert.doesNotMatch(core + scheduler + schedulerAuth, /(create|drop|alter)\s+policy[^;]+on\s+(?:public\.businesses|storage\.objects)/is, 'Session 9 must not change Business or Storage RLS policies');
-assert.doesNotMatch(core + scheduler + schedulerAuth, /grant\s+execute[^;]+\bto\s+[^;]*anon/i, 'No Session 9 RPC may be granted to anon');
-assert.doesNotMatch(core + scheduler + schedulerAuth, /permissions\s*=\s*array\[[^\]]*(files|images|proposals|data_requests|payments|reports)/i, 'No broad Advisor scope');
+assert.doesNotMatch(allSql, protectedWrite, 'Session 9 must not write Business/payment/data-room/proposal scopes');
+assert.doesNotMatch(allSql, /(create|drop|alter)\s+policy[^;]+on\s+(?:public\.businesses|storage\.objects)/is, 'Session 9 must not change Business or Storage RLS policies');
+assert.doesNotMatch(allSql, /grant\s+execute[^;]+\bto\s+[^;]*anon/i, 'No Session 9 RPC may be granted to anon');
+assert.doesNotMatch(allSql, /permissions\s*=\s*array\[[^\]]*(files|images|proposals|data_requests|payments|reports)/i, 'No broad Advisor scope');
 
 assert.ok(advisorLib.includes('d68_get_my_authority_review_v4'), 'Advisor client must use Session 9 v4 wrapper');
 assert.ok(advisorLib.includes('d68_advisor_update_authority_notification_preferences_v1'), 'Advisor client must update preferences through Session 9 RPC');
@@ -122,6 +134,6 @@ assert.ok(pkg.scripts['qa:advisor-session9'], 'package.json must expose qa:advis
 assert.ok(pkg.scripts['qa:release']?.includes('qa:advisor-session9'), 'release QA must include Session 9');
 
 console.log('✓ Advisor Session 9 controlled authority email notifications static contract: PASS');
-console.log('✓ Dedicated Vault scheduler token is required before the Edge worker can claim service-owned jobs.');
+console.log('✓ Dedicated Vault scheduler token is required before the hardened Edge worker v2 can claim service-owned jobs.');
 console.log('✓ Preferences affect delivery only; exact-alert dedupe, 6 sent emails/profile/24h and max 3 attempts remain enforced.');
 console.log('✓ No Business, authority, Storage or payment permission was added.');
