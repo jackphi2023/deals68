@@ -65,7 +65,7 @@
     "qa:market-partner-demo": "node scripts/qa-market-partner-demo.mjs"
   },
   "dependencies": {
-    "@supabase/supabase-js": "2.109.0",
+    "@supabase/supabase-js": "2.45.4",
     "lucide-react": "0.468.0",
     "react": "18.3.1",
     "react-dom": "18.3.1",
