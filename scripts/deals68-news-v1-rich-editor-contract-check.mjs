@@ -52,7 +52,7 @@ check('Paste sanitizer normalizes H1 to H2', /tag === 'H3' \? 3 : 2/.test(conten
 check('Paste sanitizer rejects executable and embed elements', /SCRIPT[\s\S]*STYLE[\s\S]*IFRAME[\s\S]*OBJECT[\s\S]*EMBED/.test(content));
 check('Pasted external IMG elements are dropped', /if \(tag === 'IMG'\) return \[\]/.test(content));
 check('Links are protocol-sanitized', /sanitizeNewsHref/.test(content) && /http:[\s\S]*https:[\s\S]*mailto:[\s\S]*tel:/.test(content));
-check('Image sources reject arbitrary protocols', /sanitizeNewsImageSrc/.test(content) && /url\.protocol === 'https:'/.test(content));
+check('Image sources are restricted to managed news-media storage', /sanitizeNewsImageSrc/.test(content) && /storage\/v1\/object\/public\/news-media/.test(content));
 check('YouTube parser only returns canonical video IDs', /YOUTUBE_ID_RE/.test(content) && /parseYouTubeVideoId/.test(content));
 
 for (const token of ['Bôi đậm','In nghiêng','Gạch chân','Danh sách dấu chấm','Danh sách đánh số','Trích dẫn','Link','Ảnh','YouTube','Undo','Redo','Xóa format']) {
