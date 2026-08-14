@@ -22,6 +22,7 @@ import { toLocalizedPath } from '../lib/i18nRoutes';
 import type { Lang } from '../lib/i18n';
 import { HeroBannerSlider, PromotionBanner } from '../components/SiteBanners';
 import SensitiveFinancialValue from '../components/business/SensitiveFinancialValue';
+import FeaturedNews from '../components/news/FeaturedNews';
 
 type Deal = {
   id: string;
@@ -340,6 +341,8 @@ export default function Home({ lang }: { lang: Lang }) {
           <div className="d68-home-industry-grid">{industries.map((item) => <Link key={item.vi} to={buildPath('/businesses', lang, { industry: item.key })} className="d68-home-industry-card"><div><IndustryLineIcon type={item.icon} /></div><section><strong>{T(lang, item.vi, item.en)}</strong><p>{T(lang, item.noteVi, item.noteEn)}</p></section></Link>)}</div>
         </div>
       </section>
+
+      <FeaturedNews lang={lang} />
 
       <section className="d68-home-block d68-home-valuation">
         <div className="d68-home-container">
