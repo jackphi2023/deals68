@@ -58,13 +58,13 @@
       "id": "public-login-business-option",
       "file": "src/pages/Login.tsx",
       "type": "contains",
-      "value": "{ key: 'business', vi: 'Doanh nghiệp', en: 'Business', register: '/register/business' }"
+      "value": "{ key: 'business', vi: 'Doanh nghiệp', en: 'Business' }"
     },
     {
       "id": "public-login-investor-option",
       "file": "src/pages/Login.tsx",
       "type": "contains",
-      "value": "{ key: 'investor', vi: 'Nhà đầu tư', en: 'Investor', register: '/register/investor' }"
+      "value": "{ key: 'investor', vi: 'Nhà đầu tư', en: 'Investor' }"
     },
     {
       "id": "public-login-business-dashboard-target",
