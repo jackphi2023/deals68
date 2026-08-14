@@ -58,8 +58,16 @@ check('Route prefetch understands News list/detail', /path === '\/news'[^\n]*loa
 
 check('News list uses service layer only', /listPublishedNews/.test(list) && /listNewsByTag/.test(list) && /listNewsTags/.test(list));
 check('News list uses 12-row public page contract', /NEWS_DEFAULT_PUBLIC_PAGE_SIZE/.test(list));
+check('News list collects published corpus in service-sized pages for archive stats', /NEWS_MAX_PUBLIC_PAGE_SIZE/.test(list) && /loadAllPublishedNews/.test(list));
 check('Tag slug is normalized before querying', /normalizeNewsSlug\(tagSlug\)/.test(list));
 check('Tag page handles unknown topic', /Topic not found/.test(list) && /Không tìm thấy chủ đề/.test(list));
+check('Month archive accepts YYYY-MM query and filters by editorial published date', /normalizeArchiveMonth/.test(list) && /searchParams\.get\('month'\)/.test(list) && /published_date[\s\S]*startsWith\(`\$\{selectedMonth\}-`\)/.test(list));
+check('Month archive links are clickable from the News root', /to=\{`\$\{newsPath\}\?month=\$\{item\.month\}`\}/.test(list));
+check('News sidebar exposes Time and Topics boxes', /Thời gian/.test(list) && /Chủ đề/.test(list) && /d68-news-filter-box/.test(list));
+check('Popular News tags are capped at top 10', /\.slice\(0, 10\)/.test(list));
+check('News intro uses the approved market wording', /Cập nhật và góc nhìn thực tiễn về đầu tư, M&A, gọi vốn và các giao dịch trên thị trường\./.test(list));
+check('Published article count summary is removed', !/\$\{total\} bài đã xuất bản/.test(list) && !/\$\{total\} published articles/.test(list));
+check('Pagination stays after the list and always shows current page/total pages', /d68-news-grid[\s\S]*d68-news-pagination/.test(list) && /Trang \$\{page\}\/\$\{pageCount\}/.test(list));
 check('Out-of-range pagination is handled without claiming zero News', /total > 0 && !rows\.length/.test(list) && /Go to the last page/.test(list));
 
 check('News cards use localized article data', /localizeNewsArticle\(article, language\)/.test(card));
@@ -71,15 +79,20 @@ check('News detail loads published article through service', /getNewsBySlug\(slu
 check('Recent News is capped at 5 and excludes current article', /getRecentNews\(5, loadedArticle\.id, lang\)/.test(detail));
 check('Related News is capped at 4', /getRelatedNews\(loadedArticle\.id, 4, lang\)/.test(detail));
 check('Recent/Related failures do not hide core article', /Promise\.allSettled/.test(detail));
-check('Detail renders breadcrumb, H1, date, excerpt, tags and hero image', /d68-news-breadcrumb/.test(detail) && /<h1>\{localized\.title\}<\/h1>/.test(detail) && /dateTime=\{localized\.publishedDate\}/.test(detail) && /d68-news-article__excerpt/.test(detail) && /<NewsTags/.test(detail) && /d68-news-article__hero/.test(detail));
+check('Detail renders breadcrumb, H1, date, excerpt and tags', /d68-news-breadcrumb/.test(detail) && /<h1>\{localized\.title\}<\/h1>/.test(detail) && /dateTime=\{localized\.publishedDate\}/.test(detail) && /d68-news-article__excerpt/.test(detail) && /<NewsTags/.test(detail));
+check('Detail does not repeat featured image above article content', !/d68-news-article__hero/.test(detail) && !/<img[\s\S]*localized\.featuredImageUrl/.test(detail));
 check('Detail uses NEWS-04 safe renderer', /<NewsContentRenderer content=\{localized\.content\}/.test(detail));
 check('Recent sidebar localizes per language', /localizeNewsArticle\(article, language\)/.test(sidebar));
 check('Safe renderer still avoids raw HTML injection', !/dangerouslySetInnerHTML/.test(renderer));
 
-check('Public News grid is 3 columns desktop', /grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/.test(css));
+check('Homepage/public generic News grid remains 3 columns desktop', /d68-news-grid\{[^}]*grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/.test(css));
+check('Desktop News list uses an 80/20 main/sidebar layout', /d68-news-list-layout\{[^}]*grid-template-columns:minmax\(0,4fr\) minmax\(210px,1fr\)/.test(css));
+check('Desktop News rows split image/content at 25/75 inside the 80% main column', /d68-news-list-main \.d68-news-card:not\(\.is-compact\)\{[^}]*grid-template-columns:minmax\(150px,25%\) minmax\(0,75%\)/.test(css));
+check('Desktop News row orders title excerpt date tags', /d68-news-list-main \.d68-news-card__title\{[^}]*order:1/.test(css) && /d68-news-list-main \.d68-news-card__body>p\{[^}]*order:2/.test(css) && /d68-news-list-main \.d68-news-card time\{[^}]*order:3/.test(css) && /d68-news-list-main \.d68-news-card__body>\.d68-news-tags\{[^}]*order:4/.test(css));
 check('News card media keeps 4:3 ratio', /d68-news-card__image-link\{[^}]*aspect-ratio:4\/3/.test(css));
 check('News card image uses centered cover without distortion', /d68-news-card__image-link img\{[^}]*width:100%[^}]*height:100%[^}]*object-fit:cover[^}]*object-position:center/.test(css));
-check('Detail hero uses a 4:3 clipped frame and centered cover image', /d68-news-article__hero\{[^}]*aspect-ratio:4\/3[^}]*overflow:hidden/.test(css) && /d68-news-article__hero img\{[^}]*width:100%[^}]*height:100%[^}]*object-fit:cover[^}]*object-position:center/.test(css));
+check('Embedded article images use 60% width on desktop and auto height', /d68-news-content__image\{[^}]*width:60%[^}]*margin:26px auto/.test(css) && /d68-news-content__image img\{[^}]*width:100%[^}]*height:auto/.test(css));
+check('Mobile embedded article images expand to usable full width', /@media\(max-width:700px\)[\s\S]*d68-news-content__image\{[^}]*width:100%/.test(css));
 check('Recent sidebar image uses centered cover in 4:3 frame', /d68-news-sidebar__image\{[^}]*aspect-ratio:4\/3[^}]*overflow:hidden/.test(css) && /d68-news-sidebar__image img\{[^}]*object-fit:cover[^}]*object-position:center/.test(css));
 check('Mobile compact Related cards preserve 4:3 media', /d68-news-card\.is-compact \.d68-news-card__image-link\{[^}]*aspect-ratio:4\/3/.test(css) && !/d68-news-card\.is-compact \.d68-news-card__image-link\{[^}]*aspect-ratio:auto/.test(css));
 check('Detail has desktop content/sidebar layout', /d68-news-detail-layout\{[^}]*grid-template-columns:minmax\(0,1fr\) 310px/.test(css));
