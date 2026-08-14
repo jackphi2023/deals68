@@ -69,20 +69,44 @@ function articleHasLanguage(article: any, lang: 'vi' | 'en') {
   return Boolean(article[`slug_${lang}`] && article[`title_${lang}`] && article[`excerpt_${lang}`] && article[`content_json_${lang}`]);
 }
 
+function postgrestHeaders(rows: any[], total: number) {
+  return {
+    'access-control-allow-origin': '*',
+    'access-control-expose-headers': 'content-range, range-unit',
+    'content-range': rows.length ? `0-${rows.length - 1}/${total}` : `*/${total}`,
+    'range-unit': 'items',
+  };
+}
+
 async function json(route: Route, rows: any[], total = rows.length) {
+  const accept = route.request().headers()['accept'] || '';
+  const wantsObject = accept.includes('application/vnd.pgrst.object+json');
+  if (wantsObject && rows.length === 1) {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      headers: postgrestHeaders(rows, total),
+      body: JSON.stringify(rows[0]),
+    });
+    return;
+  }
   await route.fulfill({
     status: 200,
     contentType: 'application/json',
-    headers: { 'content-range': rows.length ? `0-${rows.length - 1}/${total}` : '*/0' },
+    headers: postgrestHeaders(rows, total),
     body: JSON.stringify(rows),
   });
 }
 
 async function mockNewsRest(page: Page) {
   // Registered first so the more specific News routes below take precedence.
-  // This keeps NEWS-08 deterministic even when GitHub has no Supabase secrets.
   await page.route('https://news08.test.supabase.co/**', async (route) => {
-    await route.fulfill({ status: 200, contentType: 'application/json', body: '[]' });
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      headers: { 'access-control-allow-origin': '*' },
+      body: '[]',
+    });
   });
 
   await page.route('**/rest/v1/news_articles*', async (route) => {
@@ -120,6 +144,9 @@ async function mockNewsRest(page: Page) {
         news_article_tags: relations.filter((rel) => rel.article_id === row.id).map((rel) => ({ tag_id: rel.tag_id })),
       }));
     }
+    if (viSlug || enSlug) {
+      console.log(`[NEWS08 mock article] ${url.search} rows=${rows.length} accept=${route.request().headers()['accept'] || ''}`);
+    }
     await json(route, rows, total);
   });
 
@@ -150,8 +177,14 @@ async function mockNewsRest(page: Page) {
   });
 }
 
+async function logNewsState(page: Page, label: string) {
+  const main = await page.locator('main').innerText().catch(() => '<no main>');
+  console.log(`[NEWS08 ${label}] ${main.slice(0, 1200)}`);
+}
+
 test.describe('NEWS-08 — public News release UAT', () => {
   test.beforeEach(async ({ page }) => {
+    page.on('pageerror', (error) => console.log(`[NEWS08 pageerror] ${error.message}`));
     await mockNewsRest(page);
   });
 
@@ -166,12 +199,14 @@ test.describe('NEWS-08 — public News release UAT', () => {
     await gotoAndWait(page, '/news/tag/ma');
     await expect(page.getByRole('heading', { level: 1, name: 'Chủ đề: M&A' })).toBeVisible();
     await expect(page.locator('.d68-news-card')).toHaveCount(3);
+    if (await page.locator('link[rel="alternate"][hreflang="en"]').count() === 0) await logNewsState(page, 'missing-tag-hreflang');
     await expect(page.locator('link[rel="alternate"][hreflang="en"]')).toHaveAttribute('href', 'https://deals68.com/en/news/tag/ma');
     await expectNoHorizontalOverflow(page);
   });
 
   test('detail renders editorial date, safe rich content, Recent/Related and NewsArticle SEO', async ({ page }) => {
     await gotoAndWait(page, '/news/thuong-vu-ma-viet-nam');
+    if (await page.getByRole('heading', { level: 1, name: 'Thương vụ M&A Việt Nam' }).count() === 0) await logNewsState(page, 'missing-vi-detail');
     await expect(page.getByRole('heading', { level: 1, name: 'Thương vụ M&A Việt Nam' })).toBeVisible();
     await expect(page.locator('time[datetime="2026-08-10"]').first()).toBeVisible();
     await expect(page.getByText('Nội dung bài viết NEWS-08')).toBeVisible();
@@ -191,6 +226,7 @@ test.describe('NEWS-08 — public News release UAT', () => {
 
   test('EN article uses the genuine language bundle and VI hreflang', async ({ page }) => {
     await gotoAndWait(page, '/en/news/vietnam-ma-deal');
+    if (await page.getByRole('heading', { level: 1, name: 'Vietnam M&A Deal' }).count() === 0) await logNewsState(page, 'missing-en-detail');
     await expect(page.getByRole('heading', { level: 1, name: 'Vietnam M&A Deal' })).toBeVisible();
     await expect(page.getByText('NEWS-08 article content')).toBeVisible();
     await expect(page.locator('link[rel="alternate"][hreflang="vi"]')).toHaveAttribute('href', 'https://deals68.com/news/thuong-vu-ma-viet-nam');
@@ -199,6 +235,7 @@ test.describe('NEWS-08 — public News release UAT', () => {
 
   test('unavailable article is noindex and does not leak another article', async ({ page }) => {
     await gotoAndWait(page, '/news/khong-ton-tai');
+    if (await page.getByRole('heading', { level: 1, name: 'Không tìm thấy bài viết' }).count() === 0) await logNewsState(page, 'missing-not-found');
     await expect(page.getByRole('heading', { level: 1, name: 'Không tìm thấy bài viết' })).toBeVisible();
     await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'noindex,follow');
     await expect(page.getByText('Thương vụ M&A Việt Nam')).toHaveCount(0);
