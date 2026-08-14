@@ -79,6 +79,12 @@ async function json(route: Route, rows: any[], total = rows.length) {
 }
 
 async function mockNewsRest(page: Page) {
+  // Registered first so the more specific News routes below take precedence.
+  // This keeps NEWS-08 deterministic even when GitHub has no Supabase secrets.
+  await page.route('https://news08.test.supabase.co/**', async (route) => {
+    await route.fulfill({ status: 200, contentType: 'application/json', body: '[]' });
+  });
+
   await page.route('**/rest/v1/news_articles*', async (route) => {
     const url = new URL(route.request().url());
     let rows = [...articles];
@@ -130,12 +136,11 @@ async function mockNewsRest(page: Page) {
   await page.route('**/rest/v1/news_article_tags*', async (route) => {
     const url = new URL(route.request().url());
     let rows = [...relations];
-    const articleEq = url.searchParams.get('article_id');
-    if (articleEq?.startsWith('eq.')) rows = rows.filter((row) => row.article_id === articleEq.slice(3));
-    const articleIds = idsFromInFilter(articleEq);
+    const articleFilter = url.searchParams.get('article_id');
+    if (articleFilter?.startsWith('eq.')) rows = rows.filter((row) => row.article_id === articleFilter.slice(3));
+    if (articleFilter?.startsWith('neq.')) rows = rows.filter((row) => row.article_id !== articleFilter.slice(4));
+    const articleIds = idsFromInFilter(articleFilter);
     if (articleIds.length) rows = rows.filter((row) => articleIds.includes(row.article_id));
-    const articleNeq = url.searchParams.get('article_id')?.startsWith('neq.') ? url.searchParams.get('article_id')!.slice(4) : null;
-    if (articleNeq) rows = rows.filter((row) => row.article_id !== articleNeq);
     const tagIds = idsFromInFilter(url.searchParams.get('tag_id'));
     if (tagIds.length) rows = rows.filter((row) => tagIds.includes(row.tag_id));
 
