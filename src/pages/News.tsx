@@ -58,8 +58,8 @@ export default function News({ lang }: Props) {
             page: 1,
             pageSize: 1,
             language: alternateLanguage,
-          });
-          hasAlternateTagContent = alternateResult.total > 0;
+          }).catch(() => null);
+          hasAlternateTagContent = Boolean(alternateResult && alternateResult.total > 0);
         }
       }
 
