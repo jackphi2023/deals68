@@ -5,6 +5,7 @@ import path from 'node:path';
 const root = process.cwd();
 const failures = [];
 let total = 0;
+const releaseMode = process.env.D68_NEWS_RELEASE_MODE === '1';
 
 function check(label, condition) {
   total += 1;
@@ -152,21 +153,25 @@ check(
   directNewsQueriesOutsideService.length === 0,
 );
 
-const forbiddenUiFiles = [
-  'src/pages/News.tsx',
-  'src/pages/NewsDetail.tsx',
-  'src/components/news/NewsCard.tsx',
-  'src/components/news/NewsContentRenderer.tsx',
-  'src/components/news/NewsEditor.tsx',
-  'src/components/news/NewsTags.tsx',
-  'src/components/news/FeaturedNews.tsx',
-  'src/components/news/NewsSidebar.tsx',
-  'src/components/admin/AdminNewsManager.tsx',
-  'src/components/admin/AdminNewsEditor.tsx',
-  'src/styles/pages/news.css',
-];
-check('NEWS-02 does not add News UI files', forbiddenUiFiles.every((rel) => !exists(rel)));
-check('NEWS-02 does not add public News routes yet', !/<Route[^>]+path=["'][^"']*\/news/i.test(app));
+if (!releaseMode) {
+  const forbiddenUiFiles = [
+    'src/pages/News.tsx',
+    'src/pages/NewsDetail.tsx',
+    'src/components/news/NewsCard.tsx',
+    'src/components/news/NewsContentRenderer.tsx',
+    'src/components/news/NewsEditor.tsx',
+    'src/components/news/NewsTags.tsx',
+    'src/components/news/FeaturedNews.tsx',
+    'src/components/news/NewsSidebar.tsx',
+    'src/components/admin/AdminNewsManager.tsx',
+    'src/components/admin/AdminNewsEditor.tsx',
+    'src/styles/pages/news.css',
+  ];
+  check('NEWS-02 does not add News UI files', forbiddenUiFiles.every((rel) => !exists(rel)));
+  check('NEWS-02 does not add public News routes yet', !/<Route[^>]+path=["'][^"']*\/news/i.test(app));
+} else {
+  console.log('INFO NEWS-02 release mode: historical no-UI assertions skipped.');
+}
 
 if (failures.length) {
   console.error(`\nNEWS-02 service/data contract: ${total - failures.length}/${total} PASS`);
