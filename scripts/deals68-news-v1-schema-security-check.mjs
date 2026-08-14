@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const root = process.cwd();
-const migrationRel = 'supabase/migrations/20260814045746_news_v1_schema_security.sql';
+const migrationRel = 'supabase/migrations/20260814044837_news_v1_schema_security.sql';
 const migrationPath = path.join(root, migrationRel);
 const failures = [];
 let total = 0;
