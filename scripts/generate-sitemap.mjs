@@ -13,6 +13,7 @@ const staticViPaths = [
   '/businesses/fundraising',
   '/businesses/sale',
   '/businesses/debt',
+  '/news',
   '/pricing',
   '/pricing/business',
   '/pricing/investor',
@@ -33,6 +34,7 @@ const staticViPaths = [
 const staticEnPaths = [
   '/en',
   '/en/businesses',
+  '/en/news',
   '/en/pricing',
   '/en/valuation',
   '/en/about',
@@ -78,11 +80,28 @@ async function fetchRows(table, select, filters = '') {
 
 function entry(urlPath, lastmod = '') {
   const location = `${SITE_URL}${urlPath === '/' ? '/' : urlPath}`;
-  return `  <url>
-    <loc>${xml(location)}</loc>${
+  return `  <url>\n    <loc>${xml(location)}</loc>${
       lastmod ? `\n    <lastmod>${xml(lastmod.slice(0, 10))}</lastmod>` : ''
-    }
-  </url>`;
+    }\n  </url>`;
+}
+
+function hasNewsBundle(row, language) {
+  const suffix = language === 'en' ? 'en' : 'vi';
+  return Boolean(
+    row?.published_date
+    && String(row?.[`slug_${suffix}`] || '').trim()
+    && String(row?.[`title_${suffix}`] || '').trim()
+    && String(row?.[`excerpt_${suffix}`] || '').trim()
+    && row?.[`content_json_${suffix}`],
+  );
+}
+
+function newerLastmod(current, candidate) {
+  const currentValue = String(current || '');
+  const candidateValue = String(candidate || '');
+  if (!currentValue) return candidateValue;
+  if (!candidateValue) return currentValue;
+  return candidateValue > currentValue ? candidateValue : currentValue;
 }
 
 async function main() {
@@ -109,6 +128,73 @@ async function main() {
     urls.set(`/en/businesses/${encoded}`, row.updated_at || '');
   }
 
+  // NEWS-07: News sitemap rows are read through the anon role and are still
+  // explicitly constrained to Published + non-deleted content. VI and EN URLs
+  // are emitted independently so an incomplete EN bundle never creates a fake
+  // translated URL.
+  const newsArticles = await fetchRows(
+    'news_articles',
+    'id,status,slug_vi,slug_en,title_vi,title_en,excerpt_vi,excerpt_en,content_json_vi,content_json_en,published_date,updated_at,deleted_at',
+    '&status=eq.published&deleted_at=is.null&published_date=not.is.null&order=published_date.desc&limit=5000',
+  ).catch(() => []);
+
+  const articleLanguages = new Map();
+  let latestViNews = '';
+  let latestEnNews = '';
+
+  for (const row of newsArticles) {
+    const articleId = String(row.id || '').trim();
+    if (!articleId) continue;
+    const vi = hasNewsBundle(row, 'vi');
+    const en = hasNewsBundle(row, 'en');
+    articleLanguages.set(articleId, { vi, en, updatedAt: row.updated_at || row.published_date || '' });
+
+    if (vi) {
+      const slug = String(row.slug_vi || '').trim();
+      urls.set(`/news/${encodeURIComponent(slug)}`, row.updated_at || row.published_date || '');
+      latestViNews = newerLastmod(latestViNews, row.updated_at || row.published_date || '');
+    }
+    if (en) {
+      const slug = String(row.slug_en || '').trim();
+      urls.set(`/en/news/${encodeURIComponent(slug)}`, row.updated_at || row.published_date || '');
+      latestEnNews = newerLastmod(latestEnNews, row.updated_at || row.published_date || '');
+    }
+  }
+
+  if (latestViNews) urls.set('/news', latestViNews);
+  if (latestEnNews) urls.set('/en/news', latestEnNews);
+
+  // Tag pages are emitted only when at least one sitemap-eligible article in
+  // that language is linked to the tag. This keeps empty/localization-only tag
+  // routes out of the index.
+  const [newsRelations, newsTags] = await Promise.all([
+    fetchRows('news_article_tags', 'article_id,tag_id', '&limit=10000').catch(() => []),
+    fetchRows('news_tags', 'id,slug', '&limit=5000').catch(() => []),
+  ]);
+  const tagById = new Map(
+    newsTags
+      .map((tag) => [String(tag.id || ''), String(tag.slug || '').trim()])
+      .filter(([id, slug]) => id && slug),
+  );
+  const tagLastmods = new Map();
+
+  for (const relation of newsRelations) {
+    const article = articleLanguages.get(String(relation.article_id || ''));
+    const tagSlug = tagById.get(String(relation.tag_id || ''));
+    if (!article || !tagSlug) continue;
+
+    const state = tagLastmods.get(tagSlug) || { vi: '', en: '' };
+    if (article.vi) state.vi = newerLastmod(state.vi, article.updatedAt);
+    if (article.en) state.en = newerLastmod(state.en, article.updatedAt);
+    tagLastmods.set(tagSlug, state);
+  }
+
+  for (const [tagSlug, state] of tagLastmods.entries()) {
+    const encoded = encodeURIComponent(tagSlug);
+    if (state.vi) urls.set(`/news/tag/${encoded}`, state.vi);
+    if (state.en) urls.set(`/en/news/tag/${encoded}`, state.en);
+  }
+
   fs.mkdirSync(outputDir, { recursive: true });
   const body = Array.from(urls.entries())
     .map(([urlPath, lastmod]) => entry(urlPath, lastmod))
@@ -116,11 +202,7 @@ async function main() {
 
   fs.writeFileSync(
     outputFile,
-    `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${body}
-</urlset>
-`,
+    `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${body}\n</urlset>\n`,
     'utf8',
   );
 
