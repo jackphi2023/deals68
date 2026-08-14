@@ -31,6 +31,8 @@ const loadAdvisorRegister = () => import('./pages/AdvisorRegister');
 const loadAdvisorLogin = () => import('./pages/AdvisorLogin');
 const loadAdvisorAccount = () => import('./pages/AdvisorAccount');
 const loadValuation = () => import('./pages/Valuation');
+const loadNews = () => import('./pages/News');
+const loadNewsDetail = () => import('./pages/NewsDetail');
 const loadModuleScreen = () => import('./pages/ModuleScreen');
 const loadNotFound = () => import('./pages/NotFound');
 const loadBusinessDashboard = () => import('./pages/BusinessDashboardWithReports');
@@ -55,6 +57,8 @@ const AdvisorRegister = lazy(loadAdvisorRegister);
 const AdvisorLogin = lazy(loadAdvisorLogin);
 const AdvisorAccount = lazy(loadAdvisorAccount);
 const Valuation = lazy(loadValuation);
+const News = lazy(loadNews);
+const NewsDetail = lazy(loadNewsDetail);
 const ModuleScreen = lazy(loadModuleScreen);
 const NotFound = lazy(loadNotFound);
 const BusinessDashboard = lazy(loadBusinessDashboard);
@@ -78,6 +82,8 @@ function likelyNextRouteLoaders(pathname: string): RouteLoader[] {
   if (path === '/investors') return [loadInvestorDetail];
   if (path.startsWith('/investors/')) return [loadBusinesses];
   if (path === '/pricing') return [loadRegister];
+  if (path === '/news') return [loadNewsDetail];
+  if (path.startsWith('/news/')) return [loadNews];
   if (path === '/login') return [loadForgotPassword];
   if (path === '/advisor/register') return [loadAdvisorLogin];
   if (path === '/advisor/login') return [loadAdvisorAccount];
@@ -282,6 +288,9 @@ export default function App(){
         <Route path="/investors/:code" element={<InvestorMarketplaceGate><InvestorDetail lang="vi"/></InvestorMarketplaceGate>}/>
         <Route path="/pricing" element={<Pricing lang="vi"/>}/>
         <Route path="/valuation" element={<Valuation lang="vi"/>}/>
+        <Route path="/news" element={<News lang="vi"/>}/>
+        <Route path="/news/tag/:tagSlug" element={<News lang="vi"/>}/>
+        <Route path="/news/:slug" element={<NewsDetail lang="vi"/>}/>
         <Route path="/login" element={<Login lang="vi"/>}/>
         <Route path="/advisor/register" element={<AdvisorRegister lang="vi"/>}/>
         <Route path="/advisor/login" element={<AdvisorLogin lang="vi"/>}/>
@@ -307,6 +316,9 @@ export default function App(){
         <Route path="/en/investors/:code" element={<InvestorMarketplaceGate><InvestorDetail lang="en"/></InvestorMarketplaceGate>}/>
         <Route path="/en/pricing" element={<Pricing lang="en"/>}/>
         <Route path="/en/valuation" element={<Valuation lang="en"/>}/>
+        <Route path="/en/news" element={<News lang="en"/>}/>
+        <Route path="/en/news/tag/:tagSlug" element={<News lang="en"/>}/>
+        <Route path="/en/news/:slug" element={<NewsDetail lang="en"/>}/>
         <Route path="/en/login" element={<Login lang="en"/>}/>
         <Route path="/en/advisor/register" element={<AdvisorRegister lang="en"/>}/>
         <Route path="/en/advisor/login" element={<AdvisorLogin lang="en"/>}/>
