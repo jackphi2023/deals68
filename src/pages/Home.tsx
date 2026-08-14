@@ -342,8 +342,6 @@ export default function Home({ lang }: { lang: Lang }) {
         </div>
       </section>
 
-      <FeaturedNews lang={lang} />
-
       <section className="d68-home-block d68-home-valuation">
         <div className="d68-home-container">
           <div className="d68-home-valuation__box">
@@ -358,6 +356,8 @@ export default function Home({ lang }: { lang: Lang }) {
       </section>
 
       <section className="d68-home-block d68-home-how"><div className="d68-home-container"><div className="d68-home-title d68-home-title--center"><h2>{T(lang, 'Cách hoạt động', 'How it works')}</h2><p>{T(lang, 'Ba bước để bắt đầu một thương vụ trên Deals68.', 'Three steps to start a deal on Deals68.')}</p></div><div className="d68-home-steps">{steps.map((step) => <div key={step.n}><b>{step.n}</b><h3>{step.title}</h3><p>{step.desc}</p></div>)}</div></div></section>
+
+      <FeaturedNews lang={lang} />
     </main>
   );
 }
