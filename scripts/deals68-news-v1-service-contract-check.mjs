@@ -54,7 +54,12 @@ check(
   'News language contract is VI EN',
   /NewsLanguage\s*=\s*'vi'\s*\|\s*'en'/m.test(types),
 );
-check('News content stays structured JSON', /NewsContentJson\s*=\s*Record<string, unknown>/m.test(types));
+check(
+  'News content stays structured JSON',
+  releaseMode
+    ? /NewsContentJson\s*=\s*\{[\s\S]*type:\s*'doc';[\s\S]*content\?:\s*NewsContentNode\[\]/m.test(types)
+    : /NewsContentJson\s*=\s*Record<string, unknown>/m.test(types),
+);
 check('Public News page size defaults to 12', /NEWS_DEFAULT_PUBLIC_PAGE_SIZE\s*=\s*12/.test(types));
 check('Admin News page size defaults to 20', /NEWS_DEFAULT_ADMIN_PAGE_SIZE\s*=\s*20/.test(types));
 check('Public list options carry language explicitly', /NewsPublicListOptions[\s\S]*language\?: NewsLanguage/.test(types));
