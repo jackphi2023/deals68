@@ -33,12 +33,11 @@ export function sanitizeNewsHref(value: unknown): string | null {
 export function sanitizeNewsImageSrc(value: unknown): string | null {
   const src = String(value || '').trim();
   if (!src) return null;
-  if (src.startsWith('/')) return src;
   try {
     const url = new URL(src);
-    if (url.protocol === 'https:' || (url.protocol === 'http:' && url.hostname === 'localhost')) {
-      return url.href;
-    }
+    const safeProtocol = url.protocol === 'https:' || (url.protocol === 'http:' && url.hostname === 'localhost');
+    const managedNewsMedia = url.pathname.includes('/storage/v1/object/public/news-media/');
+    if (safeProtocol && managedNewsMedia) return url.href;
   } catch {
     return null;
   }
