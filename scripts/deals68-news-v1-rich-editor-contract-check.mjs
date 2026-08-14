@@ -5,6 +5,7 @@ import path from 'node:path';
 const root = process.cwd();
 const failures = [];
 let total = 0;
+const releaseMode = process.env.D68_NEWS_RELEASE_MODE === '1';
 const read = (rel) => fs.readFileSync(path.join(root, rel), 'utf8');
 const exists = (rel) => fs.existsSync(path.join(root, rel));
 const check = (label, condition) => {
@@ -81,7 +82,11 @@ check('Admin rich editor CSS remains in dedicated admin-news stylesheet', /@impo
 const deps = { ...(pkg.dependencies || {}), ...(pkg.devDependencies || {}) };
 const richEditorDeps = Object.keys(deps).filter((name) => /tiptap|lexical|quill|ckeditor|slate|prosemirror/i.test(name));
 check('NEWS-04 adds no external rich-editor framework dependency', richEditorDeps.length === 0);
-check('NEWS-04 still adds no public News routes', !/<Route[^>]+path=["']\/?(?:en\/)?news/i.test(app));
+if (!releaseMode) {
+  check('NEWS-04 still adds no public News routes', !/<Route[^>]+path=["']\/?(?:en\/)?news/i.test(app));
+} else {
+  console.log('INFO NEWS-04 release mode: historical no-public-route assertion skipped.');
+}
 
 const migrationsDir = path.join(root, 'supabase/migrations');
 const newsMigrations = fs.readdirSync(migrationsDir).filter((name) => /news.*\.sql$/i.test(name));
