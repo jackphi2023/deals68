@@ -6,6 +6,7 @@ export type AdminTab =
   | 'proposals'
   | 'reports'
   | 'banners'
+  | 'news'
   | 'businesses'
   | 'business_review'
   | 'advisor_intakes'
@@ -62,6 +63,7 @@ export const ADMIN_NAV_SECTIONS: AdminNavSection[] = [
     label: 'Nội dung & tăng trưởng',
     items: [
       { id: 'banners', label: 'Banner', icon: '🖼️', href: '/admin/banners', aliases: ['banners', 'banner'] },
+      { id: 'news', label: 'Tin tức', icon: '📰', href: '/admin/news', aliases: ['news'] },
       { id: 'promos', label: 'Mã KM', icon: '🎟️', href: '/admin/promo', aliases: ['promo', 'promos'] },
     ],
   },
