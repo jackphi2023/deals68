@@ -1,4 +1,4 @@
-name: NEWS-08 Dependency Refresh
+name: NEWS-08 Final Fixture Patch
 
 on:
   push:
@@ -8,7 +8,7 @@ permissions:
   contents: write
 
 jobs:
-  refresh:
+  patch:
     if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -20,12 +20,23 @@ jobs:
         with:
           node-version: 20
           cache: npm
-      - name: Refresh audited runtime dependencies
-        run: npm install --save-exact @supabase/supabase-js@2.109.0 react-router-dom@6.30.4
-      - name: Keep build-only tooling in devDependencies
-        run: npm install --save-dev --save-exact vite@5.4.21 typescript@5.6.3 @vitejs/plugin-react@4.3.4
-      - name: Apply non-breaking transitive audit fixes
-        run: npm audit fix || true
+      - name: Patch duplicate PostgREST slug filters in NEWS-08 fixture
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const file = 'tests/e2e/07-news-v1.spec.ts';
+          let source = fs.readFileSync(file, 'utf8');
+          const replacements = [
+            ["const viSlug = url.searchParams.get('slug_vi');", "const viSlug = url.searchParams.getAll('slug_vi').find((value) => value.startsWith('eq.'));"],
+            ["const enSlug = url.searchParams.get('slug_en');", "const enSlug = url.searchParams.getAll('slug_en').find((value) => value.startsWith('eq.'));"],
+          ];
+          for (const [from, to] of replacements) {
+            if (!source.includes(from)) throw new Error(`Expected fixture line not found: ${from}`);
+            source = source.replace(from, to);
+          }
+          fs.writeFileSync(file, source);
+          NODE
+      - run: npm ci
       - name: Verify no high or critical production advisory remains
         shell: bash
         run: |
@@ -33,10 +44,8 @@ jobs:
           node <<'NODE'
           const fs = require('fs');
           const audit = JSON.parse(fs.readFileSync('/tmp/news08-audit.json', 'utf8'));
-          const vulnerabilities = audit.vulnerabilities || {};
-          const blocking = Object.entries(vulnerabilities)
-            .filter(([, value]) => ['high', 'critical'].includes(String(value?.severity || '').toLowerCase()))
-            .map(([name, value]) => ({ name, severity: value.severity, via: value.via }));
+          const blocking = Object.entries(audit.vulnerabilities || {})
+            .filter(([, value]) => ['high', 'critical'].includes(String(value?.severity || '').toLowerCase()));
           console.log('Production audit metadata:', JSON.stringify(audit.metadata?.vulnerabilities || {}, null, 2));
           if (blocking.length) {
             console.error('Blocking production advisories:', JSON.stringify(blocking, null, 2));
@@ -44,16 +53,16 @@ jobs:
           }
           console.log('PASS no high/critical production advisories.');
           NODE
-      - name: Commit regenerated lockfile
+      - name: Commit fixture fix
         shell: bash
         run: |
-          git diff -- package.json package-lock.json
-          git add package.json package-lock.json
+          git diff -- tests/e2e/07-news-v1.spec.ts
+          git add tests/e2e/07-news-v1.spec.ts
           if git diff --cached --quiet; then
-            echo "No dependency changes to commit."
+            echo "No fixture change to commit."
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git commit -m "chore: refresh secure release dependencies"
+          git commit -m "test(news): handle duplicate PostgREST slug filters"
           git push origin HEAD:building
