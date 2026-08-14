@@ -28,10 +28,12 @@ const listRel = 'src/pages/News.tsx';
 const detailRel = 'src/pages/NewsDetail.tsx';
 const typesRel = 'src/lib/newsTypes.ts';
 const sitemapRel = 'scripts/generate-sitemap.mjs';
+const edgeRel = 'netlify/edge-functions/seo.ts';
+const netlifyRel = 'netlify.toml';
 const packageRel = 'package.json';
 const robotsRel = 'public/robots.txt';
 
-for (const rel of [seoRel, listRel, detailRel, typesRel, sitemapRel, packageRel, robotsRel]) {
+for (const rel of [seoRel, listRel, detailRel, typesRel, sitemapRel, edgeRel, netlifyRel, packageRel, robotsRel]) {
   check(`${rel} exists`, exists(rel));
 }
 
@@ -40,9 +42,12 @@ const list = read(listRel);
 const detail = read(detailRel);
 const types = read(typesRel);
 const sitemap = read(sitemapRel);
+const edge = read(edgeRel);
+const netlify = read(netlifyRel);
 const pkg = read(packageRel);
 const robots = read(robotsRel);
 
+// Browser/SPA SEO owner.
 check('SEO canonical host is Deals68 production', /NEWS_SITE_URL = 'https:\/\/deals68\.com'/.test(seo));
 check('SEO manages document title', /document\.title = title/.test(seo));
 check('SEO manages meta description', /meta\[name="description"\]/.test(seo));
@@ -64,7 +69,7 @@ check('NewsArticle uses Admin SEO description with excerpt fallback', /localized
 check('NewsArticle uses featured image when available', /localized\.featuredImageUrl/.test(seo) && /jsonLd\.image/.test(seo));
 check('NewsArticle hreflang is conditional on a real alternate bundle', /const alternate = localizeNewsArticle\(article, otherLang\)/.test(seo) && /alternatePath = alternate/.test(seo));
 check('News SEO restores default head state on SPA navigation', /restorers[\s\S]*reverse\(\)[\s\S]*restore/.test(seo));
-check('News SEO does not invent x-default alternate', !/hreflang\s*=\s*['"]x-default/.test(seo));
+check('Browser News SEO does not invent x-default alternate', !/hreflang\s*=\s*['"]x-default/.test(seo));
 
 check('News list uses collection SEO', /NewsCollectionSeo/.test(list));
 check('News list canonical preserves real pagination', /seoPath = paginationHref\(basePath, page\)/.test(list));
@@ -81,6 +86,33 @@ check('News detail canonical normalizes requested slug for unavailable states', 
 check('News type contains optional localized SEO title fields', /seo_title_vi: string \| null/.test(types) && /seo_title_en: string \| null/.test(types));
 check('News type contains optional localized SEO description fields', /seo_description_vi: string \| null/.test(types) && /seo_description_en: string \| null/.test(types));
 
+// Initial HTML / social unfurl SEO owner.
+check('Netlify routes all requests through the existing SEO Edge function', /\[\[edge_functions\]\][\s\S]*function\s*=\s*"seo"[\s\S]*path\s*=\s*"\/\*"/.test(netlify));
+check('Edge News SEO uses anon credentials only', /VITE_SUPABASE_ANON_KEY/.test(edge) && /SUPABASE_ANON_KEY/.test(edge) && !/SERVICE_ROLE|service_role/i.test(edge));
+check('Edge handles News root', /basePath === '\/news'/.test(edge));
+check('Edge handles News tag route before article route', edge.indexOf('newsTagMatch') >= 0 && edge.indexOf('newsArticleMatch') > edge.indexOf('newsTagMatch'));
+check('Edge article lookup explicitly requires Published state', /addPublishedNewsFilters[\s\S]*status.*eq\.published/.test(edge));
+check('Edge article lookup explicitly excludes soft-deleted rows', /addPublishedNewsFilters[\s\S]*deleted_at.*is\.null/.test(edge));
+check('Edge article lookup requires editorial published_date', /addPublishedNewsFilters[\s\S]*published_date.*not\.is\.null/.test(edge));
+check('Edge language bundle requires slug title excerpt and body', /slug_\$\{suffix\}[\s\S]*title_\$\{suffix\}[\s\S]*excerpt_\$\{suffix\}[\s\S]*content_json_\$\{suffix\}/.test(edge));
+check('Edge article uses Admin SEO title with fallback', /seoTitle \|\| `\$\{articleTitle\} \| Deals68\.com`/.test(edge));
+check('Edge article uses Admin SEO description with excerpt fallback', /seoDescription \|\| excerpt/.test(edge));
+check('Edge article emits NewsArticle JSON-LD', /'@type': 'NewsArticle'/.test(edge));
+check('Edge NewsArticle datePublished uses published_date', /datePublished: article\.published_date/.test(edge));
+check('Edge NewsArticle dateModified uses updated_at', /dateModified: article\.updated_at/.test(edge));
+check('Edge NewsArticle canonical is mainEntityOfPage', /mainEntityOfPage[\s\S]*'@id': canonical/.test(edge));
+check('Edge article hreflang requires opposite complete bundle', /newsAlternateForArticle/.test(edge) && /addPublishedNewsFilters\(params, lang\)/.test(edge) && /if \(alternateSlug\)/.test(edge));
+check('Edge News alternates are typed VI/EN only', /type SeoAlternate = \{ hreflang: SeoLanguage; path: string \}/.test(edge));
+check('Legacy x-default remains isolated to non-News automatic SEO', /input\.alternates === undefined[\s\S]*'x-default'/.test(edge));
+check('Edge emits OG and Twitter metadata in initial HTML', /og:title/.test(edge) && /twitter:card/.test(edge));
+check('Edge emits article published and modified meta', /article:published_time/.test(edge) && /article:modified_time/.test(edge));
+check('Edge escapes CMS strings before HTML attributes/text', /function escapeHtml/.test(edge) && /escapeHtml\(input\.imageAlt \|\| input\.pageName\)/.test(edge));
+check('Edge JSON-LD prevents script breakout', /function safeJson[\s\S]*\\u003c/.test(edge));
+check('Unavailable Edge News article is noindex', /Article not found[\s\S]*noindex = true/.test(edge));
+check('Empty or unavailable Edge tag is noindex', /newsTagSeo[\s\S]*!currentEligible[\s\S]*noindex: true/.test(edge));
+check('Preview hosts remain noindex', /previewHost[\s\S]*noindex = noindex \|\| previewHost/.test(edge));
+
+// Build-time fallback sitemap.
 check('Sitemap includes VI News root', /'\/news'/.test(sitemap));
 check('Sitemap includes EN News root', /'\/en\/news'/.test(sitemap));
 check('Sitemap fetches News through anon REST at build time', /fetchRows\([\s\S]*'news_articles'/.test(sitemap));
@@ -90,11 +122,21 @@ check('Sitemap requires published_date', /published_date=not\.is\.null/.test(sit
 check('Sitemap queries VI and EN article URLs independently', /viNewsArticles/.test(sitemap) && /enNewsArticles/.test(sitemap));
 check('Sitemap VI bundle requires slug title excerpt content', /slug_vi=not\.is\.null/.test(sitemap) && /title_vi=not\.is\.null/.test(sitemap) && /excerpt_vi=not\.is\.null/.test(sitemap) && /content_json_vi=not\.is\.null/.test(sitemap));
 check('Sitemap EN bundle requires slug title excerpt content', /slug_en=not\.is\.null/.test(sitemap) && /title_en=not\.is\.null/.test(sitemap) && /excerpt_en=not\.is\.null/.test(sitemap) && /content_json_en=not\.is\.null/.test(sitemap));
-check('Sitemap does not download rich content JSON in select payload', !/'[^']*content_json_vi[^']*'/.test(sitemap.match(/fetchRows\([\s\S]*?viNewsArticles[\s\S]*?\);/)?.[0] || '') || /'id,slug_vi,published_date,updated_at'/.test(sitemap));
+check('Sitemap selects only lightweight News metadata', /'id,slug_vi,published_date,updated_at'/.test(sitemap) && /'id,slug_en,published_date,updated_at'/.test(sitemap));
 check('Sitemap includes News tag pages only from eligible linked articles', /news_article_tags/.test(sitemap) && /tagLastmods/.test(sitemap) && /\/news\/tag\//.test(sitemap) && /\/en\/news\/tag\//.test(sitemap));
 check('Sitemap lastmod uses News update/publication timestamps', /row\.updated_at \|\| row\.published_date/.test(sitemap));
-check('Existing postbuild still owns sitemap generation', /"postbuild": "node scripts\/generate-sitemap\.mjs dist"/.test(pkg));
+check('Existing postbuild still owns fallback sitemap generation', /"postbuild": "node scripts\/generate-sitemap\.mjs dist"/.test(pkg));
+
+// Live editorial sitemap overlay.
+check('Edge intercepts sitemap.xml', /url\.pathname === '\/sitemap\.xml'/.test(edge));
+check('Live sitemap uses strict anon reads so failures preserve fallback', /fetchRowsStrict/.test(edge) && /catch \{[\s\S]*return response/.test(edge));
+check('Live sitemap queries VI and EN bundles independently', /liveNewsSitemapEntries[\s\S]*buildLanguageParams\('vi'\)[\s\S]*buildLanguageParams\('en'\)/.test(edge));
+check('Live sitemap strips stale News URLs before overlay', /overlayLiveNewsSitemap[\s\S]*isNewsSitemapLoc/.test(edge));
+check('Live sitemap adds article and tag URLs by available language', /\/news\/\$\{encodeURIComponent\(slug\)\}/.test(edge) && /\/en\/news\/\$\{encodeURIComponent\(slug\)\}/.test(edge) && /\/news\/tag\/\$\{encoded\}/.test(edge) && /\/en\/news\/tag\/\$\{encoded\}/.test(edge));
+check('Live sitemap uses updated_at with published_date fallback', /row\.updated_at \|\| row\.published_date/.test(edge));
+check('Live sitemap has short cache window for editorial changes', /max-age=300/.test(edge));
 check('Robots still advertises production sitemap', /Sitemap: https:\/\/deals68\.com\/sitemap\.xml/.test(robots));
+
 check('No external SEO framework dependency was added', !/react-helmet|helmet-async|next-seo/.test(pkg));
 
 const migrationsDir = path.join(root, 'supabase/migrations');
