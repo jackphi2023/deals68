@@ -1,9 +1,9 @@
 # Deals68 News V1 — Product & Engineering Contract
 
-**Session:** NEWS-00  
-**Status:** Contract locked — no runtime feature implementation in this session  
-**Target integration branch:** `building`  
-**Production branch:** `main` — must remain untouched until NEWS-08 release gate  
+**Session:** NEWS-00
+**Status:** Contract locked — no runtime feature implementation in this session
+**Target integration branch:** `building`
+**Production branch:** `main` — must remain untouched until NEWS-08 release gate
 **NEWS-00 baseline:** `building` at `c834767aeba27024a02e1e1ab9428c7d1ef4209f`
 
 ---
