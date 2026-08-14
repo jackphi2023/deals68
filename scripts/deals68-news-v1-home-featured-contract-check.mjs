@@ -39,15 +39,16 @@ const featured = read(featuredRel);
 const card = read(cardRel);
 const service = read(serviceRel);
 const app = read(appRel);
+const newsCss = read(newsCssRel);
 
 check('Homepage imports FeaturedNews', /import FeaturedNews from ['"]\.\.\/components\/news\/FeaturedNews['"]/.test(home));
 check('Homepage renders FeaturedNews with current language', /<FeaturedNews\s+lang=\{lang\}\s*\/>/.test(home));
 
-const industriesIndex = home.indexOf('d68-home-industries');
+const howIndex = home.indexOf('d68-home-how');
 const featuredIndex = home.indexOf('<FeaturedNews lang={lang} />');
-const valuationIndex = home.indexOf('d68-home-valuation');
-check('Featured News is after Featured Industries', industriesIndex >= 0 && featuredIndex > industriesIndex);
-check('Featured News is before Valuation CTA', valuationIndex >= 0 && featuredIndex < valuationIndex);
+const mainCloseIndex = home.lastIndexOf('</main>');
+check('Featured News is after How it works', howIndex >= 0 && featuredIndex > howIndex);
+check('Featured News is the final Homepage content block above Footer', featuredIndex >= 0 && featuredIndex < mainCloseIndex && /<FeaturedNews\s+lang=\{lang\}\s*\/>\s*<\/main>/.test(home));
 check('Homepage has exactly one FeaturedNews render', (home.match(/<FeaturedNews\s+lang=\{lang\}\s*\/>/g) || []).length === 1);
 
 check('FeaturedNews uses NEWS-02 service instead of direct Supabase query', /getFeaturedNews/.test(featured) && !/\.from\(['"]news_/.test(featured));
@@ -64,6 +65,13 @@ check('Homepage News cards show image title excerpt only', /showDate=\{false\}/.
 check('NewsCard keeps date visible by default outside Homepage', /showDate = true/.test(card));
 check('NewsCard keeps tags visible by default outside Homepage', /showTags = true/.test(card));
 check('NewsCard keeps excerpt for non-compact cards', /!compact \? <p>\{localized\.excerpt\}<\/p> : null/.test(card));
+
+check('Homepage Featured News section uses transparent shared canvas', /\.d68-featured-news-home\{background:transparent\}/.test(newsCss));
+check('Homepage Featured News cards remove border', /\.d68-featured-news-home \.d68-news-card\{[^}]*border:0/.test(newsCss));
+check('Homepage Featured News cards remove card background', /\.d68-featured-news-home \.d68-news-card\{[^}]*background:transparent/.test(newsCss));
+check('Homepage Featured News cards remove shadow', /\.d68-featured-news-home \.d68-news-card\{[^}]*box-shadow:none/.test(newsCss));
+check('Homepage Featured News keeps image as the visual surface', /\.d68-featured-news-home \.d68-news-card__image-link\{[^}]*border-radius:14px/.test(newsCss));
+check('Homepage Featured News body has no card-side padding', /\.d68-featured-news-home \.d68-news-card__body\{padding:14px 0 0\}/.test(newsCss));
 
 check('Featured service requires published status', /getFeaturedNews[\s\S]*\.eq\('status', 'published'\)/.test(service));
 check('Featured service excludes soft-deleted rows', /getFeaturedNews[\s\S]*\.is\('deleted_at', null\)/.test(service));
