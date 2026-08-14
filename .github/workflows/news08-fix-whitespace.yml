@@ -1,0 +1,35 @@
+name: NEWS-08 Fix Diff Integrity
+
+on:
+  push:
+    branches: [building]
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: building
+      - name: Remove trailing whitespace from News contract
+        shell: bash
+        run: |
+          sed -i 's/[[:space:]]\+$//' docs/NEWS_V1_SPEC.md
+          git diff --check
+      - name: Commit focused cleanup
+        shell: bash
+        run: |
+          git add docs/NEWS_V1_SPEC.md
+          if git diff --cached --quiet; then
+            echo "No whitespace cleanup needed."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "docs: remove NEWS contract trailing whitespace"
+          git push origin HEAD:building
