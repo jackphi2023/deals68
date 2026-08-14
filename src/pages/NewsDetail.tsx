@@ -41,13 +41,13 @@ export default function NewsDetail({ lang }: Props) {
         return;
       }
       setArticle(loadedArticle);
-      const [recentRows, relatedRows] = await Promise.all([
+      const [recentResult, relatedResult] = await Promise.allSettled([
         getRecentNews(5, loadedArticle.id, lang),
         getRelatedNews(loadedArticle.id, 4, lang),
       ]);
       if (cancelled) return;
-      setRecent(recentRows);
-      setRelated(relatedRows);
+      setRecent(recentResult.status === 'fulfilled' ? recentResult.value : []);
+      setRelated(relatedResult.status === 'fulfilled' ? relatedResult.value : []);
     };
 
     void load()
