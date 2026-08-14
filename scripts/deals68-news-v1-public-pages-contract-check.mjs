@@ -5,6 +5,7 @@ import path from 'node:path';
 const root = process.cwd();
 const failures = [];
 let total = 0;
+const releaseMode = process.env.D68_NEWS_RELEASE_MODE === '1';
 
 function exists(rel) { return fs.existsSync(path.join(root, rel)); }
 function read(rel) { return fs.readFileSync(path.join(root, rel), 'utf8'); }
@@ -87,7 +88,11 @@ const directNewsQueries = srcFiles
   .filter((file) => path.resolve(file) !== path.resolve(root, serviceRel))
   .filter((file) => /\.from\(['"]news_(?:articles|tags|article_tags)['"]\)/.test(fs.readFileSync(file, 'utf8')));
 check('News table access is not scattered outside newsService', directNewsQueries.length === 0);
-check('NEWS-05 does not add Homepage FeaturedNews yet', !/FeaturedNews|d68-home-featured-news/.test(home));
+if (!releaseMode) {
+  check('NEWS-05 does not add Homepage FeaturedNews yet', !/FeaturedNews|d68-home-featured-news/.test(home));
+} else {
+  console.log('INFO NEWS-05 release mode: historical pre-Homepage assertion skipped.');
+}
 
 const migrationsDir = path.join(root, 'supabase/migrations');
 const newsMigrations = fs.readdirSync(migrationsDir).filter((name) => /news.*\.sql$/i.test(name));
