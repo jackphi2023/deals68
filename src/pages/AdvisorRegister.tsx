@@ -24,7 +24,7 @@ function signupError(lang: Lang, raw?: string, code?: string) {
   ) {
     return T(lang, 'Email không hợp lệ hoặc đã được đăng ký.', 'The email is invalid or already registered.');
   }
-  return raw || T(lang, 'Không thể gửi hồ sơ Advisor.', 'Could not submit the Advisor application.');
+  return raw || T(lang, 'Không thể gửi hồ sơ Cố vấn/Môi giới.', 'Could not submit the Advisor/Broker profile.');
 }
 
 export default function AdvisorRegister({ lang = 'vi' }: { lang?: Lang }) {
@@ -121,8 +121,8 @@ export default function AdvisorRegister({ lang = 'vi' }: { lang?: Lang }) {
       setMessageType('ok');
       setMessage(T(
         lang,
-        'Hồ sơ Advisor đã được tạo. Mã OTP đã gửi đến email; vui lòng xác thực để vào trang trạng thái tài khoản.',
-        'Your Advisor application has been created. An OTP was sent to your email; verify it to access your account status page.',
+        'Hồ sơ Cố vấn/Môi giới đã được tạo. Mã OTP đã gửi đến email; vui lòng xác thực để vào trang trạng thái tài khoản.',
+        'Your Advisor/Broker profile has been created. An OTP was sent to your email; verify it to access your account status page.',
       ));
       const loginPath = `/advisor/login?email=${encodeURIComponent(normalizedEmail)}&otp=1&signup=1&next=${encodeURIComponent(lang === 'en' ? '/en/dashboard/advisor' : '/dashboard/advisor')}`;
       window.setTimeout(() => navigate(toLocalizedPath(loginPath, lang), { replace: true }), 1200);
@@ -138,22 +138,13 @@ export default function AdvisorRegister({ lang = 'vi' }: { lang?: Lang }) {
     <main className="d68-auth-page d68-register-page d68-advisor-auth-page">
       <section className="d68-auth-card d68-register-card d68-advisor-register-card">
         <div className="d68-auth-head">
-          <span>{T(lang, 'Advisor / Broker', 'Advisor / Broker')}</span>
-          <h1>{T(lang, 'Đăng ký Cố vấn hoặc Môi giới', 'Advisor or Broker registration')}</h1>
+          <span>{T(lang, 'Cố vấn / Môi giới', 'Advisor / Broker')}</span>
+          <h1>{T(lang, 'Đăng ký Cố vấn/Môi giới', 'Advisor/Broker registration')}</h1>
           <p>{T(
             lang,
-            'Tạo một tài khoản Advisor độc lập. Sau khi xác thực email, hồ sơ sẽ chờ Deals68 kiểm tra trước khi được phân công quản lý doanh nghiệp.',
-            'Create a separate Advisor account. After email verification, Deals68 will review the application before any Business assignment is granted.',
+            'Tạo một tài khoản Cố vấn/Môi giới để có thể đăng nhiều hồ sơ doanh nghiệp cần chuyển nhượng hoặc gọi vốn. Sau khi xác thực email, hồ sơ sẽ chờ Deals68 kiểm tra trước khi được tạo các hồ sơ doanh nghiệp.',
+            'Create an Advisor/Broker account to list multiple businesses seeking a sale or fundraising. After email verification, Deals68 will review your profile before you can create Business profiles.',
           )}</p>
-        </div>
-
-        <div className="d68-advisor-security-note">
-          <b>{T(lang, 'Chưa cấp quyền doanh nghiệp', 'No Business access yet')}</b>
-          <span>{T(
-            lang,
-            'Đăng ký Advisor không tự tạo quyền với bất kỳ hồ sơ doanh nghiệp nào. Mọi quyền sau này phải được Admin xác minh và cấp theo phạm vi.',
-            'Advisor registration does not grant access to any Business profile. Future access must be verified and assigned by an Admin with explicit scopes.',
-          )}</span>
         </div>
 
         <form className="d68-register-form" onSubmit={submit}>
@@ -169,11 +160,10 @@ export default function AdvisorRegister({ lang = 'vi' }: { lang?: Lang }) {
 
           <section>
             <h2>{T(lang, 'Hồ sơ nghề nghiệp', 'Professional profile')}</h2>
-            <div className="d68-advisor-type-grid" role="group" aria-label={T(lang, 'Loại tài khoản Advisor', 'Advisor account type')}>
+            <div className="d68-advisor-type-grid" role="group" aria-label={T(lang, 'Loại tài khoản Cố vấn/Môi giới', 'Advisor/Broker account type')}>
               {([
                 ['advisor', T(lang, 'Cố vấn', 'Advisor')],
                 ['broker', T(lang, 'Môi giới', 'Broker')],
-                ['advisor_broker', T(lang, 'Cố vấn & Môi giới', 'Advisor & Broker')],
               ] as [AdvisorType, string][]).map(([value, label]) => (
                 <button key={value} type="button" className={advisorType === value ? 'active' : ''} onClick={() => setAdvisorType(value)} aria-pressed={advisorType === value}>{label}</button>
               ))}
@@ -195,10 +185,10 @@ export default function AdvisorRegister({ lang = 'vi' }: { lang?: Lang }) {
           </label>
 
           {message ? <div className={messageType === 'ok' ? 'd68-auth-success' : 'd68-auth-error'}>{message}</div> : null}
-          <button className="d68-auth-submit" disabled={loading}>{loading ? T(lang, 'Đang tạo hồ sơ...', 'Creating application...') : T(lang, 'Tạo hồ sơ Advisor', 'Create Advisor application')}</button>
+          <button className="d68-auth-submit" disabled={loading}>{loading ? T(lang, 'Đang tạo hồ sơ...', 'Creating profile...') : T(lang, 'Tạo hồ sơ', 'Create profile')}</button>
         </form>
 
-        <p className="d68-auth-bottom">{T(lang, 'Đã có tài khoản Advisor?', 'Already have an Advisor account?')} <Link to={toLocalizedPath('/advisor/login', lang)}>{T(lang, 'Đăng nhập tại đây', 'Log in here')}</Link></p>
+        <p className="d68-auth-bottom">{T(lang, 'Đã có tài khoản?', 'Already have an account?')} <Link to={toLocalizedPath('/advisor/login', lang)}>{T(lang, 'Đăng nhập tại đây', 'Log in here')}</Link></p>
       </section>
     </main>
   );
