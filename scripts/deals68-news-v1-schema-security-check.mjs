@@ -3,10 +3,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const root = process.cwd();
-const migrationRel = 'supabase/migrations/20260814044837_news_v1_schema_security.sql';
-const migrationPath = path.join(root, migrationRel);
 const failures = [];
 let total = 0;
+const releaseMode = process.env.D68_NEWS_RELEASE_MODE === '1';
 
 function check(label, condition) {
   total += 1;
@@ -22,8 +21,10 @@ function read(rel) {
   return fs.readFileSync(path.join(root, rel), 'utf8');
 }
 
-check('NEWS-01 migration exists', fs.existsSync(migrationPath));
-const sql = fs.existsSync(migrationPath) ? fs.readFileSync(migrationPath, 'utf8') : '';
+check('NEWS-01 migration exists', fs.existsSync(path.join(root, 'supabase/migrations/20260814044837_news_v1_schema_security.sql')));
+const sql = fs.existsSync(path.join(root, 'supabase/migrations/20260814044837_news_v1_schema_security.sql'))
+  ? fs.readFileSync(path.join(root, 'supabase/migrations/20260814044837_news_v1_schema_security.sql'), 'utf8')
+  : '';
 const app = read('src/App.tsx');
 
 check('news_articles table exists in migration', /create table if not exists public\.news_articles/i.test(sql));
@@ -111,28 +112,32 @@ for (const command of ['select', 'insert', 'update', 'delete']) {
   );
 }
 
-const forbiddenRuntimeFiles = [
-  'src/pages/News.tsx',
-  'src/pages/NewsDetail.tsx',
-  'src/services/newsService.ts',
-  'src/components/news/NewsCard.tsx',
-  'src/components/news/NewsContentRenderer.tsx',
-  'src/components/news/NewsEditor.tsx',
-  'src/components/news/NewsTags.tsx',
-  'src/components/news/FeaturedNews.tsx',
-  'src/components/news/NewsSidebar.tsx',
-  'src/components/admin/AdminNewsManager.tsx',
-  'src/components/admin/AdminNewsEditor.tsx',
-  'src/styles/pages/news.css',
-];
-check(
-  'NEWS-01 does not add News runtime files',
-  forbiddenRuntimeFiles.every((rel) => !fs.existsSync(path.join(root, rel))),
-);
-check(
-  'NEWS-01 does not add public News routes yet',
-  !/<Route[^>]+path=["'][^"']*\/news/i.test(app),
-);
+if (!releaseMode) {
+  const forbiddenRuntimeFiles = [
+    'src/pages/News.tsx',
+    'src/pages/NewsDetail.tsx',
+    'src/services/newsService.ts',
+    'src/components/news/NewsCard.tsx',
+    'src/components/news/NewsContentRenderer.tsx',
+    'src/components/news/NewsEditor.tsx',
+    'src/components/news/NewsTags.tsx',
+    'src/components/news/FeaturedNews.tsx',
+    'src/components/news/NewsSidebar.tsx',
+    'src/components/admin/AdminNewsManager.tsx',
+    'src/components/admin/AdminNewsEditor.tsx',
+    'src/styles/pages/news.css',
+  ];
+  check(
+    'NEWS-01 does not add News runtime files',
+    forbiddenRuntimeFiles.every((rel) => !fs.existsSync(path.join(root, rel))),
+  );
+  check(
+    'NEWS-01 does not add public News routes yet',
+    !/<Route[^>]+path=["'][^"']*\/news/i.test(app),
+  );
+} else {
+  console.log('INFO NEWS-01 release mode: historical no-runtime assertions skipped.');
+}
 
 if (failures.length) {
   console.error(`\nNEWS-01 schema/security contract: ${total - failures.length}/${total} PASS`);
