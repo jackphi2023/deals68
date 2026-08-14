@@ -17,31 +17,7 @@ import {
   type NewsTagWriteInput,
 } from '../lib/newsTypes';
 
-const NEWS_ARTICLE_SELECT = [
-  'id',
-  'status',
-  'slug_vi',
-  'slug_en',
-  'title_vi',
-  'title_en',
-  'excerpt_vi',
-  'excerpt_en',
-  'content_json_vi',
-  'content_json_en',
-  'featured_image_url',
-  'featured_image_alt_vi',
-  'featured_image_alt_en',
-  'is_featured',
-  'published_date',
-  'author_name',
-  'seo_title_vi',
-  'seo_title_en',
-  'seo_description_vi',
-  'seo_description_en',
-  'created_at',
-  'updated_at',
-  'deleted_at',
-].join(',');
+const NEWS_ARTICLE_SELECT = 'id,status,slug_vi,slug_en,title_vi,title_en,excerpt_vi,excerpt_en,content_json_vi,content_json_en,featured_image_url,featured_image_alt_vi,featured_image_alt_en,is_featured,published_date,author_name,seo_title_vi,seo_title_en,seo_description_vi,seo_description_en,created_at,updated_at,deleted_at' as const;
 
 const NEWS_TAG_SELECT = 'id,slug,label_vi,label_en,created_at';
 const MAX_RELATED_RELATIONS = 500;
