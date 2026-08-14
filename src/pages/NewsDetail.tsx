@@ -2,10 +2,11 @@ import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import NewsCard from '../components/news/NewsCard';
 import NewsContentRenderer from '../components/news/NewsContentRenderer';
+import { NewsArticleSeo, NewsStateSeo } from '../components/news/NewsSeo';
 import NewsSidebar from '../components/news/NewsSidebar';
 import NewsTags from '../components/news/NewsTags';
 import { getNewsBySlug, getRecentNews, getRelatedNews } from '../services/newsService';
-import { localizeNewsArticle, type NewsArticle, type NewsLanguage } from '../lib/newsTypes';
+import { localizeNewsArticle, normalizeNewsSlug, type NewsArticle, type NewsLanguage } from '../lib/newsTypes';
 
 type Props = { lang: NewsLanguage };
 
@@ -61,16 +62,40 @@ export default function NewsDetail({ lang }: Props) {
   }, [lang, slug]);
 
   const newsPath = lang === 'en' ? '/en/news' : '/news';
+  const normalizedSlug = normalizeNewsSlug(slug);
+  const currentPath = `${newsPath}/${encodeURIComponent(normalizedSlug || slug)}`;
 
   if (loading) {
-    return <main className="d68-news-page"><div className="d68-news-shell"><div className="d68-news-state">{lang === 'en' ? 'Loading article...' : 'Đang tải bài viết...'}</div></div></main>;
+    return (
+      <main className="d68-news-page">
+        <NewsStateSeo lang={lang} path={currentPath} />
+        <div className="d68-news-shell"><div className="d68-news-state">{lang === 'en' ? 'Loading article...' : 'Đang tải bài viết...'}</div></div>
+      </main>
+    );
   }
   if (error) {
-    return <main className="d68-news-page"><div className="d68-news-shell"><div className="d68-news-state is-error">{error}</div></div></main>;
+    return (
+      <main className="d68-news-page">
+        <NewsStateSeo
+          lang={lang}
+          path={currentPath}
+          title={lang === 'en' ? 'Article unavailable | Deals68.com' : 'Bài viết chưa thể hiển thị | Deals68.com'}
+        />
+        <div className="d68-news-shell"><div className="d68-news-state is-error">{error}</div></div>
+      </main>
+    );
   }
   if (!article) {
     return (
       <main className="d68-news-page">
+        <NewsStateSeo
+          lang={lang}
+          path={currentPath}
+          title={lang === 'en' ? 'Article not found | Deals68.com' : 'Không tìm thấy bài viết | Deals68.com'}
+          description={lang === 'en'
+            ? 'This Deals68 News article is not available.'
+            : 'Bài viết Tin tức Deals68 này không khả dụng.'}
+        />
         <div className="d68-news-shell d68-news-not-found">
           <h1>{lang === 'en' ? 'Article not found' : 'Không tìm thấy bài viết'}</h1>
           <p>{lang === 'en' ? 'The article may not be published, may have been removed, or the URL is incorrect.' : 'Bài viết có thể chưa được xuất bản, đã bị gỡ hoặc đường dẫn không chính xác.'}</p>
@@ -85,6 +110,8 @@ export default function NewsDetail({ lang }: Props) {
 
   return (
     <main className="d68-news-page">
+      <NewsArticleSeo article={article} lang={lang} />
+
       <div className="d68-news-shell d68-news-detail-shell">
         <nav className="d68-news-breadcrumb" aria-label="Breadcrumb">
           <Link to={newsPath}>{lang === 'en' ? 'News' : 'Tin tức'}</Link>
