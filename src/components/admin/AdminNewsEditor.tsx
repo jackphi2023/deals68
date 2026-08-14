@@ -129,23 +129,6 @@ function parseTags(raw: string): NewsTagWriteInput[] {
   return Array.from(deduped.values());
 }
 
-function readImageDimensions(file: File) {
-  return new Promise<{ width: number; height: number }>((resolve, reject) => {
-    const url = URL.createObjectURL(file);
-    const image = new Image();
-    image.onload = () => {
-      const result = { width: image.naturalWidth, height: image.naturalHeight };
-      URL.revokeObjectURL(url);
-      resolve(result);
-    };
-    image.onerror = () => {
-      URL.revokeObjectURL(url);
-      reject(new Error('Không đọc được kích thước ảnh.'));
-    };
-    image.src = url;
-  });
-}
-
 function validateForPublish(form: EditorForm) {
   const missing: string[] = [];
   if (!clean(form.title_vi)) missing.push('Tiêu đề VI');
@@ -153,7 +136,7 @@ function validateForPublish(form: EditorForm) {
   if (!clean(form.excerpt_vi)) missing.push('Mô tả ngắn VI');
   if (!newsContentHasMeaningfulContent(form.content_vi)) missing.push('Nội dung VI');
   if (!clean(form.published_date)) missing.push('Ngày đăng');
-  if (!clean(form.featured_image_url)) missing.push('Ảnh đại diện 4:3');
+  if (!clean(form.featured_image_url)) missing.push('Ảnh đại diện');
   if (missing.length) return `Chưa đủ thông tin để xuất bản: ${missing.join(', ')}.`;
 
   const hasAnyEn = [
@@ -242,14 +225,9 @@ export default function AdminNewsEditor({ articleId, onCancel, onSaved }: Props)
     setError('');
     setMessage('');
     try {
-      const { width, height } = await readImageDimensions(file);
-      const ratio = width / height;
-      if (Math.abs(ratio - 4 / 3) > 0.02) {
-        throw new Error(`Ảnh đại diện phải có tỷ lệ 4:3. Ảnh hiện tại là ${width}×${height}px.`);
-      }
       const uploaded = await adminUploadNewsFeaturedImage(file);
       patch({ featured_image_url: uploaded.publicUrl });
-      setMessage(`Đã upload ảnh đại diện ${width}×${height}px vào news-media.`);
+      setMessage('Đã upload ảnh gốc vào news-media. Khi hiển thị, ảnh được canh giữa trong khung 4:3.');
     } catch (uploadError: any) {
       setError(uploadError?.message || 'Không upload được ảnh đại diện.');
     } finally {
@@ -375,9 +353,10 @@ export default function AdminNewsEditor({ articleId, onCancel, onSaved }: Props)
           </section>
 
           <section className="d68-admin-card">
-            <h3>Ảnh đại diện 4:3</h3>
-            {form.featured_image_url ? <img className="d68-admin-news__featured-preview" src={form.featured_image_url} alt="Preview" /> : <div className="d68-admin-news__featured-empty">Khuyến nghị 1200 × 900 px</div>}
-            <label className="d68-admin-btn light d68-admin-news__file-button">{uploading ? 'Đang upload...' : 'Chọn ảnh 4:3'}<input type="file" hidden accept="image/jpeg,image/png,image/webp" disabled={uploading} onChange={(event) => void uploadFeaturedImage(event)} /></label>
+            <h3>Ảnh đại diện</h3>
+            {form.featured_image_url ? <img className="d68-admin-news__featured-preview" src={form.featured_image_url} alt="Preview" /> : <div className="d68-admin-news__featured-empty">Giữ ảnh gốc · hiển thị khung 4:3 canh giữa</div>}
+            <label className="d68-admin-btn light d68-admin-news__file-button">{uploading ? 'Đang upload...' : 'Chọn ảnh'}<input type="file" hidden accept="image/jpeg,image/png,image/webp" disabled={uploading} onChange={(event) => void uploadFeaturedImage(event)} /></label>
+            <p>JPEG/PNG/WebP tối đa 10 MB. Không bắt buộc tỷ lệ ảnh nguồn; nên dùng ảnh độ phân giải cao để hiển thị sắc nét.</p>
             <label className="d68-admin-field"><span>Alt ảnh VI</span><input className="d68-admin-input" value={form.featured_image_alt_vi} onChange={(event) => patch({ featured_image_alt_vi: event.target.value })} /></label>
             <label className="d68-admin-field"><span>Alt ảnh EN</span><input className="d68-admin-input" value={form.featured_image_alt_en} onChange={(event) => patch({ featured_image_alt_en: event.target.value })} /></label>
           </section>
