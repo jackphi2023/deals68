@@ -92,6 +92,7 @@ export default function NewsEditor({
 
   function runCommand(command: string, value?: string) {
     focusEditor();
+    document.execCommand('styleWithCSS', false, 'false');
     document.execCommand(command, false, value);
     syncFromDom();
   }
