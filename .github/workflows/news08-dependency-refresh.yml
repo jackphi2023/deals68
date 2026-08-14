@@ -23,7 +23,7 @@ jobs:
       - name: Refresh only audited runtime dependencies
         run: npm install --save-exact @supabase/supabase-js@2.109.0 react-router-dom@6.30.4 vite@5.4.21
       - name: Apply non-breaking transitive audit fixes
-        run: npm audit fix
+        run: npm audit fix || true
       - name: Verify no high or critical production advisory remains
         run: npm audit --omit=dev --audit-level=high
       - name: Commit regenerated lockfile
