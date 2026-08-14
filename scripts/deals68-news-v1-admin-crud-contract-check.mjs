@@ -76,7 +76,8 @@ check('Admin editor keeps publication date independent', /type="date"[\s\S]*publ
 check('Admin editor supports draft and published states', /option value="draft"/.test(editor) && /option value="published"/.test(editor));
 check('Admin editor supports featured flag', /is_featured/.test(editor) && /Tin nổi bật/.test(editor));
 check('Admin editor supports optional SEO VI EN fields', /seo_title_vi/.test(editor) && /seo_description_vi/.test(editor) && /seo_title_en/.test(editor) && /seo_description_en/.test(editor));
-check('Admin editor requires 4:3 featured image before publish', /Ảnh đại diện 4:3/.test(editor) && /Math\.abs\(ratio - 4 \/ 3\)/.test(editor));
+check('Admin editor requires a featured image before publish without enforcing source ratio', /missing\.push\('Ảnh đại diện'\)/.test(editor) && !/readImageDimensions|Math\.abs\(ratio - 4 \/ 3\)|phải có tỷ lệ 4:3/.test(editor));
+check('Admin featured image copy explains original upload and 4:3 centered display', /Không bắt buộc tỷ lệ ảnh nguồn/.test(editor) && /Giữ ảnh gốc/.test(editor) && /khung 4:3/.test(editor));
 check(
   'Admin editor stores content as structured JSON',
   releaseMode
@@ -90,6 +91,7 @@ if (!releaseMode) {
 }
 
 check('Featured image upload uses news-media service', /adminUploadNewsFeaturedImage/.test(editor) && /NEWS_MEDIA_BUCKET = 'news-media'/.test(media));
+check('News media service uploads the original File object without resize or compression', /\.upload\(path, file, \{/.test(media) && /contentType: file\.type/.test(media) && !/canvas|toBlob|resize|compress/i.test(media));
 check('News media service restricts JPEG PNG WebP and 10MB', /image\/jpeg/.test(media) && /image\/png/.test(media) && /image\/webp/.test(media) && /10 \* 1024 \* 1024/.test(media));
 check('News UI has no direct news table queries', !/\.from\(['"]news_/.test(manager + editor + portal));
 check('News table access remains centralized in newsService', /\.from\('news_articles'\)/.test(service) && /\.from\('news_tags'\)/.test(service) && /\.from\('news_article_tags'\)/.test(service));
