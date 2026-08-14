@@ -5,6 +5,7 @@ import { listNewsByTag, listNewsTags, listPublishedNews } from '../services/news
 import {
   NEWS_DEFAULT_PUBLIC_PAGE_SIZE,
   localizeNewsTag,
+  normalizeNewsSlug,
   type NewsArticle,
   type NewsLanguage,
   type NewsTag,
@@ -24,6 +25,7 @@ function paginationHref(basePath: string, page: number) {
 export default function News({ lang }: Props) {
   const { tagSlug } = useParams<{ tagSlug?: string }>();
   const [searchParams] = useSearchParams();
+  const normalizedTagSlug = normalizeNewsSlug(tagSlug);
   const page = positivePage(searchParams.get('page'));
   const [rows, setRows] = useState<NewsArticle[]>([]);
   const [total, setTotal] = useState(0);
@@ -36,13 +38,13 @@ export default function News({ lang }: Props) {
     setLoading(true);
     setError('');
     const load = async () => {
-      const result = tagSlug
-        ? await listNewsByTag(tagSlug, { page, pageSize: NEWS_DEFAULT_PUBLIC_PAGE_SIZE, language: lang })
+      const result = normalizedTagSlug
+        ? await listNewsByTag(normalizedTagSlug, { page, pageSize: NEWS_DEFAULT_PUBLIC_PAGE_SIZE, language: lang })
         : await listPublishedNews({ page, pageSize: NEWS_DEFAULT_PUBLIC_PAGE_SIZE, language: lang });
       let resolvedTag: NewsTag | null = null;
-      if (tagSlug) {
+      if (normalizedTagSlug) {
         const tags = await listNewsTags();
-        resolvedTag = tags.find((item) => item.slug === tagSlug) || null;
+        resolvedTag = tags.find((item) => item.slug === normalizedTagSlug) || null;
       }
       if (cancelled) return;
       setRows(result.rows);
@@ -62,21 +64,21 @@ export default function News({ lang }: Props) {
         if (!cancelled) setLoading(false);
       });
     return () => { cancelled = true; };
-  }, [lang, page, tagSlug]);
+  }, [lang, normalizedTagSlug, page]);
 
   const pageCount = Math.max(1, Math.ceil(total / NEWS_DEFAULT_PUBLIC_PAGE_SIZE));
-  const basePath = tagSlug
-    ? `${lang === 'en' ? '/en/news/tag' : '/news/tag'}/${encodeURIComponent(tagSlug)}`
+  const basePath = normalizedTagSlug
+    ? `${lang === 'en' ? '/en/news/tag' : '/news/tag'}/${encodeURIComponent(normalizedTagSlug)}`
     : (lang === 'en' ? '/en/news' : '/news');
   const newsPath = lang === 'en' ? '/en/news' : '/news';
   const localizedTag = useMemo(() => tag ? localizeNewsTag(tag, lang) : null, [tag, lang]);
 
-  const title = tagSlug
+  const title = normalizedTagSlug
     ? localizedTag
       ? (lang === 'en' ? `Topic: ${localizedTag.label}` : `Chủ đề: ${localizedTag.label}`)
       : (lang === 'en' ? 'News topic' : 'Chủ đề Tin tức')
     : (lang === 'en' ? 'News & Market Insights' : 'Tin tức & Góc nhìn thị trường');
-  const intro = tagSlug
+  const intro = normalizedTagSlug
     ? (lang === 'en' ? 'Published Deals68 articles in this topic.' : 'Các bài viết Deals68 đã xuất bản thuộc chủ đề này.')
     : (lang === 'en'
       ? 'Updates and practical perspectives on investment, M&A, fundraising and private-market transactions.'
@@ -86,7 +88,7 @@ export default function News({ lang }: Props) {
     <main className="d68-news-page">
       <section className="d68-news-hero">
         <div className="d68-news-shell">
-          {tagSlug ? <Link className="d68-news-back" to={newsPath}>← {lang === 'en' ? 'All News' : 'Tất cả Tin tức'}</Link> : null}
+          {normalizedTagSlug ? <Link className="d68-news-back" to={newsPath}>← {lang === 'en' ? 'All News' : 'Tất cả Tin tức'}</Link> : null}
           <h1>{title}</h1>
           <p>{intro}</p>
         </div>
@@ -95,17 +97,23 @@ export default function News({ lang }: Props) {
       <section className="d68-news-shell d68-news-list-section">
         {error ? <div className="d68-news-state is-error">{error}</div> : null}
         {loading ? <div className="d68-news-state">{lang === 'en' ? 'Loading News...' : 'Đang tải Tin tức...'}</div> : null}
-        {!loading && !error && tagSlug && !tag ? (
+        {!loading && !error && normalizedTagSlug && !tag ? (
           <div className="d68-news-state">
             <b>{lang === 'en' ? 'Topic not found.' : 'Không tìm thấy chủ đề.'}</b>
             <Link to={newsPath}>{lang === 'en' ? 'View all News' : 'Xem tất cả Tin tức'}</Link>
           </div>
         ) : null}
-        {!loading && !error && tag && !rows.length ? (
+        {!loading && !error && tag && total === 0 ? (
           <div className="d68-news-state">{lang === 'en' ? 'No published articles in this topic yet.' : 'Chưa có bài đã xuất bản trong chủ đề này.'}</div>
         ) : null}
-        {!loading && !error && !tagSlug && !rows.length ? (
+        {!loading && !error && !normalizedTagSlug && total === 0 ? (
           <div className="d68-news-state">{lang === 'en' ? 'No published News yet.' : 'Chưa có Tin tức đã xuất bản.'}</div>
+        ) : null}
+        {!loading && !error && total > 0 && !rows.length ? (
+          <div className="d68-news-state">
+            <b>{lang === 'en' ? 'This page has no results.' : 'Trang này không có kết quả.'}</b>
+            <Link to={paginationHref(basePath, pageCount)}>{lang === 'en' ? 'Go to the last page' : 'Đi đến trang cuối'}</Link>
+          </div>
         ) : null}
 
         {rows.length ? (
