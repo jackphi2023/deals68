@@ -64,11 +64,13 @@ check('NewsArticle uses Admin SEO description with excerpt fallback', /localized
 check('NewsArticle uses featured image when available', /localized\.featuredImageUrl/.test(seo) && /jsonLd\.image/.test(seo));
 check('NewsArticle hreflang is conditional on a real alternate bundle', /const alternate = localizeNewsArticle\(article, otherLang\)/.test(seo) && /alternatePath = alternate/.test(seo));
 check('News SEO restores default head state on SPA navigation', /restorers[\s\S]*reverse\(\)[\s\S]*restore/.test(seo));
+check('News SEO does not invent x-default alternate', !/hreflang\s*=\s*['"]x-default/.test(seo));
 
 check('News list uses collection SEO', /NewsCollectionSeo/.test(list));
 check('News list canonical preserves real pagination', /seoPath = paginationHref\(basePath, page\)/.test(list));
 check('Paginated list does not fabricate language alternate', /page === 1/.test(list) && /alternatePath/.test(list));
-check('Tag hreflang checks opposite-language published content', /alternateLanguage[\s\S]*listNewsByTag\(normalizedTagSlug/.test(list) && /alternateResult\.total > 0/.test(list));
+check('Tag hreflang checks opposite-language published content', /alternateLanguage[\s\S]*listNewsByTag\(normalizedTagSlug/.test(list) && /alternateResult[\s\S]*total > 0/.test(list));
+check('Tag hreflang probe cannot break the primary page', /listNewsByTag\(normalizedTagSlug,[\s\S]*language: alternateLanguage,[\s\S]*\)\.catch\(\(\) => null\)/.test(list));
 check('Tag not found and empty tag can be noindexed', /noindex = loading[\s\S]*!tag[\s\S]*total === 0/.test(list));
 check('List SEO title includes page number when paginated', /Page \$\{page\}/.test(list) && /Trang \$\{page\}/.test(list));
 
@@ -85,8 +87,10 @@ check('Sitemap fetches News through anon REST at build time', /fetchRows\([\s\S]
 check('Sitemap explicitly requires Published News', /status=eq\.published/.test(sitemap));
 check('Sitemap explicitly excludes soft-deleted News', /deleted_at=is\.null/.test(sitemap));
 check('Sitemap requires published_date', /published_date=not\.is\.null/.test(sitemap));
-check('Sitemap emits VI and EN article URLs independently', /hasNewsBundle\(row, 'vi'\)/.test(sitemap) && /hasNewsBundle\(row, 'en'\)/.test(sitemap));
-check('Sitemap never emits incomplete language bundle', /title_\$\{suffix\}/.test(sitemap) && /excerpt_\$\{suffix\}/.test(sitemap) && /content_json_\$\{suffix\}/.test(sitemap));
+check('Sitemap queries VI and EN article URLs independently', /viNewsArticles/.test(sitemap) && /enNewsArticles/.test(sitemap));
+check('Sitemap VI bundle requires slug title excerpt content', /slug_vi=not\.is\.null/.test(sitemap) && /title_vi=not\.is\.null/.test(sitemap) && /excerpt_vi=not\.is\.null/.test(sitemap) && /content_json_vi=not\.is\.null/.test(sitemap));
+check('Sitemap EN bundle requires slug title excerpt content', /slug_en=not\.is\.null/.test(sitemap) && /title_en=not\.is\.null/.test(sitemap) && /excerpt_en=not\.is\.null/.test(sitemap) && /content_json_en=not\.is\.null/.test(sitemap));
+check('Sitemap does not download rich content JSON in select payload', !/'[^']*content_json_vi[^']*'/.test(sitemap.match(/fetchRows\([\s\S]*?viNewsArticles[\s\S]*?\);/)?.[0] || '') || /'id,slug_vi,published_date,updated_at'/.test(sitemap));
 check('Sitemap includes News tag pages only from eligible linked articles', /news_article_tags/.test(sitemap) && /tagLastmods/.test(sitemap) && /\/news\/tag\//.test(sitemap) && /\/en\/news\/tag\//.test(sitemap));
 check('Sitemap lastmod uses News update/publication timestamps', /row\.updated_at \|\| row\.published_date/.test(sitemap));
 check('Existing postbuild still owns sitemap generation', /"postbuild": "node scripts\/generate-sitemap\.mjs dist"/.test(pkg));
