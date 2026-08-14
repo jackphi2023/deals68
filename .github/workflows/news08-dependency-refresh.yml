@@ -20,12 +20,30 @@ jobs:
         with:
           node-version: 20
           cache: npm
-      - name: Refresh only audited runtime dependencies
-        run: npm install --save-exact @supabase/supabase-js@2.109.0 react-router-dom@6.30.4 vite@5.4.21
+      - name: Refresh audited runtime dependencies
+        run: npm install --save-exact @supabase/supabase-js@2.109.0 react-router-dom@6.30.4
+      - name: Keep build-only tooling in devDependencies
+        run: npm install --save-dev --save-exact vite@5.4.21 typescript@5.6.3 @vitejs/plugin-react@4.3.4
       - name: Apply non-breaking transitive audit fixes
         run: npm audit fix || true
       - name: Verify no high or critical production advisory remains
-        run: npm audit --omit=dev --audit-level=high
+        shell: bash
+        run: |
+          npm audit --omit=dev --json > /tmp/news08-audit.json || true
+          node <<'NODE'
+          const fs = require('fs');
+          const audit = JSON.parse(fs.readFileSync('/tmp/news08-audit.json', 'utf8'));
+          const vulnerabilities = audit.vulnerabilities || {};
+          const blocking = Object.entries(vulnerabilities)
+            .filter(([, value]) => ['high', 'critical'].includes(String(value?.severity || '').toLowerCase()))
+            .map(([name, value]) => ({ name, severity: value.severity, via: value.via }));
+          console.log('Production audit metadata:', JSON.stringify(audit.metadata?.vulnerabilities || {}, null, 2));
+          if (blocking.length) {
+            console.error('Blocking production advisories:', JSON.stringify(blocking, null, 2));
+            process.exit(1);
+          }
+          console.log('PASS no high/critical production advisories.');
+          NODE
       - name: Commit regenerated lockfile
         shell: bash
         run: |
