@@ -4,6 +4,7 @@ import { BrowserRouter, useLocation } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import App from './App';
 import InvestorAccessBoundary from './components/InvestorAccessBoundary';
+import AdminNewsPortal from './components/admin/AdminNewsPortal';
 import AdminReportsPortal from './features/adminReports/AdminReportsPortal';
 import BusinessPublicRevenueControls from './features/businessRevenueVisibility/BusinessPublicRevenueControls';
 import PublicBusinessRevenuePresentation from './features/businessRevenueVisibility/PublicBusinessRevenuePresentation';
@@ -26,6 +27,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
         <InvestorAccessBoundary>
           <Deals68RouteRoot />
           <AdminReportsPortal />
+          <AdminNewsPortal />
           <BusinessPublicRevenueControls />
           <PublicBusinessRevenuePresentation />
           <DashboardProfileReviewNoticePortal />
