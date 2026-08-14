@@ -45,11 +45,11 @@ export function validateNewsImageFile(file: File) {
   }
 }
 
-export async function adminUploadNewsFeaturedImage(file: File): Promise<NewsMediaUpload> {
+async function adminUploadNewsImage(file: File, folder: 'featured' | 'inline'): Promise<NewsMediaUpload> {
   validateNewsImageFile(file);
   const extension = fileExtension(file);
   const datePrefix = new Date().toISOString().slice(0, 10);
-  const path = `featured/${datePrefix}/${safeBaseName(file.name)}-${uploadId()}.${extension}`;
+  const path = `${folder}/${datePrefix}/${safeBaseName(file.name)}-${uploadId()}.${extension}`;
 
   const { error } = await supabase.storage
     .from(NEWS_MEDIA_BUCKET)
@@ -64,4 +64,12 @@ export async function adminUploadNewsFeaturedImage(file: File): Promise<NewsMedi
   if (!data.publicUrl) throw new Error('Không tạo được public URL cho ảnh News.');
 
   return { path, publicUrl: data.publicUrl };
+}
+
+export async function adminUploadNewsFeaturedImage(file: File): Promise<NewsMediaUpload> {
+  return adminUploadNewsImage(file, 'featured');
+}
+
+export async function adminUploadNewsInlineImage(file: File): Promise<NewsMediaUpload> {
+  return adminUploadNewsImage(file, 'inline');
 }
