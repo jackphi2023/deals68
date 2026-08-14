@@ -113,8 +113,8 @@ async function mockNewsRest(page: Page) {
     const url = new URL(route.request().url());
     let rows = [...articles];
 
-    const viSlug = url.searchParams.get('slug_vi');
-    const enSlug = url.searchParams.get('slug_en');
+    const viSlug = url.searchParams.getAll('slug_vi').find((value) => value.startsWith('eq.'));
+    const enSlug = url.searchParams.getAll('slug_en').find((value) => value.startsWith('eq.'));
     if (viSlug?.startsWith('eq.')) rows = rows.filter((row) => row.slug_vi === viSlug.slice(3));
     if (enSlug?.startsWith('eq.')) rows = rows.filter((row) => row.slug_en === enSlug.slice(3));
 
