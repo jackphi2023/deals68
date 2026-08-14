@@ -13,7 +13,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        supabase: ['2.99.0', '2.100.0', '2.103.0', '2.106.2']
+        supabase: ['2.46.2', '2.50.0', '2.55.0', '2.60.0', '2.70.0', '2.80.0']
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -30,8 +30,12 @@ jobs:
         run: |
           node -e "for (const p of ['@supabase/supabase-js','@supabase/auth-js','@supabase/postgrest-js']) console.log(p, require(p + '/package.json').version)"
       - name: Build repository with candidate
+        id: build
+        continue-on-error: true
         run: npm run build
       - name: Audit candidate production graph in isolated manifest
+        id: audit
+        continue-on-error: true
         shell: bash
         run: |
           rm -rf /tmp/news08-candidate && mkdir -p /tmp/news08-candidate
@@ -53,3 +57,8 @@ jobs:
           }
           console.log('PASS no high/critical production advisories');
           NODE
+      - name: Require build and security compatibility
+        shell: bash
+        run: |
+          echo "build=${{ steps.build.outcome }} audit=${{ steps.audit.outcome }}"
+          [[ "${{ steps.build.outcome }}" == "success" && "${{ steps.audit.outcome }}" == "success" ]]
