@@ -77,7 +77,12 @@ check('Admin editor supports draft and published states', /option value="draft"/
 check('Admin editor supports featured flag', /is_featured/.test(editor) && /Tin nổi bật/.test(editor));
 check('Admin editor supports optional SEO VI EN fields', /seo_title_vi/.test(editor) && /seo_description_vi/.test(editor) && /seo_title_en/.test(editor) && /seo_description_en/.test(editor));
 check('Admin editor requires 4:3 featured image before publish', /Ảnh đại diện 4:3/.test(editor) && /Math\.abs\(ratio - 4 \/ 3\)/.test(editor));
-check('Admin editor stores provisional content as structured JSON', /type: 'doc'/.test(editor) && /type: 'paragraph'/.test(editor) && /content_json_vi: plainTextToContent/.test(editor));
+check(
+  'Admin editor stores content as structured JSON',
+  releaseMode
+    ? /content_json_vi: newsContentHasMeaningfulContent\(form\.content_vi\) \? form\.content_vi : null/.test(editor)
+    : /type: 'doc'/.test(editor) && /type: 'paragraph'/.test(editor) && /content_json_vi: plainTextToContent/.test(editor),
+);
 
 if (!releaseMode) {
   check('NEWS-03 does not use raw HTML rendering', !/dangerouslySetInnerHTML|contentEditable/.test(editor));
