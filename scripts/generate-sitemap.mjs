@@ -85,23 +85,21 @@ function entry(urlPath, lastmod = '') {
     }\n  </url>`;
 }
 
-function hasNewsBundle(row, language) {
-  const suffix = language === 'en' ? 'en' : 'vi';
-  return Boolean(
-    row?.published_date
-    && String(row?.[`slug_${suffix}`] || '').trim()
-    && String(row?.[`title_${suffix}`] || '').trim()
-    && String(row?.[`excerpt_${suffix}`] || '').trim()
-    && row?.[`content_json_${suffix}`],
-  );
-}
-
 function newerLastmod(current, candidate) {
   const currentValue = String(current || '');
   const candidateValue = String(candidate || '');
   if (!currentValue) return candidateValue;
   if (!candidateValue) return currentValue;
   return candidateValue > currentValue ? candidateValue : currentValue;
+}
+
+function mergeNewsLanguage(articleLanguages, row, language) {
+  const articleId = String(row.id || '').trim();
+  if (!articleId) return;
+  const current = articleLanguages.get(articleId) || { vi: false, en: false, updatedAt: '' };
+  current[language] = true;
+  current.updatedAt = newerLastmod(current.updatedAt, row.updated_at || row.published_date || '');
+  articleLanguages.set(articleId, current);
 }
 
 async function main() {
@@ -128,37 +126,43 @@ async function main() {
     urls.set(`/en/businesses/${encoded}`, row.updated_at || '');
   }
 
-  // NEWS-07: News sitemap rows are read through the anon role and are still
-  // explicitly constrained to Published + non-deleted content. VI and EN URLs
-  // are emitted independently so an incomplete EN bundle never creates a fake
-  // translated URL.
-  const newsArticles = await fetchRows(
-    'news_articles',
-    'id,status,slug_vi,slug_en,title_vi,title_en,excerpt_vi,excerpt_en,content_json_vi,content_json_en,published_date,updated_at,deleted_at',
-    '&status=eq.published&deleted_at=is.null&published_date=not.is.null&order=published_date.desc&limit=5000',
-  ).catch(() => []);
+  // NEWS-07: query VI and EN independently with explicit language-bundle
+  // filters. This avoids downloading rich content JSON during postbuild while
+  // ensuring an incomplete translation never creates an indexable URL.
+  const commonNewsFilters = '&status=eq.published&deleted_at=is.null&published_date=not.is.null&order=published_date.desc&limit=5000';
+  const [viNewsArticles, enNewsArticles] = await Promise.all([
+    fetchRows(
+      'news_articles',
+      'id,slug_vi,published_date,updated_at',
+      `${commonNewsFilters}&slug_vi=not.is.null&title_vi=not.is.null&excerpt_vi=not.is.null&content_json_vi=not.is.null`,
+    ).catch(() => []),
+    fetchRows(
+      'news_articles',
+      'id,slug_en,published_date,updated_at',
+      `${commonNewsFilters}&slug_en=not.is.null&title_en=not.is.null&excerpt_en=not.is.null&content_json_en=not.is.null`,
+    ).catch(() => []),
+  ]);
 
   const articleLanguages = new Map();
   let latestViNews = '';
   let latestEnNews = '';
 
-  for (const row of newsArticles) {
-    const articleId = String(row.id || '').trim();
-    if (!articleId) continue;
-    const vi = hasNewsBundle(row, 'vi');
-    const en = hasNewsBundle(row, 'en');
-    articleLanguages.set(articleId, { vi, en, updatedAt: row.updated_at || row.published_date || '' });
+  for (const row of viNewsArticles) {
+    const slug = String(row.slug_vi || '').trim();
+    if (!slug) continue;
+    const lastmod = row.updated_at || row.published_date || '';
+    urls.set(`/news/${encodeURIComponent(slug)}`, lastmod);
+    latestViNews = newerLastmod(latestViNews, lastmod);
+    mergeNewsLanguage(articleLanguages, row, 'vi');
+  }
 
-    if (vi) {
-      const slug = String(row.slug_vi || '').trim();
-      urls.set(`/news/${encodeURIComponent(slug)}`, row.updated_at || row.published_date || '');
-      latestViNews = newerLastmod(latestViNews, row.updated_at || row.published_date || '');
-    }
-    if (en) {
-      const slug = String(row.slug_en || '').trim();
-      urls.set(`/en/news/${encodeURIComponent(slug)}`, row.updated_at || row.published_date || '');
-      latestEnNews = newerLastmod(latestEnNews, row.updated_at || row.published_date || '');
-    }
+  for (const row of enNewsArticles) {
+    const slug = String(row.slug_en || '').trim();
+    if (!slug) continue;
+    const lastmod = row.updated_at || row.published_date || '';
+    urls.set(`/en/news/${encodeURIComponent(slug)}`, lastmod);
+    latestEnNews = newerLastmod(latestEnNews, lastmod);
+    mergeNewsLanguage(articleLanguages, row, 'en');
   }
 
   if (latestViNews) urls.set('/news', latestViNews);
