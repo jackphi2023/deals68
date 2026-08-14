@@ -94,7 +94,8 @@ check('Edge handles News tag route before article route', edge.indexOf('newsTagM
 check('Edge article lookup explicitly requires Published state', /addPublishedNewsFilters[\s\S]*status.*eq\.published/.test(edge));
 check('Edge article lookup explicitly excludes soft-deleted rows', /addPublishedNewsFilters[\s\S]*deleted_at.*is\.null/.test(edge));
 check('Edge article lookup requires editorial published_date', /addPublishedNewsFilters[\s\S]*published_date.*not\.is\.null/.test(edge));
-check('Edge language bundle requires slug title excerpt and body', /slug_\$\{suffix\}[\s\S]*title_\$\{suffix\}[\s\S]*excerpt_\$\{suffix\}[\s\S]*content_json_\$\{suffix\}/.test(edge));
+check('Edge language bundle requires slug title excerpt and body', /const slugKey = `slug_\$\{suffix\}`[\s\S]*title_\$\{suffix\}[\s\S]*excerpt_\$\{suffix\}[\s\S]*content_json_\$\{suffix\}/.test(edge));
+check('Edge requested article slug cannot be overwritten by bundle filter', /if \(!params\.has\(slugKey\)\) params\.set\(slugKey, 'not\.is\.null'\)/.test(edge) && /params\.set\(`slug_\$\{suffix\}`, `eq\.\$\{slug\}`\)[\s\S]*addPublishedNewsFilters\(params, lang\)/.test(edge));
 check('Edge article uses Admin SEO title with fallback', /seoTitle \|\| `\$\{articleTitle\} \| Deals68\.com`/.test(edge));
 check('Edge article uses Admin SEO description with excerpt fallback', /seoDescription \|\| excerpt/.test(edge));
 check('Edge article emits NewsArticle JSON-LD', /'@type': 'NewsArticle'/.test(edge));
