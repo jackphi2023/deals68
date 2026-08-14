@@ -132,16 +132,6 @@ export default function NewsDetail({ lang }: Props) {
               <NewsTags tags={article.tags} language={lang} />
             </header>
 
-            {localized.featuredImageUrl ? (
-              <figure className="d68-news-article__hero">
-                <img
-                  src={localized.featuredImageUrl}
-                  alt={localized.featuredImageAlt || localized.title}
-                  decoding="async"
-                />
-              </figure>
-            ) : null}
-
             <NewsContentRenderer content={localized.content} />
           </article>
 

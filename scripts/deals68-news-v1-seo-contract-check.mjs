@@ -72,7 +72,8 @@ check('News SEO restores default head state on SPA navigation', /restorers[\s\S]
 check('Browser News SEO does not invent x-default alternate', !/hreflang\s*=\s*['"]x-default/.test(seo));
 
 check('News list uses collection SEO', /NewsCollectionSeo/.test(list));
-check('News list canonical preserves real pagination', /seoPath = paginationHref\(basePath, page\)/.test(list));
+check('News list canonical preserves real pagination', /seoPath = paginationHref\(basePath, page(?:, selectedMonth)?\)/.test(list));
+check('Month-filtered canonical preserves the selected archive month', /seoPath = paginationHref\(basePath, page, selectedMonth\)/.test(list));
 check('Paginated list does not fabricate language alternate', /page === 1/.test(list) && /alternatePath/.test(list));
 check('Tag hreflang checks opposite-language published content', /alternateLanguage[\s\S]*listNewsByTag\(normalizedTagSlug/.test(list) && /alternateResult[\s\S]*total > 0/.test(list));
 check('Tag hreflang probe cannot break the primary page', /listNewsByTag\(normalizedTagSlug,[\s\S]*language: alternateLanguage,[\s\S]*\)\.catch\(\(\) => null\)/.test(list));
