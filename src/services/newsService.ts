@@ -10,6 +10,7 @@ import {
   type NewsArticleRow,
   type NewsArticleUpdateInput,
   type NewsArticleWriteInput,
+  type NewsLanguage,
   type NewsListResult,
   type NewsPublicListOptions,
   type NewsTag,
@@ -77,7 +78,13 @@ function publicPaging(options: NewsPublicListOptions = {}) {
     NEWS_MAX_PUBLIC_PAGE_SIZE,
   );
   const from = (page - 1) * pageSize;
-  return { page, pageSize, from, to: from + pageSize - 1 };
+  return {
+    page,
+    pageSize,
+    from,
+    to: from + pageSize - 1,
+    language: options.language || 'vi',
+  } as const;
 }
 
 function adminPaging(filters: NewsAdminListFilters = {}) {
@@ -89,6 +96,15 @@ function adminPaging(filters: NewsAdminListFilters = {}) {
   );
   const from = (page - 1) * pageSize;
   return { page, pageSize, from, to: from + pageSize - 1 };
+}
+
+function requireLanguageBundle(query: any, language: NewsLanguage) {
+  const suffix = language === 'en' ? 'en' : 'vi';
+  return query
+    .not(`slug_${suffix}`, 'is', null)
+    .not(`title_${suffix}`, 'is', null)
+    .not(`excerpt_${suffix}`, 'is', null)
+    .not(`content_json_${suffix}`, 'is', null);
 }
 
 function nullableText(value: unknown) {
@@ -216,12 +232,15 @@ function rowsWithoutJoinPayload(rows: any[]): NewsArticleRow[] {
 export async function listPublishedNews(
   options: NewsPublicListOptions = {},
 ): Promise<NewsListResult> {
-  const { page, pageSize, from, to } = publicPaging(options);
-  const { data, error, count } = await supabase
+  const { page, pageSize, from, to, language } = publicPaging(options);
+  let query = supabase
     .from('news_articles')
     .select(NEWS_ARTICLE_SELECT, { count: 'exact' })
     .eq('status', 'published')
-    .is('deleted_at', null)
+    .is('deleted_at', null);
+  query = requireLanguageBundle(query, language);
+
+  const { data, error, count } = await query
     .order('published_date', { ascending: false })
     .order('created_at', { ascending: false })
     .range(from, to);
@@ -233,17 +252,20 @@ export async function listPublishedNews(
 
 export async function getNewsBySlug(
   slug: string,
-  language: 'vi' | 'en' = 'vi',
+  language: NewsLanguage = 'vi',
 ): Promise<NewsArticle | null> {
   const normalized = normalizeNewsSlug(slug);
   if (!normalized) return null;
   const slugColumn = language === 'en' ? 'slug_en' : 'slug_vi';
 
-  const { data, error } = await supabase
+  let query = supabase
     .from('news_articles')
     .select(NEWS_ARTICLE_SELECT)
     .eq('status', 'published')
-    .is('deleted_at', null)
+    .is('deleted_at', null);
+  query = requireLanguageBundle(query, language);
+
+  const { data, error } = await query
     .eq(slugColumn, normalized)
     .maybeSingle();
   throwIfError('Get News by slug', error);
@@ -258,7 +280,7 @@ export async function listNewsByTag(
   options: NewsPublicListOptions = {},
 ): Promise<NewsListResult> {
   const normalizedTagSlug = normalizeNewsSlug(tagSlug);
-  const { page, pageSize, from, to } = publicPaging(options);
+  const { page, pageSize, from, to, language } = publicPaging(options);
   if (!normalizedTagSlug) return { rows: [], total: 0, page, pageSize };
 
   const { data: tag, error: tagError } = await supabase
@@ -270,12 +292,15 @@ export async function listNewsByTag(
   if (!tag) return { rows: [], total: 0, page, pageSize };
 
   const selectWithTagRelation = `${NEWS_ARTICLE_SELECT},news_article_tags!inner(tag_id)`;
-  const { data, error, count } = await supabase
+  let query = supabase
     .from('news_articles')
     .select(selectWithTagRelation, { count: 'exact' })
     .eq('status', 'published')
     .is('deleted_at', null)
-    .eq('news_article_tags.tag_id', tag.id)
+    .eq('news_article_tags.tag_id', tag.id);
+  query = requireLanguageBundle(query, language);
+
+  const { data, error, count } = await query
     .order('published_date', { ascending: false })
     .order('created_at', { ascending: false })
     .range(from, to);
@@ -285,14 +310,20 @@ export async function listNewsByTag(
   return { rows, total: count || 0, page, pageSize };
 }
 
-export async function getFeaturedNews(limit = 3): Promise<NewsArticle[]> {
+export async function getFeaturedNews(
+  limit = 3,
+  language: NewsLanguage = 'vi',
+): Promise<NewsArticle[]> {
   const safeLimit = positiveInt(limit, 3, 12);
-  const { data, error } = await supabase
+  let query = supabase
     .from('news_articles')
     .select(NEWS_ARTICLE_SELECT)
     .eq('status', 'published')
     .is('deleted_at', null)
-    .eq('is_featured', true)
+    .eq('is_featured', true);
+  query = requireLanguageBundle(query, language);
+
+  const { data, error } = await query
     .order('published_date', { ascending: false })
     .order('created_at', { ascending: false })
     .limit(safeLimit);
@@ -303,10 +334,11 @@ export async function getFeaturedNews(limit = 3): Promise<NewsArticle[]> {
 export async function getRecentNews(
   limit = 5,
   excludeArticleId?: string,
+  language: NewsLanguage = 'vi',
 ): Promise<NewsArticle[]> {
   const safeLimit = positiveInt(limit, 5, 20);
   const requested = Math.min(safeLimit + (excludeArticleId ? 1 : 0), NEWS_MAX_PUBLIC_PAGE_SIZE);
-  const result = await listPublishedNews({ page: 1, pageSize: requested });
+  const result = await listPublishedNews({ page: 1, pageSize: requested, language });
   return result.rows
     .filter((article) => !excludeArticleId || article.id !== excludeArticleId)
     .slice(0, safeLimit);
@@ -315,6 +347,7 @@ export async function getRecentNews(
 export async function getRelatedNews(
   articleId: string,
   limit = 4,
+  language: NewsLanguage = 'vi',
 ): Promise<NewsArticle[]> {
   const currentId = String(articleId || '').trim();
   if (!currentId) return [];
@@ -353,12 +386,15 @@ export async function getRelatedNews(
   const candidateIds = Array.from(overlap.keys()).slice(0, MAX_RELATED_ARTICLES);
   if (!candidateIds.length) return [];
 
-  const { data: candidates, error: candidateError } = await supabase
+  let query = supabase
     .from('news_articles')
     .select(NEWS_ARTICLE_SELECT)
     .in('id', candidateIds)
     .eq('status', 'published')
-    .is('deleted_at', null)
+    .is('deleted_at', null);
+  query = requireLanguageBundle(query, language);
+
+  const { data: candidates, error: candidateError } = await query
     .limit(MAX_RELATED_ARTICLES);
   throwIfError('Load related News articles', candidateError);
 
@@ -418,6 +454,22 @@ export async function adminListNews(
   return { rows, total: count || 0, page, pageSize };
 }
 
+export async function adminGetNewsById(articleId: string): Promise<NewsArticle | null> {
+  const id = String(articleId || '').trim();
+  if (!id) return null;
+
+  const { data, error } = await supabase
+    .from('news_articles')
+    .select(NEWS_ARTICLE_SELECT)
+    .eq('id', id)
+    .maybeSingle();
+  throwIfError('Admin get News by id', error);
+  if (!data) return null;
+
+  const [article] = await attachTags([data as NewsArticleRow]);
+  return article || null;
+}
+
 export async function adminCreateNews(input: NewsArticleWriteInput): Promise<NewsArticle> {
   const payload = normalizeWriteInput(input);
   if (!payload.status) payload.status = 'draft';
@@ -442,13 +494,8 @@ export async function adminUpdateNews(
 
   const payload = normalizeWriteInput(input);
   if (!Object.keys(payload).length) {
-    const { data, error } = await supabase
-      .from('news_articles')
-      .select(NEWS_ARTICLE_SELECT)
-      .eq('id', id)
-      .single();
-    throwIfError('Admin get News before no-op update', error);
-    const [article] = await attachTags([data as NewsArticleRow]);
+    const article = await adminGetNewsById(id);
+    if (!article) throw new NewsServiceError('Admin update News', new Error('Article not found'));
     return article;
   }
 
