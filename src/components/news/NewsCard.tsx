@@ -6,6 +6,8 @@ type Props = {
   article: NewsArticle;
   language: NewsLanguage;
   compact?: boolean;
+  showDate?: boolean;
+  showTags?: boolean;
 };
 
 function formatNewsDate(value: string, language: NewsLanguage) {
@@ -18,7 +20,13 @@ function formatNewsDate(value: string, language: NewsLanguage) {
   }).format(date);
 }
 
-export default function NewsCard({ article, language, compact = false }: Props) {
+export default function NewsCard({
+  article,
+  language,
+  compact = false,
+  showDate = true,
+  showTags = true,
+}: Props) {
   const localized = localizeNewsArticle(article, language);
   if (!localized) return null;
   const detailPath = `${language === 'en' ? '/en/news' : '/news'}/${encodeURIComponent(localized.slug)}`;
@@ -38,12 +46,12 @@ export default function NewsCard({ article, language, compact = false }: Props) 
         )}
       </Link>
       <div className="d68-news-card__body">
-        <time dateTime={localized.publishedDate}>{formatNewsDate(localized.publishedDate, language)}</time>
+        {showDate ? <time dateTime={localized.publishedDate}>{formatNewsDate(localized.publishedDate, language)}</time> : null}
         <h2 className="d68-news-card__title">
           <Link to={detailPath}>{localized.title}</Link>
         </h2>
         {!compact ? <p>{localized.excerpt}</p> : null}
-        <NewsTags tags={article.tags} language={language} compact />
+        {showTags ? <NewsTags tags={article.tags} language={language} compact /> : null}
       </div>
     </article>
   );
