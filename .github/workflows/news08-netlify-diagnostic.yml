@@ -1,0 +1,26 @@
+name: NEWS-08 Netlify Build Diagnostic
+
+on:
+  push:
+    branches: [building]
+
+permissions:
+  contents: read
+
+jobs:
+  netlify-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Reproduce Netlify build locally
+        shell: bash
+        env:
+          VITE_SUPABASE_URL: https://news08.test.supabase.co
+          VITE_SUPABASE_ANON_KEY: news08-ci-anon-key
+        run: npx --yes netlify-cli@latest build --context deploy-preview
