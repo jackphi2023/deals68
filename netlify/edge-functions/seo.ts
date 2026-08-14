@@ -45,6 +45,10 @@ function escapeHtml(value: unknown): string {
     .replace(/"/g, '&quot;');
 }
 
+function escapeXml(value: unknown): string {
+  return escapeHtml(value).replace(/'/g, '&apos;');
+}
+
 function cleanDescription(value: unknown): string {
   return String(value || '')
     .replace(/\s+/g, ' ')
@@ -93,19 +97,24 @@ function newsCollectionDescription(lang: SeoLanguage) {
     : 'Cập nhật và góc nhìn thực tiễn về đầu tư, M&A, gọi vốn và các giao dịch trên thị trường tư nhân.';
 }
 
+function supabaseCredentials() {
+  return {
+    url:
+      Netlify.env.get('VITE_SUPABASE_URL') ||
+      Netlify.env.get('SUPABASE_URL') ||
+      '',
+    key:
+      Netlify.env.get('VITE_SUPABASE_ANON_KEY') ||
+      Netlify.env.get('SUPABASE_ANON_KEY') ||
+      '',
+  };
+}
+
 async function fetchRows(
   table: string,
   params: URLSearchParams,
 ): Promise<any[]> {
-  const url =
-    Netlify.env.get('VITE_SUPABASE_URL') ||
-    Netlify.env.get('SUPABASE_URL') ||
-    '';
-  const key =
-    Netlify.env.get('VITE_SUPABASE_ANON_KEY') ||
-    Netlify.env.get('SUPABASE_ANON_KEY') ||
-    '';
-
+  const { url, key } = supabaseCredentials();
   if (!url || !key) return [];
 
   const response = await fetch(
@@ -122,6 +131,29 @@ async function fetchRows(
   if (!response.ok) return [];
   const data = await response.json().catch(() => []);
   return Array.isArray(data) ? data : [];
+}
+
+async function fetchRowsStrict(
+  table: string,
+  params: URLSearchParams,
+): Promise<any[]> {
+  const { url, key } = supabaseCredentials();
+  if (!url || !key) throw new Error('Supabase anon environment is unavailable.');
+
+  const response = await fetch(
+    `${url.replace(/\/+$/, '')}/rest/v1/${table}?${params.toString()}`,
+    {
+      headers: {
+        apikey: key,
+        Authorization: `Bearer ${key}`,
+        Accept: 'application/json',
+      },
+    },
+  );
+  if (!response.ok) throw new Error(`Supabase sitemap query failed: ${response.status}`);
+  const data = await response.json();
+  if (!Array.isArray(data)) throw new Error('Supabase sitemap response was not an array.');
+  return data;
 }
 
 async function businessSeo(slug: string, lang: SeoLanguage) {
@@ -339,14 +371,18 @@ async function newsTagArticleIds(tagId: string) {
 }
 
 async function eligibleNewsForIds(articleIds: string[], lang: SeoLanguage) {
-  if (!articleIds.length) return null;
-  const params = new URLSearchParams();
-  params.set('select', 'id,published_date,updated_at');
-  params.set('id', `in.(${articleIds.join(',')})`);
-  addPublishedNewsFilters(params, lang);
-  params.set('order', 'published_date.desc,created_at.desc');
-  params.set('limit', '1');
-  return (await fetchRows('news_articles', params))[0] || null;
+  for (let index = 0; index < articleIds.length; index += 100) {
+    const chunk = articleIds.slice(index, index + 100);
+    const params = new URLSearchParams();
+    params.set('select', 'id,published_date,updated_at');
+    params.set('id', `in.(${chunk.join(',')})`);
+    addPublishedNewsFilters(params, lang);
+    params.set('order', 'published_date.desc,created_at.desc');
+    params.set('limit', '1');
+    const row = (await fetchRows('news_articles', params))[0];
+    if (row) return row;
+  }
+  return null;
 }
 
 async function newsTagSeo(tagSlug: string, lang: SeoLanguage, page: number): Promise<DynamicSeo | null> {
@@ -461,6 +497,127 @@ function newsCollectionSeo(lang: SeoLanguage, page: number): DynamicSeo {
   };
 }
 
+function newerLastmod(current: string, candidate: string) {
+  if (!current) return candidate;
+  if (!candidate) return current;
+  return candidate > current ? candidate : current;
+}
+
+function mergeNewsLanguage(
+  articleLanguages: Map<string, { vi: boolean; en: boolean; updatedAt: string }>,
+  row: any,
+  lang: SeoLanguage,
+) {
+  const id = String(row.id || '').trim();
+  if (!id) return;
+  const current = articleLanguages.get(id) || { vi: false, en: false, updatedAt: '' };
+  current[lang] = true;
+  current.updatedAt = newerLastmod(current.updatedAt, row.updated_at || row.published_date || '');
+  articleLanguages.set(id, current);
+}
+
+async function liveNewsSitemapEntries() {
+  const buildLanguageParams = (lang: SeoLanguage) => {
+    const suffix = lang === 'en' ? 'en' : 'vi';
+    const params = new URLSearchParams();
+    params.set('select', `id,slug_${suffix},published_date,updated_at`);
+    addPublishedNewsFilters(params, lang);
+    params.set('order', 'published_date.desc');
+    params.set('limit', '5000');
+    return params;
+  };
+
+  const [viRows, enRows] = await Promise.all([
+    fetchRowsStrict('news_articles', buildLanguageParams('vi')),
+    fetchRowsStrict('news_articles', buildLanguageParams('en')),
+  ]);
+
+  const urls = new Map<string, string>();
+  const articleLanguages = new Map<string, { vi: boolean; en: boolean; updatedAt: string }>();
+  let latestVi = '';
+  let latestEn = '';
+
+  for (const row of viRows) {
+    const slug = String(row.slug_vi || '').trim();
+    if (!slug) continue;
+    const lastmod = row.updated_at || row.published_date || '';
+    urls.set(`/news/${encodeURIComponent(slug)}`, lastmod);
+    latestVi = newerLastmod(latestVi, lastmod);
+    mergeNewsLanguage(articleLanguages, row, 'vi');
+  }
+  for (const row of enRows) {
+    const slug = String(row.slug_en || '').trim();
+    if (!slug) continue;
+    const lastmod = row.updated_at || row.published_date || '';
+    urls.set(`/en/news/${encodeURIComponent(slug)}`, lastmod);
+    latestEn = newerLastmod(latestEn, lastmod);
+    mergeNewsLanguage(articleLanguages, row, 'en');
+  }
+
+  urls.set('/news', latestVi);
+  urls.set('/en/news', latestEn);
+
+  const relationParams = new URLSearchParams();
+  relationParams.set('select', 'article_id,tag_id');
+  relationParams.set('limit', '10000');
+  const tagParams = new URLSearchParams();
+  tagParams.set('select', 'id,slug');
+  tagParams.set('limit', '5000');
+  const [relations, tags] = await Promise.all([
+    fetchRowsStrict('news_article_tags', relationParams),
+    fetchRowsStrict('news_tags', tagParams),
+  ]);
+  const tagById = new Map(
+    tags
+      .map((tag) => [String(tag.id || ''), String(tag.slug || '').trim()] as const)
+      .filter(([id, slug]) => id && slug),
+  );
+  const tagLastmods = new Map<string, { vi: string; en: string }>();
+
+  for (const relation of relations) {
+    const article = articleLanguages.get(String(relation.article_id || ''));
+    const tagSlug = tagById.get(String(relation.tag_id || ''));
+    if (!article || !tagSlug) continue;
+    const state = tagLastmods.get(tagSlug) || { vi: '', en: '' };
+    if (article.vi) state.vi = newerLastmod(state.vi, article.updatedAt);
+    if (article.en) state.en = newerLastmod(state.en, article.updatedAt);
+    tagLastmods.set(tagSlug, state);
+  }
+
+  for (const [tagSlug, state] of tagLastmods) {
+    const encoded = encodeURIComponent(tagSlug);
+    if (state.vi) urls.set(`/news/tag/${encoded}`, state.vi);
+    if (state.en) urls.set(`/en/news/tag/${encoded}`, state.en);
+  }
+
+  return urls;
+}
+
+function sitemapEntry(path: string, lastmod: string) {
+  return `  <url>\n    <loc>${escapeXml(`${SITE_URL}${path}`)}</loc>${
+    lastmod ? `\n    <lastmod>${escapeXml(lastmod.slice(0, 10))}</lastmod>` : ''
+  }\n  </url>`;
+}
+
+function isNewsSitemapLoc(loc: string) {
+  return loc === `${SITE_URL}/news`
+    || loc.startsWith(`${SITE_URL}/news/`)
+    || loc === `${SITE_URL}/en/news`
+    || loc.startsWith(`${SITE_URL}/en/news/`);
+}
+
+function overlayLiveNewsSitemap(xml: string, newsUrls: Map<string, string>) {
+  if (!xml.includes('</urlset>')) return xml;
+  const withoutStaleNews = xml.replace(/\s*<url>[\s\S]*?<\/url>/g, (block) => {
+    const loc = block.match(/<loc>([^<]+)<\/loc>/)?.[1] || '';
+    return isNewsSitemapLoc(loc.trim()) ? '' : block;
+  });
+  const newsBody = Array.from(newsUrls.entries())
+    .map(([path, lastmod]) => sitemapEntry(path, lastmod))
+    .join('\n');
+  return withoutStaleNews.replace('</urlset>', `${newsBody ? `\n${newsBody}\n` : '\n'}</urlset>`);
+}
+
 function isPreviewHost(hostname: string) {
   return !['deals68.com', 'www.deals68.com'].includes(
     hostname.toLowerCase(),
@@ -493,12 +650,12 @@ function renderSeoBlock(input: {
     : 'index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1';
   const basePath = input.canonicalPath.replace(/\?.*$/, '').replace(/^\/en(?=\/|$)/, '') || '/';
 
-  const alternateRows = input.alternates === undefined
+  const alternateRows: Array<{ hreflang: string; path: string }> = input.alternates === undefined
     ? (!input.noindex && supportsEnglishSeoPath(basePath)
       ? [
-          { hreflang: 'vi' as const, path: localizedSeoPath(basePath, 'vi') },
-          { hreflang: 'en' as const, path: localizedSeoPath(basePath, 'en') },
-          { hreflang: 'x-default' as const, path: localizedSeoPath(basePath, 'vi') },
+          { hreflang: 'vi', path: localizedSeoPath(basePath, 'vi') },
+          { hreflang: 'en', path: localizedSeoPath(basePath, 'en') },
+          { hreflang: 'x-default', path: localizedSeoPath(basePath, 'vi') },
         ]
       : [])
     : (!input.noindex ? input.alternates : []);
@@ -568,8 +725,28 @@ export default async function seoEdgeFunction(
   context: any,
 ) {
   const response = await context.next();
-  const contentType = response.headers.get('content-type') || '';
+  const url = new URL(request.url);
 
+  if (request.method === 'GET' && url.pathname === '/sitemap.xml') {
+    try {
+      const liveNews = await liveNewsSitemapEntries();
+      const xml = await response.text();
+      const nextXml = overlayLiveNewsSitemap(xml, liveNews);
+      const headers = new Headers(response.headers);
+      headers.delete('content-length');
+      headers.set('cache-control', 'public, max-age=300, stale-while-revalidate=600');
+      headers.set('x-deals68-seo', 'edge-v1-news-sitemap');
+      return new Response(nextXml, {
+        status: response.status,
+        statusText: response.statusText,
+        headers,
+      });
+    } catch {
+      return response;
+    }
+  }
+
+  const contentType = response.headers.get('content-type') || '';
   if (
     request.method === 'HEAD' ||
     !contentType.includes('text/html')
@@ -577,7 +754,6 @@ export default async function seoEdgeFunction(
     return response;
   }
 
-  const url = new URL(request.url);
   const pathname = url.pathname.replace(/\/+$/, '') || '/';
   const lang = seoLanguageFromPath(pathname);
   const basePath = stripSeoLanguagePrefix(pathname);
@@ -720,8 +896,9 @@ export default async function seoEdgeFunction(
     }
   }
 
-  noindex = noindex || isPreviewHost(url.hostname);
-  if (noindex && isPreviewHost(url.hostname)) alternates = [];
+  const previewHost = isPreviewHost(url.hostname);
+  noindex = noindex || previewHost;
+  if (previewHost) alternates = [];
 
   const html = await response.text();
   const seoBlock = renderSeoBlock({
