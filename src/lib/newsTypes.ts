@@ -1,7 +1,80 @@
 export type NewsLanguage = 'vi' | 'en';
 export type NewsArticleStatus = 'draft' | 'published' | 'deleted';
 export type NewsEditableStatus = Exclude<NewsArticleStatus, 'deleted'>;
-export type NewsContentJson = Record<string, unknown>;
+
+export type NewsTextMark =
+  | { type: 'bold' }
+  | { type: 'italic' }
+  | { type: 'underline' }
+  | { type: 'link'; attrs: { href: string } };
+
+export type NewsTextNode = {
+  type: 'text';
+  text: string;
+  marks?: NewsTextMark[];
+};
+
+export type NewsHardBreakNode = { type: 'hardBreak' };
+export type NewsInlineNode = NewsTextNode | NewsHardBreakNode;
+
+export type NewsParagraphNode = {
+  type: 'paragraph';
+  content?: NewsInlineNode[];
+};
+
+export type NewsHeadingNode = {
+  type: 'heading';
+  attrs: { level: 2 | 3 };
+  content?: NewsInlineNode[];
+};
+
+export type NewsBlockquoteNode = {
+  type: 'blockquote';
+  content?: Array<NewsParagraphNode | NewsHeadingNode>;
+};
+
+export type NewsListItemNode = {
+  type: 'listItem';
+  content?: NewsParagraphNode[];
+};
+
+export type NewsBulletListNode = {
+  type: 'bulletList';
+  content?: NewsListItemNode[];
+};
+
+export type NewsOrderedListNode = {
+  type: 'orderedList';
+  content?: NewsListItemNode[];
+};
+
+export type NewsImageNode = {
+  type: 'image';
+  attrs: {
+    src: string;
+    alt?: string;
+    caption?: string;
+  };
+};
+
+export type NewsYouTubeNode = {
+  type: 'youtube';
+  attrs: { videoId: string };
+};
+
+export type NewsContentNode =
+  | NewsParagraphNode
+  | NewsHeadingNode
+  | NewsBlockquoteNode
+  | NewsBulletListNode
+  | NewsOrderedListNode
+  | NewsImageNode
+  | NewsYouTubeNode;
+
+export type NewsContentJson = {
+  type: 'doc';
+  content?: NewsContentNode[];
+};
 
 export const NEWS_DEFAULT_PUBLIC_PAGE_SIZE = 12;
 export const NEWS_MAX_PUBLIC_PAGE_SIZE = 50;
