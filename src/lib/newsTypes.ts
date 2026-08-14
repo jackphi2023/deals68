@@ -74,6 +74,7 @@ export type LocalizedNewsArticle = {
 export type NewsPublicListOptions = {
   page?: number;
   pageSize?: number;
+  language?: NewsLanguage;
 };
 
 export type NewsListResult = {
