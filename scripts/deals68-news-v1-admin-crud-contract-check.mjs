@@ -5,6 +5,7 @@ import path from 'node:path';
 const root = process.cwd();
 const failures = [];
 let total = 0;
+const releaseMode = process.env.D68_NEWS_RELEASE_MODE === '1';
 
 function exists(rel) {
   return fs.existsSync(path.join(root, rel));
@@ -77,8 +78,11 @@ check('Admin editor supports featured flag', /is_featured/.test(editor) && /Tin 
 check('Admin editor supports optional SEO VI EN fields', /seo_title_vi/.test(editor) && /seo_description_vi/.test(editor) && /seo_title_en/.test(editor) && /seo_description_en/.test(editor));
 check('Admin editor requires 4:3 featured image before publish', /Ảnh đại diện 4:3/.test(editor) && /Math\.abs\(ratio - 4 \/ 3\)/.test(editor));
 check('Admin editor stores provisional content as structured JSON', /type: 'doc'/.test(editor) && /type: 'paragraph'/.test(editor) && /content_json_vi: plainTextToContent/.test(editor));
-check('NEWS-03 does not use raw HTML rendering', !/dangerouslySetInnerHTML|contentEditable/.test(editor));
-check('NEWS-03 does not embed arbitrary iframe or YouTube editor yet', !/<iframe|youtube/i.test(editor));
+
+if (!releaseMode) {
+  check('NEWS-03 does not use raw HTML rendering', !/dangerouslySetInnerHTML|contentEditable/.test(editor));
+  check('NEWS-03 does not embed arbitrary iframe or YouTube editor yet', !/<iframe|youtube/i.test(editor));
+}
 
 check('Featured image upload uses news-media service', /adminUploadNewsFeaturedImage/.test(editor) && /NEWS_MEDIA_BUCKET = 'news-media'/.test(media));
 check('News media service restricts JPEG PNG WebP and 10MB', /image\/jpeg/.test(media) && /image\/png/.test(media) && /image\/webp/.test(media) && /10 \* 1024 \* 1024/.test(media));
@@ -86,7 +90,11 @@ check('News UI has no direct news table queries', !/\.from\(['"]news_/.test(mana
 check('News table access remains centralized in newsService', /\.from\('news_articles'\)/.test(service) && /\.from\('news_tags'\)/.test(service) && /\.from\('news_article_tags'\)/.test(service));
 
 check('Dedicated Admin News CSS is registered in the single CSS entry', /admin-news\.css/.test(cssIndex));
-check('Public /news routes are still absent in NEWS-03', !/<Route[^>]+path=["']\/?(?:en\/)?news/i.test(app));
+if (!releaseMode) {
+  check('Public /news routes are still absent in NEWS-03', !/<Route[^>]+path=["']\/?(?:en\/)?news/i.test(app));
+} else {
+  console.log('INFO NEWS-03 release mode: historical pre-rich-editor/pre-public assertions skipped.');
+}
 
 const deps = { ...(pkg.dependencies || {}), ...(pkg.devDependencies || {}) };
 const richEditorDeps = Object.keys(deps).filter((name) => /tiptap|lexical|quill|ckeditor|slate|prosemirror/i.test(name));
