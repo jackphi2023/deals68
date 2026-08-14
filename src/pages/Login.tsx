@@ -9,11 +9,11 @@ import type { Lang } from '../lib/i18n';
 const T = (lang: Lang, vi: string, en: string) => lang === 'en' ? en : vi;
 
 type LoginRole = 'business' | 'investor' | 'admin';
-type LoginRoleDef = { key: LoginRole; vi: string; en: string; register?: string };
+type LoginRoleDef = { key: LoginRole; vi: string; en: string };
 
 const publicRoleDefs: LoginRoleDef[] = [
-  { key: 'business', vi: 'Doanh nghiệp', en: 'Business', register: '/register/business' },
-  { key: 'investor', vi: 'Nhà đầu tư', en: 'Investor', register: '/register/investor' },
+  { key: 'business', vi: 'Doanh nghiệp', en: 'Business' },
+  { key: 'investor', vi: 'Nhà đầu tư', en: 'Investor' },
 ];
 const adminRole: LoginRoleDef = { key: 'admin', vi: 'Admin', en: 'Admin' };
 
@@ -61,7 +61,6 @@ export default function Login({ lang = 'vi' }: { lang?: Lang }) {
   const [cooldown, setCooldown] = useState(0);
 
   const next = params.get('next');
-  const currentRole = useMemo(() => roleDefs.find((r) => r.key === role) || roleDefs[0], [role, roleDefs]);
   const userFieldLabel = role === 'business' ? T(lang, 'Tên đăng nhập hoặc email', 'Username or email') : 'Email';
   const userFieldPlaceholder = role === 'business' ? T(lang, 'Tên đăng nhập / email', 'Username / email') : 'email@example.com';
 
@@ -224,10 +223,10 @@ export default function Login({ lang = 'vi' }: { lang?: Lang }) {
           {otpMode ? <button type="button" className="d68-auth-ghost" onClick={resendOtp} disabled={loading || cooldown > 0}>{cooldown > 0 ? T(lang, `Gửi lại sau ${cooldown}s`, `Resend in ${cooldown}s`) : T(lang, 'Gửi lại mã OTP', 'Resend OTP')}</button> : null}
         </form>
 
-        {!isAdminLogin && currentRole.register ? (
-          <p className="d68-auth-bottom">
-            {T(lang, 'Chưa có tài khoản?', 'No account yet?')}{' '}
-            <Link to={toLocalizedPath(currentRole.register, lang)}>{T(lang, `Đăng ký ${currentRole.vi}`, 'Register')}</Link>
+        {!isAdminLogin ? (
+          <p className="d68-auth-bottom" style={{ fontSize: 10 }}>
+            {T(lang, 'Đăng nhập tài khoản Cố vấn/Môi giới', 'Log in to your Advisor/Broker account')}{' '}
+            <Link to={toLocalizedPath('/advisor/login', lang)}><strong>{T(lang, 'tại đây', 'here')}</strong></Link>
           </p>
         ) : null}
       </section>
