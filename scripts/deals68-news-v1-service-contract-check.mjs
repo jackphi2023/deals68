@@ -56,6 +56,7 @@ check(
 check('News content stays structured JSON', /NewsContentJson\s*=\s*Record<string, unknown>/m.test(types));
 check('Public News page size defaults to 12', /NEWS_DEFAULT_PUBLIC_PAGE_SIZE\s*=\s*12/.test(types));
 check('Admin News page size defaults to 20', /NEWS_DEFAULT_ADMIN_PAGE_SIZE\s*=\s*20/.test(types));
+check('Public list options carry language explicitly', /NewsPublicListOptions[\s\S]*language\?: NewsLanguage/.test(types));
 check('News slugs are normalized centrally', /export function normalizeNewsSlug/.test(types));
 check('Localization helper does not auto-copy VI article text into EN fields', (
   /language === 'en' \? article\.title_en : article\.title_vi/.test(types) &&
@@ -67,6 +68,10 @@ check(
   'News service reuses shared Deals68 Supabase client',
   /import \{ supabase \} from ['"]\.\.\/lib\/supabase['"]/.test(service),
 );
+check(
+  'Public service enforces complete language bundles',
+  /function requireLanguageBundle[\s\S]*slug_\$\{suffix\}[\s\S]*title_\$\{suffix\}[\s\S]*excerpt_\$\{suffix\}[\s\S]*content_json_\$\{suffix\}/.test(service),
+);
 
 const requiredFunctions = [
   'listPublishedNews',
@@ -77,6 +82,7 @@ const requiredFunctions = [
   'getRelatedNews',
   'listNewsTags',
   'adminListNews',
+  'adminGetNewsById',
   'adminCreateNews',
   'adminUpdateNews',
   'adminDeleteNews',
@@ -100,8 +106,13 @@ for (const fn of publicFunctionNames) {
   const body = start >= 0 ? service.slice(start, nextExport >= 0 ? nextExport : service.length) : '';
   check(`${fn} explicitly filters published rows`, /\.eq\('status', 'published'\)/.test(body));
   check(`${fn} explicitly excludes deleted rows`, /\.is\('deleted_at', null\)/.test(body));
+  check(`${fn} applies language availability`, /requireLanguageBundle\(query, language\)/.test(body));
 }
 
+check(
+  'Recent News delegates to language-aware published listing',
+  /getRecentNews[\s\S]*listPublishedNews\(\{ page: 1, pageSize: requested, language \}\)/.test(service),
+);
 check(
   'Published News ordering uses editorial date then creation date',
   /\.order\('published_date', \{ ascending: false \}\)[\s\S]*\.order\('created_at', \{ ascending: false \}\)/.test(service),
