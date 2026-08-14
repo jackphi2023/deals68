@@ -6,8 +6,10 @@ export type AdminTab =
   | 'proposals'
   | 'reports'
   | 'banners'
+  | 'news'
   | 'businesses'
   | 'business_review'
+  | 'advisor_intakes'
   | 'assets'
   | 'investors'
   | 'promos'
@@ -49,6 +51,7 @@ export const ADMIN_NAV_SECTIONS: AdminNavSection[] = [
     label: 'Hồ sơ',
     items: [
       { id: 'business_review', label: 'Duyệt public DN', icon: '✅', href: '/admin/business-review', aliases: ['business-review'] },
+      { id: 'advisor_intakes', label: 'Duyệt Advisor intake', icon: '🛡️', href: '/admin/advisor-intakes', aliases: ['advisor-intakes', 'advisor-authority'] },
       { id: 'businesses', label: 'Doanh nghiệp', icon: '🏢', href: '/admin/businesses', aliases: ['businesses'] },
       { id: 'assets', label: 'Ảnh/File DN', icon: '🖼️', href: '/admin/assets', aliases: ['assets'] },
       { id: 'investors', label: 'Nhà đầu tư', icon: '📈', href: '/admin/investors', aliases: ['investors'] },
@@ -60,6 +63,7 @@ export const ADMIN_NAV_SECTIONS: AdminNavSection[] = [
     label: 'Nội dung & tăng trưởng',
     items: [
       { id: 'banners', label: 'Banner', icon: '🖼️', href: '/admin/banners', aliases: ['banners', 'banner'] },
+      { id: 'news', label: 'Tin tức', icon: '📰', href: '/admin/news', aliases: ['news'] },
       { id: 'promos', label: 'Mã KM', icon: '🎟️', href: '/admin/promo', aliases: ['promo', 'promos'] },
     ],
   },

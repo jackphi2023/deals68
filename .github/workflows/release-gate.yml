@@ -4,7 +4,7 @@ on:
   pull_request:
     branches: [main]
   push:
-    branches: [beta-reference]
+    branches: [beta-reference, building]
 
 permissions:
   contents: read
@@ -20,6 +20,8 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
+      - name: Audit production dependencies
+        run: npm audit --omit=dev --audit-level=high
       - run: npm run qa:release
 
   public-e2e:
@@ -28,6 +30,8 @@ jobs:
     env:
       VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
       VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+      D68_USE_LOCAL_SERVER: "1"
+      D68_BASE_URL: http://127.0.0.1:5173
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -36,11 +40,16 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx playwright install --with-deps chromium
-      - name: Run public E2E when Supabase secrets are configured
+      - name: Run NEWS-08 deterministic browser UAT against this checkout
+        env:
+          VITE_SUPABASE_URL: https://news08.test.supabase.co
+          VITE_SUPABASE_ANON_KEY: news08-ci-anon-key
+        run: npx playwright test tests/e2e/07-news-v1.spec.ts --config=playwright.config.ts
+      - name: Run legacy public E2E when Supabase secrets are configured
         shell: bash
         run: |
           if [[ -z "${VITE_SUPABASE_URL}" || -z "${VITE_SUPABASE_ANON_KEY}" ]]; then
-            echo "Public E2E skipped: add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY repository secrets."
+            echo "Legacy public E2E skipped: add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY repository secrets."
             exit 0
           fi
           npm run test:e2e:public

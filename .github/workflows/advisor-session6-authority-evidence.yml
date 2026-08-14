@@ -1,0 +1,51 @@
+name: Advisor Session 6 - Authority Evidence
+
+on:
+  push:
+    branches:
+      - building
+      - 'agent/advisor-session6-*'
+  pull_request:
+    branches:
+      - building
+    paths:
+      - 'src/pages/AdvisorAccount.tsx'
+      - 'src/pages/AdminAdvisorIntakes.tsx'
+      - 'src/components/AdvisorAuthorityEvidencePanel.tsx'
+      - 'src/components/AdminAdvisorIntakeCard.tsx'
+      - 'src/lib/advisorAuthorityEvidence.ts'
+      - 'src/lib/adminAdvisorIntakes.ts'
+      - 'src/styles/pages/advisor-authority-evidence.css'
+      - 'src/styles/pages/admin-advisor-authority-evidence.css'
+      - 'supabase/migrations/20260807155500_advisor_authority_evidence_phase6_v1.sql'
+      - 'scripts/deals68-advisor-session6-*.mjs'
+      - 'package.json'
+      - '.github/workflows/advisor-session6-authority-evidence.yml'
+
+jobs:
+  advisor-authority-evidence:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Run Advisor Session 6 authority evidence contract
+        run: npm run qa:advisor-session6
+      - name: Re-run Session 0 Business baseline
+        run: npm run qa:advisor-session0
+      - name: Re-run Session 1 assignment security
+        run: npm run qa:advisor-session1
+      - name: Re-run Session 2 authentication
+        run: npm run qa:advisor-session2
+      - name: Re-run Session 3 read-only portfolio
+        run: npm run qa:advisor-session3
+      - name: Re-run Session 4 atomic intake
+        run: npm run qa:advisor-session4
+      - name: Re-run Session 5 Admin authority review
+        run: npm run qa:advisor-session5
+      - name: Run existing release QA
+        run: npm run qa:release

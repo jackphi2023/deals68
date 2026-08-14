@@ -1,0 +1,45 @@
+name: Advisor Session 4 - Atomic Business Intake
+
+on:
+  push:
+    branches:
+      - building
+      - agent/advisor-session4-business-intake
+    paths:
+      - 'src/lib/advisorAuth.ts'
+      - 'src/pages/AdvisorAccount.tsx'
+      - 'src/pages/AdvisorBusinessCreate.tsx'
+      - 'src/styles/pages/advisor-business-intake.css'
+      - 'supabase/migrations/20260806184000_advisor_business_intake_phase4_v1.sql'
+      - 'scripts/deals68-advisor-session4-*.mjs'
+      - 'docs/advisor/ADVISOR_SESSION4_BUSINESS_INTAKE.md'
+      - 'package.json'
+      - '.github/workflows/advisor-session4-business-intake.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  advisor-business-intake:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Run Advisor Session 4 atomic intake contract
+        run: npm run qa:advisor-session4
+      - name: Re-run Session 0 Business baseline
+        run: npm run qa:advisor-session0
+      - name: Re-run Session 1 assignment security
+        run: npm run qa:advisor-session1
+      - name: Re-run Session 2 authentication
+        run: npm run qa:advisor-session2
+      - name: Re-run Session 3 read-only portfolio
+        run: npm run qa:advisor-session3
+      - name: Run existing release QA
+        run: npm run qa:release

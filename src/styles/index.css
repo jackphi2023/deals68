@@ -24,9 +24,12 @@
 @import './pages/pricing.css' layer(d68-overrides);
 @import './pages/valuation.css' layer(d68-overrides);
 @import './pages/auth.css' layer(d68-overrides);
+@import './pages/advisor-auth.css' layer(d68-overrides);
 @import './pages/dashboard.css' layer(d68-overrides);
 @import './pages/business-dashboard.css' layer(d68-overrides);
 @import './pages/admin.css' layer(d68-overrides);
+@import './pages/admin-news.css' layer(d68-overrides);
+@import './pages/news.css' layer(d68-overrides);
 @import './pages/static.css' layer(d68-overrides);
 @import './pages/ui-fixes.css' layer(d68-overrides);
 @import './final/release-foundation.css' layer(d68-overrides);

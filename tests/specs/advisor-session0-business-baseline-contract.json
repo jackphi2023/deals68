@@ -1,0 +1,310 @@
+{
+  "id": "advisor-session0-business-baseline-v1",
+  "title": "Advisor Session 0 - Existing Business flow regression baseline",
+  "version": "1.0.0",
+  "targetBranch": "building",
+  "runtimeChangesAllowed": false,
+  "purpose": "Lock the current Business registration, login, owner dashboard, upload, payment scoping and moderation contracts before Advisor multi-business development starts.",
+  "checks": [
+    {
+      "id": "route-register-business-vi",
+      "file": "src/App.tsx",
+      "type": "contains",
+      "value": "<Route path=\"/register/:role\" element={<Register lang=\"vi\"/>}/>"
+    },
+    {
+      "id": "route-register-business-en",
+      "file": "src/App.tsx",
+      "type": "contains",
+      "value": "<Route path=\"/en/register/:role\" element={<Register lang=\"en\"/>}/>"
+    },
+    {
+      "id": "dashboard-gate-contract",
+      "file": "src/App.tsx",
+      "type": "contains",
+      "value": "function DashboardGate({ role, children }: { role: 'business' | 'investor'; children: ReactNode })"
+    },
+    {
+      "id": "dashboard-business-route",
+      "file": "src/App.tsx",
+      "type": "contains",
+      "value": "<Route path=\"/dashboard/business\" element={<DashboardGate role=\"business\"><BusinessDashboard/></DashboardGate>}/>"
+    },
+    {
+      "id": "dashboard-business-wildcard-route",
+      "file": "src/App.tsx",
+      "type": "contains",
+      "value": "<Route path=\"/dashboard/business/*\" element={<DashboardGate role=\"business\"><BusinessDashboard/></DashboardGate>}/>"
+    },
+    {
+      "id": "dashboard-business-role-check",
+      "file": "src/App.tsx",
+      "type": "contains",
+      "value": "if (profile.role !== role && profile.role !== 'admin')"
+    },
+    {
+      "id": "dashboard-business-enabled-check",
+      "file": "src/App.tsx",
+      "type": "contains",
+      "value": "if (profile.role !== 'admin' && !profile.dashboard_login_enabled)"
+    },
+    {
+      "id": "public-login-role-type",
+      "file": "src/pages/Login.tsx",
+      "type": "contains",
+      "value": "type LoginRole = 'business' | 'investor' | 'admin';"
+    },
+    {
+      "id": "public-login-business-option",
+      "file": "src/pages/Login.tsx",
+      "type": "contains",
+      "value": "{ key: 'business', vi: 'Doanh nghiệp', en: 'Business', register: '/register/business' }"
+    },
+    {
+      "id": "public-login-investor-option",
+      "file": "src/pages/Login.tsx",
+      "type": "contains",
+      "value": "{ key: 'investor', vi: 'Nhà đầu tư', en: 'Investor', register: '/register/investor' }"
+    },
+    {
+      "id": "public-login-business-dashboard-target",
+      "file": "src/pages/Login.tsx",
+      "type": "contains",
+      "value": "if (role === 'business') return '/dashboard/business';"
+    },
+    {
+      "id": "public-login-no-advisor-tab",
+      "file": "src/pages/Login.tsx",
+      "type": "notContains",
+      "value": "key: 'advisor'"
+    },
+    {
+      "id": "public-login-no-affiliate-tab",
+      "file": "src/pages/Login.tsx",
+      "type": "notContains",
+      "value": "key: 'affiliate'"
+    },
+    {
+      "id": "register-business-role-branch",
+      "file": "src/pages/Register.tsx",
+      "type": "contains",
+      "value": "const isBusiness = normalized === 'business';"
+    },
+    {
+      "id": "register-business-requires-plan",
+      "file": "src/pages/Register.tsx",
+      "type": "contains",
+      "value": "if (!plan) {"
+    },
+    {
+      "id": "register-business-requires-term",
+      "file": "src/pages/Register.tsx",
+      "type": "contains",
+      "value": "if (!serviceWeeks) {"
+    },
+    {
+      "id": "register-business-requires-payment-ack",
+      "file": "src/pages/Register.tsx",
+      "type": "contains",
+      "value": "if (plan && serviceWeeks && !paymentAck) {"
+    },
+    {
+      "id": "register-business-bundle",
+      "file": "src/pages/Register.tsx",
+      "type": "contains",
+      "value": "const bundle = await createSignupBundle({"
+    },
+    {
+      "id": "register-business-role-payload",
+      "file": "src/pages/Register.tsx",
+      "type": "contains",
+      "value": ": isBusiness\n            ? 'business'"
+    },
+    {
+      "id": "register-business-plan-is-per-business",
+      "file": "src/pages/Register.tsx",
+      "type": "contains",
+      "value": "plan: selectedBusinessPlan,"
+    },
+    {
+      "id": "register-business-quota-is-per-plan",
+      "file": "src/pages/Register.tsx",
+      "type": "contains",
+      "value": "quota_total: businessProposalQuotaForPlan(selectedBusinessPlan),"
+    },
+    {
+      "id": "register-business-order-code",
+      "file": "src/pages/Register.tsx",
+      "type": "contains",
+      "value": "isInvestor ? 'INVREG' : isBusiness ? 'BIZREG' : 'PARTNER'"
+    },
+    {
+      "id": "register-business-assets-queued-by-business-id",
+      "file": "src/pages/Register.tsx",
+      "type": "contains",
+      "value": "businessId: bundle.business_id"
+    },
+    {
+      "id": "register-business-login-next",
+      "file": "src/pages/Register.tsx",
+      "type": "contains",
+      "value": "? '/dashboard/business'"
+    },
+    {
+      "id": "data-get-my-business-contract",
+      "file": "src/lib/data.ts",
+      "type": "contains",
+      "value": "export async function getMyBusiness(ownerId: string)"
+    },
+    {
+      "id": "data-get-my-business-owner-single",
+      "file": "src/lib/data.ts",
+      "type": "contains",
+      "value": ".eq('owner_id', ownerId).maybeSingle();"
+    },
+    {
+      "id": "data-signup-rpc-v2",
+      "file": "src/lib/data.ts",
+      "type": "contains",
+      "value": "supabase.rpc('create_signup_bundle_v2'"
+    },
+    {
+      "id": "data-create-business-owner-id",
+      "file": "src/lib/data.ts",
+      "type": "contains",
+      "value": "owner_id: ownerId,"
+    },
+    {
+      "id": "data-create-business-public-snapshot-null",
+      "file": "src/lib/data.ts",
+      "type": "contains",
+      "value": "public_snapshot_json: null,"
+    },
+    {
+      "id": "data-create-business-pending-snapshot",
+      "file": "src/lib/data.ts",
+      "type": "contains",
+      "value": "pending_changes_json: payload,"
+    },
+    {
+      "id": "data-create-business-pending-status",
+      "file": "src/lib/data.ts",
+      "type": "contains",
+      "value": "status: 'pending_admin_review',"
+    },
+    {
+      "id": "data-create-business-hidden-before-review",
+      "file": "src/lib/data.ts",
+      "type": "contains",
+      "value": "visible: false"
+    },
+    {
+      "id": "data-file-storage-business-scope",
+      "file": "src/lib/data.ts",
+      "type": "contains",
+      "value": "`${businessId}/signup/${stableId}-${safeName}`"
+    },
+    {
+      "id": "dashboard-load-owner-business",
+      "file": "src/pages/BusinessDashboard.tsx",
+      "type": "contains",
+      "value": "const biz = await getMyBusiness(profile.id);"
+    },
+    {
+      "id": "dashboard-files-business-scope",
+      "file": "src/pages/BusinessDashboard.tsx",
+      "type": "contains",
+      "value": "getBusinessFiles(biz.id)"
+    },
+    {
+      "id": "dashboard-images-business-scope",
+      "file": "src/pages/BusinessDashboard.tsx",
+      "type": "contains",
+      "value": "getBusinessImages(biz.id)"
+    },
+    {
+      "id": "dashboard-relations-business-scope",
+      "file": "src/pages/BusinessDashboard.tsx",
+      "type": "contains",
+      "value": "business_uuid: biz.id"
+    },
+    {
+      "id": "dashboard-payments-business-scope",
+      "file": "src/pages/BusinessDashboard.tsx",
+      "type": "contains",
+      "value": ".eq('business_id', biz.id)"
+    },
+    {
+      "id": "dashboard-runtime-role-restriction",
+      "file": "src/pages/BusinessDashboard.tsx",
+      "type": "contains",
+      "value": "profile.role !== 'business' && profile.role !== 'admin'"
+    },
+    {
+      "id": "dashboard-profile-save-pending-only",
+      "file": "src/pages/BusinessDashboard.tsx",
+      "type": "contains",
+      "value": "pending_changes_json: pending"
+    },
+    {
+      "id": "dashboard-profile-save-moderation-status",
+      "file": "src/pages/BusinessDashboard.tsx",
+      "type": "contains",
+      "value": "moderation_status: 'pending_admin_review'"
+    },
+    {
+      "id": "dashboard-new-profile-hidden",
+      "file": "src/pages/BusinessDashboard.tsx",
+      "type": "contains",
+      "value": "patch.status = 'pending_admin_review'; patch.visible = false;"
+    },
+    {
+      "id": "dashboard-profile-update-business-id",
+      "file": "src/pages/BusinessDashboard.tsx",
+      "type": "contains",
+      "value": ".update(patch).eq('id', b.id)"
+    },
+    {
+      "id": "dashboard-file-upload-actor-owner",
+      "file": "src/pages/BusinessDashboard.tsx",
+      "type": "contains",
+      "value": "uploadBusinessFile(b.id, profile.id"
+    },
+    {
+      "id": "dashboard-image-upload-actor-owner",
+      "file": "src/pages/BusinessDashboard.tsx",
+      "type": "contains",
+      "value": "uploadBusinessImage(b.id, profile.id"
+    },
+    {
+      "id": "dashboard-realtime-business-row",
+      "file": "src/pages/BusinessDashboard.tsx",
+      "type": "contains",
+      "value": "filter: `id=eq.${b.id}`"
+    },
+    {
+      "id": "dashboard-realtime-business-assets",
+      "file": "src/pages/BusinessDashboard.tsx",
+      "type": "contains",
+      "value": "filter: `business_id=eq.${b.id}`"
+    },
+    {
+      "id": "auth-profile-server-role",
+      "file": "src/contexts/AuthContext.tsx",
+      "type": "contains",
+      "value": ".from('profiles').select('id,role,username,display_name,email,country_iso2,language_code,timezone,status,dashboard_login_enabled')"
+    },
+    {
+      "id": "auth-no-user-metadata-authorisation",
+      "file": "src/contexts/AuthContext.tsx",
+      "type": "notContains",
+      "value": "user.user_metadata.role"
+    },
+    {
+      "id": "role-advisor-is-reserved",
+      "file": "src/lib/supabase.ts",
+      "type": "contains",
+      "value": "export type Role = 'business' | 'investor' | 'advisor' | 'affiliate' | 'market_partner' | 'admin';"
+    }
+  ]
+}

@@ -104,8 +104,6 @@ export default function Pricing({ lang }: { lang: Lang }) {
     ? businessProposalQuotaForPlan(bizPlan)
     : 0;
   const termWeeks = role === 'business' ? units : paidPlanSelected ? units * 4 : 0;
-  const advisorComingSoon = role === 'advisor';
-  const advisorTooltip = T(lang, 'Sắp ra mắt', 'Coming soon');
   const premiumUnitPrice = country === 'vn'
     ? money(INVESTOR_PREMIUM_MONTHLY_VND, 'VND')
     : money(INVESTOR_PREMIUM_MONTHLY_USD, 'USD');
@@ -290,7 +288,6 @@ export default function Pricing({ lang }: { lang: Lang }) {
   }
 
   function checkout() {
-    if (advisorComingSoon) return;
     localStorage.setItem(
       'd68_checkout_intent',
       JSON.stringify({
@@ -312,7 +309,9 @@ export default function Pricing({ lang }: { lang: Lang }) {
         createdAt: new Date().toISOString(),
       }),
     );
-    navigate(toLocalizedPath(`/register/${role}`, lang));
+    navigate(
+      toLocalizedPath(role === 'advisor' ? '/advisor/register' : `/register/${role}`, lang),
+    );
   }
 
   return (
@@ -510,26 +509,16 @@ export default function Pricing({ lang }: { lang: Lang }) {
                 {T(lang, 'Tiết kiệm', 'You save')} {money(saving, currency)}
               </p>
             ) : null}
-            <span
-              className="d68-pricing-checkout-wrap"
-              data-tooltip={advisorComingSoon ? advisorTooltip : undefined}
-              tabIndex={advisorComingSoon ? 0 : undefined}
-              aria-label={advisorComingSoon ? advisorTooltip : undefined}
-            >
-              <button
-                type="button"
-                onClick={checkout}
-                disabled={advisorComingSoon}
-                aria-disabled={advisorComingSoon}
-              >
-                {advisorComingSoon
+            <span className="d68-pricing-checkout-wrap">
+              <button type="button" onClick={checkout}>
+                {role === 'advisor'
                   ? T(lang, 'Tạo tài khoản', 'Create account')
                   : investorStandardSelected
                     ? T(lang, 'Tạo tài khoản miễn phí', 'Create free account')
                     : role === 'investor' && investorPlan === 'premium'
                       ? T(lang, 'Đăng ký gói Nâng cao', 'Choose Premium')
                       : T(lang, 'Đăng ký tài khoản', 'Register account')}{' '}
-                {!advisorComingSoon ? '→' : ''}
+                →
               </button>
             </span>
             <small>

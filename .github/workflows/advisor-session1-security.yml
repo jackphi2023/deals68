@@ -1,0 +1,44 @@
+name: Advisor Session 1 - Assignment Security
+
+on:
+  push:
+    branches: [building]
+    paths:
+      - 'supabase/migrations/20260806093000_advisor_assignment_security_phase1_v1.sql'
+      - 'scripts/deals68-advisor-session1-security-check.mjs'
+      - 'scripts/deals68-advisor-session1-postgres-test.mjs'
+      - 'docs/advisor/ADVISOR_SESSION1_ASSIGNMENT_SECURITY.md'
+      - 'package.json'
+  pull_request:
+    branches: [building, main]
+    paths:
+      - 'supabase/migrations/20260806093000_advisor_assignment_security_phase1_v1.sql'
+      - 'scripts/deals68-advisor-session1-security-check.mjs'
+      - 'scripts/deals68-advisor-session1-postgres-test.mjs'
+      - 'docs/advisor/ADVISOR_SESSION1_ASSIGNMENT_SECURITY.md'
+      - 'package.json'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: advisor-session1-assignment-security-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  advisor-assignment-security:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Run Advisor Session 1 security contract
+        run: npm run qa:advisor-session1
+      - name: Re-run Business baseline
+        run: npm run qa:advisor-session0
+      - name: Run existing release QA
+        run: npm run qa:release
