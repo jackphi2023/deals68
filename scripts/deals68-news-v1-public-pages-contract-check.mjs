@@ -78,6 +78,10 @@ check('Safe renderer still avoids raw HTML injection', !/dangerouslySetInnerHTML
 
 check('Public News grid is 3 columns desktop', /grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/.test(css));
 check('News card media keeps 4:3 ratio', /d68-news-card__image-link\{[^}]*aspect-ratio:4\/3/.test(css));
+check('News card image uses centered cover without distortion', /d68-news-card__image-link img\{[^}]*width:100%[^}]*height:100%[^}]*object-fit:cover[^}]*object-position:center/.test(css));
+check('Detail hero uses a 4:3 clipped frame and centered cover image', /d68-news-article__hero\{[^}]*aspect-ratio:4\/3[^}]*overflow:hidden/.test(css) && /d68-news-article__hero img\{[^}]*width:100%[^}]*height:100%[^}]*object-fit:cover[^}]*object-position:center/.test(css));
+check('Recent sidebar image uses centered cover in 4:3 frame', /d68-news-sidebar__image\{[^}]*aspect-ratio:4\/3[^}]*overflow:hidden/.test(css) && /d68-news-sidebar__image img\{[^}]*object-fit:cover[^}]*object-position:center/.test(css));
+check('Mobile compact Related cards preserve 4:3 media', /d68-news-card\.is-compact \.d68-news-card__image-link\{[^}]*aspect-ratio:4\/3/.test(css) && !/d68-news-card\.is-compact \.d68-news-card__image-link\{[^}]*aspect-ratio:auto/.test(css));
 check('Detail has desktop content/sidebar layout', /d68-news-detail-layout\{[^}]*grid-template-columns:minmax\(0,1fr\) 310px/.test(css));
 check('Public News has tablet breakpoint', /@media\(max-width:980px\)/.test(css));
 check('Public News has mobile single-column breakpoint', /@media\(max-width:700px\)[\s\S]*d68-news-grid\{grid-template-columns:1fr/.test(css));
