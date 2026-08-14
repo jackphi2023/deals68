@@ -8,6 +8,10 @@ import {
 } from '../../services/newsService';
 import { adminUploadNewsFeaturedImage } from '../../services/newsMediaService';
 import {
+  emptyNewsDocument,
+  newsContentHasMeaningfulContent,
+} from '../../lib/newsContent';
+import {
   normalizeNewsSlug,
   type NewsArticle,
   type NewsArticleStatus,
@@ -16,6 +20,8 @@ import {
   type NewsLanguage,
   type NewsTagWriteInput,
 } from '../../lib/newsTypes';
+import NewsEditor from '../news/NewsEditor';
+import NewsContentRenderer from '../news/NewsContentRenderer';
 
 type Props = {
   articleId?: string;
@@ -31,8 +37,8 @@ type EditorForm = {
   slug_en: string;
   excerpt_vi: string;
   excerpt_en: string;
-  content_vi: string;
-  content_en: string;
+  content_vi: NewsContentJson;
+  content_en: NewsContentJson;
   featured_image_url: string;
   featured_image_alt_vi: string;
   featured_image_alt_en: string;
@@ -46,57 +52,33 @@ type EditorForm = {
   tags: string;
 };
 
-const EMPTY_FORM: EditorForm = {
-  status: 'draft',
-  title_vi: '',
-  title_en: '',
-  slug_vi: '',
-  slug_en: '',
-  excerpt_vi: '',
-  excerpt_en: '',
-  content_vi: '',
-  content_en: '',
-  featured_image_url: '',
-  featured_image_alt_vi: '',
-  featured_image_alt_en: '',
-  is_featured: false,
-  published_date: '',
-  author_name: 'Deals68.com',
-  seo_title_vi: '',
-  seo_title_en: '',
-  seo_description_vi: '',
-  seo_description_en: '',
-  tags: '',
-};
+function emptyForm(): EditorForm {
+  return {
+    status: 'draft',
+    title_vi: '',
+    title_en: '',
+    slug_vi: '',
+    slug_en: '',
+    excerpt_vi: '',
+    excerpt_en: '',
+    content_vi: emptyNewsDocument(),
+    content_en: emptyNewsDocument(),
+    featured_image_url: '',
+    featured_image_alt_vi: '',
+    featured_image_alt_en: '',
+    is_featured: false,
+    published_date: '',
+    author_name: 'Deals68.com',
+    seo_title_vi: '',
+    seo_title_en: '',
+    seo_description_vi: '',
+    seo_description_en: '',
+    tags: '',
+  };
+}
 
 function clean(value: unknown) {
   return String(value ?? '').trim();
-}
-
-function textFromNode(node: unknown): string {
-  if (!node || typeof node !== 'object') return '';
-  const item = node as Record<string, unknown>;
-  if (item.type === 'text') return clean(item.text);
-  const children = Array.isArray(item.content) ? item.content : [];
-  return children.map(textFromNode).filter(Boolean).join(item.type === 'doc' ? '\n\n' : ' ');
-}
-
-function contentToPlainText(content: NewsContentJson | null) {
-  return content ? textFromNode(content).replace(/\n{3,}/g, '\n\n').trim() : '';
-}
-
-function plainTextToContent(value: string): NewsContentJson | null {
-  const source = String(value || '').replace(/\r\n/g, '\n').trim();
-  if (!source) return null;
-  const paragraphs = source
-    .split(/\n{2,}/)
-    .map((paragraph) => paragraph.trim())
-    .filter(Boolean)
-    .map((paragraph) => ({
-      type: 'paragraph',
-      content: [{ type: 'text', text: paragraph.replace(/\n+/g, ' ') }],
-    }));
-  return { type: 'doc', content: paragraphs };
 }
 
 function articleToForm(article: NewsArticle): EditorForm {
@@ -108,8 +90,8 @@ function articleToForm(article: NewsArticle): EditorForm {
     slug_en: article.slug_en || '',
     excerpt_vi: article.excerpt_vi || '',
     excerpt_en: article.excerpt_en || '',
-    content_vi: contentToPlainText(article.content_json_vi),
-    content_en: contentToPlainText(article.content_json_en),
+    content_vi: article.content_json_vi || emptyNewsDocument(),
+    content_en: article.content_json_en || emptyNewsDocument(),
     featured_image_url: article.featured_image_url || '',
     featured_image_alt_vi: article.featured_image_alt_vi || '',
     featured_image_alt_en: article.featured_image_alt_en || '',
@@ -165,22 +147,30 @@ function readImageDimensions(file: File) {
 }
 
 function validateForPublish(form: EditorForm) {
-  const missingVi = [
-    ['Tiêu đề VI', form.title_vi],
-    ['Slug VI', form.slug_vi],
-    ['Mô tả ngắn VI', form.excerpt_vi],
-    ['Nội dung VI', form.content_vi],
-    ['Ngày đăng', form.published_date],
-    ['Ảnh đại diện 4:3', form.featured_image_url],
-  ].filter(([, value]) => !clean(value));
-  if (missingVi.length) {
-    return `Chưa đủ thông tin để xuất bản: ${missingVi.map(([label]) => label).join(', ')}.`;
-  }
+  const missing: string[] = [];
+  if (!clean(form.title_vi)) missing.push('Tiêu đề VI');
+  if (!clean(form.slug_vi)) missing.push('Slug VI');
+  if (!clean(form.excerpt_vi)) missing.push('Mô tả ngắn VI');
+  if (!newsContentHasMeaningfulContent(form.content_vi)) missing.push('Nội dung VI');
+  if (!clean(form.published_date)) missing.push('Ngày đăng');
+  if (!clean(form.featured_image_url)) missing.push('Ảnh đại diện 4:3');
+  if (missing.length) return `Chưa đủ thông tin để xuất bản: ${missing.join(', ')}.`;
 
-  const enCore = [form.title_en, form.slug_en, form.excerpt_en, form.content_en];
-  const hasAnyEn = enCore.some((value) => clean(value));
-  if (hasAnyEn && enCore.some((value) => !clean(value))) {
-    return 'Bản EN đã được nhập một phần. Hãy hoàn tất Tiêu đề, Slug, Mô tả ngắn và Nội dung EN hoặc để trống toàn bộ.';
+  const hasAnyEn = [
+    clean(form.title_en),
+    clean(form.slug_en),
+    clean(form.excerpt_en),
+    newsContentHasMeaningfulContent(form.content_en) ? 'content' : '',
+  ].some(Boolean);
+  if (hasAnyEn) {
+    const missingEn: string[] = [];
+    if (!clean(form.title_en)) missingEn.push('Title');
+    if (!clean(form.slug_en)) missingEn.push('Slug');
+    if (!clean(form.excerpt_en)) missingEn.push('Short description');
+    if (!newsContentHasMeaningfulContent(form.content_en)) missingEn.push('Content');
+    if (missingEn.length) {
+      return `Bản EN đang nhập dở. Hãy hoàn tất ${missingEn.join(', ')} hoặc để trống toàn bộ bản EN.`;
+    }
   }
   return '';
 }
@@ -190,11 +180,12 @@ function languageLabel(language: NewsLanguage) {
 }
 
 export default function AdminNewsEditor({ articleId, onCancel, onSaved }: Props) {
-  const [form, setForm] = useState<EditorForm>(EMPTY_FORM);
+  const [form, setForm] = useState<EditorForm>(() => emptyForm());
   const [language, setLanguage] = useState<NewsLanguage>('vi');
   const [loading, setLoading] = useState(Boolean(articleId));
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [editorBusy, setEditorBusy] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [slugTouched, setSlugTouched] = useState({ vi: Boolean(articleId), en: Boolean(articleId) });
@@ -203,7 +194,7 @@ export default function AdminNewsEditor({ articleId, onCancel, onSaved }: Props)
   useEffect(() => {
     let cancelled = false;
     if (!articleId) {
-      setForm(EMPTY_FORM);
+      setForm(emptyForm());
       setLoading(false);
       return undefined;
     }
@@ -213,7 +204,7 @@ export default function AdminNewsEditor({ articleId, onCancel, onSaved }: Props)
       .then((article) => {
         if (cancelled) return;
         if (!article) throw new Error('Không tìm thấy bài News.');
-        if (article.status === 'deleted') throw new Error('Bài đã xóa mềm và không thể chỉnh sửa trong NEWS-03.');
+        if (article.status === 'deleted') throw new Error('Bài đã xóa mềm và không thể chỉnh sửa.');
         setForm(articleToForm(article));
         setSlugTouched({ vi: true, en: true });
       })
@@ -229,6 +220,7 @@ export default function AdminNewsEditor({ articleId, onCancel, onSaved }: Props)
   }, [articleId]);
 
   const tagCount = useMemo(() => parseTags(form.tags).length, [form.tags]);
+  const activeContent = language === 'vi' ? form.content_vi : form.content_en;
 
   function patch(values: Partial<EditorForm>) {
     setForm((current) => ({ ...current, ...values }));
@@ -257,7 +249,7 @@ export default function AdminNewsEditor({ articleId, onCancel, onSaved }: Props)
       }
       const uploaded = await adminUploadNewsFeaturedImage(file);
       patch({ featured_image_url: uploaded.publicUrl });
-      setMessage(`Đã upload ảnh ${width}×${height}px vào news-media.`);
+      setMessage(`Đã upload ảnh đại diện ${width}×${height}px vào news-media.`);
     } catch (uploadError: any) {
       setError(uploadError?.message || 'Không upload được ảnh đại diện.');
     } finally {
@@ -288,8 +280,8 @@ export default function AdminNewsEditor({ articleId, onCancel, onSaved }: Props)
         slug_en: normalizeNewsSlug(form.slug_en) || null,
         excerpt_vi: clean(form.excerpt_vi) || null,
         excerpt_en: clean(form.excerpt_en) || null,
-        content_json_vi: plainTextToContent(form.content_vi),
-        content_json_en: plainTextToContent(form.content_en),
+        content_json_vi: newsContentHasMeaningfulContent(form.content_vi) ? form.content_vi : null,
+        content_json_en: newsContentHasMeaningfulContent(form.content_en) ? form.content_en : null,
         featured_image_url: clean(form.featured_image_url) || null,
         featured_image_alt_vi: clean(form.featured_image_alt_vi) || null,
         featured_image_alt_en: clean(form.featured_image_alt_en) || null,
@@ -317,20 +309,18 @@ export default function AdminNewsEditor({ articleId, onCancel, onSaved }: Props)
     }
   }
 
-  if (loading) {
-    return <div className="d68-admin-news__loading">Đang tải bài News...</div>;
-  }
+  if (loading) return <div className="d68-admin-news__loading">Đang tải bài News...</div>;
 
   return (
     <form className="d68-admin-news-editor" onSubmit={save}>
       <div className="d68-admin-news__toolbar">
         <div>
           <h2>{isEditing ? 'Chỉnh sửa tin' : 'Tạo tin mới'}</h2>
-          <p>NEWS-03 dùng nội dung text có cấu trúc cơ bản. Rich text, paste cleanup, ảnh nội dung và YouTube sẽ được thay ở NEWS-04.</p>
+          <p>Rich editor lưu structured JSON. Nội dung paste được làm sạch; ảnh nội dung và YouTube chỉ lưu bằng node được kiểm soát.</p>
         </div>
         <div className="d68-admin-actions">
           <button type="button" className="d68-admin-btn light" onClick={onCancel} disabled={saving}>Hủy</button>
-          <button type="submit" className="d68-admin-btn blue" disabled={saving || uploading}>{saving ? 'Đang lưu...' : 'Lưu tin'}</button>
+          <button type="submit" className="d68-admin-btn blue" disabled={saving || uploading || editorBusy}>{saving ? 'Đang lưu...' : 'Lưu tin'}</button>
         </div>
       </div>
 
@@ -341,67 +331,62 @@ export default function AdminNewsEditor({ articleId, onCancel, onSaved }: Props)
         <section className="d68-admin-card d68-admin-news-editor__main">
           <div className="d68-admin-news__lang-tabs" role="tablist" aria-label="Ngôn ngữ bài viết">
             {(['vi', 'en'] as NewsLanguage[]).map((item) => (
-              <button
-                key={item}
-                type="button"
-                className={language === item ? 'active' : ''}
-                onClick={() => setLanguage(item)}
-              >
+              <button key={item} type="button" className={language === item ? 'active' : ''} onClick={() => setLanguage(item)}>
                 {languageLabel(item)}
               </button>
             ))}
           </div>
+
+          {language === 'en' ? <div className="d68-admin-notice warn">Không tự động dịch VI → EN. Chỉ xuất bản EN khi đủ Title, Slug, Short description và Content.</div> : null}
 
           {language === 'vi' ? (
             <>
               <label className="d68-admin-field"><span>Tiêu đề *</span><input className="d68-admin-input" value={form.title_vi} onChange={(event) => updateTitle('vi', event.target.value)} maxLength={180} /></label>
               <label className="d68-admin-field"><span>Slug VI *</span><input className="d68-admin-input" value={form.slug_vi} onChange={(event) => { setSlugTouched((value) => ({ ...value, vi: true })); patch({ slug_vi: normalizeNewsSlug(event.target.value) }); }} placeholder="tin-moi-ma" /></label>
               <label className="d68-admin-field"><span>Mô tả ngắn *</span><textarea className="d68-admin-input textarea d68-admin-news__excerpt" value={form.excerpt_vi} onChange={(event) => patch({ excerpt_vi: event.target.value })} maxLength={320} /></label>
-              <label className="d68-admin-field"><span>Nội dung *</span><textarea className="d68-admin-input textarea d68-admin-news__content" value={form.content_vi} onChange={(event) => patch({ content_vi: event.target.value })} placeholder="Nhập nội dung text. Mỗi đoạn cách nhau một dòng trống." /></label>
+              <div className="d68-admin-field"><span>Nội dung *</span><NewsEditor value={form.content_vi} onChange={(content) => patch({ content_vi: content })} onBusyChange={setEditorBusy} onError={setError} ariaLabel="Nội dung tiếng Việt" /></div>
+              <label className="d68-admin-field"><span>SEO title VI</span><input className="d68-admin-input" value={form.seo_title_vi} onChange={(event) => patch({ seo_title_vi: event.target.value })} maxLength={180} /></label>
+              <label className="d68-admin-field"><span>SEO description VI</span><textarea className="d68-admin-input textarea" value={form.seo_description_vi} onChange={(event) => patch({ seo_description_vi: event.target.value })} maxLength={320} /></label>
             </>
           ) : (
             <>
-              <div className="d68-admin-notice warn">Không tự động dịch VI → EN. Chỉ xuất bản EN khi đủ toàn bộ bundle tiếng Anh.</div>
-              <label className="d68-admin-field"><span>Title EN</span><input className="d68-admin-input" value={form.title_en} onChange={(event) => updateTitle('en', event.target.value)} maxLength={180} /></label>
+              <label className="d68-admin-field"><span>Title</span><input className="d68-admin-input" value={form.title_en} onChange={(event) => updateTitle('en', event.target.value)} maxLength={180} /></label>
               <label className="d68-admin-field"><span>Slug EN</span><input className="d68-admin-input" value={form.slug_en} onChange={(event) => { setSlugTouched((value) => ({ ...value, en: true })); patch({ slug_en: normalizeNewsSlug(event.target.value) }); }} placeholder="news-slug" /></label>
-              <label className="d68-admin-field"><span>Short description EN</span><textarea className="d68-admin-input textarea d68-admin-news__excerpt" value={form.excerpt_en} onChange={(event) => patch({ excerpt_en: event.target.value })} maxLength={320} /></label>
-              <label className="d68-admin-field"><span>Content EN</span><textarea className="d68-admin-input textarea d68-admin-news__content" value={form.content_en} onChange={(event) => patch({ content_en: event.target.value })} placeholder="English content. Separate paragraphs with a blank line." /></label>
+              <label className="d68-admin-field"><span>Short description</span><textarea className="d68-admin-input textarea d68-admin-news__excerpt" value={form.excerpt_en} onChange={(event) => patch({ excerpt_en: event.target.value })} maxLength={320} /></label>
+              <div className="d68-admin-field"><span>Content</span><NewsEditor value={form.content_en} onChange={(content) => patch({ content_en: content })} onBusyChange={setEditorBusy} onError={setError} ariaLabel="English content" /></div>
+              <label className="d68-admin-field"><span>SEO title EN</span><input className="d68-admin-input" value={form.seo_title_en} onChange={(event) => patch({ seo_title_en: event.target.value })} maxLength={180} /></label>
+              <label className="d68-admin-field"><span>SEO description EN</span><textarea className="d68-admin-input textarea" value={form.seo_description_en} onChange={(event) => patch({ seo_description_en: event.target.value })} maxLength={320} /></label>
             </>
           )}
+
+          <details className="d68-admin-news__preview">
+            <summary>Xem trước nội dung {languageLabel(language)}</summary>
+            <NewsContentRenderer content={activeContent} />
+          </details>
         </section>
 
         <aside className="d68-admin-news-editor__side">
           <section className="d68-admin-card">
             <h3>Xuất bản</h3>
             <label className="d68-admin-field"><span>Trạng thái</span><select className="d68-admin-input" value={form.status} onChange={(event) => patch({ status: event.target.value as EditorForm['status'] })}><option value="draft">Bản nháp</option><option value="published">Đã xuất bản</option></select></label>
-            <label className="d68-admin-field"><span>Ngày đăng</span><input type="date" className="d68-admin-input" value={form.published_date} onChange={(event) => patch({ published_date: event.target.value })} /></label>
+            <label className="d68-admin-field"><span>Ngày đăng</span><input className="d68-admin-input" type="date" value={form.published_date} onChange={(event) => patch({ published_date: event.target.value })} /></label>
             <label className="d68-admin-field"><span>Tác giả</span><input className="d68-admin-input" value={form.author_name} onChange={(event) => patch({ author_name: event.target.value })} /></label>
             <label className="d68-admin-check"><input type="checkbox" checked={form.is_featured} onChange={(event) => patch({ is_featured: event.target.checked })} /> Tin nổi bật</label>
           </section>
 
           <section className="d68-admin-card">
             <h3>Ảnh đại diện 4:3</h3>
-            {form.featured_image_url ? <img className="d68-admin-news__featured-preview" src={form.featured_image_url} alt={form.featured_image_alt_vi || 'News featured'} /> : <div className="d68-admin-news__image-placeholder">Chưa có ảnh</div>}
-            <label className="d68-admin-news__upload d68-admin-btn light">{uploading ? 'Đang upload...' : 'Chọn ảnh 4:3'}<input type="file" accept="image/jpeg,image/png,image/webp" onChange={uploadFeaturedImage} disabled={uploading || saving} /></label>
-            <small>Khuyến nghị 1200×900 px. JPEG/PNG/WebP, tối đa 10 MB.</small>
-            <label className="d68-admin-field"><span>Alt VI</span><input className="d68-admin-input" value={form.featured_image_alt_vi} onChange={(event) => patch({ featured_image_alt_vi: event.target.value })} /></label>
-            <label className="d68-admin-field"><span>Alt EN</span><input className="d68-admin-input" value={form.featured_image_alt_en} onChange={(event) => patch({ featured_image_alt_en: event.target.value })} /></label>
+            {form.featured_image_url ? <img className="d68-admin-news__featured-preview" src={form.featured_image_url} alt="Preview" /> : <div className="d68-admin-news__featured-empty">Khuyến nghị 1200 × 900 px</div>}
+            <label className="d68-admin-btn light d68-admin-news__file-button">{uploading ? 'Đang upload...' : 'Chọn ảnh 4:3'}<input type="file" hidden accept="image/jpeg,image/png,image/webp" disabled={uploading} onChange={(event) => void uploadFeaturedImage(event)} /></label>
+            <label className="d68-admin-field"><span>Alt ảnh VI</span><input className="d68-admin-input" value={form.featured_image_alt_vi} onChange={(event) => patch({ featured_image_alt_vi: event.target.value })} /></label>
+            <label className="d68-admin-field"><span>Alt ảnh EN</span><input className="d68-admin-input" value={form.featured_image_alt_en} onChange={(event) => patch({ featured_image_alt_en: event.target.value })} /></label>
           </section>
 
           <section className="d68-admin-card">
-            <h3>Tags <span className="d68-admin-badge warn">{tagCount}</span></h3>
-            <label className="d68-admin-field"><span>Tags</span><textarea className="d68-admin-input textarea" value={form.tags} onChange={(event) => patch({ tags: event.target.value })} placeholder="M&A | M&A, Gọi vốn | Fundraising" /><small>Phân cách bằng dấu phẩy hoặc xuống dòng. Có thể nhập `VI | EN`; hệ thống không tự dịch tag.</small></label>
+            <h3>Tags</h3>
+            <label className="d68-admin-field"><span>Nhiều tags, cách nhau dấu phẩy hoặc xuống dòng</span><textarea className="d68-admin-input textarea" value={form.tags} onChange={(event) => patch({ tags: event.target.value })} placeholder={'M&A | M&A, Gọi vốn | Fundraising'} /></label>
+            <p className="d68-admin-subtle">{tagCount} tag · Cú pháp song ngữ: VI | EN.</p>
           </section>
-
-          <details className="d68-admin-card d68-admin-news__seo">
-            <summary>SEO nâng cao</summary>
-            <div className="d68-admin-news__seo-fields">
-              <label className="d68-admin-field"><span>SEO title VI</span><input className="d68-admin-input" value={form.seo_title_vi} onChange={(event) => patch({ seo_title_vi: event.target.value })} /></label>
-              <label className="d68-admin-field"><span>SEO description VI</span><textarea className="d68-admin-input textarea" value={form.seo_description_vi} onChange={(event) => patch({ seo_description_vi: event.target.value })} /></label>
-              <label className="d68-admin-field"><span>SEO title EN</span><input className="d68-admin-input" value={form.seo_title_en} onChange={(event) => patch({ seo_title_en: event.target.value })} /></label>
-              <label className="d68-admin-field"><span>SEO description EN</span><textarea className="d68-admin-input textarea" value={form.seo_description_en} onChange={(event) => patch({ seo_description_en: event.target.value })} /></label>
-            </div>
-          </details>
         </aside>
       </div>
     </form>
