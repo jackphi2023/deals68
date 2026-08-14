@@ -61,7 +61,7 @@ function roleLabel(lang: Lang, role: Role) {
     ? T(lang, 'Doanh nghiệp', 'Business')
     : role === 'investor'
       ? T(lang, 'Nhà đầu tư', 'Investor')
-      : T(lang, 'Cố vấn', 'Advisor');
+      : T(lang, 'Môi giới/Cố vấn', 'Advisor/Broker');
 }
 
 export default function Pricing({ lang }: { lang: Lang }) {
@@ -170,8 +170,8 @@ export default function Pricing({ lang }: { lang: Lang }) {
     {
       key: 'advisor' as Role,
       icon: '🤝',
-      titleVi: 'Cố vấn',
-      titleEn: 'Advisor',
+      titleVi: 'Môi giới/Cố vấn',
+      titleEn: 'Advisor/Broker',
       descVi: 'Đại diện nhiều thương vụ, quản lý khách hàng và hỗ trợ kết nối.',
       descEn: 'Represent multiple mandates, manage clients and support matching.',
       price: money(CFG.advisor.vn, 'VND'),
@@ -182,7 +182,7 @@ export default function Pricing({ lang }: { lang: Lang }) {
         T(lang, 'Quản lý nhiều hồ sơ', 'Manage multiple profiles'),
         T(lang, 'Tiếp cận nhiều nhà đầu tư hơn', 'Reach more investors'),
         T(lang, 'Kết nối Nhà đầu tư và Doanh nghiệp', 'Connect investors and businesses'),
-        T(lang, 'Hồ sơ cố vấn', 'Advisor profile'),
+        T(lang, 'Hồ sơ Môi giới/Cố vấn', 'Advisor/Broker profile'),
       ],
     },
   ];
@@ -192,8 +192,8 @@ export default function Pricing({ lang }: { lang: Lang }) {
       off: '0%',
       termVi: 'Kỳ hạn tối thiểu',
       termEn: 'Minimum term',
-      whoVi: 'Doanh nghiệp 4 tuần · Nhà đầu tư Nâng cao/Cố vấn 4 tháng',
-      whoEn: 'Business 4 weeks · Premium Investor/Advisor 4 months',
+      whoVi: 'Doanh nghiệp 4 tuần · Nhà đầu tư Nâng cao/Môi giới/Cố vấn 4 tháng',
+      whoEn: 'Business 4 weeks · Premium Investor/Advisor/Broker 4 months',
     },
     {
       off: '15%',
@@ -323,8 +323,8 @@ export default function Pricing({ lang }: { lang: Lang }) {
           <p>
             {T(
               lang,
-              'Doanh nghiệp trả phí hiển thị theo tuần; Nhà đầu tư Tiêu chuẩn miễn phí, Nhà đầu tư Nâng cao và Cố vấn trả phí theo tháng. Kỳ hạn dài hơn — giảm giá nhiều hơn.',
-              'Businesses pay a weekly listing fee; Standard Investors are free, while Premium Investors and Advisors pay monthly. Longer terms mean bigger discounts.',
+              'Doanh nghiệp trả phí hiển thị theo tuần; Nhà đầu tư Tiêu chuẩn miễn phí, Nhà đầu tư Nâng cao và Môi giới/Cố vấn trả phí theo tháng. Kỳ hạn dài hơn — giảm giá nhiều hơn.',
+              'Businesses pay a weekly listing fee; Standard Investors are free, while Premium Investors and Advisors/Brokers pay monthly. Longer terms mean bigger discounts.',
             )}
           </p>
         </div>
