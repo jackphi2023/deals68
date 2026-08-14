@@ -247,10 +247,11 @@ async function investorSeo(code: string, lang: SeoLanguage) {
 
 function addPublishedNewsFilters(params: URLSearchParams, lang: SeoLanguage) {
   const suffix = lang === 'en' ? 'en' : 'vi';
+  const slugKey = `slug_${suffix}`;
   params.set('status', 'eq.published');
   params.set('deleted_at', 'is.null');
   params.set('published_date', 'not.is.null');
-  params.set(`slug_${suffix}`, 'not.is.null');
+  if (!params.has(slugKey)) params.set(slugKey, 'not.is.null');
   params.set(`title_${suffix}`, 'not.is.null');
   params.set(`excerpt_${suffix}`, 'not.is.null');
   params.set(`content_json_${suffix}`, 'not.is.null');
