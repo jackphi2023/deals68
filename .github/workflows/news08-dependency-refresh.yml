@@ -1,0 +1,39 @@
+name: NEWS-08 Dependency Refresh
+
+on:
+  push:
+    branches: [building]
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: building
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Refresh only audited runtime dependencies
+        run: npm install --save-exact @supabase/supabase-js@2.109.0 react-router-dom@6.30.4 vite@5.4.21
+      - name: Verify production audit
+        run: npm audit --omit=dev --audit-level=high
+      - name: Commit regenerated lockfile
+        shell: bash
+        run: |
+          git diff -- package.json package-lock.json
+          git add package.json package-lock.json
+          if git diff --cached --quiet; then
+            echo "No dependency changes to commit."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "chore: refresh secure release dependencies"
+          git push origin HEAD:building
