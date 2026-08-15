@@ -1,0 +1,121 @@
+name: Final verified performance phase 3
+
+on:
+  pull_request:
+    branches: [building]
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.event.pull_request.head.ref == 'automation/performance-phase3-rebase-20260721'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: automation/performance-phase3-rebase-20260721
+          fetch-depth: 30
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Apply corrected Phase 3 patch
+        shell: bash
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+          import re
+          source = Path('.github/workflows/performance-phase3-rebase.yml').read_text().splitlines()
+          start = next(i for i, line in enumerate(source) if "python3 <<'PY'" in line) + 1
+          end = next(i for i in range(start, len(source)) if source[i].strip() == 'PY')
+          script = '\n'.join(line[10:] if line.startswith('          ') else line for line in source[start:end]) + '\n'
+          replacement = '''start_marker = "        const assets = await getBusinessDetailAssets(b.id, { publicOnly: !(canDownload || ownerViewing) }).catch(() => ({ files: [], images: [] }));"
+end_marker = "          setSimilar((related || []).map((row: any) => normalizeSimilar(row, lang)).filter((row: SimilarDeal | null): row is SimilarDeal => !!row && row.slug !== b.slug).slice(0, 3));"
+start_index = detail.find(start_marker)
+end_index = detail.find(end_marker, start_index)
+if start_index < 0 or end_index < 0:
+    raise SystemExit(f'parallel business detail markers not found: {start_index}, {end_index}')
+detail = detail[:start_index] + new + detail[end_index + len(end_marker):]'''
+          script, count = re.subn(
+              r"^\s*detail = replace_once\(detail, old, new, 'parallel business detail'\)\s*$",
+              replacement,
+              script,
+              count=1,
+              flags=re.M,
+          )
+          if count != 1:
+              raise SystemExit(f'Could not patch Business Detail replacement line: {count}')
+          Path('/tmp/phase3-rebase.py').write_text(script)
+          PY
+          python3 /tmp/phase3-rebase.py
+      - name: Install dependencies
+        run: npm ci
+      - name: Production build
+        run: npm run build
+      - name: Core QA
+        run: |
+          npm run qa:css
+          npm run qa:migrations
+          npm run check:routes
+      - name: Verify no new package regression
+        shell: bash
+        run: |
+          cat > /tmp/check.cjs <<'NODE'
+          const { spawnSync } = require('child_process');
+          const fs = require('fs');
+          const path = require('path');
+          function failures(root) {
+            const source = fs.readFileSync(path.join(root, 'scripts/deals68-package-checks.mjs'), 'utf8');
+            const scripts = [...source.matchAll(/'([^']+\.mjs)'/g)].map((m) => m[1]);
+            return scripts.filter((script) => (spawnSync(process.execPath, [script], { cwd: root, stdio: 'ignore' }).status ?? 1) !== 0);
+          }
+          const current = failures(process.argv[2]);
+          const baseline = failures(process.argv[3]);
+          const newFailures = current.filter((script) => !baseline.includes(script));
+          console.log(JSON.stringify({ current, baseline, newFailures }, null, 2));
+          if (newFailures.length) process.exit(1);
+          NODE
+          git worktree add /tmp/phase3-latest-baseline c8f6b5fb4ab857f592b23bd769f459902979b190
+          node /tmp/check.cjs "$GITHUB_WORKSPACE" /tmp/phase3-latest-baseline
+      - name: Verify Phase 3 contracts
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const data = fs.readFileSync('src/lib/data.ts', 'utf8');
+          const metrics = fs.readFileSync('src/lib/publicMetrics.ts', 'utf8');
+          const home = fs.readFileSync('src/pages/Home.tsx', 'utf8');
+          const businesses = fs.readFileSync('src/pages/Businesses.tsx', 'utf8');
+          const detail = fs.readFileSync('src/pages/BusinessDetail.tsx', 'utf8');
+          const checks = [
+            [data.includes('businessPublicListSelect'), 'lightweight Business projection'],
+            [data.includes("{ count: 'exact' }"), 'combined Business list/count'],
+            [data.includes('public:business-facets:'), 'Business facet cache'],
+            [metrics.includes('getPublicHomepageBootstrap'), 'Homepage bootstrap client'],
+            [home.includes('getPublicHomepageBootstrap(6, 80)'), 'Homepage single RPC path'],
+            [businesses.includes('listBusinessesPage(filters)'), 'Business listing one request'],
+            [detail.includes('const [assets, related] = await Promise.all'), 'Business detail parallel requests'],
+            [!fs.existsSync('src/lib/publicRequestCache.ts'), 'no duplicate cache layer'],
+          ];
+          for (const [ok, label] of checks) {
+            if (!ok) throw new Error(label);
+            console.log(`PASS: ${label}`);
+          }
+          NODE
+          git diff --check
+      - name: Commit tested implementation
+        shell: bash
+        run: |
+          rm -f .github/phase3-retry-trigger.txt .github/phase3-retry-trigger-2.txt
+          rm -f .github/workflows/performance-phase3-rebase.yml
+          rm -f .github/workflows/performance-phase3-rebase-diagnostic.yml
+          rm -f .github/workflows/performance-phase3-rebase-retry.yml
+          rm -f .github/workflows/performance-phase3-retry-diagnostic.yml
+          rm -f .github/workflows/performance-phase3-final.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A .github src supabase/migrations/20260721042000_public_data_performance_v1.sql
+          git commit -m "perf(data): consolidate public queries and payloads"
+          git push origin HEAD:automation/performance-phase3-rebase-20260721
